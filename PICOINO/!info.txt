@@ -1,0 +1,5 @@
+This folder contains programs for:
+
+Picoino 1.0
+
+Compilations of other devices are skipped.

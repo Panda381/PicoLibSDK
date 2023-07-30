@@ -1,0 +1,6 @@
+This folder contains Games for:
+
+PicoPad 0.8
+PicoPad 1.0
+
+Compilations of Picoino are skipped.

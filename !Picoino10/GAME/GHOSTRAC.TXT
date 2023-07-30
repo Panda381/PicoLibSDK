@@ -1,0 +1,11 @@
+^YGhost Racing^0
+
+Game of car racing.
+You can race with your
+ghost from best lap.
+
+^WUP or Ctrl^0 .. spead up
+^WDOWN or Spc^0 . breaks
+^WLEFT^0 ........ turn left
+^WRIGHT^0 ....... turn right
+^WBack^0 ........ quit

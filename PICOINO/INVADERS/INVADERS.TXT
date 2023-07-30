@@ -1,0 +1,8 @@
+^YSpace Invaders^0
+
+Shooting game
+
+^WLEFT^0 ..... left
+^WRIGHT^0 .... right
+^WSpc^0 ...... shooting
+^WBack^0 ..... quit game

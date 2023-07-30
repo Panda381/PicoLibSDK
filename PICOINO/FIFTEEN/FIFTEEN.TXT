@@ -1,0 +1,12 @@
+^YFifteen^0
+
+Logic game - sort
+tiles from 1 to 15
+
+^WRIGHT^0 ... right
+^WUP^0 ...... up
+^WLEFT^0 .... left
+^WDOWN^0 .... down
+^WSpc^0 ..... new game
+^WCtrl^0 .... help hint
+^WBack^0 .... quit

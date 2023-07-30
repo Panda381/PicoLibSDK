@@ -1,0 +1,16 @@
+Generator of Bernoulli numbers, used by linear factorials.
+Project of MS VC++ 2005 (for Windows)
+
+PicoPad SDK: Copyright (c) 2023 Miroslav Nemecek, Panda38@seznam.cz
+
+If compiling under MS VC, "GENERATOR" should be in preprocessor definitions.
+Set number of Bernoulli number BIGINT_BERN_NUM in include.h.
+
+Uses files from up-directory:
+../bernoulli.c
+../bigint.c
+../bigint.h
+
+Generaters files:
+bernoulli.c (Bernoulli numbers in C code)
+bernoulli.csv (Bernoulli numbers as CSV list with commas)

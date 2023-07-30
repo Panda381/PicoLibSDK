@@ -1,0 +1,6 @@
+^YPixels^0
+
+Demo - random generation
+       of colored pixels
+
+^WBack^0 .... quit

@@ -1,0 +1,5 @@
+^YEarth^0
+
+Demo - rotating globe
+
+^WBack^0 .... quit

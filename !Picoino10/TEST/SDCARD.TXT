@@ -1,0 +1,8 @@
+^YSD Card^0
+
+Test SD card and files.
+
+^WSpc^0 ..... dir. list
+^WZ^0 ....... HEX LOADER
+^WCtrl^0 .... write $TEMP$
+^WBack^0 .... quit

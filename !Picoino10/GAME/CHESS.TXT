@@ -1,0 +1,15 @@
+^YChess^0
+
+Chess game
+
+^WLEFT^0 .... left
+^WRIGHT^0 ... right
+^WUP^0 ...... up
+^WDOWN^0 .... down
+^WSpc^0 ..... pick up
+^WZ^0 ....... cancel
+^WCtrl^0 .... help
+^WBack^0 .... quit
+
+Difficulty: 2..5 forward
+moves (up to 2 minutes)

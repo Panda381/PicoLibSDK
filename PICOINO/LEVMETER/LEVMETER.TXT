@@ -1,0 +1,6 @@
+^YLevel Meter^0
+
+Demo - simulation of music
+       spectrum indicator
+
+^WBack^0 .... quit

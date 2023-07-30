@@ -1,0 +1,720 @@
+
+PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
+==================================================================
+Version 1.00, July 2023
+
+Copyright (c) 2023 Miroslav Nemecek
+
+Panda38@seznam.cz
+hardyplotter2@gmail.com
+https://github.com/Panda381/PicoLibSDK
+https://www.breatharian.eu/hw/picolibsdk/index_en.html
+https://github.com/pajenicko/picopad
+https://picopad.eu/en/
+
+
+About
+-----
+PicoLibSDK is an alternative extended C/C++ SDK library for the Raspberry Pico
+module with the RP2040 processor, but it can also be used for other modules
+which use this processor. Compared to the original SDK library, officially
+provided with the Raspberry Pico, the PicoLibSDK library tries to extend the
+functionality of the original library and especially to make the SDK library
+easier to use. What you can find in the PicoLibSDK library:
+
+- Boot Loader: Boot loader allowing to select and run UF2 programs from SD card.
+
+- SDK hardware control: ADC, boot ROM, clocks control, CPU control, hardware
+  divider, DMA, double and float arithmetics, FIFO mailboxes, flash programming,
+  GPIO, I2C, hardware interpolator, IRQ, multicore, PIO, PLL, PWM, QSPI, reset
+  and power control, ROSC, RTC, SPI, spinlocks, SysTick, alarm timer, watchdog,
+  XOSC.
+
+- Tool library: alarm, 32-bit Unix calendar, long 64-bit astronomic calendar,
+  canvas drawing, RGBA color vector, CRC check with DMA support, decode numbers,
+  TFT drawing, escape packet protocol, event ring buffer, FAT file system,
+  doubly linked list, memory allocator, 2D transformation matrix, mini-ring
+  buffer, formatted print, PWM sound output, QVGA drawing, random generator,
+  rectangle, ring buffer, DMA ring buffer, SD card, streams, text strings, text
+  list, text print, tree list.
+
+- USB library: multiplayer mini-port, CDC device and host - serial communication,
+  HID device and host - including external keyboard and mouse.
+
+- Big intergers: calculations with large integers, calculation of Bernoulli
+  numbers.
+
+- Real numbers: calculations with floating-point numbers with optional precision
+  up to 3690 digits and 30-bit exponent. Scientific functions with optional
+  calculation method - Ln, Exp, Sqrt, Sin, Cos, Tan, arcus, hyperbolic functions
+  and many more. Linear factorials with accurate and fast calculation.
+
+- Display drivers: Prepared support of TFT display 320x240/16bits and QVGA
+  display 320x240/8 bits.
+
+- Devices: Support of Picoino with 8-bit QVGA display and PicoPad with 16-bit
+  TFT display.
+
+- Samples: Prepared 47 sample programs and games.
+
+
+License
+-------
+The library source code is, with a few exceptions, completely free to use for
+any purpose, including commercial use. It is possible to use and modify all or
+parts of the library source code without restriction. The only exceptions are
+the single- and double-floating-point mathematics libraries, which are mostly
+the copyrighted work of Raspberry Pi and Mark Owen and are therefore subject to
+the licensing terms of the original authors.
+
+
+Building
+--------
+The compilation of the PicoLibSDK library and its sample examples is mainly
+prepared for easy use on Windows. It does not require any additional programs
+and utilities, only the installation of the GCC ARM compiler.
+
+GCC ARM Installation in Windows
+
+Download the GCC ARM compiler from https://developer.arm.com/downloads/-/gnu-rm.
+Use Windows 32-bit Installer. PicoLibSDK compilation was prepared for GCC-ARM
+compiler version 10. I recommend installing it in C:\ARM10 folder.This will make
+it easier to change the compiler version later.
+
+In the last stage of the installation, enable the "Add path to environment
+variable" option. This will ensure that the compiler files will be found.
+Note: If you are using a shell program such as FAR, you must exit and restart
+the program to update the PATH system variable.
+
+How to compile in Windows
+
+The compilation of the PicoLibSDK library was prepared primarily for ease of use
+in cooperation with the FAR file manager or another file manager that supports
+the console window. For each sample application, there are several BAT command
+files that can be easily run from the FAR by pressing a letter and Enter. The
+compilation is done using c.bat (in FAR press letter C and Enter). The d.bat
+file is used to clean up the compilation and delete generated intermediate
+files. Use e.bat to send the compiled program to the Raspberry Pico. The a.bat
+file performs all 3 operations at once - cleaning up old compilation, compile
+the program and send it to the Pico.
+
+Sending the program to Pico using e.bat is done by copying the file to the Pico
+access disk. This assumes that the Pico access disk is labeled R: (like
+Raspberry). If your disk has a different name, correct the disk name in the
+_e1.bat file (in the base folder of the PicoLibSDK library) or rename the disk
+in the system disk management (This Computer - Service - Disk Management -
+Change Drive Letter and Paths).
+
+Cleaning up the compilation can be useful not only to clean up the application
+directory, but also during application development. Normally, all files are
+compiled during the first compilation. When recompiling, only the changed files
+are compiled. However, this only applies to *.c and *.cpp and *.s files, not *.h
+header files. If you make a change to a *.h file, you may need to either modify
+the C file that uses that *.h file, or clean up the compilation with d.bat
+before recompiling to do a complete compilation.
+
+The Windows compilation does not use CMake to optimize the compilation, all
+files are always compiled. This can be tedious, however - the programmer usually
+spends most of the time thinking and writing the program, and only a small part
+on compiling. Therefore, it may be preferable to handle the compilation more
+easily, rather than saving some compilation time. The final code is not affected
+- the linker will only use the parts of the program that are really needed in
+the final code. If you want to use some part of the library, you usually don't
+need to activate its compilation (with exceptions such as USB or real numbers),
+you just use necessary functions in the program.
+
+How to compile in Linux
+
+The Linux compilation is not prepared in the PicoLibSDK library. It is assumed
+that a Linux user can prepare compilation files himself better (unlike Windows
+users). What is needed for compilation:
+1. In the base directory of the library, edit the Makefile.inc file. Change
+   the call to the elf2uf2 program to call the Linux version, in the line
+   "UF = ../../_tools/elf2uf2.exe". Use the Linux version of the program from
+   the original SDK. Change the command to create the build directory to the
+   Linux variant in the line "@../../_tools/mkdir.exe -p $(TEMP) ".
+2. In the compilation script, set the system variables TARGET = the target name
+   of the application, DEVICE = the name of the target device with version (use
+   picopad10) and DEVCLASS = the class of the target device (use picopad). These
+   variables can also be specified on the command line as MAKE parameters.
+3. Start the compilation with "make all" in the root directory of the
+   application.
+4. After the compilation, run the LoaderCrc program with files BIN and UF2 as
+   parameters. This will set right CRC checksum into generated files. LoaderCrc
+   is console program, prepared for Windows. You will need to compile the
+   program for Linux. You can find source of the program in the
+   _tools/PicoPadLoaderCrc directory.
+
+
+Configuration
+-------------
+To configure application compilation, switches defined by #define C preprocessor
+commands are used. In most cases, there is no need to change the compilation
+configuration - it is predefined optimally for the target device for which the
+application is being compiled. Changing the configuration may be necessary in
+cases where a module is disabled and needs to be activated. This is for example
+activating the STDIO output on a USB port that is disabled by default.
+
+The default configuration file is config.h, which is located in the base folder
+of the application. For example, by entering the command:
+
+#define USE_USB_STDIO 1 // use USB stdio (UsbPrint function)
+
+activates the USB STDIO output (the output from printf() will go to the COM
+console on the host system).
+
+Most configuration switches use a value of 1 to turn the module on, and a value
+of 0 to turn it off.
+
+If a configuration switch is not specified at all in the config.h file, its
+default setting is used. In the first step, the default setting is used in the
+_config.h file, which is found in the home folder of the files for the target
+device (e.g. _devices\picopad).
+
+If the configuration switch is not defined there either, the default switch
+setting is used, which is specified in the config_def.h file located in the base
+folder of the PicoLibSDK library.
+
+Some configuration switches can be automatically reconfigured. This applies when
+a module requires another module - in that case, the other module is activated
+even if the user has requested that it be deactivated. An example would be the
+activation of USB device. If following command is given:
+
+#define USE_USB_DEV_CDC 1
+
+to activate the USB communication UART interface, the USE_USB_DEV (USB device)
+and USE_USB (USB interface) switches are also automatically activated.
+
+
+How to create new project
+-------------------------
+To start a new project, the easiest way is to go to the NEW folder and copy the
+NEW project folder under a new name (e.g. TEST). In the new folder, open the
+c.bat, d.bat and e.bat files and change the settings of the TARGET system
+variable to the name of the new project (e.g. "set TARGET=TEST"). If you want
+the compiled project to be uploaded to another folder in the target SD card
+image, change the setting of the GRPDIR parameter in c.bat - this is the name
+of the project group folder.
+
+Do not use the name LOADER for the project - this name is used to distinguish
+the boot loader during compilation.
+
+You can add configuration switches to the file config.h in your new project. For
+example, if you want the printf output to run to a USB virtual serial port, set
+the parameter:
+
+#define USE_USB_STDIO	1	// use USB stdio (UsbPrint function)
+
+You can add your *.h header files to the include.h file. These files will be
+visible to all your source code. Add include files at the end of the file, after
+the main include , e.g.:
+
+#include "src/main.h"		// main code
+#include "src/game.h"		// game
+
+You can add your source files to the Makefile file. Add ASM files to the group
+ASRC, add C source files to the group CSRC and add C++ source files to the group
+SRC. For example add source of image:
+
+SRC += src/main.cpp
+SRC += img/logo.cpp
+
+Remember that if you have some functions in a C or S (ASM) file and you want to
+call them from a CPP file, you have to mark the functions in the *.h header file
+with the extern "C" tag so that their names are visible in the CPP file. For
+example:
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void MyFunction();
+
+#ifdef __cplusplus
+}
+#endif
+ 
+
+Select or create new target device
+----------------------------------
+PicoLibSDK can be compiled with miscellaneous target devices. In the current
+version of the library, programs are compiled implicitly for PicoPad version
+1.0. To change the default target device, or to create a new target device,
+open the _setup.bat file in the base PicoLibSDK folder. You will see several
+settings there. Move the ":default" label in front of another parameter set to
+change the default target device.
+
+You create a new device by creating a new parameter group and changing the
+parameters in the meaning: DEVICE is the name of the target device, including
+the version. It is used in the source code to distinguish device variants.
+DEVCLASS is the class of the target device - used primarily in Makefile to
+distinguish the compilation type. DEVDIR is the path to the SD card image.
+It is used when copying a compiled file to the target SD card.
+
+You can also select the target device to be compiled in the c.bat file. In
+multiple compilation, the name of the target device is passed here as the %1
+parameter, which is passed forward on the last row of the file as the parameter
+for the _c1.bat file. You can prepend another row before the last row, in which
+you set the name of the target device as a parameter, according to the list of
+names given in the _setup.bat file. For example, if you want to compile for
+picopad08 (you can leave the last row, the row added before it will take
+precedence):
+
+..\..\_c1.bat picopad08
+..\..\_c1.bat %1
+
+The following text refers only to the creation of a new device.
+
+As you can see in the Makefile.inc in the base folder of the library, the
+_makefile.inc file from the device folder is included in the Makefile, named
+according to the DEVCLASS parameter. So, for a new device, you must create a
+folder in the _devices folder named by DEVCLASS, and create the _makefile.inc
+file there. This will contain a list of source files and possibly also DEFINE
+parameters. First of all, you need to add a DEFINE specifying that it is
+compiled for this device. For example:
+
+DEFINE += -D USE_PICOINO=1
+
+Add the include file _config.h from the device folder to the config_def.h file,
+conditioned on the switch for the device. It will contain additional
+configuration parameter settings. For example:
+
+#if USE_PICOINO // use Picoino device configuration
+#include "_devices/picoino/_config.h"
+#endif
+
+In the includes.h file in the base library folder, add a call of the _include.h
+file from the device folder, conditioned on the switch for the device. It will
+contain the included header files for the device. For example:
+
+#if USE_PICOINO // use Picoino device configuration
+#include "_devices/picoino/_include.h"
+#endif
+
+
+Conventions
+-----------
+The library source files use the Windows style notation for function names and
+global variables - the initial letters of words are uppercase, other letters are
+lowercase. Constants #define are uppercase. Local variables are lowercase. Types
+of structures start with the letter 's'.
+
+Structure definitions of hardware are not used to access the peripheral
+registers, but direct access via register address definitions with #define is
+used. Similarly, the library usually does not use predefined constants to
+manipulate registers, but uses directly numeric values according to the
+datasheet. These practices are used for simplicity of access. The usual
+conventions using definitions require searching constantly between the datasheet
+and the definition files, and so rather than making the job easier, they make
+the job more complicated. This simplified approach only requires the use of the
+datasheet. This does not affect the SDK library user, as most operations are
+covered by functions, without having to work directly with registers.
+
+Base Types:
+
+s8	signed 8-bit integer
+u8	unsigned 8-bit integer
+s16	signed 16-bit integer
+u16	unsigned 16-bit integer
+s32	signed 32-bit integer
+u32	unsigned 32-bit integer
+s64	signed 64-bit integer
+u64	unsigned 64-bit integer
+
+int	signed integer
+uint	unsigned integer
+
+Bool	logical Boolean type with 8-bit size
+True	logical Boolean true value
+False	logical Boolean false value
+
+NULL	invalid pointer
+
+Note: 'char' can be signed or unsigned. Better to use s8 or u8 if you need
+      to be sure.
+
+Useful Constants and Macros:
+
+count_of(a)	count of array entries
+INLINE		inline function
+NOINLINE	no-inline function
+ALIGNED		array aligned to 4-bytes
+PACKED		packed structure with unaligned entries
+NOFLASH(fnc)	time critical function placed into RAM
+ENDIAN16(k)	change 16-bit endian (little endian <-> big endian)
+ABS(val)	absolute value
+MAX(val1,val2)	maximal value
+MIN(val1,val2)	minimal value
+B0..B31		bit 0..bit 31 (= 0x00000001 .. 0x80000000)
+BIT(pos)	bit at given position
+BIGINT		big integer value (=0x40000000)
+KHZ		kHz multiply (= 1000)
+MHZ		MHz multiply (= 1000000)
+NOCHAR		no character from keyboard (= 0)
+NOKEY		no key from keyboard (= 0)
+
+Control characters
+
+symbolic name / HEX code / text code / ASCII name / Control-letter / usage
+CH_NUL		0x00	'\0'	NUL	^@ no character, end of text
+CH_ALL		0x01	'\1'	SOH	^A select [A]ll
+CH_BLOCK	0x02	'\2'	STX	^B mark [B]lock
+CH_STX = CH_BLOCK (start of packet)
+CH_COPY		0x03	'\3'	ETX	^C [C]opy block, copy file
+CH_ETX = CH_COPY (end of packet)
+CH_END		0x04	'\4'	EOT	^D en[D] of row, end of files
+CH_MOVE		0x05	'\5'	ENQ	^E rename files, mov[E] block
+CH_FIND		0x06	'\6'	ACK	^F [F]ind
+CH_NEXT		0x07	'\a'	BEL	^G [G]o next, repeat find
+CH_BS		0x08	'\b'	BS	^H backspace
+CH_TAB		0x09	'\t'	HT	^I tabulator
+CH_LF		0x0A	'\n'	LF	^J line feed
+CH_PGUP		0x0B	'\v'	VT	^K page up
+CH_PGDN		0x0C	'\f'	FF	^L page down
+CH_FF = CH_PGDN (form feed, new page)
+CH_CR		0x0D	'\r'	CR	^M enter, next row, run file
+CH_NEW		0x0E	'\16'	SO	^N [N]ew file
+CH_OPEN		0x0F	'\17'	SI	^O [O]pen file, edit file
+CH_PRINT	0x10	'\20'	DLE	^P [P]rint file, send file
+CH_QUERY	0x11	'\21'	DC1	^Q [Q]uery, display help
+CH_REPLACE	0x12	'\22'	DC2	^R find and [R]eplace
+CH_SAVE		0x13	'\23'	DC3	^S [S]ave file
+CH_INS		0x14	'\24'	DC4	^T [T]oggle Insert switch, mark file
+CH_HOME		0x15	'\25'	NAK	^U Home, begin of row, begin of files
+CH_PASTE	0x16	'\26'	SYN	^V paste from clipboard
+CH_SYN = CH_PASTE (synchronise transfer)
+CH_CLOSE	0x17	'\27'	ETB	^W close file
+CH_CUT		0x18	'\30'	CAN	^X cut selected text
+CH_REDO		0x19	'\31'	EM	^Y redo previously undo action
+CH_UNDO		0x1A	'\32'	SUB	^Z undo action
+CH_ESC		0x1B	'\e'	ESC	^[ Esc, break, menu
+CH_RIGHT	0x1C	'\34'	FS	^\ Right (+Shift: End, +Ctrl: Word right)
+CH_UP		0x1D	'\35'	GS	^] Up (+Shift: PageUp, +Ctrl: Text start)
+CH_LEFT		0x1E	'\36'	RS	^^ Left (+Shift: Home, +Ctrl: Word left)
+CH_DOWN		0x1F	'\37'	US	^_ Down (+Shift: PageDn, +Ctrl: Text end)
+CH_SPC		0x20	‘ ‘	SPC	space
+CH_DEL		0x7F	'\x7F'	DEL	delete character on cursor
+
+
+Directory structure
+-------------------
+How PicoLibSDK library files and directories are organized:
+
+!Picoino10 - SD card contents with sample programs and loader for Picoino.
+
+!Picoino08 - SD card contents with sample programs and loader for PicoPad
+	beta 0.8.
+
+!Picoino10 - SD card contents with sample programs and loader for PicoPad
+	version 1.0.
+
+_boot2 - boot2 loader stage 2, which is placed at the beginning of each UF2
+	program and is used to initialize the Flash memory interface. The boot2
+	loader is compiled using the prepared batch file c.bat and requires the
+	checksum program boot2crc.exe.
+
+_devices - device definitions and drivers. Currently, the ready devices are
+	Picoino, PicoPad 0.8 and PicoPad 1.0. The target device is selected at
+	compile time with the c.bat file parameter ('picoino10', 'picopad08' or
+	'picopad10'). If the target device is not specified when compiling the
+	application, the default device is selected by the _setup.bat file.
+
+_display - drivers for the displays. Currently, there is a QVGA display driver
+	for 8-bit output to a VGA monitor in RGB332 format and 320x240 pixel
+	resolution - this driver is used by the Picoino. And secondly, a TFT
+	display driver for 16-bit RGB565 format at 320x240 pixel resolution -
+	this driver is used by PicoPad.
+
+_font - prepared fonts. These are non-proportional fonts with a fixed cell width
+	for a character of 8 pixels. The file is in BMP 2-color format. The
+	RaspPicoImg.exe program exports the font images to the C source file.
+
+_lib - library files of utilities, including library for large real numbers and
+	for large integers.
+
+_loader - boot3 program loader, with the ability to run applications from the
+	SD card.
+
+_sdk - SDK library for controlling the RP2040 hardware.
+
+_tools - support programs:
+	- Boot2CRC - boot2 boot loader checksum calculation
+	- HidComp - compiler and decompiler of HID descriptors
+	- PicoPadImg - converting BMP images to PicoPad format
+	- PicoPadLoaderBin - export boot3 loader to C source code
+	- PicoPadLoaderCrc - calculate (and set) application checksum
+	- RaspPicoClock - calculation of PLL generator settings combinations
+	- RaspPicoImg - convert BMP images to Picoino format
+	- RaspPicoPal332 - palette generator for Picoino and QVGA output
+	- RaspPicoRle - RLE compression of BMP images for PicoVGA library
+	- RaspPicoSnd - export WAV audio files to C source code
+	- elf2uf2 - convert ELF file to UF2 file
+	- pioasm - PIO program assembler
+
+BOOK - sample programs for PicoPad, group "books"
+
+DEMO - demonstration sample programs for PicoPad
+
+GAME - sample games for PicoPad
+
+NEW - folder for creating new custom applications of PicoPad
+
+PICOINO - sample programs for Picoino
+
+PROG - sample programs for PicoPad
+
+TEST - test programs for PicoPad
+
+_setup.bat - setting parameters for compilation according to the selected target
+	device
+
+c_all.bat - compilation of all sample applications for the selected target
+	device
+
+c_all_devices.bat - compilation of all sample applications for all target
+	devices
+
+config_def.h - setting the default compilation configuration
+
+d_all.bat - clean up the compilation from temporary files
+
+global.h - global definitions (types, constants)
+
+includes.h - global include of all header *.h files to compile
+
+Makefile.inc - main compilation script for make.exe
+
+memmap_*.ld - scripts for linker
+
+
+Boot3 loader
+------------
+The PicoLibSDK boot3 loader is a 32 KB resident program that is permanently
+loaded at the beginning of the Flash memory. The boot3 loader can be loaded
+into the processor's memory only by programming via USB cable, just like the
+classic procedure for programming regular programs for the Raspberry Pico.
+
+The Boot3 loader contains a standard boot2 loader (256 bytes) at its start.
+During system boot, the boot2 loader is started first, which initializes the
+Flash memory and passes on control to the boot3 loader.
+
+The boot3 loader first initializes the base devices. In the Picoino the output
+is to the QVGA display, implemented by the PIO, in the PicoPad the output is to
+the TFT display. The boot3 loader detects whether an SD card is inserted. If no
+SD card is inserted, it checks if there is a valid application loaded in the
+memory from the next address up to 32 KB (it must have a valid checksum) and if
+the application is OK, it runs it. If an SD card is inserted, it will not run
+the application, but will display the contents of the SD card and allows the
+user to select a program to run.
+
+The applications on the SD card are in UF2 format. They differ from the standard
+format for Pico only in that they contain a boot3 loader at the beginning and
+that they are protected by a checksum. This allows applications to be loaded
+into the Pico in the classic way via USB cable, like other common applications,
+because the boot3 loader will be loaded into memory along with them.
+
+When the boot3 loader starts an application from the SD card, it skips the
+initial 32 KB that the boot3 loader contains and loads the rest of the file into
+Flash memory. It then checks the validity of the application - it must have a
+valid header and a valid checksum. If everything is OK, the boot3 loader will
+run the application.
+
+It is also possible to immediately start an application that is already loaded
+in memory - this is possible with the ‘Y’ button (the ‘Back’ button in Picoino),
+which is otherwise used to exit the application.
+
+When selecting an application to run, the boot3 loader displays a preview image
+and description text in addition to the file name. Whether the application has
+an image and text available is indicated by the TXT and BMP shortcuts next to
+the file name.
+
+The description text is displayed in the right half of the screen. The text can
+have a line length of up to 26 characters. The number of lines can be either 14,
+if an image is also present, or 30 lines. The following control characters can
+be used in the text:
+
+^	is prefix of control characters
+^^	print ^ character
+^1..^9	print character with code 1..9
+^A..^V	print character with code 10..31
+^0	normal gray text
+^W	white text
+^X	green text
+^Y	yellow text
+^Z	red text
+^[	start invert
+^]	stop invert
+
+The preview image is a BMP file. For Picoino it is an 8-bit format with RGB332
+palettes (that are generated by RaspPicoPal332). For PicoPad, it is a 16-bit
+RGB565 format - if you save such an image from Photoshop, choose the extended
+formats when saving and select the R5G6B5 format. For both formats, turn on the
+"Flip row order" option. You can get the preview images from the application as
+a screenshot by turning on the configuration option USE_SCREENSHOT = 1.
+
+
+Booting process
+---------------
+After the power is turned on and the reset sequence is completed, the processor
+starts its operation in the BootROM (16 KB from address 0x00000000), which is a
+fixed part of the RP2040 and cannot be changed by the user. The start address
+("_start") is stored in the BootROM in the second entry of the interrupt vector.
+The first entry is the address of the stack pointer.
+
+Both processor cores start in the BootROM in the same way. If it is core 1
+(detected via CpuID()), core 1 goes into sleep mode in a waiting loop, waiting
+to be woken up by the core 0 via the mailbox FIFO. Only core 0 continues its
+activity (main()).
+
+The processor will first check if the BOOTSEL button is pressed. If so, it will
+switch to booting the program from USB. If it is not pressed, it continues
+booting from the external Flash memory (_flash_boot).
+
+Activates the connection for the external Flash memory (the Flash memory is
+mapped from address 0x10000000 and has a size of 2 to 16 MB) and reads 256 bytes
+from the beginning of the Flash memory to end of RAM memory, to address
+0x20041F00. These 256 bytes contain the stage 2 boot loader and are appended to
+the beginning of each application for the RP2040.
+
+The processor checks the boot loader checksum - the calculated CRC32A for the
+first 252 bytes must match the checksum in the last 4 bytes. If the checksum
+matches, the program jumps to the beginning of the boot2 loader.
+
+The BootROM program initialized only the basic interface for the Flash memory -
+in order to be able to connect basically any Flash memory. Boot2 loader sets a
+faster Flash memory interface. Different boot2 loaders may be needed for
+different Flash memories.
+
+Boot2 loader continues by jumping to the main application program. It reads the
+stack pointer settings and start address from the vector table at address
+0x10000100, and jumps into the application at the start address.
+Applications compiled for the PicoLibSDK library may contain another boot loader
+at the beginning, stage 3. It is 32 KB in size and is used to load programs from
+the SD card into Flash memory.
+
+Each program prepared in this way contains the entire 32 KB boot3 loader at the
+beginning. This allows the program to be loaded into the Flash memory using both
+the classic USB cable procedure and the boot3 loader from the SD card. When
+booting a program from an SD card, the boot3 loader does not load the first
+32 KB of the file, but only the following part, with the program itself. The
+program itself thus starts at address 0x10008000 with its vector table.
+
+Before starting the application, the Boot3 loader first checks the special
+application header, which is located after the vector table. It calculates the
+CRC32A checksum of the entire application in Flash memory, and if the checksum
+is OK, it jumps to the application entry point according to the vector table.
+
+If the system starts via reset only, without loading the application into
+memory, the boot3 loader checks if an SD card is inserted into the device. If
+it is inserted, it is assumed that the user will want to start another
+application by selecting it, and the contents of the SD card will be displayed.
+If the SD card is not inserted, it is assumed to just restart the application,
+in which case the boot3 loader will jump to start the application.
+
+Whether the application starts via the boot3 loader or just via the boot2
+loader, in both cases it starts with the start address stored in the second
+entry of the vector table “_reset_handler“ (the first entry is the stack
+pointer). This code is located in the crt0.S file.
+
+If core1 is detected, it jumps back to BootROM to go sleep, waiting to be
+activated. Only core0 will continue. The program copies the read-only data from
+Flash memory to RAM memory - this initializes the global variables. It also
+transfers to RAM the codes of functions that are to be executed from RAM and not
+from Flash.
+
+Next, the program clears the BSS segment, which is an area that does not require
+initialization, but can be expected to contain zero variables.
+
+The program calls the RuntimeInit() function (in the sdk_runtime.c file), which
+contains the basic initialization of the system without burdening the programmer
+of it. The function initializes peripherals, object constructors, ROM functions,
+floating math, interrupt controller, system clock, memory allocator, and finally
+target device. After it, program starts with main() function with main program
+code.
+
+When the program wants to return to the boot3 loader (exiting the program with
+the Y key), it does so by calling the ResetToBootLoader() function. The function
+sets the magic value in the scratch register of the watchdog and activates the
+watchdog. Watchdog will reset the processor. From the magic value boot3 loader
+recognizes that it is an application exit, so it displays the contents of the SD
+card instead of jumping into the application.
+
+
+FAR File Manager
+----------------
+I highly recommend that you use the FAR file manager when developing
+applications for the microchips. FAR includes everything that is needed to
+develop software for microchips - it includes quality text editor, manipulation
+with files, searching, comparison. And above all, it includes a console window
+where you can still see the output from the compiler. The entire PicoLibSDK
+library was developed using the FAR manager. You can download FAR manager from
+the web site https://www.farmanager.com/ .
+
+Most important controls of the file window
+
+Tab			change active panel
+Ctrl+O			hide/show both panels
+Ctrl+U			swap panels
+Ctrl+P			hide/show inactive panel
+Alft+F1			change disk in left panel
+Alf+F2			change disk in right panel
+Insert			select file
+[Numeric +]		select files by mask
+Shift+[Numeric +]	select all files (and directories)
+Shift+[Numeric -]	unselect all files (and directories)
+Ctrl+F			full path to command line
+F3			view file
+F4			edit file
+F5			copy selected files and directories
+F6			move selected files and directories
+F7			create directory
+F8			delete selected files and directories
+F11			modules (compare files and their contents)
+Alt+F7			search files and their contents
+Alt+F8			command history
+Shift+F4		create new file and edit
+
+You can preset the window size in the shortcut properties.
+
+Most important controls of text editor (F4)
+
+F2			save file
+Shift+F2		save file As
+F7			search
+Ctrl+F7			search and replace
+Shift+F8		select code page
+Esc			quit editor
+Ctrl+Z			undo
+Ctrl+Shift+Z		redo
+Shift+arrows		select block
+Ctrl+C			copy to clipboard
+Ctrl+X			cut to clipboard
+Ctrl+V			paste from clipboard
+Delete			delete selection
+
+
+History of versions
+-------------------
+03/08/2023 PicoPad prototype with pre-alpha PicoLibSDK version 0.8.
+04/28/2023 PicoPad full version with alpha PicoLibSDK version 0.90
+06/28/2023 alpha PicoLibSDK version 0.91, improved battery measurement
+07/30/2023 PicoLibSDK version 1.00, first final release
+
+
+Missing and @TODO
+-----------------
+SDK supports that are missing in the library and are needed @TODO:
+
+- Get Flash unique ID
+- XIP control
+- run double-floating-point from bootrom
+- SSI interface
+- bluetooth and wifi
+- more USB drivers (audio, bluetooth, dfu, midi, msc, net, tmc, video)
+- mutex
+- prepare other devices (Picoino, Pimoroni, Pico)
+- DDS compression image format
+- ADPCM sound compression
+- add multiple cache sector buffers to FAT file system module
+- calibrations to flash: quartz frequency, ADC voltage, temperature
+- encapsulation of text strings into C++ objects

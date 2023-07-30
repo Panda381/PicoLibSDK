@@ -1,0 +1,11 @@
+^YEggs^0
+
+Logic game (Reversi)
+
+^WLEFT^0 .... left
+^WRIGHT^0 ... right
+^WUP^0 ...... up
+^WDOWN^0 .... down
+^WSpc^0 ..... put stone
+^WCtrl^0 .... help turn
+^WBack^0 .... quit

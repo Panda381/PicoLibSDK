@@ -1,0 +1,35 @@
+	HID_USAGE_PAGE ( HID_USAGE_PAGE_DESKTOP ), \
+	HID_USAGE      ( HID_USAGE_DESKTOP_GAMEPAD ), \
+	HID_COLLECTION ( HID_COLLECTION_APPLICATION ), \
+		HID_USAGE_PAGE   ( HID_USAGE_PAGE_DESKTOP ), \
+		HID_USAGE        ( HID_USAGE_DESKTOP_X ), \
+		HID_USAGE        ( HID_USAGE_DESKTOP_Y ), \
+		HID_USAGE        ( HID_USAGE_DESKTOP_Z ), \
+		HID_USAGE        ( HID_USAGE_DESKTOP_RZ ), \
+		HID_USAGE        ( HID_USAGE_DESKTOP_RX ), \
+		HID_USAGE        ( HID_USAGE_DESKTOP_RY ), \
+		HID_LOGICAL_MIN  ( 0x81 ),			/* minimal value = -127 */ \
+		HID_LOGICAL_MAX  ( 0x7f ),			/* maximal value = +127 */ \
+		HID_REPORT_COUNT ( 6 ),				/* number of elements = 6 bytes */ \
+		HID_REPORT_SIZE  ( 8 ),				/* size of element = 8 bits */ \
+		HID_INPUT        ( HID_DATA | HID_VARIABLE | HID_ABSOLUTE ), /* this elements contain absolute data */ \
+		/* 8-bit Hat direction switch, 8 directions: 0, 45, ... 315 degrees */ \
+		HID_USAGE_PAGE     ( HID_USAGE_PAGE_DESKTOP ), \
+		HID_USAGE          ( HID_USAGE_DESKTOP_HAT_SWITCH ), \
+		HID_LOGICAL_MIN    ( 1 ),			/* minimal value = 1 */ \
+		HID_LOGICAL_MAX    ( 8 ),			/* maximal value = 8 */ \
+		HID_PHYSICAL_MIN   ( 0 ),			/* minimal physical value = 0 degrees */ \
+		HID_PHYSICAL_MAX2  ( 315 ),			/* maximal physical value = 315 degrees */ \
+		HID_REPORT_COUNT   ( 1 ),			/* number of elements = 1 byte */ \
+		HID_REPORT_SIZE    ( 8 ),			/* size of element = 8 bits */ \
+		HID_INPUT          ( HID_DATA | HID_VARIABLE | HID_ABSOLUTE ), /* this elements contain absolute data */ \
+		/* 32-bit Button Map */ \
+		HID_USAGE_PAGE     ( HID_USAGE_PAGE_BUTTON ), \
+		HID_USAGE_MIN      ( 1 ),			/* minimal code = 1 */ \
+		HID_USAGE_MAX      ( 32 ),			/* maximal code = 32 */ \
+		HID_LOGICAL_MIN    ( 0 ),			/* minimal value = 0 */ \
+		HID_LOGICAL_MAX    ( 1 ),			/* maximal value = 1 */ \
+		HID_REPORT_COUNT   ( 32 ),			/* number of elements = 32 bits */ \
+		HID_REPORT_SIZE    ( 1 ),			/* size of element = 1 bit */ \
+		HID_INPUT          ( HID_DATA | HID_VARIABLE | HID_ABSOLUTE ), /* this elements contain absolute data */ \
+	HID_COLLECTION_END
