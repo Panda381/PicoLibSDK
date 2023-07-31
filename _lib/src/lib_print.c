@@ -25,6 +25,7 @@
 #include "../../_display/st7789/st7789.h"
 #include "../../_display/qvga/qvga.h"
 #include "../../_sdk/usb_inc/sdk_usb_dev_cdc.h"
+#include "../../_sdk/usb_inc/sdk_usb_host_hid.h"
 
 //#if USE_PICOPAD		// use PicoPad device configuration
 //#include "../../_devices/picopad/picopad_key.h"
