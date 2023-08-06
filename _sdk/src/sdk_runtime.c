@@ -32,6 +32,7 @@
 #include "../usb_inc/sdk_usb_dev.h" // devices
 #include "../usb_inc/sdk_usb_dev_cdc.h"
 #include "../inc/sdk_rosc.h"
+#include "../inc/sdk_uart.h"
 
 #if USE_IRQ	// use IRQ interrupts (sdk_irq.c, sdk_irq.h)
 // copy of vector table in RAM
@@ -149,6 +150,11 @@ void RuntimeInit()
 #if USE_USB_STDIO		// use USB stdio (UsbPrint function)
 	UsbDevInit(&UsbDevCdcSetupDesc);
 #endif
+
+#if USE_UART_STDIO
+	// initialize UART stdio
+	UartStdioInit();
+#endif
 }
 
 // Device terminate
@@ -157,6 +163,11 @@ void DeviceTerm();
 // runtime terminate
 void RuntimeTerm()
 {
+#if USE_UART_STDIO
+	// terminate UART stdio
+	UartStdioTerm();
+#endif
+
 	// terminate USB
 #if USE_USB
 	UsbTerm();

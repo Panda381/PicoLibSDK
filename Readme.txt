@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
 ==================================================================
-Version 1.00, July 2023
+SDK Programmer's Guide, Version 1.01, August 2023
 
 Copyright (c) 2023 Miroslav Nemecek
 
@@ -52,10 +52,11 @@ easier to use. What you can find in the PicoLibSDK library:
 - Display drivers: Prepared support of TFT display 320x240/16bits and QVGA
   display 320x240/8 bits.
 
-- Devices: Support of Picoino with 8-bit QVGA display and PicoPad with 16-bit
-  TFT display.
+- Devices: Support of Picoino/PicoinoMini with 8-bit QVGA display and PicoPad
+  with 16-bit TFT display. Some samples are also prepared for the basic
+  Raspberry Pico without additional hardware.
 
-- Samples: Prepared 47 sample programs and games.
+- Samples: Prepared 54 sample programs and games.
 
 
 License
@@ -400,6 +401,10 @@ Directory structure
 -------------------
 How PicoLibSDK library files and directories are organized:
 
+!Pico - sample programs for base Raspberry Pico module.
+
+!PicoinoMini - SD card contents with sample programs and loader for PicoinoMini.
+
 !Picoino10 - SD card contents with sample programs and loader for Picoino.
 
 !Picoino08 - SD card contents with sample programs and loader for PicoPad
@@ -414,16 +419,19 @@ _boot2 - boot2 loader stage 2, which is placed at the beginning of each UF2
 	checksum program boot2crc.exe.
 
 _devices - device definitions and drivers. Currently, the ready devices are
-	Picoino, PicoPad 0.8 and PicoPad 1.0. The target device is selected at
-	compile time with the c.bat file parameter ('picoino10', 'picopad08' or
-	'picopad10'). If the target device is not specified when compiling the
-	application, the default device is selected by the _setup.bat file.
+	Pico, Picoino 1.0, PicoinoMini, PicoPad 0.8 and PicoPad 1.0. The target
+	device is selected at compile time with the c.bat file parameter
+	('pico', 'picoinomini', 'picoino10', 'picopad08' or 'picopad10'). If the
+	target device is not specified when compiling the application, the
+	default device is selected by the _setup.bat file.
 
 _display - drivers for the displays. Currently, there is a QVGA display driver
 	for 8-bit output to a VGA monitor in RGB332 format and 320x240 pixel
 	resolution - this driver is used by the Picoino. And secondly, a TFT
 	display driver for 16-bit RGB565 format at 320x240 pixel resolution -
 	this driver is used by PicoPad.
+
+_doc - documentation, SDK Programmer's Guide.
 
 _font - prepared fonts. These are non-proportional fonts with a fixed cell width
 	for a character of 8 pixels. The file is in BMP 2-color format. The
@@ -451,19 +459,11 @@ _tools - support programs:
 	- elf2uf2 - convert ELF file to UF2 file
 	- pioasm - PIO program assembler
 
-BOOK - sample programs for PicoPad, group "books"
+Pico - sample programs for Raspberry Pico
 
-DEMO - demonstration sample programs for PicoPad
+Picoino - sample programs for Picoino and PicoinoMini
 
-GAME - sample games for PicoPad
-
-NEW - folder for creating new custom applications of PicoPad
-
-PICOINO - sample programs for Picoino
-
-PROG - sample programs for PicoPad
-
-TEST - test programs for PicoPad
+PicoPad - sample programs for PicoPad
 
 _setup.bat - setting parameters for compilation according to the selected target
 	device
@@ -698,7 +698,9 @@ History of versions
 03/08/2023 PicoPad prototype with pre-alpha PicoLibSDK version 0.8.
 04/28/2023 PicoPad full version with alpha PicoLibSDK version 0.90
 06/28/2023 alpha PicoLibSDK version 0.91, improved battery measurement
-07/30/2023 PicoLibSDK version 1.00, first final release
+07/30/2023 version 1.00: first final release
+08/06/2023 version 1.01: printf() print memory block, stdio to UART
+	and FILE, add Pico and PicoinoMini devices, some USB repairs
 
 
 Missing and @TODO
@@ -712,7 +714,6 @@ SDK supports that are missing in the library and are needed @TODO:
 - bluetooth and wifi
 - more USB drivers (audio, bluetooth, dfu, midi, msc, net, tmc, video)
 - mutex
-- prepare other devices (Picoino, Pimoroni, Pico)
 - DDS compression image format
 - ADPCM sound compression
 - add multiple cache sector buffers to FAT file system module

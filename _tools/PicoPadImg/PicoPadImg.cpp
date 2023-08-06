@@ -11,7 +11,7 @@
 // Images for PicoPad
 
 #include <stdio.h>
-#include <windows.h>
+#include <malloc.h>
 
 #pragma warning(disable : 4996) // unsafe fopen
 
@@ -19,8 +19,15 @@ typedef signed char s8;
 typedef unsigned char u8;
 typedef signed short s16;
 typedef unsigned short u16;
-typedef signed long int s32;
-typedef unsigned long int u32;
+
+typedef signed long int s32;		// on 64-bit system use "signed int"
+typedef unsigned long int u32;		// on 64-bit system use "unsigned int"
+//typedef signed int s32;
+//typedef unsigned int u32;
+
+typedef unsigned int BOOL;
+#define TRUE  1
+#define FALSE 0
 
 #pragma pack(push,1)
 typedef struct _bmpBITMAPFILEHEADER { // 14 bytes
@@ -266,6 +273,13 @@ void Unpack4()
 // main function
 int main(int argc, char* argv[])
 {
+	if ((sizeof(_bmpBITMAPFILEHEADER) != 14) ||
+		(sizeof(_bmpBITMAPINFOHEADER) != 40))
+	{
+		printf("Incorrect size of data types. Check typedef of s32/u32 or do 32-bit compilation.\n");
+		return 1;
+	}
+
 	// check syntax
 	if ((argc != 4) && (argc != 5))
 	{

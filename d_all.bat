@@ -1,16 +1,20 @@
 @echo off
 rem Delete temporary files of all projects in all sub-directories
 
+rem skip boot2 and boot3 loader
+goto start
+
 rem Delete boot2 stage
 cd _boot2
 call d.bat
 cd ..
 
-rem Delete boot loader
+rem Delete boot3 loader
 cd _loader\LOADER
 call d.bat
 cd ..\..
 
+:start
 rem Loop to find all sub-directories
 for /D %%d in (*) do call :del1 %%d
 exit /b

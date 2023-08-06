@@ -18,22 +18,26 @@
 
 # ASM source files
 ifeq (${TARGET},LOADER)
-ASRC += ../../_boot2/boot2_w25q080_bin.S
+ASRC += ../../../_boot2/boot2_w25q080_bin.S
 else
-ASRC += ../../_loader/loader_${DEVICE}.S
+ifeq (${DEVCLASS},pico)
+ASRC += ../../../_boot2/boot2_w25q080_bin.S
+else
+ASRC += ../../../_loader/loader_${DEVICE}.S
+endif
 endif
 
 # SDK
-include ../../_sdk/_makefile.inc
+include ../../../_sdk/_makefile.inc
 
 # Libraries
-include ../../_lib/_makefile.inc
+include ../../../_lib/_makefile.inc
 
 # fonts
-include ../../_font/_makefile.inc
+include ../../../_font/_makefile.inc
 
 # Device class
-include ../../_devices/${DEVCLASS}/_makefile.inc
+include ../../../_devices/${DEVCLASS}/_makefile.inc
 
 # Includes
 IPATH += -I.
@@ -55,9 +59,13 @@ CONFIGFILE = ./config.h
 
 # linker script
 ifeq (${TARGET},LOADER)
-LDSCRIPT = ../../memmap_boot.ld
+LDSCRIPT = ../../../memmap_boot.ld
 else
-LDSCRIPT = ../../memmap_app.ld
+ifeq (${DEVCLASS},pico)
+LDSCRIPT = ../../../memmap_default.ld
+else
+LDSCRIPT = ../../../memmap_app.ld
+endif
 endif
 
 # CPU Architecture
@@ -212,7 +220,7 @@ NM = ${COMP}nm
 SZ = ${COMP}size
 
 # uf2
-UF = ../../_tools/elf2uf2.exe
+UF = ../../../_tools/elf2uf2.exe
 
 ##############################################################################
 # File list
@@ -230,8 +238,8 @@ ALLOBJ = $(addprefix $(TEMP)/, $(addsuffix .o, $(ALLBASE)))
 # Clear temporary directory (use "make clean")
 
 clean:
-	@../../_tools/rm -rf $(TEMP)
-	@../../_tools/rm -f ./$(TARGET).bin ./$(TARGET).hex ./$(TARGET).lst ./$(TARGET).map ./$(TARGET).sym ./$(TARGET).siz ./$(TARGET).uf2
+	@../../../_tools/rm -rf $(TEMP)
+	@../../../_tools/rm -f ./$(TARGET).bin ./$(TARGET).hex ./$(TARGET).lst ./$(TARGET).map ./$(TARGET).sym ./$(TARGET).siz ./$(TARGET).uf2
 
 ##############################################################################
 # Compile all (use "make all")
@@ -242,7 +250,7 @@ all: createdirs elf bin hex lst sym siz uf2
 # Create temporary directory
 
 createdirs:
-	@../../_tools/mkdir.exe -p $(TEMP)
+	@../../../_tools/mkdir.exe -p $(TEMP)
 
 ##############################################################################
 # Dependencies of output files

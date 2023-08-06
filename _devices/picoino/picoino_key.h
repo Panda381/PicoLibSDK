@@ -1,9 +1,18 @@
 
 // ****************************************************************************
 //
-//                                 Keyboard
+//                            Keyboard - Picoino 1.0
 //
 // ****************************************************************************
+// PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
+// Copyright (c) 2023 Miroslav Nemecek, Panda38@seznam.cz, hardyplotter2@gmail.com
+// 	https://github.com/Panda381/PicoLibSDK
+//	https://www.breatharian.eu/hw/picolibsdk/index_en.html
+//	https://github.com/pajenicko/picopad
+//	https://picopad.eu/en/
+// License:
+//	This source code is freely available for any purpose, including commercial.
+//	It is possible to take and modify the code or parts of it, without restriction.
 
 #ifndef _PICOINO_KEY_H
 #define _PICOINO_KEY_H
@@ -12,22 +21,14 @@
 extern "C" {
 #endif
 
+#if !USE_PICOINOMINI
+
 #define KEY_COLNUM	8	// number of columns (output COL1..COL8)
 #define KEY_ROWNUM	7	// number of rows (input ROW1..ROW7)
 #define KEY_NUM		(KEY_COLNUM*KEY_ROWNUM) // number of keys
-//#define KEY_EXTNUM	2	// number of extra bits - DIP configuration
-
-//#define KEYMAXCNT	70	// max. counter of pressed key in [ms]
-//#define KEYDELCNT	500	// first delay before repeat in [ms]
-//#define KEYREPCNT	100	// repeat delay in [ms]
 
 #define KEYBUF_SIZE	20	// size of keyboard buffer (= 32)
 
-//#define KEY_MASK	0x3f	// key code mask
-//#define KEY_REP		B6	// flag - repeated key
-//#define KEY_REL		B7	// flag - release key
-
-// timings
 #define KEY_REL_TIME	50	// delta time of release in [ms]
 
 // Virtual key codes (scanned keyboard) = key scan code + 1
@@ -106,58 +107,16 @@ extern volatile u8 KeyRelMap[KEY_NUM]; // key release map counter (in [ms]/2)
 extern volatile Bool KeyCapsLock; // flag - caps lock is ON
 extern volatile Bool KeyInsert; // flag - Insert is ON
 
-// key map, counters of pressed keys - key is pressed if counter > 0
-//extern volatile u8 KeyMap[KEY_NUM];
-//extern volatile u8 KeyRepMap[KEY_NUM]; // key repeat map
-
-// key coordinates on board, high nibble = row 0..4, low nibble = column 0..14
-//extern const u8 KeyCoord[KEY_NUM];
-
-// key short labels (3 characters per key)
-//extern const char KeyShortLabel[KEY_NUM*3+1];
-
-// name of key scan code
-//extern const char* const KeyCodeName[KEY_NUM];
-
-// name of control character
-//extern const char* const CtrlCharName[34];
-
-// flag - scan first or second half of keyboard
-//extern volatile Bool KeyHalf;
-
-//extern Bool ShiftIsOn; // shift is pressed
-//extern Bool CtrlIsOn; // ctrl is pressed
-
-// keyboard timings setup
-//extern u8 KeyMaxCnt; // max. counter of pressed key - release interval
-//extern u8 KeyDelCnt; // first delay before repeat
-//extern u8 KeyRepCnt; // repeat delay
-
-// DIP config DEV_* (0=VGA, DIP1=PAL, DIP2=NTSC, DIP1|DIP2=OLDVGA)
-// - Use GetDipCfg() function to get config value
-//extern u8 DipCfg;
-
 // initialize keyboard
 void KeyInit();
 
 // terminate keyboard
 void KeyTerm();
 
-// check if key is pressed (release flag is ignored)
+// check if key is pressed
 Bool KeyPressed(u8 key);
 
-// setup keyboard timings after changing display timings
-//  vlines = number of vertical SYNC video lines (how many is KeyScan function called per frame)
-//  vfreq = vertical frequency in Hz
-//void KeySetup(int vlines, int vfreq);
-
-// short delay
-//void NOFLASH(KeyShortDelay)(u8 num);
-
-// scan one column of keyboard
-//void KeyColScan(u8* m, u8* r);
-
-// scan keyboard (one call of function scans half of keyboard and takes about 13 us)
+// scan keyboard (called from SysTick)
 void KeyScan();
 
 // get virtual key code from keyboard buffer (returns NOKEY if no scan code)
@@ -177,6 +136,8 @@ Bool KeyNoPressed();
 
 // wait for no key pressed
 void KeyWaitNoPressed();
+
+#endif // USE_PICOINOMINI
 
 #ifdef __cplusplus
 }

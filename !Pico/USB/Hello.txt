@@ -1,0 +1,1 @@
+Simplest sample program: print "Hello World!" on USB console.

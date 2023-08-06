@@ -36,7 +36,7 @@ rem This command is located in _setup.bat file.
 rem    set DEVDIR=!PicoPad
 
 rem Setup parameters DEVICE, DEVCLASS and DEVDIR (%1 = device name)
-call ..\..\_setup.bat %1
+call ..\..\..\_setup.bat %1
 
 rem Check if target name "LOADER" is used in other directory than root.
 rem We need it to detect compilation of boot loader in makefile.
@@ -51,7 +51,8 @@ if exist %TARGET%.uf2 del %TARGET%.uf2
 if exist %TARGET%.bin del %TARGET%.bin
 
 rem Compile
-..\..\_tools\make.exe all
+echo Device: %DEVICE%
+..\..\..\_tools\make.exe all
 rem If you want to see all error messages, compile using this command:
 rem ..\..\_tools\make.exe all 2> err.txt
 
@@ -66,13 +67,14 @@ type %TARGET%.siz
 
 rem Calculate CRC to check by boot loader (skip if compiling boot loader)
 if "%TARGET%"=="LOADER" goto skipcrc
-..\..\_tools\PicoPadLoaderCrc\LoaderCrc.exe %TARGET%.bin %TARGET%.uf2
+if "%DEVCLASS%"=="pico" goto skipcrc
+..\..\..\_tools\PicoPadLoaderCrc\LoaderCrc.exe %TARGET%.bin %TARGET%.uf2
 if errorlevel 1 goto err
 
 :skipcrc
 rem Copy UF2 file to destination folder with image of SD card
-if not exist ..\..\%DEVDIR%\%GRPDIR%\*.UF2 md ..\..\%DEVDIR%\%GRPDIR%
-copy /b %TARGET%.uf2 ..\..\%DEVDIR%\%GRPDIR%\%TARGET%.UF2 > nul
+if not exist ..\..\..\%DEVDIR%\%GRPDIR%\*.UF2 md ..\..\..\%DEVDIR%\%GRPDIR%
+copy /b %TARGET%.uf2 ..\..\..\%DEVDIR%\%GRPDIR%\%TARGET%.UF2 > nul
 goto end
 
 :err

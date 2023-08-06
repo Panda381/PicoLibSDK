@@ -21,10 +21,6 @@
 extern "C" {
 #endif
 
-// LED GPIOs
-//#define LED1_PIN	22	// LED1 inverted, blue, on right
-//#define LED2_PIN 	25	// default internal LED pin, on Pico board
-
 // LED indices
 #define LED1		0	// LED1 index (yellow USR, on the left)
 #define LED2		1	// LED internal index (green, on Pico board)

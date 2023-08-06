@@ -6,7 +6,7 @@ rem If no device name is specified, default device will be used,
 rem marked with ":default" label in the _setup.bat file.
 
 
-rem skip boot2 and loader, it should be already compiled
+rem skip boot2 and boot3 loader, it should be already compiled
 goto start
 
 rem Compile boot2 stage - it needs to be compiled first
@@ -16,7 +16,7 @@ echo ======== Compiling _boot2 ========
 call c.bat %1
 cd ..
 
-rem Compile boot loader - it needs to be compiled second
+rem Compile boot3 loader - it needs to be compiled second
 cd _loader\LOADER
 echo.
 echo ======== Compiling _loader ========

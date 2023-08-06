@@ -12,9 +12,6 @@
 //	https://github.com/pajenicko/picopad
 //	https://picopad.eu/en/
 
-// Most processors on the market are the first B0 version, so missing features
-// are always added in this SDK, without using bootrom of higher version.
-
 /*
  * Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
  *

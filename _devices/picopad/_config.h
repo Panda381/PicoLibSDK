@@ -61,6 +61,23 @@
 #define DISP_CS_PIN	21		// chip selection pin
 #endif
 
+#ifndef USE_DRAW_STDIO
+#define USE_DRAW_STDIO	1		// use DRAW stdio (DrawPrint function)
+#endif
+
+// UART stdio
+#ifndef UART_STDIO_PORT
+#define UART_STDIO_PORT	0		// UART stdio port 0 or 1
+#endif
+
+#ifndef UART_STDIO_TX
+#define UART_STDIO_TX	0		// UART stdio TX GPIO pin
+#endif
+
+#ifndef UART_STDIO_RX
+#define UART_STDIO_RX	1		// UART stdio RX GPIO pin
+#endif
+
 // PWM sound
 #ifndef PWMSND_GPIO
 #define PWMSND_GPIO	15		// PWM output GPIO pin (0..29)

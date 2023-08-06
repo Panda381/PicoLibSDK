@@ -19,6 +19,9 @@
 #if USE_FAT	// use FAT file system (lib_fat.c, lib_fat.h)
 
 #include "../inc/lib_fat.h"
+#include "../inc/lib_stream.h"
+#include "../inc/lib_text.h"
+#include "../inc/lib_print.h"
 
 // disk buffer
 ALIGNED u8 DiskBuf[SECT_SIZE];
@@ -1300,6 +1303,13 @@ Bool DiskMount()
 	return True;
 }
 
+// mount disk if not mounted
+Bool DiskAutoMount()
+{
+	if (DiskMounted()) return True;
+	return DiskMount();
+}
+
 // flush disk write buffers (should be called repeatedly after some time)
 Bool DiskFlush()
 {
@@ -1671,6 +1681,57 @@ u32 FileWrite(sFile* file, const void* buf, u32 num)
 	file->attr |= ATTR_MODI;
 
 	return write;
+}
+
+// print character to file
+void FilePrintChar(sFile* file, char ch)
+{
+	FileWrite(file, &ch, 1);
+}
+
+// print unformatted text to file (returns number of characters)
+u32 FilePrintText(sFile* file, const char* txt)
+{
+	u32 n = StrLen(txt); // get text length
+	FileWrite(file, txt, n);
+	return n;
+}
+
+// callback - write data to file
+u32 StreamWriteFile(sStream* str, const void* buf, u32 num)
+{
+	sFile* f = (sFile*)str->cookie;
+	FileWrite(f, buf, num);
+	return num;
+}
+
+// formatted print string to file, with argument list (returns number of characters)
+u32 FilePrintArg(sFile* file, const char* fmt, va_list args)
+{
+	// write and read stream
+	sStream wstr, rstr;
+
+	// initialize stream to read from
+	StreamReadBufInit(&rstr, fmt, StrLen(fmt));
+
+	// initialize stream to write to
+	Stream0Init(&wstr); // initialize nul stream
+	wstr.write = StreamWriteFile; // write callback
+	wstr.cookie = (u32)file;
+	
+	// print string
+	return StreamPrintArg(&wstr, &rstr, args);
+}
+
+// formatted print string to file, with variadic arguments (returns number of characters)
+NOINLINE u32 FilePrint(sFile* file, const char* fmt, ...)
+{
+	u32 n;
+	va_list args;
+	va_start(args, fmt);
+	n = FilePrintArg(file, fmt, args);
+	va_end(args);
+	return n;
 }
 
 // flush file writes and flush disk buffers (returns False on error)

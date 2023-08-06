@@ -32,7 +32,7 @@
 //#include "../usb_inc/sdk_usb_setuph.h"
 
 // setup buffer for host
-ALIGNED u8 UsbHostSetupBuff[USB_HOSTSETUPBUFF_MAX]; // size 256 bytes
+ALIGNED u8 UsbHostSetupBuff[USB_HOSTSETUPBUFF_MAX];
 
 // host device descriptors (index corresponds to the device address, including address 0)
 sUsbHostDev UsbHostDev[USE_USB_HOST_DEVNUM];
@@ -380,7 +380,7 @@ Bool UsbHostParseCfg(u8 dev_addr, const u8* p_desc)
 	// end of descriptors
 	const u8* desc_end = p_desc + ((const sUsbDescCfg*)p_desc)->totallen;
 
-	// skip confiuration descriptor
+	// skip configuration descriptor
 	p_desc = USB_DESC_NEXT(p_desc);
 
 	// parse interface descriptors
@@ -1020,9 +1020,8 @@ void UsbHostIrq()
 		// SETUP was sent (B1 = send setup packet)
 		if (UsbEndpoints[0].active && ((*USB_SIE_CTRL & B1) != 0)) // _SEND_SETUP
 		{
-			// A short delay (min. 5 us) to allow the device to prepare to receive the next SETUP packet.
-			// @TODO: Check it out - is it necessary or to extend the time? !!!!!!!
-			WaitUs(20);
+			// short delay (FS min 5 us, LS min. 200 us) to allow the device to prepare to receive next SETUP packet.
+			WaitUs(400);
 
 			// proces "transfer complete" of setup packet
 			UsbEndpoints[0].xfer_len = USB_SETUP_PKT_SIZE;
@@ -1432,6 +1431,7 @@ void UsbHostSetupSend(u8 dev_addr)
 	sEndpoint* sep = &UsbEndpoints[0];
 	UsbHostEpInit(0, dev_addr, USB_EPINX(0, USB_DIR_OUT), sep->pktmax, USB_XFER_CTRL, 0);
 	sep->rem_len = USB_SETUP_PKT_SIZE; // remaining data
+	sep->total_len = USB_SETUP_PKT_SIZE; // total length of data to transfer
 	sep->xfer_len = 0;		// transferred data
 	sep->active = True;		// transfer is active
 

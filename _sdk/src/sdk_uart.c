@@ -24,6 +24,7 @@
 #include "../inc/sdk_timer.h"
 #include "../inc/sdk_reset.h"
 #include "../inc/sdk_cpu.h"
+#include "../inc/sdk_gpio.h"
 #include "../../_lib/inc/lib_ring.h"
 #include "../../_lib/inc/lib_ringtx.h"
 #include "../../_lib/inc/lib_ringrx.h"
@@ -256,6 +257,167 @@ NOINLINE u32 UART_Print(u8 uart, const char* fmt, ...)
 	return n;
 }
 
+// === UART stdio
+
+#if USE_UART_STDIO
+//#define UART_STDIO_PORT	0	// UART stdio port 0 or 1
+//#define UART_STDIO_TX		0	// UART stdio TX GPIO pin
+//#define UART_STDIO_RX		1	// UART stdio RX GPIO pin
+//#define UART_STDIO_TXBUF	128	// size of transmit ring buffer of UART stdio
+//#define UART_STDIO_RXBUF	128	// size of receive ring buffer of UART stdio
+//#define UART_STDIO_TXSPIN	28	// transmitter spinlock 0..31 (-1 = not used)
+//#define UART_STDIO_RXSPIN	29	// receiver spinlock 0..31 (-1 = not used)
+
+// internal function to force next send data
+void UartStdioSendForce(sRing* ring)
+{
+	NVIC_IRQForce(IRQ_UART0 + UART_STDIO_PORT); // force UART interrupt
+}
+
+// send ring buffer
+//   name, size in bytes, index of spinlock, force send handler, force receive handler, cookie
+RING(UartStdioTxBuf, UART_STDIO_TXBUF, UART_STDIO_TXSPIN, UartStdioSendForce, NULL, 0);
+
+// receive ring buffer
+//   name, size in bytes, index of spinlock, force send handler, force receive handler, cookie
+RING(UartStdioRxBuf, UART_STDIO_RXBUF, UART_STDIO_RXSPIN, NULL, NULL, 0);
+
+// check if next character can be sent
+Bool UartSendReady()
+{
+	return RingWriteReady(&UartStdioTxBuf, 1);
+}
+
+// check if next character can be received
+Bool UartRecvReady()
+{
+	return RingReadReady(&UartStdioRxBuf, 1);
+}
+
+// print character to UART (wait if not ready)
+void UartPrintChar(char ch)
+{
+	RingWrite8Wait(&UartStdioTxBuf, (u8)ch);
+}
+
+// print unformatted text to UART (returns number of characters, wait if not ready)
+u32 UartPrintText(const char* txt)
+{
+	u32 n = StrLen(txt); // get text length
+	RingWriteWait(&UartStdioTxBuf, txt, n);
+	return n;
+}
+
+// callback - write data to UART
+u32 StreamWriteUartStdio(sStream* str, const void* buf, u32 num)
+{
+	RingWriteWait(&UartStdioTxBuf, buf, num);
+	return num;
+}
+
+// formatted print string to UART, with argument list (returns number of characters)
+u32 UartPrintArg(const char* fmt, va_list args)
+{
+	// write and read stream
+	sStream wstr, rstr;
+
+	// initialize stream to read from
+	StreamReadBufInit(&rstr, fmt, StrLen(fmt));
+
+	// initialize stream to write to
+	Stream0Init(&wstr); // initialize nul stream
+	wstr.write = StreamWriteUartStdio; // write callback
+	
+	// print string
+	return StreamPrintArg(&wstr, &rstr, args);
+}
+
+// formatted print string to UART, with variadic arguments (returns number of characters)
+NOINLINE u32 UartPrint(const char* fmt, ...)
+{
+	u32 n;
+	va_list args;
+	va_start(args, fmt);
+	n = UartPrintArg(fmt, args);
+	va_end(args);
+	return n;
+}
+
+// receive character (returns NOCHAR if no character)
+char UartGetChar()
+{
+	return RingReadChar(&UartStdioRxBuf);
+}
+
+// UART handler
+void UartStdioHandler()
+{
+	char ch;
+
+	// send data
+	while (UART_SendReady(UART_STDIO_PORT) && // free space in transmit FIFO
+		RingReadReady(&UartStdioTxBuf, 1)) // some data are ready to send
+			UART_SendChar(UART_STDIO_PORT, RingReadChar(&UartStdioTxBuf));
+
+	// clear transmit interrupt request (when there is no more data to send)
+	UART_ClearIRQ(UART_STDIO_PORT, UART_IRQ_TX);
+
+	// receive data
+	while (UART_RecvReady(UART_STDIO_PORT)) // received data ready
+	{
+		ch = UART_RecvChar(UART_STDIO_PORT); // receive character from UART
+		if (RingWriteReady(&UartStdioRxBuf, 1)) // if space in receive buffer
+			RingWrite8(&UartStdioRxBuf, ch); // write character
+		// otherwise lost received data if receive buffer is full
+	}
+}
+
+// initialize UART stdio
+void UartStdioInit()
+{
+	// default initialize UART: 115200 Baud, 8 bits, no parity, 1 stop, no hw control
+	UART_InitDef(UART_STDIO_PORT);
+
+	// set TX and RX pins
+	GPIO_Fnc(UART_STDIO_TX, GPIO_FNC_UART);
+	GPIO_Fnc(UART_STDIO_RX, GPIO_FNC_UART);
+
+	// set UART handler
+	SetHandler(IRQ_UART0 + UART_STDIO_PORT, UartStdioHandler);
+
+	// enable UART interrupt
+	NVIC_IRQEnable(IRQ_UART0 + UART_STDIO_PORT);
+
+	// enable interrupts from FIFO
+// Receive interrupt is triggered when the FIFO threshold level is reached.
+// We also need a receive timeout interrupt (occurs if a character does not
+// arrive for 32 clock cycles) to get the rest of the received bytes out of the FIFO.
+	UART_EnableIRQ(UART_STDIO_PORT, UART_IRQ_TX); // enable transmit interrupt
+	UART_EnableIRQ(UART_STDIO_PORT, UART_IRQ_RX); // enable receive interrupt
+	UART_EnableIRQ(UART_STDIO_PORT, UART_IRQ_TIMEOUT); // enable receive timeout interrupt
+}
+
+// terminate UART stdio
+void UartStdioTerm()
+{
+	// disable interrupts from FIFO
+	UART_DisableIRQ(UART_STDIO_PORT, UART_IRQ_TX); // disable transmit interrupt
+	UART_DisableIRQ(UART_STDIO_PORT, UART_IRQ_RX); // disable receive interrupt
+	UART_DisableIRQ(UART_STDIO_PORT, UART_IRQ_TIMEOUT); // enable receive timeout interrupt
+	
+	// disable UART interrupt
+	NVIC_IRQDisable(IRQ_UART0 + UART_STDIO_PORT);
+
+	// reset UART to its defalt state
+	UART_Reset(UART_STDIO_PORT);
+
+	// disable pins
+	GPIO_Reset(UART_STDIO_TX);
+	GPIO_Reset(UART_STDIO_RX);
+}
+
+#endif // USE_UART_STDIO
+
 // === UART test sample (with Tx/Rx loopback)
 
 #if UARTSAMPLE		// compilation switch from config_def.h - compile UART test sample
@@ -405,7 +567,6 @@ u32 UartSample_RecvBuf(char* buf, int len) { return RingRxReadData(&UartSample_R
 // --- initialize
 
 // UART handler
-// - remember to keep the state of the divider in the interrupt handler in case division is used in the handler
 void UartSample_Handler()
 {
 	char ch;

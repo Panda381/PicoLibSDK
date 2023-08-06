@@ -162,8 +162,8 @@ ALLOBJ = $(addprefix $(TEMP)/, $(addsuffix .o, $(ALLBASE)))
 # Clear temporary directory (use "make clean")
 
 clean:
-	@../_tools/rm -rf $(TEMP)
-	@../_tools/rm -f ./$(TARGET).bin ./$(TARGET).hex ./$(TARGET).lst ./$(TARGET).map ./$(TARGET).sym ./$(TARGET).siz
+	@../_tools/rm.exe -rf $(TEMP)
+	@../_tools/rm.exe -f ./$(TARGET).bin ./$(TARGET).hex ./$(TARGET).lst ./$(TARGET).map ./$(TARGET).sym ./$(TARGET).siz
 
 ##############################################################################
 # Compile all (use "make all")

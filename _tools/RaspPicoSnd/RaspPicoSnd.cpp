@@ -11,7 +11,8 @@
 // Sound must be in format: PCM, mono, 8-bit unsigned with middle at 128, sound rate 22050 Hz
 
 #include <stdio.h>
-#include <windows.h>
+#include <malloc.h>
+#include <string.h>
 
 #pragma warning(disable : 4996) // unsafe fopen
 
@@ -19,8 +20,17 @@ typedef signed char s8;
 typedef unsigned char u8;
 typedef signed short s16;
 typedef unsigned short u16;
-typedef signed long int s32;
-typedef unsigned long int u32;
+typedef unsigned short WORD;
+typedef signed long int s32;		// on 64-bit system use "signed int"
+typedef unsigned long int u32;		// on 64-bit system use "unsigned int"
+typedef unsigned long int DWORD;	// on 64-bit system use "unsigned int"
+//typedef signed int s32;
+//typedef unsigned int u32;
+//typedef unsigned int DWORN;
+
+typedef unsigned int BOOL;
+#define TRUE  1
+#define FALSE 0
 
 // WAV format
 #pragma pack(push,1)
@@ -59,6 +69,12 @@ u8* Snd = NULL; // input file buffer
 
 int main(int argc, char* argv[])
 {
+	if (sizeof(DWORD) != 4)
+	{
+		printf("Incorrect size of data types. Check typedef of s32/u32 or do 32-bit compilation.\n");
+		return 1;
+	}
+
 	// check syntax
 	if (argc != 4)
 	{

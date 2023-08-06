@@ -287,7 +287,7 @@ Bool DiskMount();
 INLINE Bool DiskMounted() { return DiskFS != FS_NONE; }
 
 // mount disk if not mounted
-INLINE Bool DiskValidate() { if (DiskMounted()) return True; return DiskMount(); }
+Bool DiskAutoMount();
 
 // flush disk write buffers (should be called repeatedly after some time)
 Bool DiskFlush();
@@ -378,6 +378,18 @@ u32 FileRead(sFile* file, void* buf, u32 num);
 
 // write file (returns number of bytes write, or less on error)
 u32 FileWrite(sFile* file, const void* buf, u32 num);
+
+// print character to file
+void FilePrintChar(sFile* file, char ch);
+
+// print unformatted text to file (returns number of characters)
+u32 FilePrintText(sFile* file, const char* txt);
+
+// formatted print string to file, with argument list (returns number of characters)
+u32 FilePrintArg(sFile* file, const char* fmt, va_list args);
+
+// formatted print string to file, with variadic arguments (returns number of characters)
+NOINLINE u32 FilePrint(sFile* file, const char* fmt, ...);
 
 // flush file writes and flush disk buffers (returns False on error)
 Bool FileFlush(sFile* file);

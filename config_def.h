@@ -25,7 +25,8 @@ DMA channels 8 and 9 are used by QVA library. Search QVGA_DMA in _devices\picoin
 
 Spinlock 31 is used by system memory allocator, safe integer etc. Search SYS_SPIN.
 Spinlock 30 is used by USB driver. Search USB_SPIN.
-Spinlocks 28 and 29 are used by UART test sample. Search: UARTSAMPLE_TXSPIN, UARTSAMPLE_RXSPIN.
+Spinlocks 28 and 29 are used by UART test sample and by USART stdio. Search:
+UARTSAMPLE_TXSPIN, UARTSAMPLE_RXSPIN, UART_STDIO_TXSPIN, UART_STDIO_RXSPIN.
 
 Hardware interpolators are used when drawing to canvas (DRAW_HWINTER_INX) and
 by VGA driver rendering service.
@@ -47,8 +48,16 @@ by VGA driver rendering service.
 #include "_devices/picopad/_config.h"
 #endif
 
+#if USE_PICO			// use Pico device configuration
+#include "_devices/pico/_config.h"
+#endif
+
 #if USE_PC
 #define ASM64		1		// 1 = use assembler x64 optimization, if available
+#endif
+
+#ifndef USE_SCREENSHOT			// use screen shots
+#define USE_SCREENSHOT	0		// use screen shots
 #endif
 
 // ----------------------------------------------------------------------------
@@ -143,12 +152,12 @@ by VGA driver rendering service.
 #define USE_USB_STDIO	0		// use USB stdio (UsbPrint function)
 #endif
 
-#ifndef USE_DRAW_STDIO
-#if USE_USB_STDIO
-#define USE_DRAW_STDIO	0		// use DRAW stdio (DrawPrint function)
-#else
-#define USE_DRAW_STDIO	1		// use DRAW stdio (DrawPrint function)
+#ifndef USE_UART_STDIO
+#define USE_UART_STDIO	0		// use UART stdio (UartPrint function)
 #endif
+
+#ifndef USE_DRAW_STDIO
+#define USE_DRAW_STDIO	0		// use DRAW stdio (DrawPrint function)
 #endif
 
 #ifndef USE_USB
@@ -596,15 +605,44 @@ by VGA driver rendering service.
 #endif
 
 #ifndef KEY_REP_TIME1
-#define KEY_REP_TIME1	400	// delta time of first press in [ms] (max 500)
+#define KEY_REP_TIME1		400	// delta time of first press in [ms] (max 500)
 #endif
 
 #ifndef KEY_REP_TIME2
-#define KEY_REP_TIME2	100	// delta time of repeat press in [ms] (max 500)
+#define KEY_REP_TIME2		100	// delta time of repeat press in [ms] (max 500)
 #endif
 
 #ifndef SYSTICK_KEYSCAN
 #define SYSTICK_KEYSCAN		0	// call KeyScan() function from SysTick system timer
+#endif
+
+// UART stdio
+#ifndef UART_STDIO_PORT
+#define UART_STDIO_PORT		0	// UART stdio port 0 or 1
+#endif
+
+#ifndef UART_STDIO_TX
+#define UART_STDIO_TX		0	// UART stdio TX GPIO pin
+#endif
+
+#ifndef UART_STDIO_RX
+#define UART_STDIO_RX		1	// UART stdio RX GPIO pin
+#endif
+
+#ifndef UART_STDIO_TXBUF
+#define UART_STDIO_TXBUF	128	// size of transmit ring buffer of UART stdio
+#endif
+
+#ifndef UART_STDIO_RXBUF
+#define UART_STDIO_RXBUF	128	// size of receive ring buffer of UART stdio
+#endif
+
+#ifndef UART_STDIO_TXSPIN
+#define UART_STDIO_TXSPIN	28	// transmitter spinlock 0..31 (-1 = not used)
+#endif
+
+#ifndef UART_STDIO_RXSPIN
+#define UART_STDIO_RXSPIN	29	// receiver spinlock 0..31 (-1 = not used)
 #endif
 
 // ----------------------------------------------------------------------------
@@ -696,10 +734,6 @@ by VGA driver rendering service.
 
 #ifndef BATTERY_EMPTY_INT
 #define BATTERY_EMPTY_INT 3100		// voltage of empty battery
-#endif
-
-#ifndef USE_SCREENSHOT			// use screen shots
-#define USE_SCREENSHOT	0		// use screen shots
 #endif
 
 // ----------------------------------------------------------------------------

@@ -117,7 +117,7 @@ void ScreenShot()
 	Bool ismount = DiskMounted();
 
 	// auto-mount disk
-	if (DiskValidate())
+	if (DiskAutoMount())
 	{
 		// prepare file name
 		while (FileExist(fn))

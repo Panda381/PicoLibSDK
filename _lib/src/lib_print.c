@@ -22,18 +22,12 @@
 #include "../inc/lib_text.h"
 #include "../inc/lib_drawtft.h"
 #include "../inc/lib_qdraw.h"
+#include "../inc/lib_decnum.h"
 #include "../../_display/st7789/st7789.h"
 #include "../../_display/qvga/qvga.h"
 #include "../../_sdk/usb_inc/sdk_usb_dev_cdc.h"
 #include "../../_sdk/usb_inc/sdk_usb_host_hid.h"
-
-//#if USE_PICOPAD		// use PicoPad device configuration
-//#include "../../_devices/picopad/picopad_key.h"
-//#endif
-
-//#if USE_PICOINO		// use Picoino device configuration
-//#include "../../_devices/picoino/picoino_key.h"
-//#endif
+#include "../../_sdk/inc/sdk_uart.h"
 
 // bit mask of used stdio streams
 u32 StdioMask = 0
@@ -45,10 +39,19 @@ u32 StdioMask = 0
 #if USE_USB_STDIO		// use USB stdio (UsbPrint function)
 	| STDIO_MASK_USB
 #endif
+
+#if USE_UART_STDIO		// use UART stdio (UartPrint function)
+	| STDIO_MASK_UART
+#endif
 ;
 
 // stream for memory printing
 sStream MemStream = { 0, 0, 0, NULL, NULL, NULL, NULL };
+
+#if USE_FAT	// use FAT file system (lib_fat.c, lib_fat.h)
+// open file to file printing
+sFile* FileToPrint;
+#endif
 
 // round coefficients ... already defined in textnum.c
 //const double SetDoubleCoeff[19] = { 5e0, 5e-1, 5e-2, 5e-3, 5e-4, 5e-5, 5e-6, 5e-7,
@@ -145,6 +148,8 @@ u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 	char buf[PR_BUFSIZE];	// temporary print buffer with converted field
 	int realsize;		// real size of printed field (including sign)
 	char* chp;		// character pointer to converted field
+	u8* sb;			// pointer to source data as bytes
+	u16* sw;		// pointer to source data as words
 
 	// format
 	int flags;		// flags PRF_* (or 0 default)
@@ -324,6 +329,122 @@ u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 				chp = buf;		// pointer to the buffer
 				size = 1;		// size = 1 character
 				sign = 0;		// no sign
+				stop = True;		// stop parsing
+				break;
+
+			// 'm' ... print memory block pointed by argument, as HEX 8-bit bytes with commas,
+			//	precision .n is total number of bytes or .* from argument,
+			//	width is number of bytes per row or * from argument, '#' flag is print as decimals
+			case 'm':
+				sb = va_arg(args, u8*); // load pointer
+				if (sb == NULL) goto null_ptr; // display "(null)" value
+				if (prec < 0) prec = 8;	// default total number of bytes
+				if (width <= 0) width = 16; // default number of bytes per row
+				ndig = 0;		// reset row position
+
+				for (; prec > 0; prec--) // loop through total bytes
+				{
+					n = *sb++;	// read one byte
+
+					// decode DEC byte
+					if (flags & PRF_ALT)
+					{
+						size = DecUNum(buf, n, 0);
+						for (n = 0; n < size; n++) OUT(buf[n]);
+					}
+					else
+					{
+						// decode HEX byte
+						OUT('0');
+						OUT('x');
+						OUT(HexDigL[(n >> 4) & 0x0f]);
+						OUT(HexDigL[n & 0x0f]);
+					}
+
+					// increase row position
+					ndig++;
+
+					// print comma
+					if (prec > 1)
+					{
+						OUT(',');
+
+						// print space or new line + tab
+						if (ndig < width)
+						{
+							OUT(' ');
+						}
+						else
+						{
+							OUT('\n');
+							OUT('\t');
+							ndig = 0;
+						}
+					}
+				}
+
+				size = 0;		// data already printed
+				sign = 0;		// no sign
+				width = 0;		// no width
+				stop = True;		// stop parsing
+				break;
+
+			// 'M' ... print memory block pointed by argument, as HEX 16-bit words with commas,
+			//	precision .n is total number of words or .* from argument,
+			//	width is number of words per row or * from argument, '#' flag is print as decimals
+			case 'M':
+				sw = va_arg(args, u16*); // load pointer
+				if (sw == NULL) goto null_ptr; // display "(null)" value
+				if (prec < 0) prec = 8;	// default total number of words
+				if (width <= 0) width = 8; // default number of words per row
+				ndig = 0;		// reset row position
+
+				for (; prec > 0; prec--) // loop through total words
+				{
+					n = *sw++;	// read one word
+
+					// decode DEC word
+					if (flags & PRF_ALT)
+					{
+						size = DecUNum(buf, n, 0);
+						for (n = 0; n < size; n++) OUT(buf[n]);
+					}
+					else
+					{
+						// decode HEX word
+						OUT('0');
+						OUT('x');
+						OUT(HexDigL[(n >> 12) & 0x0f]);
+						OUT(HexDigL[(n >> 8) & 0x0f]);
+						OUT(HexDigL[(n >> 4) & 0x0f]);
+						OUT(HexDigL[n & 0x0f]);
+					}
+
+					// increase row position
+					ndig++;
+
+					// print comma
+					if (prec > 1)
+					{
+						OUT(',');
+
+						// print space or new line + tab
+						if (ndig < width)
+						{
+							OUT(' ');
+						}
+						else
+						{
+							OUT('\n');
+							OUT('\t');
+							ndig = 0;
+						}
+					}
+				}
+
+				size = 0;		// data already printed
+				sign = 0;		// no sign
+				width = 0;		// no width
 				stop = True;		// stop parsing
 				break;
 
@@ -1076,6 +1197,19 @@ void MemPrintStart(char* buf, u32 max)
 	buf[0] = 0;
 }
 
+#if USE_FAT	// use FAT file system (lib_fat.c, lib_fat.h)
+// start file printing (using printf function)
+//  file ... open file
+void FilePrintStart(sFile* file)
+{
+	// open file to file printing
+	FileToPrint = file;
+
+	// enable
+	StdioMask |= STDIO_MASK_FILE;
+}
+#endif
+
 // print character to print channels
 void PrintChar(char ch)
 {
@@ -1084,7 +1218,6 @@ void PrintChar(char ch)
 	{
 		// print character to display
 		DrawPrintChar(ch);
-		DispUpdate();
 	}
 #endif
 
@@ -1107,6 +1240,21 @@ void PrintChar(char ch)
 			((u8*)MemStream.cookie)[MemStream.pos] = 0;
 		}
 	}
+
+#if USE_UART_STDIO	// use UART stdio (UartPrint function)
+	if ((StdioMask & STDIO_MASK_UART) != 0)
+	{
+		UartPrintChar(ch);
+	}
+#endif
+
+#if USE_FAT	// use FAT file system (lib_fat.c, lib_fat.h)
+	if ((StdioMask & STDIO_MASK_FILE) != 0)
+	{
+		// write file
+		FilePrintChar(FileToPrint, ch);
+	}
+#endif
 }
 
 int WRAPPER_FUNC(putchar)(int ch)
@@ -1152,6 +1300,21 @@ int PrintText(const char* txt)
 		// terminating 0
 		((u8*)MemStream.cookie)[MemStream.pos] = 0;
 	}
+
+#if USE_UART_STDIO	// use UART stdio (UartPrint function)
+	if ((StdioMask & STDIO_MASK_UART) != 0)
+	{
+		UartPrintText(txt);
+	}
+#endif
+
+#if USE_FAT	// use FAT file system (lib_fat.c, lib_fat.h)
+	if ((StdioMask & STDIO_MASK_FILE) != 0)
+	{
+		// write file
+		FilePrintText(FileToPrint, txt);
+	}
+#endif
 
 	return n;
 }
@@ -1201,6 +1364,22 @@ int PrintArg(const char* fmt, va_list args)
 		// terminating 0
 		((u8*)MemStream.cookie)[MemStream.pos] = 0;
 	}
+
+#if USE_UART_STDIO	// use UART stdio (UartPrint function)
+	if ((StdioMask & STDIO_MASK_UART) != 0)
+	{
+		// print string to UART
+		n = UartPrintArg(fmt, args);
+	}
+#endif
+
+#if USE_FAT	// use FAT file system (lib_fat.c, lib_fat.h)
+	if ((StdioMask & STDIO_MASK_FILE) != 0)
+	{
+		// write file
+		FilePrintArg(FileToPrint, fmt, args);
+	}
+#endif
 
 	// no stream - only get length of the string
 	if (StdioMask == 0)
@@ -1274,7 +1453,13 @@ char GetChar()
 	// CDC console
 #if USE_USB_STDIO		// use USB stdio (UsbPrint function)
 	ch = UsbDevCdcReadChar();
-	if (ch != 0) return ch;
+	if (ch != NOCHAR) return ch;
+#endif
+
+	// UART console
+#if USE_UART_STDIO		// use UART stdio
+	ch = UartGetChar();
+	if (ch != NOCHAR) return ch;
 #endif
 
 #if USE_PICOPAD || USE_PICOINO 	// use PicoPad or Picoino device configuration

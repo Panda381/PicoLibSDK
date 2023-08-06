@@ -367,6 +367,39 @@ u32 UART_PrintArg(u8 uart, const char* fmt, va_list args);
 // formatted print with blocking, with variadic arguments (returns number of characters, without terminating 0)
 NOINLINE u32 UART_Print(u8 uart, const char* fmt, ...);
 
+// === UART stdio
+
+#if USE_UART_STDIO
+
+// check if next character can be sent
+Bool UartSendReady();
+
+// check if next character can be received
+Bool UartRecvReady();
+
+// print character to UART (wait if not ready)
+void UartPrintChar(char ch);
+
+// print unformatted text to UART (returns number of characters, wait if not ready)
+u32 UartPrintText(const char* txt);
+
+// formatted print string to UART, with argument list (returns number of characters)
+u32 UartPrintArg(const char* fmt, va_list args);
+
+// formatted print string to UART, with variadic arguments (returns number of characters)
+NOINLINE u32 UartPrint(const char* fmt, ...);
+
+// receive character (returns NOCHAR if no character)
+char UartGetChar();
+
+// initialize UART stdio
+void UartStdioInit();
+
+// terminate UART stdio
+void UartStdioTerm();
+
+#endif // USE_UART_STDIO
+
 // === UART test sample (with Tx/Rx loopback)
 //
 //  In this test example, signals Tx and Rx are connected by an internal loopback.

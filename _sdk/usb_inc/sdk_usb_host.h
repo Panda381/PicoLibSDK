@@ -48,7 +48,7 @@ enum {
 // setup buffer for host
 #define USB_HOSTSETUPBUFF_MAX	320	// size of setup buffer
 // host: must be big enough to hold all descriptors from device of one configuration (minimum is 9 bytes; 4 COM ports require 273 bytes)
-extern ALIGNED u8 UsbHostSetupBuff[USB_HOSTSETUPBUFF_MAX]; // size 256 bytes
+extern ALIGNED u8 UsbHostSetupBuff[USB_HOSTSETUPBUFF_MAX];
 
 // host device descriptors (index corresponds to the device address, including address 0)
 extern sUsbHostDev UsbHostDev[USE_USB_HOST_DEVNUM];

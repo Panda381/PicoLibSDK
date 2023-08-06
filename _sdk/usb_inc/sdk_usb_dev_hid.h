@@ -199,19 +199,33 @@ u8 UsbDevHidTxSave(u8 itf_num, const void* buf, u8 len, u8 rep_id);
 Bool UsbDevHidSendReport(u8 itf_num, const void* buf, u8 len, u8 rep_id);
 
 // send keyboard report (returns False on error)
-Bool UsbDevHidSendKey(const sUsbHidKey* rep);
+Bool UsbDevHidSendKeyRep(const sUsbHidKey* rep);
+
+// send keyboard key (returna False on error), output speed 30 chars/sec
+Bool UsbDevHidSendKey(u8 key, u8 modi);
+
+// send keyboard character (returna False on error), output speed 30 chars/sec
+// - The target computer must have an English keyboard layout in order to maintain the correct character mapping.
+Bool UsbDevHidSendChar(char ch);
+
+// send keyboard text (returna False on error), output speed 30 chars/sec
+// - The target computer must have an English keyboard layout in order to maintain the correct character mapping.
+Bool UsbDevHidSendText(const char* txt);
 
 // send mouse report (returns False on error)
-Bool UsbDevHidSendMouse(const sUsbHidMouse* rep);
+Bool UsbDevHidSendMouseRep(const sUsbHidMouse* rep);
+
+// send mouse (returns False on error), output speed max 1000 rep/sec
+Bool UsbDevHidSendMouse(s8 dx, s8 dy, Bool left, Bool right, Bool mid);
 
 // send joystick report (returns False on error)
-Bool UsbDevHidSendJoy(const sUsbHidJoy* rep);
+Bool UsbDevHidSendJoyRep(const sUsbHidJoy* rep);
 
 // send gamepad report (returns False on error)
-Bool UsbDevHidSendPad(const sUsbHidPad* rep);
+Bool UsbDevHidSendPadRep(const sUsbHidPad* rep);
 
 // send power report (returns False on error)
-Bool UsbDevHidSendPwr(const sUsbHidPwr* rep);
+Bool UsbDevHidSendPwrRep(const sUsbHidPwr* rep);
 
 #ifdef __cplusplus
 }

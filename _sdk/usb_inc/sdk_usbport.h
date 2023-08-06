@@ -248,12 +248,13 @@ typedef struct {
 
 // test pattern (8 to 64 bytes) ... used to check connection quality
 #define USBPORT_CMD_TEST	5	// command: test pattern
+#define USBPORT_TEST_DATAMAX	14	// max. number of u32 entries
 typedef struct {
 	u16	crc;	// 0: checksum Crc16AFast (CRC-16 CCITT normal)
 	u8	len;	// 2: total packet length (8 to 64 bytes)
 	u8	cmd;	// 3: command (USBPORT_CMD_TEST)
 	u32	cnt;	// 4: sequence counter (to check dropped packets)
-	u8	data[56]; // 8: test pattern (random data)
+	u32	data[USBPORT_TEST_DATAMAX]; // 8: test pattern (random data, max. 56 bytes)
 } sUsbPortPktTest;
 
 // first application packet (packets 0..9 are reserved for system common packets)

@@ -252,6 +252,7 @@ void UsbXferStart(u8 epinx, void* buf, u16 len, Bool use_ring)
 	sep->active = True;	// transfer is active (busy; i.e. endpoint is used to transfer)
 	dmb();			// data memory barrier (to be able to safely test the 'active' flag)
 	sep->rem_len = len;	// remaining length of data to transfer
+	sep->total_len = len;	// total length of data to transfer
 	sep->xfer_len = 0;	// length of already transferred data
 	sep->user_buf = buf;	// pointer to user buffer, or pointer to sRing ring buffer
 	sep->use_ring = use_ring; // use ring buffer
@@ -275,12 +276,15 @@ u16 UsbXferSync(u8 epinx, u8 bufid)
 	// get number of transferred bytes
 	int len = bufctrl & 0x3ff;
 
+	// limit number of bytes
+	if ((int)sep->xfer_len + len > (int)sep->total_len) len = (int)sep->total_len - (int)sep->xfer_len;
+
 	// receive data - copy received data to user buffer
-	if (sep->rx)
+	if (sep->rx && (len > 0))
 	{
 		u8* data_buf = sep->data_buf; // data buffer in USB DPRAM (NULL = not enough DPRAM)
 		void* user_buf = sep->user_buf; // user buffer (NULL = destroy data)
-		if ((user_buf != NULL) && (data_buf != NULL) && (len > 0))
+		if ((user_buf != NULL) && (data_buf != NULL))
 		{
 			data_buf += bufid*USB_PACKET_MAX;
 
@@ -298,7 +302,11 @@ u16 UsbXferSync(u8 epinx, u8 bufid)
 	sep->xfer_len += len;
 
 	// short received data = end of transmission (less data may be received than requested)
-	if (len < sep->pktmax) sep->rem_len = 0;
+	if (len < sep->pktmax)
+	{
+		sep->rem_len = 0;
+		sep->total_len = sep->xfer_len;
+	}
 
 	return len;
 }
@@ -313,8 +321,8 @@ Bool UsbXferCont(u8 epinx)
 	// address of endpoint descriptor
 	sEndpoint* sep = &UsbEndpoints[epinx];
 
-	// synchronize buffer 1 (if some data remain, if was not short packet and if we used double-buffer mode)
-	if ((sep->rem_len > 0) && (len == sep->pktmax) && ((*sep->ep_ctrl & B30) != 0)) UsbXferSync(epinx, 1);
+	// synchronize buffer 1 (if some data remain and if we used double-buffer mode)
+	if ((sep->xfer_len < sep->total_len) && ((*sep->ep_ctrl & B30) != 0)) UsbXferSync(epinx, 1);
 
 	// end of transmission
 	if (sep->rem_len == 0) return True;

@@ -1754,7 +1754,7 @@ void DrawScroll()
 //     0x15 '\25' ^U ... set magenta text color (COL_MAGENTA)
 //     0x16 '\26' ^V ... set yellow text color (COL_YELLOW)
 //     0x17 '\27' ^W ... set white text color (COL_WHITE)
-void DrawPrintChar(char ch)
+void DrawPrintCharRaw(char ch)
 {
 	switch ((u8)ch)
 	{
@@ -1766,9 +1766,17 @@ void DrawPrintChar(char ch)
 		if (DrawPrintSize >= 2)
 		{
 			if (DrawPrintSize == 3)
+			{
+				if (DrawPrintRow >= DrawPrintRowNum-1)
+				{
+					DrawScroll(); // scroll screen one row up
+					DrawPrintRow = DrawPrintRowNum-2;
+				}
+
 				// double-sized font
 				DrawCharBg2((char)(ch + DrawPrintInv), (int)DrawPrintPos*DrawFontWidth,
 					(int)DrawPrintRow*DrawFontHeight, DrawPrintCol, COL_BLACK);
+			}
 			else
 				// double-width font
 				DrawCharBgW((char)(ch + DrawPrintInv), (int)DrawPrintPos*DrawFontWidth,
@@ -1780,9 +1788,17 @@ void DrawPrintChar(char ch)
 		else
 		{
 			if (DrawPrintSize == 1)
+			{
+				if (DrawPrintRow >= DrawPrintRowNum-1)
+				{
+					DrawScroll(); // scroll screen one row up
+					DrawPrintRow = DrawPrintRowNum-2;
+				}
+
 				// double-height font
 				DrawCharBgH((char)(ch + DrawPrintInv), (int)DrawPrintPos*DrawFontWidth,
 					(int)DrawPrintRow*DrawFontHeight, DrawPrintCol, COL_BLACK);
+			}
 			else
 				// normal font size
 				DrawCharBg((char)(ch + DrawPrintInv), (int)DrawPrintPos*DrawFontWidth,
@@ -1806,6 +1822,17 @@ void DrawPrintChar(char ch)
 		{
 			DrawScroll(); // scroll screen one row up
 			DrawPrintRow = DrawPrintRowNum-1;
+		}
+
+		// double height
+		if ((DrawPrintSize & 1) != 0)
+		{
+			DrawPrintRow++; // increase row
+			if (DrawPrintRow >= DrawPrintRowNum)
+			{
+				DrawScroll(); // scroll screen one row up
+				DrawPrintRow = DrawPrintRowNum-1;
+			}
 		}
 		break;
 
@@ -1849,7 +1876,7 @@ void DrawPrintChar(char ch)
 		{
 			u8 oldsize = DrawPrintSize; // save current font size
 			DrawPrintSize = oldsize & 1; // change double-width or double-size to normal or double-height
-			do DrawPrintChar(' '); while ((DrawPrintPos & 7) != 0); // print spaces
+			do DrawPrintCharRaw(' '); while ((DrawPrintPos & 7) != 0); // print spaces
 			DrawPrintSize = oldsize; // restore font size
 		}
 		break;		
@@ -1917,13 +1944,20 @@ void DrawPrintChar(char ch)
 	}
 }
 
-// console print text (Control characters - see DrawPrintChar)
+// console print character (with display update; Control characters - see DrawPrintCharRaw)
+void DrawPrintChar(char ch)
+{
+	DrawPrintCharRaw(ch);
+	DispUpdate();
+}
+
+// console print text (Control characters - see DrawPrintCharRaw)
 //  If text contains digit after hex numeric code of control character,
 //  split text to more parts: use "\4" "1" instead of "\41".
 void DrawPrintText(const char* txt)
 {
 	char ch;
-	while ((ch = *txt++) != 0) DrawPrintChar(ch);
+	while ((ch = *txt++) != 0) DrawPrintCharRaw(ch);
 	DispUpdate();
 }
 
@@ -1932,7 +1966,7 @@ u32 StreamWriteDrawPrint(sStream* str, const void* buf, u32 num)
 {
 	u32 n = num;
 	const char* txt = (const char*)buf;
-	for (; n > 0; n--) DrawPrintChar(*txt++);
+	for (; n > 0; n--) DrawPrintCharRaw(*txt++);
 	return num;
 }
 

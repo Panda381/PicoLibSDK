@@ -54,9 +54,9 @@ volatile Bool KeyPressMap[KEY_NUM];
 // keyboard buffer
 #define KEYBUF_SIZE	10 // size of keyboard buffer
 char KeyBuf[KEYBUF_SIZE]; // keyboard buffer
-char KeyRetBuf;	// returned key to keyboard buffer (NOKEY = no key)
-volatile u8 KeyWriteOff; // write offset to keyboard buffer
-volatile u8 KeyReadOff;	// read offset from keyboard buffer
+char KeyRetBuf = NOKEY;	// returned key to keyboard buffer (NOKEY = no key)
+volatile u8 KeyWriteOff = 0; // write offset to keyboard buffer
+volatile u8 KeyReadOff = 0;	// read offset from keyboard buffer
 
 // initialize keys
 void KeyInit()

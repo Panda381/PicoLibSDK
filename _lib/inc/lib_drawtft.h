@@ -317,9 +317,12 @@ void DrawScroll();
 //     0x15 '\25' ^U ... set magenta text color (COL_MAGENTA)
 //     0x16 '\26' ^V ... set yellow text color (COL_YELLOW)
 //     0x17 '\27' ^W ... set white text color (COL_WHITE)
+void DrawPrintCharRaw(char ch);
+
+// console print character (with display update; Control characters - see DrawPrintCharRaw)
 void DrawPrintChar(char ch);
 
-// console print text (Control characters - see DrawPrintChar)
+// console print text (Control characters - see DrawPrintCharRaw)
 //  If text contains digit after hex numeric code of control character,
 //  split text to more parts: use "\4" "1" instead of "\41".
 void DrawPrintText(const char* txt);

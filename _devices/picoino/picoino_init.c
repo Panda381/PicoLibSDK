@@ -22,8 +22,10 @@
 #include "../../_lib/inc/lib_qdraw.h"
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "../../_sdk/inc/sdk_timer.h"
+#include "picoino_init.h"
 #include "picoino_bat.h"
 #include "picoino_key.h"
+#include "picoino_keymini.h"
 
 // Device init
 void DeviceInit()
@@ -78,22 +80,28 @@ void DeviceTerm()
 #endif
 }
 
+// LED indices
+#if USE_PICOINOMINI
+
 // set LED ON (inx = LED index LED?)
 void LedOn(u8 inx)
 {
-	GPIO_Out1(LED_PIN);
+	if (inx == LED1) UserLedState = True;
+	if (inx == LED2) GPIO_Out1(LED_PIN);
 }
 
 // set LED OFF (inx = LED index LED?)
 void LedOff(u8 inx)
 {
-	GPIO_Out0(LED_PIN);
+	if (inx == LED1) UserLedState = False;
+	if (inx == LED2) GPIO_Out0(LED_PIN);
 }
 
 // flip LED (inx = LED index LED?)
 void LedFlip(u8 inx)
 {
-	GPIO_Flip(LED_PIN);
+	if (inx == LED1) UserLedState = !UserLedState;
+	if (inx == LED2) GPIO_Flip(LED_PIN);
 }
 
 // set LED (inx = LED index LED?)
@@ -101,3 +109,31 @@ void LedSet(u8 inx, u8 val)
 {
 	if (val == 0) LedOff(inx); else LedOn(inx);
 }
+
+#else // USE_PICOINOMINI
+
+// set LED ON (inx = LED index LED?)
+void LedOn(u8 inx)
+{
+	if (inx == LED1) GPIO_Out1(LED_PIN);
+}
+
+// set LED OFF (inx = LED index LED?)
+void LedOff(u8 inx)
+{
+	if (inx == LED1) GPIO_Out0(LED_PIN);
+}
+
+// flip LED (inx = LED index LED?)
+void LedFlip(u8 inx)
+{
+	if (inx == LED1) GPIO_Flip(LED_PIN);
+}
+
+// set LED (inx = LED index LED?)
+void LedSet(u8 inx, u8 val)
+{
+	if (val == 0) LedOff(inx); else LedOn(inx);
+}
+
+#endif // USE_PICOINOMINI

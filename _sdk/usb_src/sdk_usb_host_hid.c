@@ -27,8 +27,6 @@
 #include "../inc/sdk_timer.h"
 #include "../inc/sdk_cpu.h"	// dmb()
 #include "../usb_inc/sdk_usb_host.h"
-//#include "../../_lib/inc/lib_print.h"
-//#include "../../_devices/picopad/picopad_key.h"
 
 // keyboard ring buffer (contains u32 packed keyboard event)
 //   keyboard event - u32 number (only pressed key, not released)
@@ -62,17 +60,6 @@ u32 UsbHidKeyNextTime;
 
 // previous mouse report
 sUsbHidMouse UsbHidMouseOld;
-
-/*
-// debug: print report descriptor
-//  0 = nothing
-//  1 = print all
-//  2 = print only interface info
-//  3 = print only report info
-//  4 = print only report descriptor HEX list
-u8 UsbHostHidPrintDesc = 4;
-u8 UsbHostHidPrintDescRows;
-*/
 
 // buffer to load report descriptor
 u8 UsbHostRepBuf[USB_HOST_HID_REPSIZE];
@@ -260,12 +247,17 @@ void UsbHostHidInit()
 	// initialize ring buffers
 	EventRingInit(&UsbHostHidKeyRing, UsbHostHidKeyRingBuf, USB_HOST_HID_KEY_BUFSIZE, USB_SPIN);
 	EventRingInit(&UsbHostHidMouseRing, UsbHostHidMouseRingBuf, USB_HOST_HID_MOUSE_BUFSIZE, USB_SPIN);
+
+	memset(&UsbHidKeyOld, 0, sizeof(sUsbHidKey));
+	memset(&UsbHidMouseOld, 0, sizeof(sUsbHidMouse));
+	UsbHidKeyRepeat = 0;
 }
 
 // terminate class driver
 void UsbHostHidTerm()
 {
 	memset(&UsbHidKeyOld, 0, sizeof(sUsbHidKey));
+	memset(&UsbHidMouseOld, 0, sizeof(sUsbHidMouse));
 }
 
 // open class interface (returns size of used interface, 0=not supported)
@@ -328,7 +320,7 @@ void UsbHostHidParse(u8 hid_inx)
 	memset(hid->rep_info, 0, sizeof(hid->rep_info));
 
 	// remaining length of the descriptor
-	u16 rep_len = hid->rep_len;
+	int rep_len = hid->rep_len;
 
 	// source data
 	u8* s = UsbHostRepBuf;
@@ -479,77 +471,6 @@ void UsbHostHidParse(u8 hid_inx)
 
 	// store number of reports
 	hid->rep_num = rep_num;
-//	hid->repin_len = (report_in_bits + 7)/8;
-//	hid->repout_len = (report_out_bits + 7)/8;
-
-
-
-/*
-	// debug: print report descriptor
-// debug: print report descriptor
-//  0 = nothing
-//  1 = print all
-//  2 = print only interface info
-//  3 = print only report info
-//  4 = print only report descriptor HEX list
-	u8 deb = UsbHostHidPrintDesc;
-	if (deb > 0)
-	{
-		// interface info
-		if ((deb == 1) || (deb == 2))
-		{
-			printf(	"%d:addr=%d itf=%d protocol=%d mode=%d\n"
-				"  epin=%d epout=%d inmax=%d outmax=%d\n"
-				"  reptype=%d replen=%d repnum=%d\n",
-				hid_inx, hid->dev_addr, hid->itf_num, hid->protocol, hid->mode, hid->ep_in, hid->ep_out,
-				hid->epin_max, hid->epout_max, hid->rep_type, hid->rep_len, hid->rep_num);
-		}
-
-		// report info
-		int i;
-		if ((deb == 1) || (deb == 3))
-		{
-			for (i = 0; i < hid->rep_num; i++)
-			{
-				info = &hid->rep_info[i];
-				printf(	"%d,%d:repid=%d page=%d usage=%d\n"
-					" inlen=%d outlen=%d innum=%d outnum=%d\n",
-					hid_inx, i, info->rep_id, info->usage_page, info->usage,
-					 info->in_len, info->out_len, info->in_num, info->out_num);
-			}
-		}
-
-		// report descriptor HEX list
-		if ((deb == 1) || (deb == 4))
-		{
-			if (hid_inx == 0) UsbHostHidPrintDescRows = 0;
-			printf("%d:\n", hid_inx);
-			for (i = 0; i < hid->rep_len;)
-			{
-				printf("%02X ", UsbHostRepBuf[i]);
-				i++;
-
-				// More
-				if ((i % 10)==0)
-				{
-					printf("\n");
-					UsbHostHidPrintDescRows++;
-					if ((UsbHostHidPrintDescRows % 10) == 0)
-					{
-						UsbHostHidPrintDescRows = 0;
-						printf("Press any key...");
-						KeyFlush();
-						while (KeyGet() == NOKEY) {}
-						printf("\r-----------------\n");
-					}
-				}
-			}
-			if ((i % 10)!=0) printf("\n");
-		}
-	}
-*/
-
-
 }
 
 // set config interface ... 4th step = "config complete"
@@ -699,7 +620,7 @@ void UsbHostHidRepKey()
 		EventRingWrite(&UsbHostHidKeyRing, &e);
 
 		// time of next repeat key
-		UsbHidKeyNextTime = Time() + KEY_REP_TIME2;
+		UsbHidKeyNextTime = Time() + KEY_REP_TIME2*1000;
 	}
 }
 
@@ -725,10 +646,16 @@ Bool UsbHostHidComp(u8 dev_addr, u8 dev_epinx, u8 xres, u16 len)
 		// process received report - keyboard
 		if (hid->protocol == USB_HID_ITF_KEYB)
 		{
+			// length correction
+			if (len > sizeof(sUsbHidKey)) len = sizeof(sUsbHidKey);
+
+			// clear rest of report
+			if (len < sizeof(sUsbHidKey)) memset(hid->rx_buf+len, 0, sizeof(sUsbHidKey) - len);
+
 			// check change
-			if (memcmp(&UsbHidKeyOld, hid->rx_buf, sizeof(sUsbHidKey)) != 0)
+			sUsbHidKey* rep = (sUsbHidKey*)hid->rx_buf; // new report
+			if (memcmp(&UsbHidKeyOld, rep, len) != 0)
 			{
-				sUsbHidKey* rep = (sUsbHidKey*)hid->rx_buf; // new report
 				sEvent e;
 
 				// process keys
@@ -768,7 +695,7 @@ Bool UsbHostHidComp(u8 dev_addr, u8 dev_epinx, u8 xres, u16 len)
 							EventRingWrite(&UsbHostHidKeyRing, &e);
 
 							// firt press, time of next repeat key
-							UsbHidKeyNextTime = Time() + KEY_REP_TIME1;
+							UsbHidKeyNextTime = Time() + KEY_REP_TIME1*1000;
 							UsbHidKeyRepeat = key;
 						}
 						break;
@@ -799,6 +726,12 @@ Bool UsbHostHidComp(u8 dev_addr, u8 dev_epinx, u8 xres, u16 len)
 		// process received report - mouse
 		else if (hid->protocol == USB_HID_ITF_MOUSE)
 		{
+			// length correction
+			if (len > sizeof(sUsbHidMouse)) len = sizeof(sUsbHidMouse);
+
+			// clear rest of report
+			if (len < sizeof(sUsbHidMouse)) memset(hid->rx_buf+len, 0, sizeof(sUsbHidMouse) - len);
+
 			// check change
 			if (memcmp(&UsbHidMouseOld, hid->rx_buf, sizeof(sUsbHidMouse)) != 0)
 			{
@@ -1011,7 +944,7 @@ char UsbGetChar()
 //    bit 0..7: buttons mask USB_MOUSE_BTN_*, B7 is set to indicate valid mouse event
 //    bit 8..15: delta X movement (signed s8)
 //    bit 16..23: delta Y movement (signed s8)
-//    bit 24..31: delta wheel movement (signed s8)
+//    bit 24..31: delta wheel movement (signed s8) ... most mouse does not report wheel movement on uset boot mode
 u32 UsbGetMouse()
 {
 	sEvent e;

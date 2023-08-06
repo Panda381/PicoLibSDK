@@ -22,7 +22,7 @@
 #define _SDK_USB_DEF_H
 
 #include "../sdk_addressmap.h"		// Register address offsets
-#include "../../_lib/inc/lib_drawtft.h"
+//#include "../../_lib/inc/lib_drawtft.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -327,6 +327,7 @@ typedef struct {
 	u8		next_pid;	// next packet identification PID (0 or 1)
 	u8		xfer;		// transfer type USB_XFER_*
 	u16		pktmax;		// max. packet size (1023 for ISO packet, 64 otherwise)
+	u16		total_len;	// total length to transfer
 	u16		rem_len;	// remaining length of data to transfer (shifted before transfer in UsbNextBuf, set in UsbXferStart)
 	u16		xfer_len;	// length of already transferred data (shifted after transfer in UsbXferCont, cleared in UsbXferStart)
 	u8*		data_buf;	// pointer to USB data buffer in USB DPRAM (allocated with UsbRamAlloc)

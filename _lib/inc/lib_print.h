@@ -32,6 +32,12 @@ F or f ... print floating point with fixed point ('fixed mode', -123.456)
 		Trailing zeros are not reduced, or are reduced with the '#' flag.
 G or g ... print floating point with automatic format selection (general mode)
 		Trailing zeros are reduced, or are not reduced with the '#' flag.
+m ... print memory block pointed by argument, as HEX 8-bit bytes with commas,
+	precision .n is total number of bytes or .* from argument,
+	width is number of bytes per row or * from argument (default 16), '#' flag is print as decimals
+M ... print memory block pointed by argument, as HEX 16-bit words with commas,
+	precision .n is total number of words or .* from argument,
+	width is number of words per row or * from argument (default 8), '#' flag is print as decimals
 o ... print unsigned integer in OCT format
 P or p ... print pointer (upper or lower case, with prefix 0x). (0x0200457A)
 s ... print ASCIIZ text (length can be limited with '.precision')
@@ -77,6 +83,20 @@ length modifier
 ---------------
 ll ... argument is 'long long int' (u64)
 
+reserved letters from other printf libraries (not implemented in this library):
+----------------
+hh ... argument is char
+h ... argument is short
+l ... argument is long-int
+L ... argument is long double
+z ... argument is size_t
+j ... argument is intmax_t
+I ... argument is ptrdiff_t
+q ... argument is s64,u64
+a, A ... double in hexadecimal notation
+n ... print nothing, get length
+
+free letters to use: k, K, r, R, v, V, w, W, y, Y
 
 Special values of decimal number:
  infinity ... 'inf' or '-inf' ... 'INF'
@@ -94,6 +114,7 @@ va_list ... variadic functions (variable number of arguments)
 
 #include "lib_stream.h"
 #include "../../_sdk/usb_inc/sdk_usb_dev_cdc.h"
+#include "lib_fat.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -104,6 +125,11 @@ extern u32 StdioMask;
 
 // stream for memory printing
 extern sStream MemStream;
+
+#if USE_FAT	// use FAT file system (lib_fat.c, lib_fat.h)
+// open file to file printing
+extern sFile* FileToPrint;
+#endif
 
 // stream printing (returns number of characters ... text is not terminated with NUL)
 //  wstr ... write stream (destination buffer)
@@ -149,8 +175,8 @@ u32 UsbPrintText(const char* txt);
 #define STDIO_MASK_DRAW		B0	// display (use USE_DRAW_STDIO to enable)
 #define STDIO_MASK_USB		B1	// USB port (use USE_USB_STDIO to enable)
 #define STDIO_MASK_MEM		B2	// memory print
-//#define STDIO_MASK_UART		B3	// UART port
-//#define STDIO_MASK_FILE		B4	// file stdio
+#define STDIO_MASK_UART		B3	// UART port
+#define STDIO_MASK_FILE		B4	// file stdio
 
 // start display printing (using printf function; must be enabled with USE_DRAW_STDIO)
 INLINE void DrawPrintStart() { StdioMask |= STDIO_MASK_DRAW; }
@@ -173,6 +199,21 @@ INLINE u32 MemPrintLen() { return MemStream.pos; }
 
 // stop memory printing
 INLINE void MemPrintStop() { StdioMask &= ~STDIO_MASK_MEM; }
+
+// start UART printing (using printf function; must be enabled with USE_UART_STDIO)
+INLINE void UartPrintStart() { StdioMask |= STDIO_MASK_UART; }
+
+// stop UART printing
+INLINE void UartPrintStop() { StdioMask &= ~STDIO_MASK_UART; }
+
+#if USE_FAT	// use FAT file system (lib_fat.c, lib_fat.h)
+// start file printing (using printf function)
+//  file ... open file
+void FilePrintStart(sFile* file);
+
+// stop file printing
+INLINE void FilePrintStop() { StdioMask &= ~STDIO_MASK_FILE; }
+#endif
 
 // print character to print channels
 void PrintChar(char ch);

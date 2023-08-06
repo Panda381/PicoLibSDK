@@ -12,6 +12,7 @@
 #include "../../_lib/inc/lib_qdraw.h" // drawing to display buffer
 #include "../../_lib/inc/lib_pwmsnd.h" // PWM sound
 #include "picoino_bat.h"	// battery
-#include "picoino_key.h"	// keyboard
+#include "picoino_key.h"	// keyboard Picoino 1.0
+#include "picoino_keymini.h"	// keyboard PicoinoMini
 #include "picoino_init.h"	// initialize
 #include "picoino_ss.h"		// screen shot

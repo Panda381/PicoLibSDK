@@ -239,7 +239,7 @@ char UsbGetChar();
 //    bit 0..7: buttons mask USB_MOUSE_BTN_*, B7 is set to indicate valid mouse event
 //    bit 8..15: delta X movement (signed s8)
 //    bit 16..23: delta Y movement (signed s8)
-//    bit 24..31: delta wheel movement (signed s8)
+//    bit 24..31: delta wheel movement (signed s8) ... most mouse does not report wheel movement on uset boot mode
 u32 UsbGetMouse();
 
 #ifdef __cplusplus

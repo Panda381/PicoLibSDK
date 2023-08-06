@@ -26,6 +26,7 @@
 
 #include "../usb_inc/sdk_usb_phy.h" // physical layer
 #include "../usb_inc/sdk_usb_dev.h" // devices
+#include "../inc/sdk_timer.h" // devices
 
 // HID interfaces
 sUsbDevHidInter UsbDevHidInter[USE_USB_DEV_HID];
@@ -434,9 +435,6 @@ u8 UsbDevHidNewItf(const sUsbDescItf* itf)
 //  hid_inx ... interface index
 void UsbDevHidInxSend(u8 hid_inx)
 {
-
-//DrawPrint("SEND? ");
-
 	// check if device is mounted
 	if (!UsbDevHidInxIsMounted(hid_inx)) return;
 
@@ -452,9 +450,6 @@ void UsbDevHidInxSend(u8 hid_inx)
 
 	// check if endpoint is busy
 	if (UsbEpIsBusy(hid->ep_in)) return; // transmission is active
-
-
-//DrawPrint("SEND! ");
 
 	// send data
 	UsbXferStart(hid->ep_in, hid->tx_buf, len, False);
@@ -565,9 +560,6 @@ u16 UsbDevHidOpen(const sUsbDescItf* itf, u16 max_len)
 // process control transfer complete (returns False to stall)
 Bool UsbDevHidCtrl(u8 stage)
 {
-
-//DrawPrint("CTRL ");
-
 	// setup request packet
 	sUsbSetupPkt* setup = &UsbSetupRequest;
 
@@ -598,9 +590,6 @@ Bool UsbDevHidCtrl(u8 stage)
 				// get HID descriptor
 				if (rep_type == USB_HID_DESC_HID)
 				{
-
-//DrawPrint("GET_HID_DESC%d ", USB_DESC_LEN(hid->desc_hid));
-
 					UsbDevSetupStart((void*)hid->desc_hid, USB_DESC_LEN(hid->desc_hid));
 				}
 
@@ -611,10 +600,6 @@ Bool UsbDevHidCtrl(u8 stage)
 
 					const void** desc_list = UsbDevSetupDesc->desc_list;
 					if (desc_list == NULL) return False;
-
-
-//DrawPrint("GET_REP_DESC%d ", hid->desc_hid->rep_len);
-
 					UsbDevSetupStart((void*)desc_list[hid_inx], hid->desc_hid->rep_len);
 				
 				}
@@ -647,9 +632,6 @@ Bool UsbDevHidCtrl(u8 stage)
 				u16 len = setup->length;
 				if (len > USB_DEV_HID_TX_BUFSIZE) len = USB_DEV_HID_TX_BUFSIZE;
 
-
-//DrawPrint("GET_REPORT%d-%d-%d ", rep_type, rep_id, len);
-
 				// request report
 				if (UsbDevHidGetRepCB != NULL)
 				{
@@ -668,11 +650,6 @@ Bool UsbDevHidCtrl(u8 stage)
 		case USB_HID_REQ_SET_REP:
 			if (stage == USB_STAGE_SETUP)
 			{
-
-
-//DrawPrint("SET_REPORT%d ", setup->length);
-
-
 				// check report length
 				if (setup->length > USB_DEV_HID_RX_BUFSIZE) return False;
 
@@ -694,8 +671,6 @@ Bool UsbDevHidCtrl(u8 stage)
 				u16 len = setup->length;
 				if (len > USB_DEV_HID_RX_BUFSIZE) len = USB_DEV_HID_RX_BUFSIZE;
 
-//DrawPrint("SET_REPORT_B%d-%d-%d ", rep_type, rep_id, len);
-
 				// send report to application
 				if (UsbDevHidSetRepCB != NULL) UsbDevHidSetRepCB(hid->itf_num, len, rep_id, rep_type);
 			}
@@ -708,8 +683,6 @@ Bool UsbDevHidCtrl(u8 stage)
 				// get idle value
 				hid->idle = (u8)(setup->value >> 8);
 
-//DrawPrint("SET_IDLE%d ", hid->idle);
-
 				// acknowledging at Status Stage
 				UsbDevSetupAck();
 			}
@@ -719,9 +692,6 @@ Bool UsbDevHidCtrl(u8 stage)
 		case USB_HID_REQ_GET_IDLE:
 			if (stage == USB_STAGE_SETUP)
 			{
-
-//DrawPrint("GET_IDLE%d ", hid->idle);
-
 				UsbDevSetupStart(&hid->idle, 1);
 			}
 			break;
@@ -733,9 +703,6 @@ Bool UsbDevHidCtrl(u8 stage)
 				// get protocol mode
 				hid->mode = (u8)setup->value;
 
-//DrawPrint("SET_PROT%d ", hid->mode);
-
-
 				// acknowledging at Status Stage
 				UsbDevSetupAck();
 			}
@@ -745,9 +712,6 @@ Bool UsbDevHidCtrl(u8 stage)
 		case USB_HID_REQ_GET_PROT:
 			if (stage == USB_STAGE_SETUP)
 			{
-
-//DrawPrint("GET_PROT%d ", hid->mode);
-
 				UsbDevSetupStart(&hid->mode, 1);
 			}
 			break;
@@ -760,10 +724,6 @@ Bool UsbDevHidCtrl(u8 stage)
 
 	// invalid request type
 	default:
-
-//DrawPrint("???%d ", reqtype);
-
-
 		return False;
 	}
 
@@ -777,7 +737,6 @@ void UsbDevHidComp(u8 epinx, u8 xres, u16 len)
 	u8 hid_inx = UsbDevHidFindAddr(epinx);
 	if (hid_inx == USB_DRVID_INVALID)
 	{
-//DrawPrint("Comp??? ");
 		return; // invalid endpoint
 	}
 
@@ -787,17 +746,11 @@ void UsbDevHidComp(u8 epinx, u8 xres, u16 len)
 	// process next report
 	if (hid->ep_out == epinx)
 	{
-
-//DrawPrint("CompRecv ");
-
 		// receive next data
 		UsbDevHidInxRecv(hid_inx);
 	}
 	else
 	{
-
-//DrawPrint("CompSend ");
-
 		// data sent to host
 		UsbDevHidInxSend(hid_inx);
 	}
@@ -888,7 +841,7 @@ Bool UsbDevHidSendReport(u8 itf_num, const void* buf, u8 len, u8 rep_id)
 }
 
 // send keyboard report in boot mode (returns False on error)
-Bool UsbDevHidSendKey(const sUsbHidKey* rep)
+Bool UsbDevHidSendKeyRep(const sUsbHidKey* rep)
 {
 	// search keyboard interface
 	u8 hid_inx;
@@ -904,8 +857,80 @@ Bool UsbDevHidSendKey(const sUsbHidKey* rep)
 	return UsbDevHidSendReport(hid->itf_num, rep, sizeof(sUsbHidKey), 0);
 }
 
+// send keyboard key (returna False on error), output speed 30 chars/sec
+Bool UsbDevHidSendKey(u8 key, u8 modi)
+{
+	sUsbHidKey rep;
+
+	// clear structure
+	memset(&rep, 0, sizeof(sUsbHidKey));
+
+	// set modifiers
+	rep.modi = modi;
+
+	// send report - only modifiers
+	if (!UsbDevHidSendKeyRep(&rep)) return False;
+
+	// short delay
+	WaitMs(1);
+
+	// set key
+	rep.key[0] = key;
+
+	// send report
+	if (!UsbDevHidSendKeyRep(&rep)) return False;
+
+	// short delay (Windows driver: minimum 7)
+	WaitMs(15);
+
+	// clear structure
+	memset(&rep, 0, sizeof(sUsbHidKey));
+
+	// send report
+	if (!UsbDevHidSendKeyRep(&rep)) return False;
+
+	// short delay
+	WaitMs(17);
+
+	return True;
+}
+
+// send keyboard character (returna False on error), output speed 30 chars/sec
+// - The target computer must have an English keyboard layout in order to maintain the correct character mapping.
+Bool UsbDevHidSendChar(char ch)
+{
+	// check character range
+	if ((u8)ch >= ASCII_TO_HIDKEY_NUM) return True;
+
+	// get character index
+	int i = (int)ch * 2;
+
+	// get modifier
+	u8 modi = (AsciiToHidKey[i] != 0) ? USB_KEY_MODI_LSHIFT : 0;
+
+	// get key code
+	u8 key = AsciiToHidKey[i+1];
+
+	// send key
+	return UsbDevHidSendKey(key, modi);
+}
+
+// send keyboard text (returna False on error), output speed 30 chars/sec
+// - The target computer must have an English keyboard layout in order to maintain the correct character mapping.
+Bool UsbDevHidSendText(const char* txt)
+{
+	char ch;
+	for (;;)
+	{
+		ch = *txt++;
+		if (ch == 0) break;
+		if (!UsbDevHidSendChar(ch)) return False;
+	}
+	return True;
+}
+
 // send mouse report in boot mode (returns False on error)
-Bool UsbDevHidSendMouse(const sUsbHidMouse* rep)
+Bool UsbDevHidSendMouseRep(const sUsbHidMouse* rep)
 {
 	// search mouse interface
 	u8 hid_inx;
@@ -921,8 +946,29 @@ Bool UsbDevHidSendMouse(const sUsbHidMouse* rep)
 	return UsbDevHidSendReport(hid->itf_num, rep, sizeof(sUsbHidMouse), 0);
 }
 
+// send mouse (returns False on error), output speed max 1000 rep/sec
+Bool UsbDevHidSendMouse(s8 dx, s8 dy, Bool left, Bool right, Bool mid)
+{
+	sUsbHidMouse rep;
+
+	// setup
+	rep.btn = (left ? USB_MOUSE_BTN_LEFT : 0) | (right ? USB_MOUSE_BTN_RIGHT : 0) | (mid ? USB_MOUSE_BTN_MID : 0);
+	rep.x = dx;
+	rep.y = dy;
+	rep.wheel = 0;
+	rep.pan = 0;
+
+	// send report
+	if (!UsbDevHidSendMouseRep(&rep)) return False;
+
+	// short delay
+	WaitMs(1);
+
+	return True;
+}
+
 // send joystick report in boot mode (returns False on error)
-Bool UsbDevHidSendJoy(const sUsbHidJoy* rep)
+Bool UsbDevHidSendJoyRep(const sUsbHidJoy* rep)
 {
 	// search none interface
 	u8 hid_inx;
@@ -939,7 +985,7 @@ Bool UsbDevHidSendJoy(const sUsbHidJoy* rep)
 }
 
 // send gamepad report in boot mode (returns False on error)
-Bool UsbDevHidSendPad(const sUsbHidPad* rep)
+Bool UsbDevHidSendPadRep(const sUsbHidPad* rep)
 {
 	// search none interface
 	u8 hid_inx;
@@ -956,7 +1002,7 @@ Bool UsbDevHidSendPad(const sUsbHidPad* rep)
 }
 
 // send power report in boot mode (returns False on error)
-Bool UsbDevHidSendPwr(const sUsbHidPwr* rep)
+Bool UsbDevHidSendPwrRep(const sUsbHidPwr* rep)
 {
 	// search none interface
 	u8 hid_inx;

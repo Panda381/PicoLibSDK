@@ -27,7 +27,19 @@ void DeviceInit();
 // Device terminate
 void DeviceTerm();
 
-#define LED1		0	// LED1 index
+// LED indices
+#if USE_PICOINOMINI
+
+#define LED1		0	// LED1 index (yellow USR, on the left)
+#define LED2		1	// LED internal index (green, on Pico board)
+#define LED_NUM		2	// number of LEDs
+
+#else // USE_PICOINOMINI
+
+#define LED1		0	// LED internal index (green, on Pico board)
+#define LED_NUM		1	// number of LEDs
+
+#endif // USE_PICOINOMINI
 
 // set LED ON (inx = LED index LED?)
 void LedOn(u8 inx);

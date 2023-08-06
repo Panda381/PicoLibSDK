@@ -1,0 +1,6 @@
+^YTest USB-UART^0
+^YHost or Device^0
+
+^WSpc/Z/Ctrl^0
+     ... send text
+^WBack^0 ... quit
