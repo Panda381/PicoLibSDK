@@ -5,7 +5,7 @@ rem First command-line parameter (%1) of this batch can contain device name (e.g
 rem If no device name is specified, default device will be used,
 rem marked with ":default" label in the _setup.bat file.
 
-rem Only Picoino
+rem Only Picoino 1.0 and PicoinoMini
 if "%1"=="picoino10" goto start
 if "%1"=="picoinomini" goto start
 if not "%1"=="" goto stop

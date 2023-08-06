@@ -5,7 +5,7 @@ rem Loop to find all sub-directories
 for /D %%d in (*) do call :del1 %%d
 exit /b
 
-rem Sub-batch to delete temporary files of one project in %1 subdirectory.
+rem Sub-batch to delete temporary files of one project group in %1 subdirectory.
 :del1
 if not exist %1\d.bat goto stop
 cd %1
