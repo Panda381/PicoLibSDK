@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                            PicoPad Screen Shot
+//                            Picoino Screen Shot
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040

@@ -1,0 +1,6 @@
+^YHypno^0
+
+Demo - hypnotic rotating
+       pattern
+
+^WC^0 ....... quit

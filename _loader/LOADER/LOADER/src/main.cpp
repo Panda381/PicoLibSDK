@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                             PicoPad Boot Loader
+//                                Boot3 Loader
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
@@ -1251,6 +1251,15 @@ int main()
 			{
 			// Down
 			case KEY_DOWN:
+#if USE_DEMOVGA
+				// restart program
+				if (KeyPressed(KEY_UP) && CheckApp())
+				{
+					SaveBootData();
+					RunApp();
+				}
+#endif // USE_DEMOVGA
+
 				if (FileCur < FileNum-1)
 				{
 					// increase cursor
@@ -1269,6 +1278,7 @@ int main()
 				}
 				break;
 
+#ifdef KEY_RIGHT
 			// PageDown and Right
 			case KEY_RIGHT:
 				if (FileCur < FileNum-1)
@@ -1299,9 +1309,19 @@ int main()
 					//SaveBootData();
 				}
 				break;
+#endif
 
 			// Up
 			case KEY_UP:
+#if USE_DEMOVGA
+				// restart program
+				if (KeyPressed(KEY_DOWN) && CheckApp())
+				{
+					SaveBootData();
+					RunApp();
+				}
+#endif // USE_DEMOVGA
+
 				if (FileCur > 0)
 				{
 					// decrease cursor
@@ -1316,6 +1336,7 @@ int main()
 				}
 				break;
 
+#ifdef KEY_LEFT
 			// PagUp and Left
 			case KEY_LEFT:
 				if (FileCur > 0)
@@ -1343,6 +1364,7 @@ int main()
 					//SaveBootData();
 				}
 				break;
+#endif
 
 			// Enter
 			case KEY_A:
@@ -1474,6 +1496,7 @@ int main()
 				}
 				break;
 
+#ifdef KEY_B
 			// out of directory
 			case KEY_B:
 				// not root directory yet
@@ -1504,7 +1527,9 @@ int main()
 					//SaveBootData();
 				}
 				break;
+#endif
 
+#ifdef KEY_Y
 			// restart program
 			case KEY_Y:
 				if (CheckApp())
@@ -1513,7 +1538,9 @@ int main()
 					RunApp();
 				}
 				break;
+#endif
 
+#ifdef KEY_X
 			// battery
 			case KEY_X:
 #if USE_SCREENSHOT		// use screen shots
@@ -1522,6 +1549,7 @@ int main()
 				Battery();
 #endif
 				break;
+#endif
 			}
 		}
 

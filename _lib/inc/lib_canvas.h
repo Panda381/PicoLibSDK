@@ -16,8 +16,8 @@
 
 #if USE_CANVAS			// use Canvas (lib_canvas.c, lib_canvas.h)
 
-#ifndef _CANVAS_H
-#define _CANVAS_H
+#ifndef _LIB_CANVAS_H
+#define _LIB_CANVAS_H
 
 #include "../../_sdk/inc/sdk_interp.h"
 #include "lib_mat2d.h"
@@ -169,6 +169,6 @@ void CanvasImgLine(sCanvas* canvas, sCanvas* src, int xd, int yd, int xs, int ys
 }
 #endif
 
-#endif // _CANVAS_H
+#endif // _LIB_CANVAS_H
 
 #endif // USE_CANVAS			// use Canvas (lib_canvas.c, lib_canvas.h)

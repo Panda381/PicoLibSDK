@@ -16,8 +16,8 @@
 
 #if USE_TPRINT			// use Text Print (lib_tprint.c, lib_tprint.h)
 
-#ifndef _TPRINT_H
-#define _TPRINT_H
+#ifndef _LIB_TPRINT_H
+#define _LIB_TPRINT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -175,6 +175,6 @@ void TPrintScroll();
 }
 #endif
 
-#endif // _TPRINT_H
+#endif // _LIB_TPRINT_H
 
 #endif // USE_TPRINT			// use Text Print (lib_tprint.c, lib_tprint.h)

@@ -1,0 +1,15 @@
+^YFlappy^0 for MZ-800
+(c) dB-Soft 1984
+
+Logic game - move blue
+ball to blue wall.
+Requires USB keyboard
+
+^WRIGHT^0 ... right
+^WUP^0 ...... up
+^WLEFT^0 .... left
+^WDOWN^0 .... down
+^WSpace^0 ... shoot mushroom
+^WTab^0 ..... solve scene
+    (only first 8 scenes)
+^WEsc^0 ..... quit

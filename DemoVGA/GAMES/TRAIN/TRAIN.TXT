@@ -1,0 +1,13 @@
+^YTrain^0
+
+Logic game
+
+Requires USB keyboard
+
+^WRIGHT^0 ... right
+^WUP^0 ...... up
+^WLEFT^0 .... left
+^WDOWN^0 .... down
+^WEnter^0 ... enter password
+^WTab^0 ..... help solve scene
+^WEsc^0 ..... quit

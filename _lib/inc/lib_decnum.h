@@ -14,8 +14,8 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#ifndef _DECNUM_H
-#define _DECNUM_H
+#ifndef _LIB_DECNUM_H
+#define _LIB_DECNUM_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,4 +46,4 @@ void Dec2DigSpc(char* buf, u8 num);
 }
 #endif
 
-#endif // _DECNUM_H
+#endif // _LIB_DECNUM_H

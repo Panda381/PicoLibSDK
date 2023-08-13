@@ -1,0 +1,14 @@
+^YVideo Player^0
+
+^WC^0 .... -15 sec
+^WB^0 .... +15 sec
+^WA^0 .... play/stop
+^WB+C^0 .. quit
+
+Video files must be
+loaded in the /VIDEO
+directory.
+
+You can get more sample
+videos on web page:
+www.breatharian.eu/hw/picolibsdk

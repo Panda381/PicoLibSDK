@@ -18,8 +18,8 @@
 
 #if USE_RING	// use Ring buffer (lib_ring.c, lib_ring.h)
 
-#ifndef _RING_H
-#define _RING_H
+#ifndef _LIB_RING_H
+#define _LIB_RING_H
 
 #include "../../_sdk/inc/sdk_spinlock.h"	// spinlock
 #include "lib_stream.h"
@@ -164,6 +164,6 @@ NOINLINE u32 RingPrint(sRing* ring, const char* fmt, ...);
 }
 #endif
 
-#endif // _RING_H
+#endif // _LIB_RING_H
 
 #endif // USE_RING	// use Ring buffer (lib_ring.c, lib_ring.h)

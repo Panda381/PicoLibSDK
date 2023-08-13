@@ -1,0 +1,12 @@
+^YTetris^0
+
+Game stacking blocks
+
+Requires USB keyboard
+
+^WLEFT^0 ........ left
+^WRIGHT^0 ....... right
+^WUP or Tab^0 ... turn stone
+^WDOWN or Spc^0 . drop stone
+^WEnter^0 ....... pause
+^WEsc^0 ......... quit

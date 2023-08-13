@@ -1,0 +1,15 @@
+^YSokoban^0
+
+Logic game
+
+Requires USB keyboard
+
+^Warrows^0 .... move
+^WSpace^0 ..... OK, Enter
+^WEsc^0 ....... escape
+^WTab^0 ....... help solution
+^WEnter^0 ..... restart scene
+^WPgUp^0 ...... previous level
+^WPgDown^0 .... next level
+^WHome^0 ...... fast mode
+^WEnd^0 ....... slow mode

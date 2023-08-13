@@ -20,8 +20,8 @@
 
 #if USE_MALLOC	// use Memory Allocator (lib_malloc.c, lib_malloc.h)
 
-#ifndef _MALLOC_H
-#define _MALLOC_H
+#ifndef _LIB_MALLOC_H
+#define _LIB_MALLOC_H
 
 #include "lib_list.h"			// Doubly Linked List
 
@@ -200,6 +200,6 @@ u32 SafeCompExc(volatile u32* num, u32 val, u32 comp);
 }
 #endif
 
-#endif // _MALLOC_H
+#endif // _LIB_MALLOC_H
 
 #endif // USE_MALLOC	// use Memory Allocator (lib_malloc.c, lib_malloc.h)

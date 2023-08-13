@@ -20,8 +20,8 @@
 
 #if USE_MAT2D			// use 2D transformation matrix (lib_mat2d.c, lib_mat2d.h)
 
-#ifndef _MAT2D_H
-#define _MAT2D_H
+#ifndef _LIB_MAT2D_H
+#define _LIB_MAT2D_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -244,6 +244,6 @@ void Mat2D_ExportInt(const sMat2D* m, int* mat);
 }
 #endif
 
-#endif // _MAT2D_H
+#endif // _LIB_MAT2D_H
 
 #endif // USE_MAT2D			// use 2D transformation matrix (lib_mat2d.c, lib_mat2d.h)

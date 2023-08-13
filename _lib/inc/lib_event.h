@@ -18,8 +18,8 @@
 
 #if USE_EVENT		// use Event Ring buffer (lib_event.c, lib_event.h)
 
-#ifndef _EVENT_H
-#define _EVENT_H
+#ifndef _LIB_EVENT_H
+#define _LIB_EVENT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,6 +79,6 @@ void EventRingReadWait(sEventRing* ring, sEvent* event);
 }
 #endif
 
-#endif // _EVENT_H
+#endif // _LIB_EVENT_H
 
 #endif // USE_EVENT	// use Event Ring buffer (lib_event.c, lib_event.h)

@@ -16,8 +16,8 @@
 
 #if USE_RECT	// use Rectangle (lib_rect.c, lib_rect.h)
 
-#ifndef _RECT_H
-#define _RECT_H
+#ifndef _LIB_RECT_H
+#define _LIB_RECT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,6 +83,6 @@ void RectMerge(sRect* dst, const sRect* src);
 }
 #endif
 
-#endif // _RECT_H
+#endif // _LIB_RECT_H
 
 #endif // USE_RECT	// use Rectangle (lib_rect.c, lib_rect.h)

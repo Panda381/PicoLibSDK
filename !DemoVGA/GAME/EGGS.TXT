@@ -1,0 +1,13 @@
+^YEggs^0
+
+Logic game (Reversi)
+
+Requires USB keyboard
+
+^WLEFT^0 .... left
+^WRIGHT^0 ... right
+^WUP^0 ...... up
+^WDOWN^0 .... down
+^WSpace^0 ... put stone
+^WTab^0 ..... help turn
+^WEsc^0 ..... quit

@@ -22,8 +22,8 @@
 
 #if USE_PWMSND		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
 
-#ifndef _PWMSND_H
-#define _PWMSND_H
+#ifndef _LIB_PWMSND_H
+#define _LIB_PWMSND_H
 
 #include "../../_sdk/inc/sdk_cpu.h"
 #include "../../_sdk/inc/sdk_pwm.h"
@@ -106,6 +106,6 @@ void GlobalSoundSetOn();
 }
 #endif
 
-#endif // _PWMSND_H
+#endif // _LIB_PWMSND_H
 
 #endif // USE_PWMSND		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)

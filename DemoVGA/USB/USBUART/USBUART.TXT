@@ -1,0 +1,5 @@
+^YTest USB-UART^0
+^YHost or Device^0
+
+^WA/B/C^0 . send text
+^WA+B^0 ..... quit

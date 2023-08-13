@@ -35,8 +35,8 @@ SD card pinout:
 
 #if USE_SD		// use SD card (lib_sd.c, lib_sd.h)
 
-#ifndef _SD_H
-#define _SD_H
+#ifndef _LIB_SD_H
+#define _LIB_SD_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,6 +85,6 @@ void SDTerm();
 }
 #endif
 
-#endif // _SD_H
+#endif // _LIB_SD_H
 
 #endif // USE_SD		// use SD card (lib_sd.c, lib_sd.h)

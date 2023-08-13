@@ -34,8 +34,8 @@ int StrComp(const char* text1, const char* text2);
 
 #if USE_TEXT	// use Text strings, except StrLen and StrComp (lib_text.c, lib_text.h)
 
-#ifndef _TEXT_H
-#define _TEXT_H
+#ifndef _LIB_TEXT_H
+#define _LIB_TEXT_H
 
 #include "lib_malloc.h"
 
@@ -806,6 +806,6 @@ NOINLINE u32 TextAddPrint(pText* text, const char* fmt, ...);
 }
 #endif
 
-#endif // _TEXT_H
+#endif // _LIB_TEXT_H
 
 #endif // USE_TEXT	// use Text strings (lib_text.c, lib_text.h)

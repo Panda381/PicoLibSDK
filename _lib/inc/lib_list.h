@@ -16,8 +16,8 @@
 
 #if USE_LIST	// use Doubly Linked List (lib_list.c, lib_list.h)
 
-#ifndef _LIST_H
-#define _LIST_H
+#ifndef _LIB_LIST_H
+#define _LIB_LIST_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -171,6 +171,6 @@ void NumListRemove(sNumList* list, sListEntry* entry);
 }
 #endif
 
-#endif // _LIST_H
+#endif // _LIB_LIST_H
 
 #endif // USE_LIST	// use Doubly Linked List (lib_list.c, lib_list.h)

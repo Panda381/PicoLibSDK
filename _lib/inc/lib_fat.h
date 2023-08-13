@@ -18,8 +18,8 @@
 
 #if USE_FAT	// use FAT file system (lib_fat.c, lib_fat.h)
 
-#ifndef _FAT_H
-#define _FAT_H
+#ifndef _LIB_FAT_H
+#define _LIB_FAT_H
 
 #include "lib_sd.h"
 
@@ -509,6 +509,6 @@ Bool FileCheckExt(sFileInfo* fi, const char* ext);
 }
 #endif
 
-#endif // _FAT_H
+#endif // _LIB_FAT_H
 
 #endif // USE_FAT	// use FAT file system (fat.c, fat.h)

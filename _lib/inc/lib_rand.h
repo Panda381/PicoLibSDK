@@ -19,8 +19,8 @@
 
 #if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 
-#ifndef _RAND_H
-#define _RAND_H
+#ifndef _LIB_RAND_H
+#define _LIB_RAND_H
 
 #include "../../_sdk/inc/sdk_cpu.h"
 
@@ -237,6 +237,6 @@ float SmoothNoise2D(float x, float y, int scale, int seed);
 }
 #endif
 
-#endif // _RAND_H
+#endif // _LIB_RAND_H
 
 #endif // USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)

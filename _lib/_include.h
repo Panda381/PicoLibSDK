@@ -37,3 +37,4 @@
 #include "inc/lib_text.h"		// text strings
 #include "inc/lib_textlist.h"		// list of text strings
 #include "inc/lib_tree.h"		// tree list
+#include "inc/lib_video.h"		// video player

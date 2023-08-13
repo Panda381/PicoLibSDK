@@ -28,6 +28,7 @@ CSRC += ../../../_lib/src/lib_textlist.c
 CSRC += ../../../_lib/src/lib_textnum.c
 CSRC += ../../../_lib/src/lib_tprint.c
 CSRC += ../../../_lib/src/lib_tree.c
+CSRC += ../../../_lib/src/lib_video.c
 
 # C big integers
 CSRC += ../../../_lib/bigint/bigint.c

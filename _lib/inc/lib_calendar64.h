@@ -22,8 +22,8 @@
 
 #if USE_CALENDAR64	// use 64-bit calendar (lib_calendar64.c, lib_calendar64.h)
 
-#ifndef _CALENDAR64_H
-#define _CALENDAR64_H
+#ifndef _LIB_CALENDAR64_H
+#define _LIB_CALENDAR64_H
 
 #include "lib_calendar.h"
 
@@ -257,6 +257,6 @@ s16 DateTime64FastCheck(int loops);
 }
 #endif
 
-#endif // _CALENDAR64_H
+#endif // _LIB_CALENDAR64_H
 
 #endif // USE_CALENDAR64	// use 64-bit calendar (lib_calendar64.c, lib_calendar64.h)

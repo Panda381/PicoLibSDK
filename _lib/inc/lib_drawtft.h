@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                   Drawing to TFT display 16-bit 565 buffer
+//                 Drawing to TFT or VGA display 16-bit 565 buffer
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
@@ -14,10 +14,10 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#if USE_DRAWTFT		// use TFT drawing (lib_drawtft.c, lib_drawtft.h)
+#if USE_DRAWTFT		// use TFT or VGA drawing (lib_drawtft.c, lib_drawtft.h)
 
-#ifndef _DRAW_H
-#define _DRAW_H
+#ifndef _LIB_DRAWTFT_H
+#define _LIB_DRAWTFT_H
 
 #include "lib_mat2d.h"
 
@@ -131,10 +131,10 @@ void DrawTextBgH(const char* text, int x, int y, u16 col, u16 bgcol);
 void DrawTextBgW(const char* text, int x, int y, u16 col, u16 bgcol);
 void DrawTextBg2(const char* text, int x, int y, u16 col, u16 bgcol);
 
-// Draw text buffer (size TEXTSIZE)
+// Draw text buffer (size TEXTSIZE) ... on VGA display, output is to the FrameBuf, not BackBuf
 void DrawTextBuf(const char* textbuf, u16 col, u16 bgcol);
 
-// Draw text buffer with foreground color (size FTEXTSIZE)
+// Draw text buffer with foreground color (size FTEXTSIZE) ... on VGA display, output is to the FrameBuf, not BackBuf
 void DrawFTextBuf(const char* textbuf, u16 bgcol);
 
 // Draw image
@@ -337,6 +337,6 @@ NOINLINE u32 DrawPrint(const char* fmt, ...);
 }
 #endif
 
-#endif // _DRAW_H
+#endif // _LIB_DRAWTFT_H
 
 #endif // USE_DRAWTFT		// use TFT drawing (lib_drawtft.c, lib_drawtft.h)

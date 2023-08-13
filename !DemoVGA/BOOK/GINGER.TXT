@@ -1,0 +1,10 @@
+^YGingerbread House^0
+
+The Fairy Tale of
+Gingerbread House
+
+^WB^0 .... scroll down
+^WC^0 .... next page
+^WA+B^0 .. scroll up
+^WA+C^0 .. previous page
+^WA+B+C^0 ... quit

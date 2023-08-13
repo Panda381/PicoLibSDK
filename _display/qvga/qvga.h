@@ -54,9 +54,9 @@ extern "C" {
 //#define QVGA_DEF_PD2	3	// PLL PD2
 
 // frame buffer in RGB 3-3-2 pixel format
-extern ALIGNED u8 FrameBuf[FRAMESIZE]; // display buffer
+extern ALIGNED u8 FrameBuf[]; // display buffer
 #if USE_QVGA > 1
-extern ALIGNED u8 BackBuf[FRAMESIZE]; // back buffer
+extern ALIGNED u8 BackBuf[]; // back buffer
 #endif
 
 // initialize QVGA (required system clock CLK_SYS to be set to 126 MHz)

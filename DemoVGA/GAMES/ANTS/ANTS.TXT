@@ -1,0 +1,9 @@
+^YAnts^0
+
+Card game
+v1.2 multiplayer
+
+^WA^0 ........... select
+^WB^0 ........... next
+^WC^0 ........... discard
+^WB+C^0 ......... quit

@@ -16,8 +16,8 @@
 
 #if USE_QDRAW		// use QVGA drawing (lib_qdraw.c, lib_qdraw.h)
 
-#ifndef _QDRAW_H
-#define _QDRAW_H
+#ifndef _LIB_QDRAW_H
+#define _LIB_QDRAW_H
 
 #include "lib_mat2d.h"
 
@@ -278,6 +278,6 @@ NOINLINE u32 DrawPrint(const char* fmt, ...);
 }
 #endif
 
-#endif // _QDRAW_H
+#endif // _LIB_QDRAW_H
 
 #endif // USE_QDRAW		// use QVGA drawing (lib_qdraw.c, lib_qdraw.h)

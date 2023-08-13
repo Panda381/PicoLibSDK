@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
 ==================================================================
-SDK Programmer's Guide, Version 1.01, August 2023
+SDK Programmer's Guide, Version 1.02, August 2023
 
 Copyright (c) 2023 Miroslav Nemecek
 
@@ -36,7 +36,7 @@ easier to use. What you can find in the PicoLibSDK library:
   doubly linked list, memory allocator, 2D transformation matrix, mini-ring
   buffer, formatted print, PWM sound output, QVGA drawing, random generator,
   rectangle, ring buffer, DMA ring buffer, SD card, streams, text strings, text
-  list, text print, tree list.
+  list, text print, tree list, video player.
 
 - USB library: multiplayer mini-port, CDC device and host - serial communication,
   HID device and host - including external keyboard and mouse.
@@ -49,14 +49,14 @@ easier to use. What you can find in the PicoLibSDK library:
   calculation method - Ln, Exp, Sqrt, Sin, Cos, Tan, arcus, hyperbolic functions
   and many more. Linear factorials with accurate and fast calculation.
 
-- Display drivers: Prepared support of TFT display 320x240/16bits and QVGA
-  display 320x240/8 bits.
+- Display drivers: Prepared support of TFT and VGA display 320x240/16bits and
+  QVGA display 320x240/8 bits.
 
-- Devices: Support of Picoino/PicoinoMini with 8-bit QVGA display and PicoPad
-  with 16-bit TFT display. Some samples are also prepared for the basic
-  Raspberry Pico without additional hardware.
+- Devices: Support of Picoino/PicoinoMini with 8-bit QVGA display, DemoVGA with
+  16-bit VGA display and PicoPad with 16-bit TFT display. Some samples are also
+  prepared for the basic Raspberry Pico without additional hardware.
 
-- Samples: Prepared 54 sample programs and games.
+- Samples: Prepared 56 sample programs and games.
 
 
 License
@@ -99,6 +99,19 @@ files. Use e.bat to send the compiled program to the Raspberry Pico. The a.bat
 file performs all 3 operations at once - cleaning up old compilation, compile
 the program and send it to the Pico.
 
+The target device for which the compilation is performed is passed as
+a parameter via the command line. A default target device is prepared in the
+c.bat file in case you do not specify it as a parameter. In the Pico folder, the
+default compilation is for the target device 'pico' (the Raspberry Pico module
+itself without any added hardware), in the DemoVGA folder the compilation is for
+'demovga', in the Picoino folder the compilation is for 'picoino10' and in the
+PicoPad folder the default compilation is for 'picopad10'.
+
+If the target device is not passed to the compilation files, it is compiled for
+the default device set in the _setup.bat file. This also applies if you compile
+all programs using c_all.bat. You can change the default target device by moving
+the :default label in the _setup.bat file.
+
 Sending the program to Pico using e.bat is done by copying the file to the Pico
 access disk. This assumes that the Pico access disk is labeled R: (like
 Raspberry). If your disk has a different name, correct the disk name in the
@@ -126,25 +139,45 @@ you just use necessary functions in the program.
 
 How to compile in Linux
 
-The Linux compilation is not prepared in the PicoLibSDK library. It is assumed
-that a Linux user can prepare compilation files himself better (unlike Windows
-users). What is needed for compilation:
-1. In the base directory of the library, edit the Makefile.inc file. Change
-   the call to the elf2uf2 program to call the Linux version, in the line
-   "UF = ../../_tools/elf2uf2.exe". Use the Linux version of the program from
-   the original SDK. Change the command to create the build directory to the
-   Linux variant in the line "@../../_tools/mkdir.exe -p $(TEMP) ".
-2. In the compilation script, set the system variables TARGET = the target name
-   of the application, DEVICE = the name of the target device with version (use
-   picopad10) and DEVCLASS = the class of the target device (use picopad). These
-   variables can also be specified on the command line as MAKE parameters.
-3. Start the compilation with "make all" in the root directory of the
-   application.
-4. After the compilation, run the LoaderCrc program with files BIN and UF2 as
-   parameters. This will set right CRC checksum into generated files. LoaderCrc
-   is console program, prepared for Windows. You will need to compile the
-   program for Linux. You can find source of the program in the
-   _tools/PicoPadLoaderCrc directory.
+The PicoLibSDK library contains basic script files for program compilation.
+After downloading the PicoLibSDK library to the Linux, it is necessary to set
+the EXEC attribute of the execution scripts - the scripts are exported from the
+Windows environment and therefore do not have the EXEC attribute set. You can
+use the following command to set the script attribute in a batch:
+
+find . -type f -name *.sh -exec chmod +x {} \;
+
+To compile, you need at least the elf2uf2 program, which you can get from the
+original SDK library. Place the program in the _tools folder. Second, you will
+need the LoaderCrc program, which is used to calculate the checksum of
+applications run by the boot3 loader. You can find the source code for this
+program in the _tools/PicoPadLoaderCrc folder where you can compile it.
+
+As a working environment, it is a good idea to use Midnight Commander, with
+which you can edit programs and immediately compile and run them using prepared
+scripts.
+
+To compile the program, run the c.sh script. Compilation is done implicitly for
+the target device PicoPad 1.0. If you want to compile for a different device,
+you can either pass the device name as a parameter via the command line, or edit
+the parameters for the default target device in the _setup.ch script, where you
+can also find the names of possible target devices.
+
+The d.sh script is used to clean up the compilation and delete generated
+intermediate files. Use e.sh to send the compiled program to the Raspberry Pico
+- to use it, edit mount point in _e1.sh. The a.sh file performs all 3 operations
+at once - cleaning up old compilation, compile the program and send it to the
+Pico. You will also need to delete the compiled files using d.sh if you change
+the contents of the *.h header file. Without clearing the compilation, the
+recompilation of dependent *.c files would not take place (dependency method is
+not used here).
+
+The compilation does not use CMake to optimize the compilation, all files are
+always compiled. The final code is not affected - the linker will only use the
+parts of the program that are really needed in the final code. This method is
+used to make the compilation easier to use. If you want to use some part of the
+library, you usually don't need to activate its compilation (with exceptions
+such as USB or real numbers), you just use necessary functions in the program.
 
 
 Configuration
@@ -199,6 +232,9 @@ of the project group folder.
 
 Do not use the name LOADER for the project - this name is used to distinguish
 the boot loader during compilation.
+
+Use only names with a maximum length of 8 characters (uppercase), as the boot3
+loader only supports short names 8.3 of the FAT file system.
 
 You can add configuration switches to the file config.h in your new project. For
 example, if you want the printf output to run to a USB virtual serial port, set
@@ -401,6 +437,8 @@ Directory structure
 -------------------
 How PicoLibSDK library files and directories are organized:
 
+!DemoVGA - SD card contents with sample programs and loader for DemoVGA.
+
 !Pico - sample programs for base Raspberry Pico module.
 
 !PicoinoMini - SD card contents with sample programs and loader for PicoinoMini.
@@ -419,17 +457,19 @@ _boot2 - boot2 loader stage 2, which is placed at the beginning of each UF2
 	checksum program boot2crc.exe.
 
 _devices - device definitions and drivers. Currently, the ready devices are
-	Pico, Picoino 1.0, PicoinoMini, PicoPad 0.8 and PicoPad 1.0. The target
-	device is selected at compile time with the c.bat file parameter
-	('pico', 'picoinomini', 'picoino10', 'picopad08' or 'picopad10'). If the
-	target device is not specified when compiling the application, the
-	default device is selected by the _setup.bat file.
+	Pico, Picoino 1.0, PicoinoMini, DemoVGA, PicoPad 0.8 and PicoPad 1.0.
+	The target device is selected at compile time with the c.bat file
+	parameter ('pico', 'picoino10', 'picoinomini', 'demovga', 'picopad08'
+	or 'picopad10'). If the target device is not specified when compiling
+	the application, the default device is selected by the _setup.bat file.
 
 _display - drivers for the displays. Currently, there is a QVGA display driver
 	for 8-bit output to a VGA monitor in RGB332 format and 320x240 pixel
-	resolution - this driver is used by the Picoino. And secondly, a TFT
-	display driver for 16-bit RGB565 format at 320x240 pixel resolution -
-	this driver is used by PicoPad.
+	resolution - this driver is used by the Picoino. Next is VGA display
+	driver for 16-bit output to VGA monitor in RGB565 format and 320x240
+	pixel resolution - this driver is used by the DemoVGA board. And last,
+	a TFT display driver for 16-bit RGB565 format at 320x240 pixel
+	resolution - this driver is used by PicoPad.
 
 _doc - documentation, SDK Programmer's Guide.
 
@@ -451,6 +491,7 @@ _tools - support programs:
 	- PicoPadImg - converting BMP images to PicoPad format
 	- PicoPadLoaderBin - export boot3 loader to C source code
 	- PicoPadLoaderCrc - calculate (and set) application checksum
+	- PicoPadVideo - video converter to PicoPad/Picoino format
 	- RaspPicoClock - calculation of PLL generator settings combinations
 	- RaspPicoImg - convert BMP images to Picoino format
 	- RaspPicoPal332 - palette generator for Picoino and QVGA output
@@ -458,6 +499,8 @@ _tools - support programs:
 	- RaspPicoSnd - export WAV audio files to C source code
 	- elf2uf2 - convert ELF file to UF2 file
 	- pioasm - PIO program assembler
+
+DemoVGA - sample programs for DemoVGA board
 
 Pico - sample programs for Raspberry Pico
 
@@ -701,6 +744,8 @@ History of versions
 07/30/2023 version 1.00: first final release
 08/06/2023 version 1.01: printf() print memory block, stdio to UART
 	and FILE, add Pico and PicoinoMini devices, some USB repairs
+08/14/2023 version 1.02: added video player, added DemoVGA board, added
+	compilation scripts for Linux
 
 
 Missing and @TODO

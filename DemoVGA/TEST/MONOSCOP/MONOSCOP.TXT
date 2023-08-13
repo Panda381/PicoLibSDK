@@ -1,0 +1,6 @@
+^YMonoscope^0
+
+Display video test
+pattern.
+
+^WC^0 ....... quit

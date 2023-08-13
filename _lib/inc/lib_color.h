@@ -17,6 +17,9 @@
 
 #if USE_COLOR	// use color vector (lib_color.c, lib_color.h)
 
+#ifndef _LIB_COLOW_H
+#define _LIB_COLOR_H
+
 typedef float color_float;	// color element (use float or double)
 
 // color vector (color values are typically in range 0..1)
@@ -145,5 +148,7 @@ void ColorRGBToHSV(sColor* col);
 
 // convert HSV to RGB
 void ColorHSVToRGB(sColor* col);
+
+#endif // _LIB_COLOR_H
 
 #endif // USE_COLOR	// use color vector (lib_color.c, lib_color.h)

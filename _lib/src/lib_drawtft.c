@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                   Drawing to TFT display 16-bit 565 buffer
+//                   Drawing to TFT or VGA display 16-bit 565 buffer
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
@@ -16,10 +16,11 @@
 
 #include "../../global.h"	// globals
 
-#if USE_DRAWTFT		// use TFT drawing (lib_drawtft.c, lib_drawtft.h)
+#if USE_DRAWTFT		// use TFT or VGA drawing (lib_drawtft.c, lib_drawtft.h)
 
 #include "../../_font/_include.h"
 #include "../../_display/st7789/st7789.h"
+#include "../../_display/vga/vga.h"
 #include "../inc/lib_stream.h"
 #include "../inc/lib_text.h"
 #include "../inc/lib_print.h"
@@ -108,21 +109,21 @@ void DrawRect(int x, int y, int w, int h, u16 col)
 	if (w <= 0) return;
 
 	// limit y
-	if (y < 0)
+	if (y < DispMinY)
 	{
-		h += y;
-		y = 0;
+		h -= DispMinY - y;
+		y = DispMinY;
 	}
 
 	// limit h
-	if (y + h > DispHeight) h = DispHeight - y;
+	if (y + h > DispMaxY) h = DispMaxY - y;
 	if (h <= 0) return;
 
 	// update dirty rectangle
 	DispDirtyRect(x, y, w, h);
 
 	// draw
-	u16* d = &FrameBuf[x + y*DispWidth];
+	u16* d = &pDrawBuf[x + (y-DispMinY)*DispWidth];
 	int wb = DispWidth - w;
 	int i;
 	for (; h > 0; h--)
@@ -145,9 +146,7 @@ void DrawFrame(int x, int y, int w, int h, u16 col)
 // clear canvas with color
 void DrawClearCol(u16 col)
 {
-	int i;
-	for (i = 0; i < FRAMESIZE; i++) FrameBuf[i] = col;
-	DispDirtyAll();
+	DrawRect(0, 0, DispWidth, DispHeight, col);
 }
 
 // clear canvas with black color
@@ -160,10 +159,10 @@ void DrawClear()
 void DrawPoint(int x, int y, u16 col)
 {
 	// check coordinates
-	if (((u32)x >= (u32)DispWidth) || ((u32)y >= (u32)DispHeight)) return;
+	if (((u32)x >= (u32)DispWidth) || (y < DispMinY) || (y >= DispMaxY)) return;
 
 	// draw pixel
-	FrameBuf[x + y*DispWidth] = col;
+	pDrawBuf[x + (y-DispMinY)*DispWidth] = col;
 
 	// update dirty area by rectangle (must be in valid limits)
 	DispDirtyPoint(x, y);
@@ -195,7 +194,7 @@ void DrawLine(int x1, int y1, int x2, int y2, u16 col)
 	}
 
 	// destination address
-	u16* d = &FrameBuf[x1 + y1*DispWidth];
+	u16* d = &pDrawBuf[x1 + (y1-DispMinY)*DispWidth];
 
 	// steeply in X direction, X is prefered as base
 	if (dx > dy)
@@ -206,7 +205,7 @@ void DrawLine(int x1, int y1, int x2, int y2, u16 col)
 		x2 += sx;
 		for (; x1 != x2; x1 += sx)
 		{
-			if (((u32)x1 < (u32)DispWidth) && ((u32)y1 < (u32)DispHeight))
+			if (((u32)x1 < (u32)DispWidth) && (y1 >= DispMinY) && (y1 < DispMaxY))
 			{
 				*d = col;
 				DispDirtyPoint(x1, y1);
@@ -232,7 +231,7 @@ void DrawLine(int x1, int y1, int x2, int y2, u16 col)
 		y2 += sy;
 		for (; y1 != y2; y1 += sy)
 		{
-			if (((u32)x1 < (u32)DispWidth) && ((u32)y1 < (u32)DispHeight))
+			if (((u32)x1 < (u32)DispWidth) && (y1 >= DispMinY) && (y1 < DispMaxY))
 			{
 				*d = col;
 				DispDirtyPoint(x1, y1);
@@ -311,13 +310,13 @@ void DrawChar(char ch, int x, int y, u16 col)
 	const u8* s = &pDrawFont[ch];
 
 	// check if drawing is safe to use fast drawing
-	if ((x >= 0) && (y >= 0) && (x + DrawFontWidth <= DispWidth) && (y + DrawFontHeight <= DispHeight))
+	if ((x >= 0) && (y >= DispMinY) && (x + DrawFontWidth <= DispWidth) && (y + DrawFontHeight <= DispMaxY))
 	{
 		// update dirty rectangle
 		DispDirtyRect(x, y, DrawFontWidth, DrawFontHeight);
 
 		// destination address
-		d = &FrameBuf[y*DispWidth + x];
+		d = &pDrawBuf[(y-DispMinY)*DispWidth + x];
 
 		// loop through lines of one character
 		for (i = DrawFontHeight; i > 0; i--)
@@ -374,13 +373,13 @@ void DrawCharH(char ch, int x, int y, u16 col)
 	const u8* s = &pDrawFont[ch];
 
 	// check if drawing is safe to use fast drawing
-	if ((x >= 0) && (y >= 0) && (x + DrawFontWidth <= w) && (y + 2*DrawFontHeight <= DispHeight))
+	if ((x >= 0) && (y >= DispMinY) && (x + DrawFontWidth <= w) && (y + 2*DrawFontHeight <= DispMaxY))
 	{
 		// update dirty rectangle
 		DispDirtyRect(x, y, DrawFontWidth, 2*DrawFontHeight);
 
 		// destination address
-		d = &FrameBuf[y*w + x];
+		d = &pDrawBuf[(y-DispMinY)*w + x];
 
 		// loop through lines of one character
 		for (i = DrawFontHeight; i > 0; i--)
@@ -444,13 +443,13 @@ void DrawCharW(char ch, int x, int y, u16 col)
 	const u8* s = &pDrawFont[ch];
 
 	// check if drawing is safe to use fast drawing
-	if ((x >= 0) && (y >= 0) && (x + 2*DrawFontWidth <= DispWidth) && (y + DrawFontHeight <= DispHeight))
+	if ((x >= 0) && (y >= DispMinY) && (x + 2*DrawFontWidth <= DispWidth) && (y + DrawFontHeight <= DispMaxY))
 	{
 		// update dirty rectangle
 		DispDirtyRect(x, y, 2*DrawFontWidth, DrawFontHeight);
 
 		// destination address
-		d = &FrameBuf[y*DispWidth + x];
+		d = &pDrawBuf[(y-DispMinY)*DispWidth + x];
 
 		// loop through lines of one character
 		for (i = DrawFontHeight; i > 0; i--)
@@ -515,13 +514,13 @@ void DrawChar2(char ch, int x, int y, u16 col)
 	const u8* s = &pDrawFont[ch];
 
 	// check if drawing is safe to use fast drawing
-	if ((x >= 0) && (y >= 0) && (x + 2*DrawFontWidth <= w) && (y + 2*DrawFontHeight <= DispHeight))
+	if ((x >= 0) && (y >= DispMinY) && (x + 2*DrawFontWidth <= w) && (y + 2*DrawFontHeight <= DispMaxY))
 	{
 		// update dirty rectangle
 		DispDirtyRect(x, y, 2*DrawFontWidth, 2*DrawFontHeight);
 
 		// destination address
-		d = &FrameBuf[y*w + x];
+		d = &pDrawBuf[(y-DispMinY)*w + x];
 
 		// loop through lines of one character
 		for (i = DrawFontHeight; i > 0; i--)
@@ -590,13 +589,13 @@ void DrawCharBg(char ch, int x, int y, u16 col, u16 bgcol)
 	const u8* s = &pDrawFont[ch];
 
 	// check if drawing is safe to use fast drawing
-	if ((x >= 0) && (y >= 0) && (x + DrawFontWidth <= DispWidth) && (y + DrawFontHeight <= DispHeight))
+	if ((x >= 0) && (y >= DispMinY) && (x + DrawFontWidth <= DispWidth) && (y + DrawFontHeight <= DispMaxY))
 	{
 		// update dirty rectangle
 		DispDirtyRect(x, y, DrawFontWidth, DrawFontHeight);
 
 		// destination address
-		d = &FrameBuf[y*DispWidth + x];
+		d = &pDrawBuf[(y-DispMinY)*DispWidth + x];
 
 		// loop through lines of one character
 		for (i = DrawFontHeight; i > 0; i--)
@@ -656,13 +655,13 @@ void DrawCharBgH(char ch, int x, int y, u16 col, u16 bgcol)
 	const u8* s = &pDrawFont[ch];
 
 	// check if drawing is safe to use fast drawing
-	if ((x >= 0) && (y >= 0) && (x + DrawFontWidth <= w) && (y + 2*DrawFontHeight <= DispHeight))
+	if ((x >= 0) && (y >= DispMinY) && (x + DrawFontWidth <= w) && (y + 2*DrawFontHeight <= DispMaxY))
 	{
 		// update dirty rectangle
 		DispDirtyRect(x, y, DrawFontWidth, 2*DrawFontHeight);
 
 		// destination address
-		d = &FrameBuf[y*w + x];
+		d = &pDrawBuf[(y-DispMinY)*w + x];
 
 		// loop through lines of one character
 		for (i = DrawFontHeight; i > 0; i--)
@@ -729,13 +728,13 @@ void DrawCharBgW(char ch, int x, int y, u16 col, u16 bgcol)
 	const u8* s = &pDrawFont[ch];
 
 	// check if drawing is safe to use fast drawing
-	if ((x >= 0) && (y >= 0) && (x + 2*DrawFontWidth <= DispWidth) && (y + DrawFontHeight <= DispHeight))
+	if ((x >= 0) && (y >= DispMinY) && (x + 2*DrawFontWidth <= DispWidth) && (y + DrawFontHeight <= DispMaxY))
 	{
 		// update dirty rectangle
 		DispDirtyRect(x, y, 2*DrawFontWidth, DrawFontHeight);
 
 		// destination address
-		d = &FrameBuf[y*DispWidth + x];
+		d = &pDrawBuf[(y-DispMinY)*DispWidth + x];
 
 		// loop through lines of one character
 		for (i = DrawFontHeight; i > 0; i--)
@@ -801,13 +800,13 @@ void DrawCharBg2(char ch, int x, int y, u16 col, u16 bgcol)
 	const u8* s = &pDrawFont[ch];
 
 	// check if drawing is safe to use fast drawing
-	if ((x >= 0) && (y >= 0) && (x + 2*DrawFontWidth <= w) && (y + 2*DrawFontHeight <= DispHeight))
+	if ((x >= 0) && (y >= DispMinY) && (x + 2*DrawFontWidth <= w) && (y + 2*DrawFontHeight <= DispMaxY))
 	{
 		// update dirty rectangle
 		DispDirtyRect(x, y, 2*DrawFontWidth, 2*DrawFontHeight);
 
 		// destination address
-		d = &FrameBuf[y*w + x];
+		d = &pDrawBuf[(y-DispMinY)*w + x];
 
 		// loop through lines of one character
 		for (i = DrawFontHeight; i > 0; i--)
@@ -1026,7 +1025,7 @@ void DrawTextBg2(const char* text, int x, int y, u16 col, u16 bgcol)
 	}
 }
 
-// Draw text buffer (size TEXTSIZE)
+// Draw text buffer (size TEXTSIZE) ... on VGA display, output is to the FrameBuf, not BackBuf
 void DrawTextBuf(const char* textbuf, u16 col, u16 bgcol)
 {
 	// prepre
@@ -1072,7 +1071,7 @@ void DrawTextBuf(const char* textbuf, u16 col, u16 bgcol)
 	DispDirtyAll();
 }
 
-// Draw text buffer with foreground color (1 byte character, 2 bytes color)
+// Draw text buffer with foreground color (1 byte character, 2 bytes color) ... on VGA display, output is to the FrameBuf, not BackBuf
 void DrawFTextBuf(const char* textbuf, u16 bgcol)
 {
 	// prepre
@@ -1139,22 +1138,22 @@ void DrawImg(const u16* src, int xd, int yd, int w, int h, int ws)
 	if (w <= 0) return;
 
 	// limit coordinate Y
-	if (yd < 0)
+	if (yd < DispMinY)
 	{
-		h += yd;
-		src += -yd*ws;
-		yd = 0;
+		h -= DispMinY-yd;
+		src += (DispMinY-yd)*ws;
+		yd = DispMinY;
 	}
 
 	// limit h
-	if (yd + h > DispHeight) h = DispHeight - yd;
+	if (yd + h > DispMaxY) h = DispMaxY - yd;
 	if (h <= 0) return;
 
 	// update dirty rectangle
 	DispDirtyRect(xd, yd, w, h);
 
 	// draw image
-	u16* d = &FrameBuf[xd + yd*DispWidth];
+	u16* d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth];
 	for (; h > 0; h--)
 	{
 		memcpy(d, src, w*2);
@@ -1179,22 +1178,22 @@ void DrawImgPal(const u8* src, const u16* pal, int xd, int yd, int w, int h, int
 	if (w <= 0) return;
 
 	// limit coordinate Y
-	if (yd < 0)
+	if (yd < DispMinY)
 	{
-		h += yd;
-		src += -yd*ws;
-		yd = 0;
+		h -= DispMinY-yd;
+		src += (DispMinY-yd)*ws;
+		yd = DispMinY;
 	}
 
 	// limit h
-	if (yd + h > DispHeight) h = DispHeight - yd;
+	if (yd + h > DispMaxY) h = DispMaxY - yd;
 	if (h <= 0) return;
 
 	// update dirty rectangle
 	DispDirtyRect(xd, yd, w, h);
 
 	// draw image
-	u16* d = &FrameBuf[xd + yd*DispWidth];
+	u16* d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth];
 	int i;
 	ws -= w;
 	int wd = DispWidth - w;
@@ -1244,15 +1243,15 @@ void DrawImg4Pal(const u8* src, const u16* pal, int xs, int ys, int xd, int yd, 
 		ys = 0;
 	}
 
-	if (yd < 0)
+	if (yd < DispMinY)
 	{
-		h += yd;
-		ys += -yd;
-		yd = 0;
+		h -= DispMinY-yd;
+		ys += DispMinY-yd;
+		yd = DispMinY;
 	}
 
 	// limit h
-	if (yd + h > DispHeight) h = DispHeight - yd;
+	if (yd + h > DispMaxY) h = DispMaxY - yd;
 	if (h <= 0) return;
 
 	// update dirty rectangle
@@ -1266,7 +1265,7 @@ void DrawImg4Pal(const u8* src, const u16* pal, int xs, int ys, int xd, int yd, 
 	ws = (ws+1)/2;
 	for (; h > 0; h--)
 	{
-		d = &FrameBuf[xd + yd*DispWidth];
+		d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth];
 		s = &src[xs/2 + ys*ws];
 		x = xs;
 
@@ -1291,49 +1290,91 @@ void DrawImgRle(const u8* src, const u16* pal, int xd, int yd, int w, int h)
 	DispDirtyRect(xd, yd, w, h);
 
 	// draw image
-	u16* d = &FrameBuf[xd + yd*DispWidth];
+	u16* d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth];
 	int i;
 	int wd = DispWidth - w;
 	int rlenum = 0;
 	int rawnum = 0;
 	u8 b;
 	u16 rlepix;
+	if (yd + h > DispMaxY) h = DispMaxY - yd;
+
 	for (; h > 0; h--)
 	{
-		for (i = w; i > 0; i--)
+		if (yd < DispMinY)
 		{
-			// load new flag
-			if ((rlenum == 0) && (rawnum == 0))
+			for (i = w; i > 0; i--)
 			{
-				b = *src++;
-
-				// RLE string
-				if (b >= 128)
+				// load new flag
+				if ((rlenum == 0) && (rawnum == 0))
 				{
-					rlenum = b - 128 + 3;
-					rlepix = pal[*src++];
+					b = *src++;
+
+					// RLE string
+					if (b >= 128)
+					{
+						rlenum = b - 128 + 3;
+						rlepix = pal[*src++];
+					}
+
+					// RAW string
+					else
+					{
+						rawnum = b + 1;
+					}
 				}
 
-				// RAW string
+				// write pixel
+				if (rlenum != 0)
+				{
+					rlenum--;
+				}
 				else
 				{
-					rawnum = b + 1;
+					src++;
+					rawnum--;
 				}
 			}
-
-			// write pixel
-			if (rlenum != 0)
-			{
-				*d++ = rlepix;
-				rlenum--;
-			}
-			else
-			{
-				*d++ = pal[*src++];
-				rawnum--;
-			}
+			d += wd + w;
 		}
-		d += wd;
+		else
+		{
+			for (i = w; i > 0; i--)
+			{
+				// load new flag
+				if ((rlenum == 0) && (rawnum == 0))
+				{
+					b = *src++;
+
+					// RLE string
+					if (b >= 128)
+					{
+						rlenum = b - 128 + 3;
+						rlepix = pal[*src++];
+					}
+
+					// RAW string
+					else
+					{
+						rawnum = b + 1;
+					}
+				}
+
+				// write pixel
+				if (rlenum != 0)
+				{
+					*d++ = rlepix;
+					rlenum--;
+				}
+				else
+				{
+					*d++ = pal[*src++];
+					rawnum--;
+				}
+			}
+			d += wd;
+		}
+		yd++;
 	}
 }
 
@@ -1348,7 +1389,7 @@ void DrawImg4Rle(const u8* src, const u16* pal, int xd, int yd, int w, int h)
 	DispDirtyRect(xd, yd, w, h);
 
 	// draw image
-	u16* d = &FrameBuf[xd + yd*DispWidth];
+	u16* d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth];
 	const u8* s = src;
 	int i;
 	int wd = DispWidth - w;
@@ -1357,60 +1398,117 @@ void DrawImg4Rle(const u8* src, const u16* pal, int xd, int yd, int w, int h)
 	int x = 0;
 	u8 b;
 	u16 rlepix;
+	if (yd + h > DispMaxY) h = DispMaxY - yd;
 
 	for (; h > 0; h--)
 	{
-		for (i = w; i > 0; i--)
+		if (yd < DispMinY)
 		{
-			// load new flag
-			if ((rlenum == 0) && (rawnum == 0))
+			for (i = w; i > 0; i--)
 			{
-				if ((x & 1) == 0)
-					b = *s >> 4;
-				else
-					b = *s++ & 0x0f;
-				x++;
-
-				// RLE string
-				if (b >= 8)
+				// load new flag
+				if ((rlenum == 0) && (rawnum == 0))
 				{
-					rlenum = b - 8 + 3;
-
 					if ((x & 1) == 0)
 						b = *s >> 4;
 					else
 						b = *s++ & 0x0f;
 					x++;
 
-					rlepix = pal[b];
+					// RLE string
+					if (b >= 8)
+					{
+						rlenum = b - 8 + 3;
+
+						if ((x & 1) == 0)
+							b = *s >> 4;
+						else
+							b = *s++ & 0x0f;
+						x++;
+
+						rlepix = pal[b];
+					}
+
+					// RAW string
+					else
+					{
+						rawnum = b + 1;
+					}
 				}
 
-				// RAW string
+				// write pixel
+				if (rlenum != 0)
+				{
+					rlenum--;
+				}
 				else
 				{
-					rawnum = b + 1;
+					if ((x & 1) == 0)
+						b = *s >> 4;
+					else
+						b = *s++ & 0x0f;
+					x++;
+
+					rawnum--;
 				}
 			}
-
-			// write pixel
-			if (rlenum != 0)
-			{
-				*d++ = rlepix;
-				rlenum--;
-			}
-			else
-			{
-				if ((x & 1) == 0)
-					b = *s >> 4;
-				else
-					b = *s++ & 0x0f;
-				x++;
-
-				*d++ = pal[b];
-				rawnum--;
-			}
+			d += wd + w;
 		}
-		d += wd;
+		else
+		{
+			for (i = w; i > 0; i--)
+			{
+				// load new flag
+				if ((rlenum == 0) && (rawnum == 0))
+				{
+					if ((x & 1) == 0)
+						b = *s >> 4;
+					else
+						b = *s++ & 0x0f;
+					x++;
+
+					// RLE string
+					if (b >= 8)
+					{
+						rlenum = b - 8 + 3;
+
+						if ((x & 1) == 0)
+							b = *s >> 4;
+						else
+							b = *s++ & 0x0f;
+						x++;
+
+						rlepix = pal[b];
+					}
+
+					// RAW string
+					else
+					{
+						rawnum = b + 1;
+					}
+				}
+
+				// write pixel
+				if (rlenum != 0)
+				{
+					*d++ = rlepix;
+					rlenum--;
+				}
+				else
+				{
+					if ((x & 1) == 0)
+						b = *s >> 4;
+					else
+						b = *s++ & 0x0f;
+					x++;
+
+					*d++ = pal[b];
+					rawnum--;
+				}
+			}
+			d += wd;
+		}
+		yd++;
 	}
 }
 
@@ -1430,22 +1528,22 @@ void DrawBlit(const u16* src, int xd, int yd, int w, int h, int ws, u16 col)
 	if (w <= 0) return;
 
 	// limit coordinate Y
-	if (yd < 0)
+	if (yd < DispMinY)
 	{
-		h += yd;
-		src += -yd*ws;
-		yd = 0;
+		h -= DispMinY-yd;
+		src += (DispMinY-yd)*ws;
+		yd = DispMinY;
 	}
 
 	// limit h
-	if (yd + h > DispHeight) h = DispHeight - yd;
+	if (yd + h > DispMaxY) h = DispMaxY - yd;
 	if (h <= 0) return;
 
 	// update dirty rectangle
 	DispDirtyRect(xd, yd, w, h);
 
 	// draw image
-	u16* d = &FrameBuf[xd + yd*DispWidth];
+	u16* d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth];
 	int i;
 	u16 c;
 	int wbd = DispWidth - w;
@@ -1479,22 +1577,22 @@ void DrawBlitPal(const u8* src, const u16* pal, int xd, int yd, int w, int h, in
 	if (w <= 0) return;
 
 	// limit coordinate Y
-	if (yd < 0)
+	if (yd < DispMinY)
 	{
-		h += yd;
-		src += -yd*ws;
-		yd = 0;
+		h -= DispMinY-yd;
+		src += (DispMinY-yd)*ws;
+		yd = DispMinY;
 	}
 
 	// limit h
-	if (yd + h > DispHeight) h = DispHeight - yd;
+	if (yd + h > DispMaxY) h = DispMaxY - yd;
 	if (h <= 0) return;
 
 	// update dirty rectangle
 	DispDirtyRect(xd, yd, w, h);
 
 	// draw image
-	u16* d = &FrameBuf[xd + yd*DispWidth];
+	u16* d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth];
 	int i;
 	u16 c;
 	int wbd = DispWidth - w;
@@ -1551,15 +1649,15 @@ void DrawBlit4Pal(const u8* src, const u16* pal, int xs, int ys, int xd, int yd,
 		ys = 0;
 	}
 
-	if (yd < 0)
+	if (yd < DispMinY)
 	{
-		h += yd;
-		ys += -yd;
-		yd = 0;
+		h -= DispMinY-yd;
+		ys += DispMinY-yd;
+		yd = DispMinY;
 	}
 
 	// limit h
-	if (yd + h > DispHeight) h = DispHeight - yd;
+	if (yd + h > DispMaxY) h = DispMaxY - yd;
 	if (h <= 0) return;
 
 	// update dirty rectangle
@@ -1574,7 +1672,7 @@ void DrawBlit4Pal(const u8* src, const u16* pal, int xs, int ys, int xd, int yd,
 	ws = (ws+1)/2;
 	for (; h > 0; h--)
 	{
-		d = &FrameBuf[xd + yd*DispWidth];
+		d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth];
 		s = &src[xs/2 + ys*ws];
 		x = xs;
 
@@ -1610,21 +1708,21 @@ void DrawRectShadow(int x, int y, int w, int h, u8 shad)
 	if (w <= 0) return;
 
 	// limit coordinate Y
-	if (y < 0)
+	if (y < DispMinY)
 	{
-		h += y;
-		y = 0;
+		h -= DispMinY-y;
+		y = DispMinY;
 	}
 
 	// limit h
-	if (y + h > DispHeight) h = DispHeight - y;
+	if (y + h > DispMaxY) h = DispMaxY - y;
 	if (h <= 0) return;
 
 	// update dirty rectangle
 	DispDirtyRect(x, y, w, h);
 
 	// draw shadow
-	u16* d = &FrameBuf[x + y*DispWidth];
+	u16* d = &pDrawBuf[x + (y-DispMinY)*DispWidth];
 	int i;
 	u16 c, c2;
 	int wb = DispWidth - w;
@@ -1661,22 +1759,22 @@ void DrawBlitShadow(const u16* src, int xd, int yd, int w, int h, int ws, u16 co
 	if (w <= 0) return;
 
 	// limit coordinate Y
-	if (yd < 0)
+	if (yd < DispMinY)
 	{
-		h += yd;
-		src += -yd*ws;
-		yd = 0;
+		h -= DispMinY-yd;
+		src += (DispMinY-yd)*ws;
+		yd = DispMinY;
 	}
 
 	// limit h
-	if (yd + h > DispHeight) h = DispHeight - yd;
+	if (yd + h > DispMaxY) h = DispMaxY - yd;
 	if (h <= 0) return;
 
 	// update dirty rectangle
 	DispDirtyRect(xd, yd, w, h);
 
 	// draw image
-	u16* d = &FrameBuf[xd + yd*DispWidth];
+	u16* d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth];
 	int i;
 	u16 c, c2;
 	int wbd = DispWidth - w;
@@ -1734,15 +1832,15 @@ void DrawBlit1Shadow(const u8* src, int xs, int ys, int xd, int yd, int w, int h
 		ys = 0;
 	}
 
-	if (yd < 0)
+	if (yd < DispMinY)
 	{
-		h += yd;
-		ys += -yd;
-		yd = 0;
+		h -= DispMinY-yd;
+		ys += DispMinY-yd;
+		yd = DispMinY;
 	}
 
 	// limit h
-	if (yd + h > DispHeight) h = DispHeight - yd;
+	if (yd + h > DispMaxY) h = DispMaxY - yd;
 	if (h <= 0) return;
 
 	// update dirty rectangle
@@ -1758,7 +1856,7 @@ void DrawBlit1Shadow(const u8* src, int xs, int ys, int xd, int yd, int w, int h
 	for (; h > 0; h--)
 	{
 		x = xs;
-		d = &FrameBuf[xd + yd*DispWidth];
+		d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth];
 		s = &src[xs/8 + ws*ys];
 
 		for (i = w; i > 0; i--)
@@ -1812,13 +1910,13 @@ void DrawImgMat(const u16* src, int ws, int hs, int x, int y, int w, int h, cons
 	// limit y
 	int h0 = h;
 	int y0 = (mode == DRAWIMG_PERSP) ? (-h) : (-h/2); // start Y coordinate
-	if (y < 0)
+	if (y < DispMinY)
 	{
-		h += y;
-		y0 -= y;
-		y = 0;
+		h -= DispMinY-y;
+		y0 += DispMinY-y;
+		y = DispMinY;
 	}
-	if (y + h > DispHeight) h = DispHeight - y;
+	if (y + h > DispMaxY) h = DispMaxY - y;
 	if (h <= 0) return;
 
 	// update dirty rectangle
@@ -1837,7 +1935,7 @@ void DrawImgMat(const u16* src, int ws, int hs, int x, int y, int w, int h, cons
 
 	// prepare variables
 	int xy0m, yy0m; // temporary Y members
-	u16* d = &FrameBuf[DispWidth*y + x]; // destination image
+	u16* d = &pDrawBuf[DispWidth*(y-DispMinY) + x]; // destination image
 	int wbd = DispWidth - w; // destination width words
 	int i, x2, y2;
 
@@ -2135,13 +2233,13 @@ void DrawImgPalMat(const u8* src, const u16* pal, int ws, int hs, int x, int y, 
 	// limit y
 	int h0 = h;
 	int y0 = (mode == DRAWIMG_PERSP) ? (-h) : (-h/2); // start Y coordinate
-	if (y < 0)
+	if (y < DispMinY)
 	{
-		h += y;
-		y0 -= y;
-		y = 0;
+		h -= DispMinY-y;
+		y0 += DispMinY-y;
+		y = DispMinY;
 	}
-	if (y + h > DispHeight) h = DispHeight - y;
+	if (y + h > DispMaxY) h = DispMaxY - y;
 	if (h <= 0) return;
 
 	// update dirty rectangle
@@ -2160,7 +2258,7 @@ void DrawImgPalMat(const u8* src, const u16* pal, int ws, int hs, int x, int y, 
 
 	// prepare variables
 	int xy0m, yy0m; // temporary Y members
-	u16* d = &FrameBuf[DispWidth*y + x]; // destination image
+	u16* d = &pDrawBuf[DispWidth*(y-DispMinY) + x]; // destination image
 	int wbd = DispWidth - w; // destination width words
 	int i, x2, y2;
 
@@ -2458,13 +2556,13 @@ void DrawImg4PalMat(const u8* src, const u16* pal, int ws, int hs, int x, int y,
 	// limit y
 	int h0 = h;
 	int y0 = (mode == DRAWIMG_PERSP) ? (-h) : (-h/2); // start Y coordinate
-	if (y < 0)
+	if (y < DispMinY)
 	{
-		h += y;
-		y0 -= y;
-		y = 0;
+		h -= DispMinY-y;
+		y0 += DispMinY-y;
+		y = DispMinY;
 	}
-	if (y + h > DispHeight) h = DispHeight - y;
+	if (y + h > DispMaxY) h = DispMaxY - y;
 	if (h <= 0) return;
 
 	// update dirty rectangle
@@ -2483,7 +2581,7 @@ void DrawImg4PalMat(const u8* src, const u16* pal, int ws, int hs, int x, int y,
 
 	// prepare variables
 	int xy0m, yy0m; // temporary Y members
-	u16* d = &FrameBuf[DispWidth*y + x]; // destination image
+	u16* d = &pDrawBuf[DispWidth*(y-DispMinY) + x]; // destination image
 	int wbd = DispWidth - w; // destination width words
 	int i, x2, y2;
 
@@ -2819,13 +2917,13 @@ void DrawTileMap(const u16* src, const u8* map, int mapwbits, int maphbits,
 	// limit y
 	int h0 = h;
 	int y0 = (horizon == 0) ? (-h/2) : (-h); // start Y coordinate
-	if (y < 0)
+	if (y < DispMinY)
 	{
-		h += y;
-		y0 -= y;
-		y = 0;
+		h -= DispMinY-y;
+		y0 += DispMinY-y;
+		y = DispMinY;
 	}
-	if (y + h > DispHeight) h = DispHeight - y;
+	if (y + h > DispMaxY) h = DispMaxY - y;
 	if (h <= 0) return;
 
 	// update dirty rectangle
@@ -2845,7 +2943,7 @@ void DrawTileMap(const u16* src, const u8* map, int mapwbits, int maphbits,
 
 	// prepare variables
 	int xy0m, yy0m; // temporary Y members
-	u16* d = &FrameBuf[DispWidth*y + x]; // destination image
+	u16* d = &pDrawBuf[DispWidth*(y-DispMinY) + x]; // destination image
 	int wbd = DispWidth - w; // destination width in pixels
 	int i, x2, y2;
 
@@ -2923,13 +3021,13 @@ void DrawTilePalMap(const u8* src, const u16* pal, const u8* map, int mapwbits, 
 	// limit y
 	int h0 = h;
 	int y0 = (horizon == 0) ? (-h/2) : (-h); // start Y coordinate
-	if (y < 0)
+	if (y < DispMinY)
 	{
-		h += y;
-		y0 -= y;
-		y = 0;
+		h -= DispMinY-y;
+		y0 += DispMinY-y;
+		y = DispMinY;
 	}
-	if (y + h > DispHeight) h = DispHeight - y;
+	if (y + h > DispMaxY) h = DispMaxY - y;
 	if (h <= 0) return;
 
 	// update dirty rectangle
@@ -2949,7 +3047,7 @@ void DrawTilePalMap(const u8* src, const u16* pal, const u8* map, int mapwbits, 
 
 	// prepare variables
 	int xy0m, yy0m; // temporary Y members
-	u16* d = &FrameBuf[DispWidth*y + x]; // destination image
+	u16* d = &pDrawBuf[DispWidth*(y-DispMinY) + x]; // destination image
 	int wbd = DispWidth - w; // destination width in pixels
 	int i, x2, y2;
 
@@ -3027,13 +3125,13 @@ void DrawTile4PalMap(const u8* src, const u16* pal, const u8* map, int mapwbits,
 	// limit y
 	int h0 = h;
 	int y0 = (horizon == 0) ? (-h/2) : (-h); // start Y coordinate
-	if (y < 0)
+	if (y < DispMinY)
 	{
-		h += y;
-		y0 -= y;
-		y = 0;
+		h -= DispMinY-y;
+		y0 += DispMinY-y;
+		y = DispMinY;
 	}
-	if (y + h > DispHeight) h = DispHeight - y;
+	if (y + h > DispMaxY) h = DispMaxY - y;
 	if (h <= 0) return;
 
 	// update dirty rectangle
@@ -3053,7 +3151,7 @@ void DrawTile4PalMap(const u8* src, const u16* pal, const u8* map, int mapwbits,
 
 	// prepare variables
 	int xy0m, yy0m; // temporary Y members
-	u16* d = &FrameBuf[DispWidth*y + x]; // destination image
+	u16* d = &pDrawBuf[DispWidth*(y-DispMinY) + x]; // destination image
 	int wbd = DispWidth - w; // destination width in pixels
 	int i, x2, y2;
 
@@ -3117,7 +3215,7 @@ void DrawTile4PalMap(const u8* src, const u16* pal, const u8* map, int mapwbits,
 void DrawImgLine(const u16* src, int xd, int yd, int wd, int ws, int wbs)
 {
 	// some base checks
-	if ((wd <= 0) || (ws <= 0) || (yd < 0) || (yd >= DispHeight)) return;
+	if ((wd <= 0) || (ws <= 0) || (yd < DispMinY) || (yd >= DispMaxY)) return;
 
 	// pixel increment
 	int dinc = FRACTMUL*ws/wd;
@@ -3126,7 +3224,7 @@ void DrawImgLine(const u16* src, int xd, int yd, int wd, int ws, int wbs)
 	DispDirtyRect(xd, yd, wd, 1);
 
 	// prepare buffers
-	u16* d = &FrameBuf[xd + yd*DispWidth]; // destination address
+	u16* d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth]; // destination address
 	int i, j;
 
 	int dadd = 0;
@@ -3143,7 +3241,7 @@ void DrawImgLine(const u16* src, int xd, int yd, int wd, int ws, int wbs)
 void DrawImgPalLine(const u8* src, const u16* pal, int xd, int yd, int wd, int ws, int wbs)
 {
 	// some base checks
-	if ((wd <= 0) || (ws <= 0) || (yd < 0) || (yd >= DispHeight)) return;
+	if ((wd <= 0) || (ws <= 0) || (yd < DispMinY) || (yd >= DispMaxY)) return;
 
 	// pixel increment
 	int dinc = FRACTMUL*ws/wd;
@@ -3152,7 +3250,7 @@ void DrawImgPalLine(const u8* src, const u16* pal, int xd, int yd, int wd, int w
 	DispDirtyRect(xd, yd, wd, 1);
 
 	// prepare buffers
-	u16* d = &FrameBuf[xd + yd*DispWidth]; // destination address
+	u16* d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth]; // destination address
 	int i, j;
 
 	int dadd = 0;
@@ -3169,7 +3267,7 @@ void DrawImgPalLine(const u8* src, const u16* pal, int xd, int yd, int wd, int w
 void DrawImg4PalLine(const u8* src, const u16* pal, int xd, int yd, int wd, int ws, int wbs)
 {
 	// some base checks
-	if ((wd <= 0) || (ws <= 0) || (yd < 0) || (yd >= DispHeight)) return;
+	if ((wd <= 0) || (ws <= 0) || (yd < DispMinY) || (yd >= DispMaxY)) return;
 
 	// pixel increment
 	int dinc = FRACTMUL*ws/wd;
@@ -3178,7 +3276,7 @@ void DrawImg4PalLine(const u8* src, const u16* pal, int xd, int yd, int wd, int 
 	DispDirtyRect(xd, yd, wd, 1);
 
 	// prepare buffers
-	u16* d = &FrameBuf[xd + yd*DispWidth]; // destination address
+	u16* d = &pDrawBuf[xd + (yd-DispMinY)*DispWidth]; // destination address
 	int i, j, x;
 
 	int dadd = 0;
@@ -3332,6 +3430,11 @@ u16 BlendCol16(u16 col1, u16 col2, u8 level)
 // scroll screen one row up
 void DrawScroll()
 {
+#if USE_VGA > 1	// use VGA display 320x240/16; 1=use 1 frame buffer 153 KB, 2=add 1/2 back buffer 230 KB, 3=add 1/4 back buffer 192 KB (vga.c, vga.h)
+	// update screen
+	DispUpdate();
+#endif
+
 	// size of one row (in number of pixels)
 	int rowsize = WIDTH*DrawFontHeight;
 
@@ -3344,6 +3447,11 @@ void DrawScroll()
 
 	// update screen
 	DispDirtyAll();
+
+#if USE_VGA > 1	// use VGA display 320x240/16; 1=use 1 frame buffer 153 KB, 2=add 1/2 back buffer 230 KB, 3=add 1/4 back buffer 192 KB (vga.c, vga.h)
+	// load screen to back buffer
+	DispLoad();
+#endif
 }
 
 // console print character (without display update)

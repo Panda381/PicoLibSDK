@@ -28,7 +28,7 @@
 #include "../inc/lib_print.h"
 
 // pointer to draw frame buffer
-u8* pDrawBuf; // current draw buffer
+u8* pDrawBuf = FrameBuf; // current draw buffer
 const u8* pDrawFont = FONT; // font 8x8
 int DrawFontHeight = FONTH; // font height
 int DrawFontWidth = FONTW; // font width (5 to 8)

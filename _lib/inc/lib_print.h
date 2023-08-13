@@ -109,8 +109,8 @@ va_list ... variadic functions (variable number of arguments)
 
 #if USE_PRINT		// use Formatted print (lib_print.c, lib_print.h)
 
-#ifndef _PRINT_H
-#define _PRINT_H
+#ifndef _LIB_PRINT_H
+#define _LIB_PRINT_H
 
 #include "lib_stream.h"
 #include "../../_sdk/usb_inc/sdk_usb_dev_cdc.h"
@@ -244,6 +244,6 @@ char getchar();
 }
 #endif
 
-#endif // _STREAM_H
+#endif // _LIB_STREAM_H
 
 #endif // USE_PRINT		// use Formatted print (lib_print.c, lib_print.h)

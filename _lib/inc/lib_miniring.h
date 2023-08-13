@@ -18,8 +18,8 @@
 
 #if USE_MINIRING	// use Mini-Ring buffer (lib_miniring.c, lib_miniring.h)
 
-#ifndef _MINIRING_H
-#define _MINIRING_H
+#ifndef _LIB_MINIRING_H
+#define _LIB_MINIRING_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -84,6 +84,6 @@ void MiniRingBufReadWait(sMiniRing* ring, u8* data, uint len);
 }
 #endif
 
-#endif // _MINIRING_H
+#endif // _LIB_MINIRING_H
 
 #endif // USE_MINIRING	// use Mini-Ring buffer (lib_miniring.c, lib_miniring.h)

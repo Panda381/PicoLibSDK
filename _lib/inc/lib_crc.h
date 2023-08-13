@@ -24,8 +24,8 @@
 
 #if USE_CRC	// use CRC Check Sum (lib_crc.c, lib_crc.h)
 
-#ifndef _CRC_H
-#define _CRC_H
+#ifndef _LIB_CRC_H
+#define _LIB_CRC_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -633,6 +633,6 @@ u16 CrcXor(const void* buf, int len);
 }
 #endif
 
-#endif // _CRC_H
+#endif // _LIB_CRC_H
 
 #endif // USE_CRC	// use CRC Check Sum (lib_crc.c, lib_crc.h)

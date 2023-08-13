@@ -18,8 +18,8 @@
 
 #if USE_CALENDAR	// use 32-bit calendar (lib_calendar.c, lib_calendar.h)
 
-#ifndef _CALENDAR_H
-#define _CALENDAR_H
+#ifndef _LIB_CALENDAR_H
+#define _LIB_CALENDAR_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -128,6 +128,6 @@ s16 DateTimeCheck();
 }
 #endif
 
-#endif // _CALENDAR_H
+#endif // _LIB_CALENDAR_H
 
 #endif // USE_CALENDAR	// use 32-bit calendar (lib_calendar.c, lib_calendar.h)

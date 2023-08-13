@@ -15,7 +15,7 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
-#include "../../_display/qvga/qvga.h" // ST7789 display
+#include "../../_display/qvga/qvga.h" // QVGA display
 #include "../../_lib/inc/lib_pwmsnd.h"
 #include "../../_lib/inc/lib_fat.h"
 #include "../../_lib/inc/lib_sd.h"

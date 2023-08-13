@@ -232,8 +232,14 @@ Bool UsbMouseIsMounted();
 //    bit 16..23: ASCII character CH_* (NOCHAR = no valid character)
 u32 UsbGetKey();
 
+// check if key is pressed
+Bool UsbKeyIsPressed(u8 key);
+
 // get USB character (returns NOCHAR if no character)
 char UsbGetChar();
+
+// flush keys
+void UsbFlushKey();
 
 // get USB mouse (returns u32 packed mouse event, or 0 if no mouse event)
 //    bit 0..7: buttons mask USB_MOUSE_BTN_*, B7 is set to indicate valid mouse event

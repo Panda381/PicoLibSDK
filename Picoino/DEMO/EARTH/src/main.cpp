@@ -24,7 +24,7 @@ int main()
 	const u8* s;
 
 	// clear draw box
-	memset(FrameBuf, COL_BLACK, sizeof(FrameBuf));
+	for (i = 0; i < FRAMESIZE; i++) FrameBuf[i] = COL_BLACK;
 
 	// prepare U table
 	for (i = 0; i < UNUM; i++)

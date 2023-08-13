@@ -17,6 +17,7 @@ u32 LastTime;
 // update display and wait
 void DispWait(u32 ms)
 {
+	StopSound();
 	ms *= 1000;
 	u32 t;
 	DispUpdate();

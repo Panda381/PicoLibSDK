@@ -1,4 +1,4 @@
-^YPicoinoMini Boot Loader^0
+^YPicoinoMini Boot3 Loader^0
 
 Boot Loader can be loaded
 only over USB interface.

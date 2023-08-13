@@ -27,8 +27,8 @@
 
 #if USE_RINGRX		// use Ring buffer with DMA receiver (lib_ringrx.c, lib_ringrx.h)
 
-#ifndef _RINGRX_H
-#define _RINGRX_H
+#ifndef _LIB_RINGRX_H
+#define _LIB_RINGRX_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -126,6 +126,6 @@ u32 RingRxRead32Wait(sRingRx* ring);
 }
 #endif
 
-#endif // _RINGRX_H
+#endif // _LIB_RINGRX_H
 
 #endif // USE_RINGRX		// use Ring buffer with DMA receiver (lib_ringrx.c, lib_ringrx.h)

@@ -224,11 +224,13 @@ void NewGame()
 	// setup start condition
 	PlayerNum = 0;
 	PlayerHuman = 0;
+	Player = -1;
 	for (i = 0; i < PLAYER_NUM; i++)
 	{
 		// check if player is active
 		if (Players[i].type != PLAYER_OFF)
 		{
+			if (Player < 0) Player = i; // first active player
 			Players[i].atoms = 1; // number of atoms
 			Players[i].scorey = PlayerNum*48+8; // score Y coordinate
 			PlayerNum++;

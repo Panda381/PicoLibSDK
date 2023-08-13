@@ -25,8 +25,8 @@
 
 #if USE_ESCPKT	// use escape packet protocol (lib_escpkt.c, lib_escpkt.h)
 
-#ifndef _ESCPKT_H
-#define _ESCPKT_H
+#ifndef _LIB_ESCPKT_H
+#define _LIB_ESCPKT_H
 
 #include "lib_ring.h"
 
@@ -66,6 +66,6 @@ void EscPktSend(sEscPkt* esc, const u8* buf, int len);
 }
 #endif
 
-#endif // _ESCPKT_H
+#endif // _LIB_ESCPKT_H
 
 #endif // USE_ESCPKT	// use escape packet protocol (lib_escpkt.c, lib_escpkt.h)

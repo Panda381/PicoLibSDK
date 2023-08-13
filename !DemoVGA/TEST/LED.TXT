@@ -1,0 +1,5 @@
+^YLed^0
+
+Test LED indicators.
+
+^WC^0 ....... quit

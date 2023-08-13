@@ -220,7 +220,11 @@ NM = ${COMP}nm
 SZ = ${COMP}size
 
 # uf2
+ifeq (${OS},Windows_NT)
 UF = ../../../_tools/elf2uf2.exe
+else
+UF = ../../../_tools/elf2uf2
+endif
 
 ##############################################################################
 # File list
@@ -250,7 +254,11 @@ all: createdirs elf bin hex lst sym siz uf2
 # Create temporary directory
 
 createdirs:
+ifeq (${OS},Windows_NT)
 	@../../../_tools/mkdir.exe -p $(TEMP)
+else
+	@mkdir -p $(TEMP)
+endif
 
 ##############################################################################
 # Dependencies of output files

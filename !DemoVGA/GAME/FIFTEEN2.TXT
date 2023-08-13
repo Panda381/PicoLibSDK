@@ -1,0 +1,14 @@
+^YFifteen Puzzle^0
+
+Logic game - sort
+tiles from 1 to 15
+
+Requires USB keyboard
+
+^WRIGHT^0 ... right
+^WUP^0 ...... up
+^WLEFT^0 .... left
+^WDOWN^0 .... down
+^WSpace^0 ... numbers
+^WTab^0 ..... solver
+^WEsc^0 ..... quit

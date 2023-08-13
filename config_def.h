@@ -21,7 +21,8 @@ DMA 10 and 11 are reserved for temporary operations (DMA_MemCopy, CrcxxDMA),
 but they can be used temporary by user program, too. Search: UARTSAMPLE_TXDMA,
 UARTSAMPLE_RXDMA, DMA_TEMP_CHAN.
 
-DMA channels 8 and 9 are used by QVA library. Search QVGA_DMA in _devices\picoino\_config.h.
+DMA channels 8 and 9 are used by QVGA library. Search QVGA_DMA in _devices\picoino\_config.h.
+DMA channels 8 and 9 are used by VGA library. Search VGA_DMA in _devices\demovga\_config.h.
 
 Spinlock 31 is used by system memory allocator, safe integer etc. Search SYS_SPIN.
 Spinlock 30 is used by USB driver. Search USB_SPIN.
@@ -39,6 +40,10 @@ by VGA driver rendering service.
 // ----------------------------------------------------------------------------
 //                      Device custom configutation
 // ----------------------------------------------------------------------------
+
+#if USE_DEMOVGA			// use DemoVGA device configuration
+#include "_devices/demovga/_config.h"
+#endif
 
 #if USE_PICOINO			// use Picoino device configuration
 #include "_devices/picoino/_config.h"
@@ -277,7 +282,7 @@ by VGA driver rendering service.
 #endif
 
 #ifndef USE_DRAWTFT
-#define USE_DRAWTFT	0		// use TFT drawing (lib_drawtft.c, lib_drawtft.h)
+#define USE_DRAWTFT	0		// use TFT or VGA drawing (lib_drawtft.c, lib_drawtft.h)
 #endif
 
 #ifndef USE_ESCPKT
@@ -290,6 +295,10 @@ by VGA driver rendering service.
 
 #ifndef USE_FAT
 #define USE_FAT		0		// use FAT file system (lib_fat.c, lib_fat.h)
+#endif
+
+#ifndef USE_FRAMEBUF
+#define USE_FRAMEBUF	1		// use default display frame buffer
 #endif
 
 #ifndef USE_LIST
@@ -362,6 +371,10 @@ by VGA driver rendering service.
 
 #ifndef USE_TREE
 #define USE_TREE	1		// use Tree list (lib_tree.c, lib_tree.h)
+#endif
+
+#ifndef USE_VIDEO
+#define USE_VIDEO	0		// use video player (lib_video.c, lib_video.h)
 #endif
 
 #ifndef FONT
@@ -740,25 +753,17 @@ by VGA driver rendering service.
 //                             Auto-dependencies
 // ----------------------------------------------------------------------------
 
+#if USE_VIDEO
+#undef USE_FRAMEBUF
+#define USE_FRAMEBUF	0
+#endif
+
 #if USE_MEMLOCK
 #undef USE_SPINLOCK
 #define USE_SPINLOCK 1
 #endif
 
-#if USE_QVGA
-#undef USE_PIO
-#define USE_PIO 1
-#undef USE_DMA
-#define USE_DMA 1
-#undef USE_IRQ
-#define USE_IRQ 1
-#undef USE_PLL
-#define USE_PLL 1
-#undef USE_MULTICORE
-#define USE_MULTICORE 1
-#endif
-
-#if USE_VGA
+#if USE_QVGA || USE_VGA
 #undef USE_PIO
 #define USE_PIO 1
 #undef USE_DMA
@@ -919,7 +924,7 @@ by VGA driver rendering service.
 
 #if USE_DRAW_STDIO
 
-#if USE_PICOPAD // if we have TFT display
+#if USE_PICOPAD || USE_DEMOVGA // if we have TFT or VGA display
 #undef USE_DRAWTFT
 #define USE_DRAWTFT 1
 

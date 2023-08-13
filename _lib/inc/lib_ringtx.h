@@ -37,8 +37,8 @@
 
 #if USE_RINGTX	// use Ring buffer with DMA transmitter (lib_ringtx.c, lib_ringtx.h)
 
-#ifndef _RINGTX_H
-#define _RINGTX_H
+#ifndef _LIB_RINGTX_H
+#define _LIB_RINGTX_H
 
 #include "lib_stream.h"
 
@@ -155,6 +155,6 @@ NOINLINE u32 RingTxPrint(sRingTx* ring, const char* fmt, ...);
 }
 #endif
 
-#endif // _RINGTX_H
+#endif // _LIB_RINGTX_H
 
 #endif // USE_RINGTX	// use Ring buffer with DMA transmitter (lib_ringtx.c, lib_ringtx.h)

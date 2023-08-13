@@ -1,0 +1,10 @@
+^YTV Tennis^0
+
+Classic game
+
+Requires USB keyboard
+
+^WQ/A^0 ........ left player
+^WUP/DOWN^0 .... right player
+^WSpace^0 ...... serve
+^WEsc^0 ........ exit game

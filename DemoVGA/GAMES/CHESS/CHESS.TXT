@@ -1,0 +1,15 @@
+^YChess^0
+
+Chess game
+Requires USB keyboard
+
+^WLEFT^0 .... left
+^WRIGHT^0 ... right
+^WUP^0 ...... up
+^WDOWN^0 .... down
+^WSpace^0 ... pick up
+^WEsc^0 ..... cancel
+^WTab^0 ..... help
+
+Difficulty: 2..5 forward
+moves (up to 2 minutes)

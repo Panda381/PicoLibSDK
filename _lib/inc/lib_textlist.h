@@ -16,8 +16,8 @@
 
 #if USE_TEXTLIST	// use List of text strings (lib_textlist.c, lib_textlist.h)
 
-#ifndef _TEXTLIST_H
-#define _TEXTLIST_H
+#ifndef _LIB_TEXTLIST_H
+#define _LIB_TEXTLIST_H
 
 #include "lib_text.h"
 
@@ -165,6 +165,6 @@ INLINE Bool TextListJoinLines(const sTextList* list, pText* text)
 }
 #endif
 
-#endif // _TEXTLIST_H
+#endif // _LIB_TEXTLIST_H
 
 #endif // USE_TEXTLIST	// use List of text strings (lib_textlist.c, lib_textlist.h)

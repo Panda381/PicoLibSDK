@@ -16,8 +16,8 @@
 
 #if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
 
-#ifndef _STREAM_H
-#define _STREAM_H
+#ifndef _LIB_STREAM_H
+#define _LIB_STREAM_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -77,6 +77,6 @@ void StreamWriteBufInit(sStream* str, void* buf, u32 num);
 }
 #endif
 
-#endif // _STREAM_H
+#endif // _LIB_STREAM_H
 
 #endif // USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)

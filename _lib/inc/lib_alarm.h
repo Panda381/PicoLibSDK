@@ -19,8 +19,8 @@
 
 #if USE_ALARM			// use SysTick alarm (lib_alarm.c, lib_alarm.h)
 
-#ifndef _ALARM_H
-#define _ALARM_H
+#ifndef _LIB_ALARM_H
+#define _LIB_ALARM_H
 
 #include "../../_sdk/inc/sdk_cpu.h"
 #include "lib_list.h"
@@ -78,6 +78,6 @@ void AlarmInit();
 }
 #endif
 
-#endif // _ALARM_H
+#endif // _LIB_ALARM_H
 
 #endif // USE_ALARM			// use SysTick alarm (lib_alarm.c, lib_alarm.h)

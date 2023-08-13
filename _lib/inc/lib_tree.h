@@ -16,8 +16,8 @@
 
 #if USE_TREE		// use Tree list (lib_tree.c, lib_tree.h)
 
-#ifndef _TREE_H
-#define _TREE_H
+#ifndef _LIB_TREE_H
+#define _LIB_TREE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -100,6 +100,6 @@ sTree* TreeFindNextStop(sTree* tree, sTree* stop);
 }
 #endif
 
-#endif // _TREE_H
+#endif // _LIB_TREE_H
 
 #endif // USE_TREE		// use Tree list (lib_tree.c, lib_tree.h)

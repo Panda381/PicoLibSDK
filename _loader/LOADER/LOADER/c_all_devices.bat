@@ -4,6 +4,8 @@ call c.bat picoino10
 call d.bat
 call c.bat picoinomini
 call d.bat
+call c.bat demovga
+call d.bat
 call c.bat picopad08
 call d.bat
 call c.bat picopad10

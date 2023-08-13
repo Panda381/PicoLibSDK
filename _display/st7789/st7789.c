@@ -88,8 +88,10 @@
 #define DC_CMD	GPIO_Out0(DISP_DC_PIN); cb()	// set command mode
 #define DC_DATA	GPIO_Out1(DISP_DC_PIN); cb()	// set data mode
 
+#if USE_FRAMEBUF	// use default display frame buffer
 // frame buffer in RGB 5-6-5 pixel format
 ALIGNED u16 FrameBuf[FRAMESIZE];
+#endif // USE_FRAMEBUF
 
 const u8 RotationTab[4] = { 0x00, 0x60, 0xc0, 0xa0 }; // rotation mode for ST7789_MADCTL
 u8 DispRot;	// current display rotation
@@ -97,6 +99,14 @@ u16 DispWidth, DispHeight; // current display size
 
 // dirty window to update
 int DispDirtyX1, DispDirtyX2, DispDirtyY1, DispDirtyY2;
+
+// strip of back buffer
+/*
+u16* pDrawBuf = FrameBuf; // current draw buffer
+int DispStripInx = 0;	// current index of back buffer strip
+int DispMinY = 0;	// minimal Y; base of back buffer strip
+int DispMaxY = HEIGHT;	// maximal Y + 1; end of back buffer strip
+*/
 
 // last system time of auto update
 u32 DispAutoUpdateLast;
@@ -222,6 +232,44 @@ void DispWindow(u16 x1, u16 x2, u16 y1, u16 y2)
 	DispWriteCmd(ST7789_RAMWR);
 }
 
+// LOW level control: start sending image data to display window (DispSendImg() must follow)
+void DispStartImg(u16 x1, u16 x2, u16 y1, u16 y2)
+{
+	// set draw window
+	DispWindow(x1, x2, y1, y2);
+
+	// activate data mode
+	CS_ON;		// activate chip selection
+	DC_DATA;	// set data mode
+}
+
+// LOW level control: send one byte of image data to display (follows after DispStartImg())
+void DispSendImg(u8 data)
+{
+	// send data
+	while (SPI_TxIsFull(DISP_SPI)) {}
+	SPI_Write(DISP_SPI, data);
+
+	// flush received data
+	SPI_RxFlush(DISP_SPI);
+}
+
+// LOW level control: stop sending image data (follows after DispStartImg() and DispSendImg())
+void DispStopImg()
+{
+	// waiting for transmission to complete
+	while (SPI_IsBusy(DISP_SPI)) SPI_RxFlush(DISP_SPI);
+
+	// flush rest of received data
+	SPI_RxFlush(DISP_SPI);
+
+	// clear interrupt on receive overrun status
+	SPI_RxOverClear(DISP_SPI);
+
+	// deactivate chip selection
+	CS_OFF;
+}
+
 // set dirty all frame buffer
 void DispDirtyAll()
 {
@@ -287,7 +335,7 @@ void DispUpdate()
 
 		// send data from frame buffer
 		u16* s0 = &FrameBuf[DispDirtyX1 + DispDirtyY1*DispWidth];
-		int i;//, j;
+		int i;
 		for (i = DispDirtyY2 - DispDirtyY1; i > 0; i--)
 		{
 			DispWriteData(s0, (DispDirtyX2 - DispDirtyX1)*2);
@@ -388,21 +436,35 @@ void DispInit(u8 rot)
 	WaitMs(10);
 	GPIO_Out1(DISP_BLK_PIN); // set backlight on
 
+	// strip of back buffer
+/*
+	pDrawBuf = FrameBuf;	// current draw buffer
+	DispStripInx = 0;	// current index of back buffer strip
+	DispMinY = 0;		// minimal Y; base of back buffer strip
+	DispMaxY = HEIGHT;	// maximal Y + 1; end of back buffer strip
+*/
 	// clear display
+#if USE_FRAMEBUF	// use default display frame buffer
 	int i;
 	for (i = 0; i < FRAMESIZE; i++) FrameBuf[i] = 0;
 	DispUpdateAll();	// update all display (for 1st time to avoid display flickering)
 	DispWriteCmd(ST7789_DISPON); // enable display
 	DispUpdateAll();	// update all display
+#else
+	DispDirtyNone();
+	DispWriteCmd(ST7789_DISPON); // enable display
+#endif // USE_FRAMEBUF
 }
 
 // terminate display
 void DispTerm()
 {
+#if USE_FRAMEBUF	// use default display frame buffer
 	// clear display
 	int i;
 	for (i = 0; i < FRAMESIZE; i++) FrameBuf[i] = 0;
 	DispUpdateAll();	// update all display (for 1st time to avoid display flickering)
+#endif
 
 	// disable display
 	DispWriteCmd(ST7789_DISPOFF);

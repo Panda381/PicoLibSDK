@@ -49,6 +49,8 @@ void OpenScreen()
 {
 	int i, x, x2, y, y1, y2, phase;
 
+	StopSound();
+
 	// clear open screen
 	DrawClear();
 

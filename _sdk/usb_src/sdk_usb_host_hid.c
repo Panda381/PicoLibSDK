@@ -927,6 +927,24 @@ u32 UsbGetKey()
 	return e.data[0];
 }
 
+// check if key is pressed
+Bool UsbKeyIsPressed(u8 key)
+{
+	switch (key)
+	{
+	case HID_KEY_CONTROL_LEFT: return (UsbHidKeyOld.modi & USB_KEY_MODI_LCTRL) != 0;
+	case HID_KEY_SHIFT_LEFT: return (UsbHidKeyOld.modi & USB_KEY_MODI_LSHIFT) != 0;
+	case HID_KEY_ALT_LEFT: return (UsbHidKeyOld.modi & USB_KEY_MODI_LALT) != 0;
+	case HID_KEY_GUI_LEFT: return (UsbHidKeyOld.modi & USB_KEY_MODI_LWIN) != 0;
+	case HID_KEY_CONTROL_RIGHT: return (UsbHidKeyOld.modi & USB_KEY_MODI_RCTRL) != 0;
+	case HID_KEY_SHIFT_RIGHT: return (UsbHidKeyOld.modi & USB_KEY_MODI_RSHIFT) != 0;
+	case HID_KEY_ALT_RIGHT: return (UsbHidKeyOld.modi & USB_KEY_MODI_RALT) != 0;
+	case HID_KEY_GUI_RIGHT: return (UsbHidKeyOld.modi & USB_KEY_MODI_RWIN) != 0;
+	case NOKEY: return False;
+	}
+	return UsbHostHidFindKey(&UsbHidKeyOld, key);
+}
+
 // get USB character (returns NOCHAR if no character)
 char UsbGetChar()
 {
@@ -936,8 +954,14 @@ char UsbGetChar()
 		k = UsbGetKey();
 		if (k == 0) return NOCHAR;
 		ch = (char)(k >> 16);
-	} while (ch != NOCHAR);
+	} while (ch == NOCHAR);
 	return ch;
+}
+
+// flush keys
+void UsbFlushKey()
+{
+	while (UsbGetKey() != NOKEY) {}
 }
 
 // get USB mouse (returns u32 packed mouse event, or 0 if no mouse event)

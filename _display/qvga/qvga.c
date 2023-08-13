@@ -100,11 +100,13 @@
 #define QVGA_DMA_CB	(QVGA_DMA+0)	// VGA DMA channel - control block of base layer
 #define QVGA_DMA_PIO	(QVGA_DMA+1)	// VGA DMA channel - copy data of base layer to PIO (raises IRQ0 on quiet)
 
+#if USE_FRAMEBUF	// use default display frame buffer
 // frame buffer in RGB 3-3-2 pixel format
 ALIGNED u8 FrameBuf[FRAMESIZE]; // display buffer
 #if USE_QVGA > 1
 ALIGNED u8 BackBuf[FRAMESIZE]; // back buffer
 #endif
+#endif // USE_FRAMEBUF
 
 // dirty window to update
 int DispDirtyX1, DispDirtyX2, DispDirtyY1, DispDirtyY2;
@@ -128,7 +130,7 @@ u32* ScanLineCBNext;	// next control buffer
 volatile int QVgaScanLine; // current processed scan line 0... (next displayed scan line)
 volatile u32 QVgaFrame;	// frame counter
 
-// VGA DMA handler - called on end of every scanline
+// QVGA DMA handler - called on end of every scanline
 void NOFLASH(QVgaLine)()
 {
 	// Clear the interrupt request for DMA control channel
@@ -137,7 +139,7 @@ void NOFLASH(QVgaLine)()
 	// update DMA control channel and run it
 	DMA_SetReadTrig(QVGA_DMA_CB, ScanLineCBNext);
 
-	// switch current buffer index (bufinx = current preparing buffer, MiniVgaBufInx = current running buffer)
+	// switch current buffer index (bufinx = current preparing buffer, QVgaBufInx = current running buffer)
 	int bufinx = QVgaBufInx;
 	QVgaBufInx = bufinx ^ 1;
 
@@ -337,11 +339,13 @@ void QVgaDmaInit()
 // initialize QVGA (required system clock CLK_SYS to be set to 126 MHz)
 void QVgaInit()
 {
+#if USE_FRAMEBUF		// use default display frame buffer
 	// clear frame buffers
 	memset(FrameBuf, 0, FRAMESIZE);
 #if USE_QVGA > 1
 	memset(BackBuf, 0, FRAMESIZE);
 #endif
+#endif // USE_FRAMEBUF
 
 	dmb();
 

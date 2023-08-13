@@ -1,0 +1,13 @@
+^YGhost Racing^0
+
+Game of car racing.
+You can race with your
+ghost from best lap.
+
+Requires USB keyboard
+
+^WUP^0 .......... spead up
+^WDOWN^0 ........ breaks
+^WLEFT^0 ........ turn left
+^WRIGHT^0 ....... turn right
+^WEsc^0 ......... quit
