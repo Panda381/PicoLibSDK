@@ -43,11 +43,11 @@ volatile int VideoDispHeight = HEIGHT;
 // core1 function - display video frame
 void VideoDispFrame()
 {
-	int i, h;
+	int i, j,h;
 	u16* pal;
 	u8 *frm, *s;
-	u16 c;
-	u8 b;
+	u16 c, c2;
+	u16 redmask, greenmask, bluemask;
 
 	for (;;)
 	{
@@ -69,13 +69,27 @@ void VideoDispFrame()
 			s = frm + 2*256; // pointer to start of image data
 			u16* d = FrameBuf; // destination
 
+			redmask = 0xf800; // red mask (5 bits)
+			greenmask = 0x07e0; // green mask (6 bits)
+			bluemask = 0x001f; // blue mask (5 bits)
+
 			// loop through pixels
-			for (i = 0; i < WIDTH/2*h; i++)
+			for (i = 0; i < h; i++)
 			{
-				b = *s++; // load pixel
-				c = pal[b]; // convert pixel to palettes
-				*d++ = c;
-				*d++ = c;
+				c2 = pal[*s++];
+
+				for (j = 0; j < WIDTH/2-1; j++)
+				{
+					c = c2;
+					*d++ = c; // save 1st pixel (not interpolated)
+					c2 = pal[*s++]; // convert pixel to palettes
+
+					*d++ =	((((c & redmask) >> 1) + ((c2 & redmask) >> 1)) & redmask) | // red
+						((((c & greenmask) + (c2 & greenmask)) >> 1) & greenmask) | // green
+						((((c & bluemask) + (c2 & bluemask)) >> 1) & bluemask);  // blue
+				}
+				*d++ = c2;
+				*d++ = c2;
 			}
 
 #else // USE_VGA
@@ -87,15 +101,34 @@ void VideoDispFrame()
 			pal = (u16*)frm; // pointer to palettes
 			s = frm + 2*256; // pointer to start of image data
 
+			redmask = 0xf800; // red mask (5 bits)
+			greenmask = 0x07e0; // green mask (6 bits)
+			bluemask = 0x001f; // blue mask (5 bits)
+
 			// loop through pixels
-			for (i = 0; i < WIDTH/2*h; i++)
+			for (i = 0; i < h; i++)
 			{
-				b = *s++; // load pixel
-				c = pal[b]; // convert pixel to palettes
+				c2 = pal[*s++];
+
+				for (j = 0; j < WIDTH/2-1; j++)
+				{
+					c = c2;
+					DispSendImg(c & 0xff); // send 1st pixel
+					DispSendImg(c >> 8);
+
+					c2 = pal[*s++]; // convert pixel to palettes
+
+					c =	((((c & redmask) >> 1) + ((c2 & redmask) >> 1)) & redmask) | // red
+						((((c & greenmask) + (c2 & greenmask)) >> 1) & greenmask) | // green
+						((((c & bluemask) + (c2 & bluemask)) >> 1) & bluemask);  // blue
+
+					DispSendImg(c & 0xff); // send 1st pixel
+					DispSendImg(c >> 8);
+				}
 				DispSendImg(c & 0xff); // send 1st pixel
 				DispSendImg(c >> 8);
-				DispSendImg(c & 0xff); // send 2nd copy of the pixel
-				DispSendImg(c >> 8);
+				DispSendImg(c2 & 0xff); // send 2nd copy of the pixel
+				DispSendImg(c2 >> 8);
 			}
 
 			// stop sending image to the display
