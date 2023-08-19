@@ -16,15 +16,20 @@
 
 #include "../../global.h"	// globals
 #include "../../_sdk/inc/sdk_gpio.h"
+#include "pico_bat.h"
 
 // Device init
 void DeviceInit()
 {
+	// init battery measurement
+	BatInit();
 }
 
 // Device terminate
 void DeviceTerm()
 {
+	// terminate battery measurement
+	BatTerm();
 }
 
 // set LED ON (inx = LED index LED?)

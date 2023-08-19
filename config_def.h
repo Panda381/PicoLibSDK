@@ -563,7 +563,7 @@ by VGA driver rendering service.
 #endif
 
 #ifndef USE_STACKCHECK
-#define USE_STACKCHECK	0		// use Stack check (sdk_cpu.c, sdk_cpu.h)
+#define USE_STACKCHECK	1		// use Stack check (sdk_cpu.c, sdk_cpu.h)
 #endif
 
 #ifndef ASM64

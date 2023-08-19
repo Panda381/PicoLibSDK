@@ -13,6 +13,9 @@
 // to change from the default configuration in config_def.h.
 // *********
 
+#define SD_BAUD		12000000 // SD card baud speed (should be max. 7-12 Mbit/s; default standard bus speed
+				//   is 12.5 MB/s, suggested max. bitrate 15 Mbit/s, min. writting speed 2 MB/s)
+
 //#define FONT			FontBold8x8	// default system font
 //#define FONTW			8		// width of system font
 //#define FONTH			8		// height of system font

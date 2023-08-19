@@ -151,7 +151,7 @@
 #endif
 
 #ifndef SD_BAUD
-#define SD_BAUD		12000000 // SD card baud speed (should be max. 7-12 Mbit/s; default standard bus speed
+#define SD_BAUD		4000000 // SD card baud speed (should be max. 7-12 Mbit/s; default standard bus speed
 				//   is 12.5 MB/s, suggested max. bitrate 15 Mbit/s, min. writting speed 2 MB/s)
 #endif
 
@@ -198,7 +198,7 @@
 #endif
 
 #ifndef SD_BAUD
-#define SD_BAUD		12000000 // SD card baud speed (should be max. 7-12 Mbit/s; default standard bus speed
+#define SD_BAUD		4000000 // SD card baud speed (should be max. 7-12 Mbit/s; default standard bus speed
 				//   is 12.5 MB/s, suggested max. bitrate 15 Mbit/s, min. writting speed 2 MB/s)
 #endif
 

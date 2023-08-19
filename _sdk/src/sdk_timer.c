@@ -73,8 +73,7 @@ void WaitMs(int ms)
 // start alarm
 //   alarm = alarm number 0..3
 //   handler = interrupt handler
-//   time = absolute system time LOW in which to activate the alarm (max. difference 71 minutes)
-//            If 64-bit time is required, check HIGH part of the time in interrupt service.
+//   time = time interval in [us] after which to activate first alarm (min 0 us, max 71 minutes)
 // Vector table must be located in RAM
 // If vector table is not in RAM, use services with names isr_timer_0..isr_timer_3
 // Call AlarmAck on start of interrupt, then AlarmRestart to restart again, or AlarmStop to deactivate.
@@ -97,15 +96,25 @@ void AlarmStart(u8 alarm, irq_handler_t handler, u32 time)
 	RegSet(TIMER_INTE, BIT(alarm));
 
 	// arm timer
-	*TIMER_ALARM(alarm) = time;
+	if (time < 3) time = 3;
+	IRQ_LOCK;
+	*TIMER_ALARM(alarm) = time + Time();
+	IRQ_UNLOCK;
 }
 
-// restart alarm - can be called from an interrupt for a repeated alarm or if the 64-bit time has not been reached yet
-//   timedelta = difference of new time LOW from old alarm in [us]
-void AlarmRestart(u8 alarm, u32 timedelta)
+// restart alarm - can be called from an interrupt for a repeated alarm
+//   time = time interval in [us] after which to activate next alarm (max 71 minutes)
+// The maximum achievable interrupt frequency is about 100 kHz.
+void AlarmRestart(u8 alarm, u32 time)
 {
 	// re-arm timer
-	*TIMER_ALARM(alarm) = *TIMER_ALARM(alarm) + timedelta;
+	IRQ_LOCK;
+	time += *TIMER_ALARM(alarm); // next absolute time
+	u32 t = Time(); // current time
+	s32 dt = (s32)(time - t); // remaining time
+	if ((dt < 4) && (dt > -50)) time = t + 4;
+	*TIMER_ALARM(alarm) = time;
+	IRQ_UNLOCK;
 }
 
 // stop alarm - can be called from an interrupt if no next interrupt is required

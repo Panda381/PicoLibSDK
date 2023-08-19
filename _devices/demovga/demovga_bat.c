@@ -43,7 +43,7 @@ float GetBat()
 	ADC_Mux(BAT_ADC);
 
 	// get battery voltage
-	float voltage = ADC_SingleU()*BAT_MUL;//+BAT_DIODE_FV;
+	float voltage = ADC_SingleU()*BAT_MUL;
 	GPIO_Out0(LED_PIN); 
 	return voltage;
 }
@@ -61,7 +61,7 @@ int GetBatInt()
 	ADC_Mux(BAT_ADC);
 
 	// get battery voltage
-	int voltage = ADC_SingleUint()*BAT_MUL;//+BAT_DIODE_FV_INT;
+	int voltage = ADC_SingleUint()*BAT_MUL;
 	GPIO_Out0(LED_PIN); 
 	return voltage;
 }

@@ -1,4 +1,4 @@
-Video converter to PicoPad/Picoino format.
+Video converter to PicoPad/DemoVGA format.
 
 How to convert video to PicoPad format of video:
 

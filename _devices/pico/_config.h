@@ -24,3 +24,8 @@
 #ifndef UART_STDIO_RX
 #define UART_STDIO_RX	1		// UART stdio RX GPIO pin
 #endif
+
+// Battery
+#define BAT_PIN		29		// input from battery
+#define BAT_ADC		ADC_MUX_GPIO29	// ADC input
+#define BAT_MUL		3		// voltage multiplier

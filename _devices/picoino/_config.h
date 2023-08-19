@@ -201,7 +201,7 @@
 #endif
 
 #ifndef SD_BAUD
-#define SD_BAUD		12000000 // SD card baud speed (should be max. 7-12 Mbit/s; default standard bus speed
+#define SD_BAUD		4000000 // SD card baud speed (should be max. 7-12 Mbit/s; default standard bus speed
 				//   is 12.5 MB/s, suggested max. bitrate 15 Mbit/s, min. writting speed 2 MB/s)
 #endif
 
@@ -209,5 +209,3 @@
 #define BAT_PIN		29		// input from battery
 #define BAT_ADC		ADC_MUX_GPIO29	// ADC input
 #define BAT_MUL		3		// voltage multiplier
-#define BAT_DIODE_FV_INT 	311		// voltage drop in mV on diode
-#define BAT_DIODE_FV 		0.311f		// voltage drop in mV on diode

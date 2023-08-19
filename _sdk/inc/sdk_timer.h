@@ -80,9 +80,8 @@ void WaitMs(int ms);
 // start alarm
 //   alarm = alarm number 0..3
 //   handler = interrupt handler
-//   time = absolute system time LOW in which to activate the alarm (max. difference 71 minutes)
-//            If 64-bit time is required, check HIGH part of the time in interrupt service.
-// Vector table must be located in RAM
+//   time = time interval in [us] after which to activate first alarm (min 0 us, max 71 minutes)
+// Vector table must be located in RAM.
 // If vector table is not in RAM, use services with names isr_timer_0..isr_timer_3
 // Call AlarmAck on start of interrupt, then AlarmRestart to restart again, or AlarmStop to deactivate.
 // Alarm handler is shared between both processor cores. Only alarms of different numbers can be independent.
@@ -94,16 +93,20 @@ INLINE void AlarmForce(u8 alarm) { RegSet(TIMER_INTF, BIT(alarm)); }
 // unforce alarm
 INLINE void AlarmUnforce(u8 alarm) { RegClr(TIMER_INTF, BIT(alarm)); }
 
-// acknowledge alarm 0..3 interrupt - should be called from start of interrupt handler
+// check if alarm is forced
+INLINE Bool AlarmIsForced(u8 alarm) { return ((*TIMER_INTF & BIT(alarm)) != 0); }
+
+// acknowledge alarm 0..3 interrupt - should be called at start of interrupt handler
 //   Alarm will be disarmed automatically when it is triggered
 INLINE void AlarmAck(u8 alarm) { *TIMER_INTR = BIT(alarm); }
 
 // check alarm pending status
 INLINE Bool AlarmIsPending(u8 alarm) { return ((*TIMER_INTS & BIT(alarm)) != 0); }
 
-// restart alarm - can be called from an interrupt for a repeated alarm or if the 64-bit time has not been reached yet
-//   timedelta = difference of new time LOW from old alarm in [us]
-void AlarmRestart(u8 alarm, u32 timedelta);
+// restart alarm - can be called from an interrupt for a repeated alarm
+//   time = time interval in [us] after which to activate next alarm (max 71 minutes)
+// The maximum achievable interrupt frequency is about 100 kHz.
+void AlarmRestart(u8 alarm, u32 time);
 
 // stop alarm - can be called from an interrupt if no next interrupt is required
 void AlarmStop(u8 alarm);

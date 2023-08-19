@@ -9,3 +9,4 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "pico_init.h"	// initialize
+#include "pico_bat.h"	// battery
