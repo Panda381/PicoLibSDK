@@ -76,7 +76,7 @@ extern const u16 SpritesImg_Pal[55] __attribute__ ((aligned(4)));
 extern const u8 SpritesImg[55296] __attribute__ ((aligned(4)));
 #define SPRITEW		32
 #define SPRITEH		32
-#define TRANSCOL	RGBTO16(149, 34, 140)
+#define TRANSCOL	COLOR(149, 34, 140)
 
 // sprite indices
 

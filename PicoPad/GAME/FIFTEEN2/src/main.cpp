@@ -101,14 +101,14 @@ void DrawBoard()
 			b = Board[i*TILESX + j];
 			if ((b == TILE_EMPTY_INX) && !GameEnd) // empty tile in game
 			{
-				DrawImgPal(TilesImg + TILE_EMPTY*TILEW*TILEH, TilesImg_Pal, x, y, TILEW, TILEH, TILEW);
+				DrawImgPal(TilesImg, TilesImg_Pal, 0, TILE_EMPTY*TILEH, x, y, TILEW, TILEH, TILEW);
 			}
 			else
 			{
 				// draw result tile
 				bx = b & 3;
 				by = b >> 2;
-				DrawImgPal(Img + bx*TILEW + by*IMGW*TILEH, Pal, x, y, TILEW, TILEH, IMGW);
+				DrawImgPal(Img, Pal, bx*TILEW, by*TILEH, x, y, TILEW, TILEH, IMGW);
 
 				// draw frame
 				if ((PuzzleInx != 0) && DispTileNum && (b != TILE_EMPTY_INX) && !GameEnd)
@@ -130,7 +130,7 @@ void WaitOn()
 {
 	int x = HoleX()*TILEW+BOARDX;
 	int y = HoleY()*TILEH+BOARDY;
-	DrawImgPal(TilesImg + TILE_WAIT*TILEW*TILEH, TilesImg_Pal, x, y, TILEW, TILEH, TILEW);
+	DrawImgPal(TilesImg, TilesImg_Pal, 0, TILE_WAIT*TILEH, x, y, TILEW, TILEH, TILEW);
 	DispUpdate();
 }
 
@@ -139,7 +139,7 @@ void WaitOn2()
 {
 	int x = HoleX()*TILEW+BOARDX;
 	int y = HoleY()*TILEH+BOARDY;
-	DrawImgPal(TilesImg + TILE_WAIT2*TILEW*TILEH, TilesImg_Pal, x, y, TILEW, TILEH, TILEW);
+	DrawImgPal(TilesImg, TilesImg_Pal, 0, TILE_WAIT2*TILEH, x, y, TILEW, TILEH, TILEW);
 	DispUpdate();
 }
 
@@ -148,7 +148,7 @@ void WaitOff()
 {
 	int x = HoleX()*TILEW+BOARDX;
 	int y = HoleY()*TILEH+BOARDY;
-	DrawImgPal(TilesImg + TILE_EMPTY*TILEW*TILEH, TilesImg_Pal, x, y, TILEW, TILEH, TILEW);
+	DrawImgPal(TilesImg, TilesImg_Pal, 0, TILE_EMPTY*TILEH, x, y, TILEW, TILEH, TILEW);
 	DispUpdate();
 }
 

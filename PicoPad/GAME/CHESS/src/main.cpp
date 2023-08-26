@@ -200,8 +200,8 @@ void DispField(u8 inx, u8 w, u16 color, Bool usemove, Bool usecatch)
 		// display enable mark
 		if (BoardEnable[inx])
 		{
-			color = RGBTO16(0, 255, 0);
-			if (((row + col) & 1) != 0) color = RGBTO16(0, 180, 0);
+			color = COLOR(0, 255, 0);
+			if (((row + col) & 1) != 0) color = COLOR(0, 180, 0);
 			w = 2;
 #define DDW 2
 			DrawRect(x+DDW, y+DDW, TILEW-2*DDW, w, color); // top
@@ -985,11 +985,11 @@ MOVE_AGAIN:
 	{
 		// prepare cursor color
 		piece = GetPiece(p->curpos);
-		col = RGBTO16(255, 0, 0); // red cursor
+		col = COLOR(255, 0, 0); // red cursor
 		ok = False;
 		if (BoardEnable[p->curpos])
 		{
-			col = RGBTO16(0, 64, 255);
+			col = COLOR(0, 64, 255);
 			ok = True; // can move
 		}
 
@@ -1091,11 +1091,11 @@ MOVE_AGAIN:
 	while (True)
 	{
 		// prepare cursor color
-		col = RGBTO16(255, 0, 0); // red cursor
+		col = COLOR(255, 0, 0); // red cursor
 		ok = False;
 		if (BoardEnable[p->curpos])
 		{
-			col = RGBTO16(0, 64, 255);
+			col = COLOR(0, 64, 255);
 			ok = True; // can move
 		}
 

@@ -62,7 +62,7 @@ void DrawBoard()
 			b = Board[i*TILESX + j];
 			x = j*TILEW+BOARDX;
 			y = i*TILEH+BOARDY;
-			DrawImg(TilesImg + b*TILEH*TILEW, x, y, TILEW, TILEH, TILEW);
+			DrawImg(TilesImg, 0, b*TILEH, x, y, TILEW, TILEH, TILEW);
 		}
 	}
 	DispUpdate();
@@ -73,7 +73,7 @@ void WaitOn()
 {
 	int x = HoleX()*TILEW+BOARDX;
 	int y = HoleY()*TILEH+BOARDY;
-	DrawImg(TilesImg + TILE_WAIT*TILEH*TILEW, x, y, TILEW, TILEH, TILEW);
+	DrawImg(TilesImg, 0, TILE_WAIT*TILEH, x, y, TILEW, TILEH, TILEW);
 	DispUpdate();
 }
 
@@ -82,7 +82,7 @@ void WaitOn2()
 {
 	int x = HoleX()*TILEW+BOARDX;
 	int y = HoleY()*TILEH+BOARDY;
-	DrawImg(TilesImg + TILE_WAIT2*TILEH*TILEW, x, y, TILEW, TILEH, TILEW);
+	DrawImg(TilesImg, 0, TILE_WAIT2*TILEH, x, y, TILEW, TILEH, TILEW);
 	DispUpdate();
 }
 
@@ -91,7 +91,7 @@ void WaitOff()
 {
 	int x = HoleX()*TILEW+BOARDX;
 	int y = HoleY()*TILEH+BOARDY;
-	DrawImg(TilesImg + TILE_EMPTY*TILEH*TILEW, x, y, TILEW, TILEH, TILEW);
+	DrawImg(TilesImg, 0, TILE_EMPTY*TILEH, x, y, TILEW, TILEH, TILEW);
 	DispUpdate();
 }
 

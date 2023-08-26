@@ -186,7 +186,7 @@ void DispTile(u8 inx, Bool cursor)
 	if (n > 0) inx = n + owner*4;
 
 	// display tile
-	DrawImg(AtomsImg + inx*TILEW*TILEH, x, y, TILEW, TILEH, TILEW);
+	DrawImg(AtomsImg, 0, inx*TILEH, x, y, TILEW, TILEH, TILEW);
 
 	// display cursor
 	if (cursor) DrawFrame(x+1, y+1, TILEW-2, TILEH-2, Players[Player].color);

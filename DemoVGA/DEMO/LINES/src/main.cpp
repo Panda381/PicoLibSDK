@@ -94,7 +94,7 @@ int main()
 			if (bb > 255) bb = 255;
 
 			// draw line
-			DrawLine(line->coord[C_X1], line->coord[C_Y1], line->coord[C_X2], line->coord[C_Y2], RGBTO16(rr,gg,bb));
+			DrawLine(line->coord[C_X1], line->coord[C_Y1], line->coord[C_X2], line->coord[C_Y2], COLOR(rr,gg,bb));
 
 			// shift line index
 			j++;

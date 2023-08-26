@@ -15,7 +15,7 @@ int main()
 	u32 t, t2, dt;
 
 	// draw oscilloscope
-	DrawImg(OscilImg, 0, 0, WIDTH, HEIGHT, WIDTH);
+	DrawImg(OscilImg, 0, 0, 0, 0, WIDTH, HEIGHT, WIDTH);
 
 	// main loop
 	f1 = f2 = f3 = 0;
@@ -24,7 +24,7 @@ int main()
 	while (True)
 	{
 		// draw grid
-		DrawImg(GridImg, GRIDX, GRIDY, GRIDW, GRIDH, GRIDWB);
+		DrawImg(GridImg, 0, 0, GRIDX, GRIDY, GRIDW, GRIDH, GRIDWB);
 
 		// delta time
 		t2 = Time();

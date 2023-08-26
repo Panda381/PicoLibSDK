@@ -185,7 +185,7 @@ void DispField(u8 inx, u8 w, u16 color, Bool usemove, Bool usecatch)
 	}
 
 	// display field
-	DrawImg(PiecesImg + xs + ys*PIECESIMGW, x, y, TILEW, TILEH, PIECESIMGW);
+	DrawImg(PiecesImg, xs, ys, x, y, TILEW, TILEH, PIECESIMGW);
 
 	// display cursor frame
 	if (w > 0)

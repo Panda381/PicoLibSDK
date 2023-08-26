@@ -15,11 +15,11 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
-#include "../../_display/vga/vga.h" // VGA display
+#include "../../_display/minivga/minivga.h" // VGA display
 #include "../../_lib/inc/lib_pwmsnd.h"
 #include "../../_lib/inc/lib_fat.h"
 #include "../../_lib/inc/lib_sd.h"
-#include "../../_lib/inc/lib_qdraw.h"
+#include "../../_lib/inc/lib_draw.h"
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "../../_sdk/inc/sdk_timer.h"
 #include "demovga_init.h"

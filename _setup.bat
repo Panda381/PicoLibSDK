@@ -6,9 +6,10 @@ rem This batch is called from the _c1.bat file.
 
 rem Use configuration name as parameter of the batch, to select target device:
 rem   pico .......... base Raspberry Pico module, optionally with UART on pins GPIO0 and GPIO1
-rem   picoinomini ... Picoino mini version with QVGA RGB332 output
-rem   picoino10 ..... Picoino version 1.0 with QVGA RGB332 output
-rem   demovga ....... DemoVGA board
+rem   picotron ...... Picotron with VGA YRGB1111 output
+rem   picoinomini ... Picoino mini version with VGA RGB332 output
+rem   picoino10 ..... Picoino version 1.0 with VGA RGB332 output
+rem   demovga ....... DemoVGA board with VGA RGB565 output
 rem   picopad08 ..... PicoPad beta version 0.8
 rem   picopad10 ..... PicoPad version 1.0 with TFT RGB565 output
 rem   (empty) ....... default compilation
@@ -16,6 +17,7 @@ rem   (empty) ....... default compilation
 rem Move ":default" label before configuration, which you want to use as default.
 
 if "%1"=="pico" goto pico
+if "%1"=="picotron" goto picotron
 if "%1"=="picoinomini" goto picoinomini
 if "%1"=="picoino10" goto picoino10
 if "%1"=="demovga" goto demovga
@@ -33,6 +35,12 @@ goto default
 set DEVICE=pico
 set DEVCLASS=pico
 set DEVDIR=!Pico
+exit /b
+
+:picotron
+set DEVICE=picotron
+set DEVCLASS=picotron
+set DEVDIR=!Picotron
 exit /b
 
 :picoinomini

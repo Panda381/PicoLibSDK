@@ -54,7 +54,7 @@ rem Compile
 echo Device: %DEVICE%
 ..\..\..\_tools\make.exe all
 rem If you want to see all error messages, compile using this command:
-rem ..\..\_tools\make.exe all 2> err.txt
+rem ..\..\..\_tools\make.exe all 2> err.txt
 
 rem Check compilation result
 if errorlevel 1 goto err

@@ -14,8 +14,8 @@ int main()
 	float phase;
 
 	// draw sky and mast
-	DrawImg(CloudsImg, 0, 0, WIDTH, HEIGHT, WIDTH);
-	DrawBlit(MastImg, MASTX, HEIGHT - MASTH, MASTW, MASTH, MASTW, COL_WHITE);
+	DrawImg(CloudsImg, 0, 0, 0, 0, WIDTH, HEIGHT, WIDTH);
+	DrawBlit(MastImg, 0, 0, MASTX, HEIGHT - MASTH, MASTW, MASTH, MASTW, COL_WHITE);
 
 	// redraw all display
 	DispUpdateAll();
@@ -36,13 +36,13 @@ int main()
 			x2 = x + FLAGX + MASTX;
 
 			// draw flag
-			DrawImg(FlagImg+x, x2, y, 1, FLAGH, FLAGW);
+			DrawImg(FlagImg+x, 0, 0, x2, y, 1, FLAGH, FLAGW);
 
 			// redraw sky
 			if (x2 >= MASTX + MASTW) // to avoid overwrite top part of the mast
 			{
-				DrawImg(CloudsImg+x2, x2, 0, 1, y, WIDTH);
-				DrawImg(CloudsImg+x2+(y+FLAGH)*WIDTH, x2, y + FLAGH, 1, HEIGHT - y - FLAGH, WIDTH);
+				DrawImg(CloudsImg+x2, 0, 0, x2, 0, 1, y, WIDTH);
+				DrawImg(CloudsImg+x2+(y+FLAGH)*WIDTH, 0, 0, x2, y + FLAGH, 1, HEIGHT - y - FLAGH, WIDTH);
 			}
 		}
 

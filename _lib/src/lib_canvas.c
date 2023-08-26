@@ -18,7 +18,7 @@
 
 #if USE_CANVAS			// use Canvas (lib_canvas.c, lib_canvas.h)
 
-//#include "../_display/vga/vga.h"	// VGA base
+//#include "../_display/minivga/minivga.h"	// VGA base
 #include "../../_sdk/inc/sdk_interp.h"
 #include "../inc/lib_mat2d.h"
 #include "../inc/lib_canvas.h"		// canvas

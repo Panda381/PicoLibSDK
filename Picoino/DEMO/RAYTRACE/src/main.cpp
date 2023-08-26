@@ -12,7 +12,7 @@ int main()
 #if RENDER_BOTHCORES	// 1 = use both cores to render, 0 = use only core 0
 
 	// start render on core 1
-	QCore1Exec(Render3D);
+	VgaCore1Exec(Render3D);
 
 	// leaving little head start for core 1 so that both lines can be displayed simultaneously
 	WaitMs(100);

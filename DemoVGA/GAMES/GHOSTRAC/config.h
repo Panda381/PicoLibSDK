@@ -13,8 +13,6 @@
 // to change from the default configuration in config_def.h.
 // *********
 
-#define USE_VGA			2		// use VGA display 320x240/16; 1=use 1 frame buffer 153 KB, 2=add 1/2 back buffer 230 KB, 3=add 1/4 back buffer 192 KB (vga.c, vga.h)
-
 //#define FONT			FontBold8x8	// default system font
 //#define FONTW			8		// width of system font
 //#define FONTH			8		// height of system font

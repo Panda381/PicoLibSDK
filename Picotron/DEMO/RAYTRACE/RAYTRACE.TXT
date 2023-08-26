@@ -1,0 +1,10 @@
+^YRaytracing^0
+
+Demo - 3D pattern
+       generation by ray
+       tracing method
+
+Resolution 800*600/4 bits
+Demo uses both CPU cores.
+
+^WC^0 ....... quit

@@ -119,7 +119,7 @@ extern const u8 SpritesImg[2016] __attribute__ ((aligned(4)));
 #define HOUSETOTW	(HOUSENUM*HOUSEDX - HOUSESPACEX) // house total width (= 168)
 #define HOUSEX		(((WIDTH-HOUSETOTW)/2) & ~3) // house X coordinate (= 76, must be multiply of 4)
 
-//#define HOUSECOL	RGBTO16(255, 128, 0) // house color
+//#define HOUSECOL	COLOR(255, 128, 0) // house color
 
 // === mothership
 

@@ -21,8 +21,8 @@ int main()
 
 		// game goal
 		SelFont6x8();
-		DrawText("The aim of the game is to build a castle with", (WIDTH - (72-27)*6)/2, 32, RGBTO16(0, 186, 255));
-		DrawText("height of 100, or to destroy opponent's castle.", (WIDTH - (74-27)*6)/2, 40, RGBTO16(0, 186, 255));
+		DrawText("The aim of the game is to build a castle with", (WIDTH - (72-27)*6)/2, 32, COLOR(0, 186, 255));
+		DrawText("height of 100, or to destroy opponent's castle.", (WIDTH - (74-27)*6)/2, 40, COLOR(0, 186, 255));
 
 #define MENUX 10
 #define MENUY (48)

@@ -308,8 +308,8 @@ int main()
 		// update skyline
 		offx = CarDir*2*SKYLINEW/PI;
 		while (offx >= SKYLINEW) offx -= SKYLINEW;
-		DrawImg(SkylineImg, -offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
-		DrawImg(SkylineImg, WIDTH-offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
+		DrawImg(SkylineImg, 0, 0, -offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
+		DrawImg(SkylineImg, 0, 0, WIDTH-offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
 
 		// update terrain
 		Mat2D_PrepDrawImg(&Mat, TILESIZE, TILESIZE, CarX, CarY, WIDTH, WIDTH, 0, 0, CarDir, 0, TILESIZE);
@@ -392,7 +392,7 @@ int main()
 		turn = (int)((CarTurn + TURNMAX)/(2*TURNMAX)*CARIMGNUM - 0.5);
 		if (turn < 0) turn = 0;
 		if (turn >= CARIMGNUM) turn = CARIMGNUM-1;
-		DrawBlit(CarImgList[turn], CARIMGX, CARIMGY, CARIMGW, CARIMGH, CARIMGW, CARTRANS);
+		DrawBlit(CarImgList[turn], 0, 0, CARIMGX, CARIMGY, CARIMGW, CARIMGH, CARIMGW, CARTRANS);
 
 		// update time counter
 		if (CheckNext != GRASS) // game started

@@ -1,4 +1,4 @@
-CSRC += ../../../_display/qvga/qvga.c
+CSRC += ../../../_display/minivga/minivga.c
 CSRC += ../../../_devices/picoino/picoino_bat.c
 CSRC += ../../../_devices/picoino/picoino_init.c
 CSRC += ../../../_devices/picoino/picoino_ss.c

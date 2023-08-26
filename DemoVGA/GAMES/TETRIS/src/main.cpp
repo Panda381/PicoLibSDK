@@ -198,7 +198,7 @@ const int LevSpeed[LEVELNUM] = { 1000, 700, 500, 350, 250, 200, 180, 150, 120, 1
 void DispTile(u8 x, u8 y)
 {
 	u8 tile = Board[x + y*MAPW];
-	DrawImgPal(TilesImg + tile*TILESIZE, TilesImg_Pal,
+	DrawImgPal(TilesImg, TilesImg_Pal, tile*TILESIZE, 0,
 		x*TILESIZE, y*TILESIZE, TILESIZE, TILESIZE, TILESIMGW);
 }
 
@@ -486,7 +486,7 @@ void DelAllRows()
 		PLAYSOUND(LevelUpSnd);
 
 		// display message
-		DrawTextBg(" LEVEL UP ", (WIDTH - 10*8)/2, HEIGHT/2, RGBTO16(0, 0, 128), COL_YELLOW);
+		DrawTextBg(" LEVEL UP ", (WIDTH - 10*8)/2, HEIGHT/2, COLOR(0, 0, 128), COL_YELLOW);
 		DispUpdate();
 
 		// wait

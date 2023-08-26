@@ -387,8 +387,8 @@ int main()
 		DrawText2("Life", (WIDTH - 4*16)/2, 0, COL_YELLOW);
 
 		// game goal
-		DrawText("Cell rules: 3 cells born new cell,", (WIDTH - (61-27)*8)/2, 32, RGBTO16(0, 186, 255));
-		DrawText("2 cells stable state, other dead.", (WIDTH - (60-27)*8)/2, 48, RGBTO16(0, 186, 255));
+		DrawText("Cell rules: 3 cells born new cell,", (WIDTH - (61-27)*8)/2, 32, COLOR(0, 186, 255));
+		DrawText("2 cells stable state, other dead.", (WIDTH - (60-27)*8)/2, 48, COLOR(0, 186, 255));
 
 #define MENUX 10
 #define MENUY 70

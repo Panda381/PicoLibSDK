@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                              PicoPad Battery
+//                              Picoino Battery
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
@@ -14,8 +14,8 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#ifndef _PICOPAD_BAT_H
-#define _PICOPAD_BAT_H
+#ifndef _PICOINO_BAT_H
+#define _PICOINO_BAT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,4 +37,4 @@ void BatTerm();
 }
 #endif
 
-#endif // _PICOPAD_BAT_H
+#endif // _PICOINO_BAT_H

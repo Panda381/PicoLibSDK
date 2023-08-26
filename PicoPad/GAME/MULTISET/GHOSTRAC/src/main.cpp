@@ -346,8 +346,8 @@ void game()
 		// update skyline
 		offx = CarDir*2*SKYLINEW/PI;
 		while (offx >= SKYLINEW) offx -= SKYLINEW;
-		DrawImgPal(SkylineImg, SkylineImg_Pal, -offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
-		DrawImgPal(SkylineImg, SkylineImg_Pal, WIDTH-offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
+		DrawImgPal(SkylineImg, SkylineImg_Pal, 0, 0, -offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
+		DrawImgPal(SkylineImg, SkylineImg_Pal, 0, 0, WIDTH-offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
 
 		// update terrain
 		Mat2D_PrepDrawImg(&Mat, TILESIZE, TILESIZE, CarX, CarY, WIDTH, WIDTH, 0, 0, CarDir, 0, TILESIZE);
@@ -528,7 +528,7 @@ int main()
 		DrawClear();
 		SelFont8x16();
 		DrawText2("Ghost Racings", (WIDTH - 13*16)/2, 0, COL_YELLOW);
-		DrawText("Race with your ghost from last lap", 16, 32, RGBTO16(0, 186, 255));
+		DrawText("Race with your ghost from last lap", 16, 32, COLOR(0, 186, 255));
 
 #define MENUX 10
 #define MENUY (48+4)

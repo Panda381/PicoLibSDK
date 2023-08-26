@@ -97,7 +97,7 @@ int main()
 			}
 			hoty[i] = y;
 
-			DrawBlitPal(HotairImg, HotairImg_Pal, hotx[i], hoty[i], HOTAIRW, HOTAIRH, HOTAIRW, COL_WHITE);
+			DrawBlitPal(HotairImg, HotairImg_Pal, 0, 0, hotx[i], hoty[i], HOTAIRW, HOTAIRH, HOTAIRW, COL_WHITE);
 		}
 
 		// animate party balloons
@@ -107,7 +107,7 @@ int main()
 			if (y < -BALLOONH) y += HEIGHT+BALLOONH;
 			baly[i] = y;
 
-			DrawBlitPal(balimg[i], balimgpal[i], balx[i], baly[i], BALLOONW, BALLOONH, BALLOONW, COL_WHITE);
+			DrawBlitPal(balimg[i], balimgpal[i], 0, 0, balx[i], baly[i], BALLOONW, BALLOONH, BALLOONW, COL_WHITE);
 		}
 
 		// update display

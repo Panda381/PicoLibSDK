@@ -40,7 +40,7 @@ void AnimPellet(int y1)
 	{
 		// draw pellets
 		if (Blink == 6) Blink = 0;
-		DrawImg(TilesImg + TILE_PELLET*TILEW, 120, y1, TILEW, TILEH, TILESIMGW);
+		DrawImg(TilesImg, TILE_PELLET*TILEW, 0, 120, y1, TILEW, TILEH, TILESIMGW);
 	}
 }
 
@@ -60,7 +60,7 @@ void OpenScreen()
 
 	// draw logo
 	y = 3;
-	DrawImg(LogoImg, (WIDTH-LOGOW)/2, y, LOGOW, LOGOH, LOGOW);
+	DrawImg(LogoImg, 0, 0, (WIDTH-LOGOW)/2, y, LOGOW, LOGOH, LOGOW);
 	y += LOGOH;
 	DispWait(200);
 	DrawText("for Raspberry Pico", (WIDTH-18*8)/2, y, COL_GREEN);
@@ -75,7 +75,7 @@ void OpenScreen()
 	// draw characters
 	for (i = 0; i < 4; i++)
 	{
-		DrawImg(SpritesImg + (SPRITE_BLINKY+4+i*8)*SPRITEW, 70, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+		DrawImg(SpritesImg, (SPRITE_BLINKY+4+i*8)*SPRITEW, 0, 70, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
 		DispWait(400);
 		DrawText(OpenCharName[i], 110, y, OpenCharCol[i]);
 		DispWait(200);
@@ -87,20 +87,20 @@ void OpenScreen()
 	y += 35;
 
 	// draw dot points
-	DrawImg(TilesImg + TILE_DOT*TILEW, 120, y, TILEW, TILEH, TILESIMGW);
+	DrawImg(TilesImg, TILE_DOT*TILEW, 0, 120, y, TILEW, TILEH, TILESIMGW);
 	DrawText("10 pts", 140, y+2, COL_WHITE);
 	y += 20;
 
 	// draw pellet points
 	y1 = y;
-	DrawImg(TilesImg + TILE_PELLET*TILEW, 120, y1, TILEW, TILEH, TILESIMGW);
+	DrawImg(TilesImg, TILE_PELLET*TILEW, 0, 120, y1, TILEW, TILEH, TILESIMGW);
 	DrawText("50 pts", 140, y+2, COL_WHITE);
 	y -= 40;
 	DispWait(400);
 
 	// destination pellet
 	y2 = y;
-	DrawImg(TilesImg + TILE_PELLET*TILEW, 73, y2, TILEW, TILEH, TILESIMGW);
+	DrawImg(TilesImg, TILE_PELLET*TILEW, 0, 73, y2, TILEW, TILEH, TILESIMGW);
 	DispWait(400);
 
 	// prepare sprites for animation
@@ -123,14 +123,14 @@ void OpenScreen()
 			DrawRect(73, y2, TILEW, TILEH, COL_BLACK);
 		else
 			// draw pellets
-			DrawImg(TilesImg + TILE_PELLET*TILEW, 73, y2, TILEW, TILEH, TILESIMGW);
+			DrawImg(TilesImg, TILE_PELLET*TILEW, 0, 73, y2, TILEW, TILEH, TILESIMGW);
 
 		// draw sprites
-		DrawImg(SpritesImg + (SPRITE_PACL+phase)*SPRITEW, x, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
-		DrawImg(SpritesImg + (SPRITE_BLINKY+phase)*SPRITEW, x+SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
-		DrawImg(SpritesImg + (SPRITE_PINKY+phase)*SPRITEW, x+2*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
-		DrawImg(SpritesImg + (SPRITE_INKY+phase)*SPRITEW, x+3*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
-		DrawImg(SpritesImg + (SPRITE_CLYDE+phase)*SPRITEW, x+4*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+		DrawImg(SpritesImg, (SPRITE_PACL+phase)*SPRITEW, 0, x, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+		DrawImg(SpritesImg, (SPRITE_BLINKY+phase)*SPRITEW, 0, x+SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+		DrawImg(SpritesImg, (SPRITE_PINKY+phase)*SPRITEW, 0, x+2*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+		DrawImg(SpritesImg, (SPRITE_INKY+phase)*SPRITEW, 0, x+3*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+		DrawImg(SpritesImg, (SPRITE_CLYDE+phase)*SPRITEW, 0, x+4*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
 		DrawRect(x+5*SPRITEW, y-6, SPRITEW, SPRITEH, COL_BLACK);
 
 		// animation delay
@@ -167,37 +167,37 @@ void OpenScreen()
 		DrawRect(x-SPRITEW, y-6, 2*SPRITEW, SPRITEH, COL_BLACK);
 		if ((x2 < x - SPRITEW/2) && !eat1)
 		{
-			DrawImg(SpritesImg + SPRITE_200*SPRITEW, x2+SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+			DrawImg(SpritesImg, SPRITE_200*SPRITEW, 0, x2+SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
 			wait = True;
 			eat1 = True;
 		}
 		else if ((x2 < x - SPRITEW/2-1*SPRITEW) && !eat2)
 		{
-			DrawImg(SpritesImg + SPRITE_400*SPRITEW, x2+2*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+			DrawImg(SpritesImg, SPRITE_400*SPRITEW, 0, x2+2*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
 			wait = True;
 			eat2 = True;
 		}
 		else if ((x2 < x - SPRITEW/2-2*SPRITEW) && !eat3)
 		{
-			DrawImg(SpritesImg + SPRITE_800*SPRITEW, x2+3*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+			DrawImg(SpritesImg, SPRITE_800*SPRITEW, 0, x2+3*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
 			wait = True;
 			eat3 = True;
 		}
 		else if ((x2 < x - SPRITEW/2-3*SPRITEW) && !eat4)
 		{
-			DrawImg(SpritesImg + SPRITE_1600*SPRITEW, x2+4*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+			DrawImg(SpritesImg, SPRITE_1600*SPRITEW, 0, x2+4*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
 			wait = True;
 			eat4 = True;
 		}
 
 		// draw sprites
-		if (!eat1) DrawImg(SpritesImg + (SPRITE_FRIGH+phase)*SPRITEW, x2+SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
-		if (!eat2) DrawImg(SpritesImg + (SPRITE_FRIGH+phase)*SPRITEW, x2+2*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
-		if (!eat3) DrawImg(SpritesImg + (SPRITE_FRIGH+phase)*SPRITEW, x2+3*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
-		if (!eat4) DrawImg(SpritesImg + (SPRITE_FRIGH+phase)*SPRITEW, x2+4*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+		if (!eat1) DrawImg(SpritesImg, (SPRITE_FRIGH+phase)*SPRITEW, 0, x2+SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+		if (!eat2) DrawImg(SpritesImg, (SPRITE_FRIGH+phase)*SPRITEW, 0, x2+2*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+		if (!eat3) DrawImg(SpritesImg, (SPRITE_FRIGH+phase)*SPRITEW, 0, x2+3*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+		if (!eat4) DrawImg(SpritesImg, (SPRITE_FRIGH+phase)*SPRITEW, 0, x2+4*SPRITEW, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
 
 		// draw pacman
-		if (!wait) DrawImg(SpritesImg + (SPRITE_PACR+phase)*SPRITEW, x, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
+		if (!wait) DrawImg(SpritesImg, (SPRITE_PACR+phase)*SPRITEW, 0, x, y-6, SPRITEW, SPRITEH, SPRITEIMGW);
 
 		// animation delay
 		DispWait(SPEED);

@@ -16,7 +16,7 @@ int main()
 	PLAYSOUNDREP(RiverSnd);
 
 	// display top part of the screen
-	DrawImgPal(ForestImg, ForestImg_Pal, 0, 0, WIDTH, IMGH, WIDTH);
+	DrawImgPal(ForestImg, ForestImg_Pal, 0, 0, 0, 0, WIDTH, IMGH, WIDTH);
 
 	// main loop
 	phase = 0;
@@ -36,11 +36,11 @@ int main()
 			y2 = (int)(IMGH - 1 - (sinf(phase + WAVELEN/sqrtf(y0/WAVEPERSP + 1))*WAVEAMP + 1)*y0);
 			if (y2 < 0) y2 = 0;
 			if (y2 >= IMGH) y2 = IMGH-1;
-			DrawImgPal(ForestImg + y2*WIDTH, ForestImg_Pal, 0, y, WIDTH, 1, WIDTH);
+			DrawImgPal(ForestImg, ForestImg_Pal, 0, y2, 0, y, WIDTH, 1, WIDTH);
 		}
 
 		// display duck
-		DrawBlitPal(DuckImg+(duckx & 3)*64, DuckImg_Pal, duckx, 180, 64, 29, 256, 0xA158);
+		DrawBlitPal(DuckImg, DuckImg_Pal, (duckx & 3)*64, 0, duckx, 180, 64, 29, 256, 0xA158);
 
 		// increase animation phase
 		phase += ANIMSPEED;

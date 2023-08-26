@@ -36,7 +36,7 @@ void DrawBoard()
 			b = Board[i*MAPW + j];
 			x = j*TILESIZE + TILESIZE/2;
 			y = i*TILESIZE + TILESIZE/2;
-			DrawImg(TilesImg + b*TILESIZE*TILESIZE, x, y, TILESIZE, TILESIZE, TILESIZE);
+			DrawImg(TilesImg, 0, b*TILESIZE, x, y, TILESIZE, TILESIZE, TILESIZE);
 		}
 	}
 	DispUpdate();

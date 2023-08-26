@@ -177,7 +177,7 @@ const char* const PageText[PAGES] = {
 void OpenPage()
 {
 	// draw image
-	DrawImg(ImgList[Page], 0, 0, IMGWIDTH, IMGHEIGHT, IMGWIDTH);
+	DrawImg(ImgList[Page], 0, 0, 0, 0, IMGWIDTH, IMGHEIGHT, IMGWIDTH);
 
 	// clear text box
 	DrawRect(0, IMGHEIGHT, WIDTH, TXTHEIGHT, COL_BLACK);

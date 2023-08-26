@@ -339,8 +339,8 @@ int main()
 		// update skyline
 		offx = CarDir*2*SKYLINEW/PI;
 		while (offx >= SKYLINEW) offx -= SKYLINEW;
-		DrawImgPal(SkylineImg, SkylineImg_Pal, -offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
-		DrawImgPal(SkylineImg, SkylineImg_Pal, WIDTH-offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
+		DrawImgPal(SkylineImg, SkylineImg_Pal, 0, 0, -offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
+		DrawImgPal(SkylineImg, SkylineImg_Pal, 0, 0, WIDTH-offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
 
 		// update terrain
 		Mat2D_PrepDrawImg(&Mat, TILESIZE, TILESIZE, CarX, CarY, WIDTH, WIDTH, 0, 0, CarDir, 0, TILESIZE);

@@ -61,7 +61,7 @@ int main()
 
 	// ==== draw graphics
 
-		for (strip = VGA_STRIP_NUM; strip > 0; strip--)
+		for (strip = DISP_STRIP_NUM; strip > 0; strip--)
 		{
 			// next strip
 			DispSetStripNext();
@@ -75,13 +75,13 @@ int main()
 			// animate hot-air balloons
 			for (i = 0; i < HOTAIR_NUM; i++)
 			{
-				DrawBlitPal(HotairImg, HotairImg_Pal, hotx[i], hoty[i], HOTAIRW, HOTAIRH, HOTAIRW, COL_WHITE);
+				DrawBlitPal(HotairImg, HotairImg_Pal, 0, 0, hotx[i], hoty[i], HOTAIRW, HOTAIRH, HOTAIRW, COL_WHITE);
 			}
 
 			// animate party balloons
 			for (i = 0; i < BALLOON_NUM; i++)
 			{
-				DrawBlitPal(balimg[i], balimgpal[i], balx[i], baly[i], BALLOONW, BALLOONH, BALLOONW, COL_WHITE);
+				DrawBlitPal(balimg[i], balimgpal[i], 0, 0, balx[i], baly[i], BALLOONW, BALLOONH, BALLOONW, COL_WHITE);
 			}
 
 			// update screen

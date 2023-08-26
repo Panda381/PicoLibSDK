@@ -21,8 +21,9 @@ DMA 10 and 11 are reserved for temporary operations (DMA_MemCopy, CrcxxDMA),
 but they can be used temporary by user program, too. Search: UARTSAMPLE_TXDMA,
 UARTSAMPLE_RXDMA, DMA_TEMP_CHAN.
 
-DMA channels 8 and 9 are used by QVGA library. Search QVGA_DMA in _devices\picoino\_config.h.
-DMA channels 8 and 9 are used by VGA library. Search VGA_DMA in _devices\demovga\_config.h.
+DMA channels 8 and 9 are used by miniVGA library.
+
+PIO1 is used by miniVGA library.
 
 Spinlock 31 is used by system memory allocator, safe integer etc. Search SYS_SPIN.
 Spinlock 30 is used by USB driver. Search USB_SPIN.
@@ -43,6 +44,10 @@ by VGA driver rendering service.
 
 #if USE_DEMOVGA			// use DemoVGA device configuration
 #include "_devices/demovga/_config.h"
+#endif
+
+#if USE_PICOTRON		// use Picotron device configuration
+#include "_devices/picotron/_config.h"
 #endif
 
 #if USE_PICOINO			// use Picoino device configuration
@@ -281,8 +286,8 @@ by VGA driver rendering service.
 #define USE_DECNUM	1		// use DecNum (decnum.c, decnum.h)
 #endif
 
-#ifndef USE_DRAWTFT
-#define USE_DRAWTFT	0		// use TFT or VGA drawing (lib_drawtft.c, lib_drawtft.h)
+#ifndef USE_DRAW
+#define USE_DRAW	0		// use drawing to frame buffer (lib_draw.c, lib_draw.h)
 #endif
 
 #ifndef USE_ESCPKT
@@ -323,10 +328,6 @@ by VGA driver rendering service.
 
 #ifndef USE_PWMSND
 #define USE_PWMSND	0		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
-#endif
-
-#ifndef USE_QDRAW
-#define USE_QDRAW	0		// use QVGA drawing (lib_qdraw.c, lib_qdraw.h)
 #endif
 
 #ifndef USE_RAND
@@ -763,7 +764,7 @@ by VGA driver rendering service.
 #define USE_SPINLOCK 1
 #endif
 
-#if USE_QVGA || USE_VGA
+#if USE_MINIVGA
 #undef USE_PIO
 #define USE_PIO 1
 #undef USE_DMA
@@ -923,16 +924,10 @@ by VGA driver rendering service.
 #endif
 
 #if USE_DRAW_STDIO
-
-#if USE_PICOPAD || USE_DEMOVGA // if we have TFT or VGA display
-#undef USE_DRAWTFT
-#define USE_DRAWTFT 1
-
-#elif USE_PICOINO // if we have QVGA
-#undef USE_QDRAW
-#define USE_QDRAW 1
+#if USE_PICOPAD || USE_PICOINO || USE_PICOTRON || USE_DEMOVGA // if we have TFT or VGA display
+#undef USE_DRAW
+#define USE_DRAW 1
 #else
-
 #undef USE_DRAW_STDIO
 #define USE_DRAW_STDIO 0
 #endif

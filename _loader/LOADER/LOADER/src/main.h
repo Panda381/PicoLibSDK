@@ -17,12 +17,6 @@
 #ifndef _MAIN_H
 #define _MAIN_H
 
-#if USE_PICOINO
-#define PIXTYPE		u8
-#else
-#define PIXTYPE		u16
-#endif
-
 // text of file list
 //#define FONTW		8	// font width
 //#define FONTH		16	// font height

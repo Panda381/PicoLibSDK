@@ -18,7 +18,7 @@
 #define INFOW	(WIDTH-BOARDW)	// width of info box (= 80)
 #define INFOX	BOARDW		// X coordinate of info box
 
-#define INFOBG	RGBTO16(16, 16, 16) // info background color
+#define INFOBG	COLOR(16, 16, 16) // info background color
 
 #define PLAYER_OFF	0	// player is OFF
 #define PLAYER_HUMAN	1	// player is human

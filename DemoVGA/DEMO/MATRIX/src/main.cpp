@@ -22,32 +22,32 @@ char TextBuf[FTEXTSIZE];
 // palette table
 const u16 Pal[] = {
 	COL_WHITE,
-	RGBTO16(200,255,200),
-	RGBTO16(127,255,127),
-	RGBTO16(96,255,96),
-	RGBTO16(32,255,32),
-	RGBTO16(0,255,0),
-	RGBTO16(0,255,0),
-	RGBTO16(0,255,0),
-	RGBTO16(0,240,0),
-	RGBTO16(0,220,0),
-	RGBTO16(0,200,0),
-	RGBTO16(0,180,0),
-	RGBTO16(0,160,0),
-	RGBTO16(0,150,0),
-	RGBTO16(0,140,0),
-	RGBTO16(0,130,0),
-	RGBTO16(0,120,0),
-	RGBTO16(0,110,0),
-	RGBTO16(0,100,0),
-	RGBTO16(0,80,0),
-	RGBTO16(0,70,0),
-	RGBTO16(0,60,0),
-	RGBTO16(0,50,0),
-	RGBTO16(0,40,0),
-	RGBTO16(0,30,0),
-	RGBTO16(0,20,0),
-	RGBTO16(0,10,0),
+	COLOR(200,255,200),
+	COLOR(127,255,127),
+	COLOR(96,255,96),
+	COLOR(32,255,32),
+	COLOR(0,255,0),
+	COLOR(0,255,0),
+	COLOR(0,255,0),
+	COLOR(0,240,0),
+	COLOR(0,220,0),
+	COLOR(0,200,0),
+	COLOR(0,180,0),
+	COLOR(0,160,0),
+	COLOR(0,150,0),
+	COLOR(0,140,0),
+	COLOR(0,130,0),
+	COLOR(0,120,0),
+	COLOR(0,110,0),
+	COLOR(0,100,0),
+	COLOR(0,80,0),
+	COLOR(0,70,0),
+	COLOR(0,60,0),
+	COLOR(0,50,0),
+	COLOR(0,40,0),
+	COLOR(0,30,0),
+	COLOR(0,20,0),
+	COLOR(0,10,0),
 };
 #define PALLEN count_of(Pal)	// length of palette table
 
@@ -127,7 +127,6 @@ int main()
 
 		// display text screen
 		DrawFTextBuf(TextBuf, COL_BLACK);
-		DispUpdate();
 
 		switch (KeyGet())
 		{

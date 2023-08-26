@@ -9,24 +9,31 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 // === Display
+
 #ifndef WIDTH
-#define WIDTH	320			// display width
+#define WIDTH		320		// display width
 #endif
 
 #ifndef HEIGHT
-#define HEIGHT	240			// display height
+#define HEIGHT		240		// display height
 #endif
 
-#ifndef FRAMESIZE
-#define FRAMESIZE (WIDTH*HEIGHT) 	// frame size in number of colors
+#ifndef COLBITS
+#define COLBITS		16		// number of output color bits (4, 8, 15 or 16)
 #endif
+
+#define COLTYPE		u16		// type of color: u8, u16 or u32
+#define FRAMETYPE	u16		// type of frame entry: u8 or u16
+#define WIDTHLEN	WIDTH		// length of one line of one plane, in number of frame elements
+#define FRAMESIZE 	(WIDTHLEN*HEIGHT) // frame size in number of colors
+#define	DISP_STRIP_NUM	1		// number of back strips
 
 #ifndef USE_ST7789
 #define USE_ST7789	1		// use ST7789 TFT display (st7789.c, st7789.h)
 #endif
 
-#ifndef USE_DRAWTFT
-#define USE_DRAWTFT	1		// use TFT drawing (lib_drawtft.c, lib_drawtft.h)
+#ifndef USE_DRAW
+#define USE_DRAW	1	// use drawing to frame buffer (lib_draw.c, lib_draw.h)
 #endif
 
 #ifndef DISP_SPI

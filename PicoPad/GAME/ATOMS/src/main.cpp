@@ -12,7 +12,7 @@ sPlayer	Players[PLAYER_NUM] = {	// players
 	{ PLAYER_HUMAN,	3*MAPW+3, 0, 0,	COL_RED,		0 },
 	{ PLAYER_COMP,	3*MAPW+6, 0, 0,	COL_YELLOW,		0 },
 	{ PLAYER_OFF,	6*MAPW+3, 0, 0,	COL_GREEN,		0 },
-	{ PLAYER_OFF,	6*MAPW+6, 0, 0,	RGBTO16(0, 160, 255),	0 },
+	{ PLAYER_OFF,	6*MAPW+6, 0, 0,	COLOR(0, 160, 255),	0 },
 	{ PLAYER_OFF,	9*MAPW+3, 0, 0,	COL_MAGENTA,		0 }
 };
 

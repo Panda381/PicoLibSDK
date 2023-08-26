@@ -102,12 +102,12 @@ int main()
 				if (a >= (SAMPMAX-1-j))
 					DrawRect(GRAPH1X+i*8, GRAPHY+j*3, 7, 2, Colors[SAMPMAX-1-j]);
 				else
-					DrawRect(GRAPH1X+i*8, GRAPHY+j*3, 7, 2, RGBTO16(0, 0, 100));
+					DrawRect(GRAPH1X+i*8, GRAPHY+j*3, 7, 2, COLOR(0, 0, 100));
 
 				if (b >= (SAMPMAX-j))
 					DrawRect(GRAPH2X+i*8, GRAPHY+j*3, 7, 2, Colors[SAMPMAX-1-j]);
 				else
-					DrawRect(GRAPH2X+i*8, GRAPHY+j*3, 7, 2, RGBTO16(0, 0, 100));
+					DrawRect(GRAPH2X+i*8, GRAPHY+j*3, 7, 2, COLOR(0, 0, 100));
 			}
 		}
 

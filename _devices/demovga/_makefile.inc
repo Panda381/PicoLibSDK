@@ -1,4 +1,4 @@
-CSRC += ../../../_display/vga/vga.c
+CSRC += ../../../_display/minivga/minivga.c
 CSRC += ../../../_devices/demovga/demovga_bat.c
 CSRC += ../../../_devices/demovga/demovga_init.c
 CSRC += ../../../_devices/demovga/demovga_ss.c

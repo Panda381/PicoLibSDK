@@ -15,11 +15,11 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
-#include "../../_display/qvga/qvga.h" // QVGA display
+#include "../../_display/minivga/minivga.h" // QVGA display
 #include "../../_lib/inc/lib_pwmsnd.h"
 #include "../../_lib/inc/lib_fat.h"
 #include "../../_lib/inc/lib_sd.h"
-#include "../../_lib/inc/lib_qdraw.h"
+#include "../../_lib/inc/lib_draw.h"
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "../../_sdk/inc/sdk_timer.h"
 #include "picoino_init.h"
@@ -30,15 +30,8 @@
 // Device init
 void DeviceInit()
 {
-	// start QVGA on CPU 1 (must be paired with QVgaStop)
-	QVgaStart();
-
-	// initialize QDraw
-#if USE_QVGA > 1
-	pDrawBuf = BackBuf; // back drawing buffer
-#else
-	pDrawBuf = FrameBuf; // frame buffer
-#endif
+	// start VGA on CPU 1 (must be paired with VgaStop)
+	VgaStart();
 
 	// init battery measurement
 	BatInit();
@@ -60,8 +53,8 @@ void DeviceInit()
 // Device terminate
 void DeviceTerm()
 {
-	// terminate QVGA on CPU 1 (must be paired with QVgaStart)
-	QVgaStop();
+	// terminate VGA on CPU 1 (must be paired with VgaStart)
+	VgaStop();
 
 	// terminate keys
 	KeyTerm();

@@ -177,7 +177,7 @@ void Render3DFast()
 			if (tmp > 255) tmp = 255;
 			blue =  tmp; // blue
 
-			*dst++ = RGBTO16(red, green, blue);
+			*dst++ = COLOR(red, green, blue);
 
 		}
 		dst += WIDTH;
@@ -271,19 +271,19 @@ void Render3D(/*Bool useaa*/)
 			if (tmp > 255) tmp = 255;
 			blue =  tmp; // blue
 
-			*dst++ = RGBTO16(red, green, blue);
+			*dst++ = COLOR(red, green, blue);
 		}
 
 #if RENDER_BOTHCORES	// 1 = use both cores to render, 0 = use only core 0
-		if (CpuID() == 0)
+/*		if (CpuID() == 0)
 		{
 			DispDirtyRect(0, HEIGHT - 1 - y, WIDTH, 2);
 			DispUpdate();
-		}
+		}*/
 		dst += WIDTH;
 #else
-		DispDirtyRect(0, HEIGHT - 1 - y, WIDTH, 1);
-		DispUpdate();
+//		DispDirtyRect(0, HEIGHT - 1 - y, WIDTH, 1);
+//		DispUpdate();
 #endif
 	}
 }

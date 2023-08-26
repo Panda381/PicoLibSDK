@@ -4,6 +4,7 @@ Demo - 3D pattern
        generation by ray
        tracing method
 
+Resolution 400*300/16 bits
 Demo uses both CPU cores.
 
 ^WC^0 ....... quit

@@ -29,11 +29,11 @@ int main()
 #else // USE_PICOINOMINI
 
 		LedOn(LED1);
-		WaitMs(250);
+		WaitMs(500);
 		if (KeyGet() == KEY_Y) ResetToBootLoader();
 
 		LedOff(LED1);
-		WaitMs(250);
+		WaitMs(500);
 		if (KeyGet() == KEY_Y) ResetToBootLoader();
 
 #endif // USE_PICOINOMINI

@@ -20,7 +20,7 @@
 u8 __attribute__((section(".bootloaderdata"))) LoaderData[BOOTLOADER_DATA];
 
 // display
-PIXTYPE FgCol, BgCol; // foreground and background color
+COLTYPE FgCol, BgCol; // foreground and background color
 int DispX, DispY; // X and Y text coordinate
 
 // temporary buffer
@@ -69,7 +69,7 @@ void DispHome()
 }
 
 // set print colors
-void DispCol(PIXTYPE fgcol, PIXTYPE bgcol)
+void DispCol(COLTYPE fgcol, COLTYPE bgcol)
 {
 	FgCol = fgcol;
 	BgCol = bgcol;
@@ -688,7 +688,7 @@ void Preview()
 	char ch;
 	u8 inv;
 	sBmp* bmp;
-	PIXTYPE* dst;
+	COLTYPE* dst;
 
 	switch(PrevState)
 	{
@@ -917,7 +917,7 @@ void Preview()
 			(bmp->bfSize < 100) || (bmp->bfSize > 5000000) ||
 			(bmp->bfOffBits < 54) || (bmp->bfOffBits > 2000) ||
 			(bmp->biPlanes != 1) ||
-			(bmp->biBitCount != sizeof(PIXTYPE)*8) /*||
+			(bmp->biBitCount != COLBITS) /*||
 			(bmp->biCompression != 0)*/)
 		{
 			FileClose(&PrevFile);
@@ -941,8 +941,12 @@ void Preview()
 	case PREV_BMP_LOAD:
 
 		// prepare address in video memory
-#if USE_PICOINO
+#if USE_PICOINO || USE_PICOTRON
+#if COLBITS == 4
+		dst = &BackBuf[PrevLine*WIDTHLEN + WIDTH/4];
+#else // COLBITS == 4
 		dst = &BackBuf[PrevLine*WIDTH + WIDTH/2];
+#endif // COLBITS == 4
 #else
 		dst = &FrameBuf[PrevLine*WIDTH + WIDTH/2];
 #endif
@@ -951,11 +955,11 @@ void Preview()
 		i = (PrevW > (WIDTH/2)) ? (WIDTH/2) : PrevW;
 
 		// read one video line
-		FileRead(&PrevFile, dst, i*sizeof(PIXTYPE));
+		FileRead(&PrevFile, dst, (i*COLBITS+7)/8);
 		DispDirtyRect(WIDTH/2, PrevLine, WIDTH/2, 1);
 
 		// skip rest of line
-		if (PrevW > (WIDTH/2)) FileSeek(&PrevFile, FilePos(&PrevFile) + (PrevW - (WIDTH/2))*sizeof(PIXTYPE));
+		if (PrevW > (WIDTH/2)) FileSeek(&PrevFile, FilePos(&PrevFile) + (PrevW - (WIDTH/2))*COLBITS/8);
 
 		// increase line
 		PrevLine++;
@@ -1109,6 +1113,7 @@ void Battery()
 {
 	DrawClear();
 	KeyFlush();
+	u8 key;
 
 	do {
 		int bat = (GetBatInt() + 5)/10;
@@ -1125,10 +1130,23 @@ void Battery()
 		if (bat > BATTERY_FULL_INT - BATTERY_EMPTY_INT) bat = BATTERY_FULL_INT - BATTERY_EMPTY_INT;
 		Progress(bat, BATTERY_FULL_INT - BATTERY_EMPTY_INT, COL_GREEN);
 
+#if USE_PICOINO10 || USE_PICOTRON
+		DrawText("Press Z=BOOTSEL, other=back...", (WIDTH-30*8)/2, HEIGHT-16, COL_WHITE);
+#else
+		DrawText("Press B=BOOTSEL, other=back...", (WIDTH-30*8)/2, HEIGHT-16, COL_WHITE);
+#endif
+
 		DispUpdate();
 		WaitMs(200);
 
-	} while (KeyGet() == NOKEY);
+		key = KeyGet();
+#ifdef KEY_B
+		if (key == KEY_B) ResetUsb(0, 0);
+#else
+		if (key == BTN_B) ResetUsb(0, 0);
+#endif
+
+	} while (key == NOKEY);
 	
 	PreviewClr();
 	FrameFileList();

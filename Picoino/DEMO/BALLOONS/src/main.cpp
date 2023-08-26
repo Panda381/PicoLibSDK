@@ -53,10 +53,10 @@ int main()
 	while (True)
 	{
 		// animate sky
-		DrawImg(CloudsImg, skyx - CLOUDSW, skyy - CLOUDSH, CLOUDSW, CLOUDSH, CLOUDSW);
-		DrawImg(CloudsImg, skyx, skyy - CLOUDSH, CLOUDSW, CLOUDSH, CLOUDSW);
-		DrawImg(CloudsImg, skyx - CLOUDSW, skyy, CLOUDSW, CLOUDSH, CLOUDSW);
-		DrawImg(CloudsImg, skyx, skyy, CLOUDSW, CLOUDSH, CLOUDSW);
+		DrawImg(CloudsImg, 0, 0, skyx - CLOUDSW, skyy - CLOUDSH, CLOUDSW, CLOUDSH, CLOUDSW);
+		DrawImg(CloudsImg, 0, 0, skyx, skyy - CLOUDSH, CLOUDSW, CLOUDSH, CLOUDSW);
+		DrawImg(CloudsImg, 0, 0, skyx - CLOUDSW, skyy, CLOUDSW, CLOUDSH, CLOUDSW);
+		DrawImg(CloudsImg, 0, 0, skyx, skyy, CLOUDSW, CLOUDSH, CLOUDSW);
 		skyx += 4;
 		if (skyx >= CLOUDSW) skyx -= CLOUDSW;
 		skyy += 1;
@@ -93,7 +93,7 @@ int main()
 			}
 			hoty[i] = y;
 
-			DrawBlit(HotairImg, hotx[i], hoty[i], HOTAIRW, HOTAIRH, HOTAIRW, COL_WHITE);
+			DrawBlit(HotairImg, 0, 0, hotx[i], hoty[i], HOTAIRW, HOTAIRH, HOTAIRW, COL_WHITE);
 		}
 
 		// animate party balloons
@@ -103,7 +103,7 @@ int main()
 			if (y < -BALLOONH) y += HEIGHT+BALLOONH;
 			baly[i] = y;
 
-			DrawBlit(balimg[i], balx[i], baly[i], BALLOONW, BALLOONH, BALLOONW, COL_WHITE);
+			DrawBlit(balimg[i], 0, 0, balx[i], baly[i], BALLOONW, BALLOONH, BALLOONW, COL_WHITE);
 		}
 
 		// update display

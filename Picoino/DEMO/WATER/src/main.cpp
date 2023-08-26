@@ -16,7 +16,7 @@ int main()
 	PLAYSOUNDREP(RiverSnd);
 
 	// display top part of the screen
-	DrawImg(ForestImg, 0, 0, WIDTH, IMGH, WIDTH);
+	DrawImg(ForestImg, 0, 0, 0, 0, WIDTH, IMGH, WIDTH);
 
 	// main loop
 	phase = 0;
@@ -40,7 +40,7 @@ int main()
 		}
 
 		// display duck
-		DrawBlit(DuckImg+(duckx & 3)*64, duckx, 180, 64, 29, 256, 0x86);		
+		DrawBlit(DuckImg, (duckx & 3)*64, 0, duckx, 180, 64, 29, 256, 0x86);		
 
 		// increase animation phase
 		phase += ANIMSPEED;

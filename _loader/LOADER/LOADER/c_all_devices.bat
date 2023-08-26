@@ -1,5 +1,7 @@
 @echo off
 call d.bat
+call c.bat picotron
+call d.bat
 call c.bat picoino10
 call d.bat
 call c.bat picoinomini

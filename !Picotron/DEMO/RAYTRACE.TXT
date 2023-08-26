@@ -1,0 +1,9 @@
+^YRaytracing^0
+
+Demo - 3D pattern
+       generation by ray
+       tracing method
+
+Demo uses both CPU cores.
+
+^WCR^0 ...... quit

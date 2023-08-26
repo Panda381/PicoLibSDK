@@ -16,6 +16,13 @@
 #define SD_BAUD		12000000 // SD card baud speed (should be max. 7-12 Mbit/s; default standard bus speed
 				//   is 12.5 MB/s, suggested max. bitrate 15 Mbit/s, min. writting speed 2 MB/s)
 
+#define USE_MINIVGA	1			// use mini-VGA display with simple frame buffer:
+						//	1=use only frame buffer
+						//	2=add full back buffer
+						//	3=add 1/2 back buffer
+						//	4=add 1/4 back buffer
+						//	5=add 1/8 back buffer
+
 //#define FONT			FontBold8x8	// default system font
 //#define FONTW			8		// width of system font
 //#define FONTH			8		// height of system font

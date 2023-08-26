@@ -52,38 +52,38 @@ int Width = WIDTH;
 
 // gradient
 extern "C" const u16 Grad[32] = {
-	RGBTO16(0,0,84),
-	RGBTO16(0,0,195),
-	RGBTO16(0,41,195),
-	RGBTO16(0,84,195),
-	RGBTO16(0,117,195),
-	RGBTO16(0,166,255),
-	RGBTO16(0,195,255),
-	RGBTO16(0,230,255),
-	RGBTO16(0,230,195),
-	RGBTO16(0,195,195),
-	RGBTO16(0,195,84),
-	RGBTO16(41,195,0),
-	RGBTO16(84,195,0),
-	RGBTO16(117,230,0),
-	RGBTO16(166,255,0),
-	RGBTO16(195,255,0),
-	RGBTO16(230,255,0),
-	RGBTO16(255,255,0),
-	RGBTO16(255,230,0),
-	RGBTO16(255,195,0),
-	RGBTO16(255,166,0),
-	RGBTO16(255,117,0),
-	RGBTO16(255,84,0),
-	RGBTO16(255,0,0),
-	RGBTO16(255,0,84),
-	RGBTO16(255,0,195),
-	RGBTO16(255,41,255),
-	RGBTO16(255,84,255),
-	RGBTO16(255,117,255),
-	RGBTO16(255,166,255),
-	RGBTO16(255,195,255),
-	RGBTO16(255,255,255),
+	COLOR(0,0,84),
+	COLOR(0,0,195),
+	COLOR(0,41,195),
+	COLOR(0,84,195),
+	COLOR(0,117,195),
+	COLOR(0,166,255),
+	COLOR(0,195,255),
+	COLOR(0,230,255),
+	COLOR(0,230,195),
+	COLOR(0,195,195),
+	COLOR(0,195,84),
+	COLOR(41,195,0),
+	COLOR(84,195,0),
+	COLOR(117,230,0),
+	COLOR(166,255,0),
+	COLOR(195,255,0),
+	COLOR(230,255,0),
+	COLOR(255,255,0),
+	COLOR(255,230,0),
+	COLOR(255,195,0),
+	COLOR(255,166,0),
+	COLOR(255,117,0),
+	COLOR(255,84,0),
+	COLOR(255,0,0),
+	COLOR(255,0,84),
+	COLOR(255,0,195),
+	COLOR(255,41,255),
+	COLOR(255,84,255),
+	COLOR(255,117,255),
+	COLOR(255,166,255),
+	COLOR(255,195,255),
+	COLOR(255,255,255),
 };
 
 // processed lines
@@ -106,6 +106,7 @@ double Core1Cid; // increment in double format
 
 #if RENDER_2CORES // use both cores
 
+/*
 void (* volatile QCore1Fnc)() = NULL; // core 1 remote function
 
 // core 1 remote
@@ -150,7 +151,7 @@ void QCore1Wait()
 {
 	while (QCore1Busy()) {}
 }
-
+*/
 #endif // RENDER_2CORES // use both cores
 
 // update Y increment
@@ -158,7 +159,7 @@ void MandelUpdate()
 {
 #if RENDER_2CORES // use both cores
 	// wait for core1
-	QCore1Wait();
+	VgaCore1Wait();
 #endif
 
 	// current Y
@@ -184,7 +185,7 @@ void MandelStart()
 {
 #if RENDER_2CORES // use both cores
 	// wait for core1
-	QCore1Wait();
+	VgaCore1Wait();
 #endif
 
 	// current Y increment
@@ -471,7 +472,7 @@ int main()
 
 #if RENDER_2CORES // use both cores
 	// run core 1
-	VgaCore1Exec(QCore1);
+//	VgaCore1Exec(QCore1);
 #endif
 
 	// start new image
@@ -561,15 +562,15 @@ int main()
 			{
 				Ok[CurY] = True;
 
-				DispDirtyRect(0, CurY-4, DispWidth, 5);
+				DispDirtyRect(0, CurY-4, WIDTH, 5);
 		
 				// render line
 #if RENDER_2CORES // use both cores
-				if (!QCore1Busy())
+				if (!VgaCore1Busy())
 				{
 					Core1Dst = Dst;
 					Core1Cid = Cid;
-					QCore1Exec(MandelCore1);
+					VgaCore1Exec(MandelCore1);
 				}
 				else 
 #endif

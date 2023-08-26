@@ -104,7 +104,7 @@ const sTile Tiles[TILES_NUM] = {
 void DispTile(u8 tile, int x, int y)
 {
 	const sTile* t = &Tiles[tile];
-	DrawImg(TilesImg + t->x*STEP + t->y*STEP*TILESALLW, x*STEP+MAPX,
+	DrawImg(TilesImg, t->x*STEP, t->y*STEP, x*STEP+MAPX,
 		y*STEP+MAPY, t->w*STEP, t->h*STEP, TILESALLW);
 }
 

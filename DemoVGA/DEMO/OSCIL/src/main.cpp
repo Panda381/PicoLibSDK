@@ -26,7 +26,7 @@ int main()
 
 	// ==== draw graphics
 
-		for (strip = VGA_STRIP_NUM; strip > 0; strip--)
+		for (strip = DISP_STRIP_NUM; strip > 0; strip--)
 		{
 			// next strip
 			DispSetStripNext();

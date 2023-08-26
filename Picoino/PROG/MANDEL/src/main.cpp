@@ -81,7 +81,7 @@ void MandelUpdate()
 {
 #if RENDER_2CORES // use both cores
 	// wait for core1
-	QCore1Wait();
+	VgaCore1Wait();
 #endif
 
 	// current Y
@@ -107,7 +107,7 @@ void MandelStart()
 {
 #if RENDER_2CORES // use both cores
 	// wait for core1
-	QCore1Wait();
+	VgaCore1Wait();
 #endif
 
 	// current Y increment
@@ -514,11 +514,11 @@ int main()
 		
 				// render line
 #if RENDER_2CORES // use both cores
-				if (!QCore1Busy())
+				if (!VgaCore1Busy())
 				{
 					Core1Dst = Dst;
 					Core1Cid = Cid;
-					QCore1Exec(MandelCore1);
+					VgaCore1Exec(MandelCore1);
 				}
 				else 
 #endif

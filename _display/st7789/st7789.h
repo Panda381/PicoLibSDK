@@ -23,16 +23,42 @@
 extern "C" {
 #endif
 
+#ifndef WIDTH
+#define WIDTH		320		// display width
+#endif
+
+#ifndef HEIGHT
+#define HEIGHT		240		// display height
+#endif
+
+#ifndef COLBITS
+#define COLBITS		16		// number of output color bits
+#endif
+
+#define COLTYPE		u16		// type of color: u8, u16 or u32
+#define FRAMETYPE	u16		// type of frame entry: u8 or u16
+#define WIDTHLEN	WIDTH		// length of one line of one plane, in number of frame elements
+#define FRAMESIZE 	(WIDTHLEN*HEIGHT) // frame size in number of colors
+#define	DISP_STRIP_NUM	1		// number of back strips
+
+#define COLOR_B_BITS	5			// blue color bits
+#define COLOR_G_BITS	6			// greem color bits
+#define COLOR_R_BITS	5			// red color bits
+#define COLOR_B_MASK	0x001F			// blue color mask
+#define COLOR_G_MASK	0x07E0			// green color mask
+#define COLOR_R_MASK	0xF800			// red color mask
+#define COLOR(r,g,b)	((u16)( (((r)&0xf8)<<8) | (((g)&0xfc)<<3) | (((b)&0xf8)>>3) ))
+
 // DISP_SPI_BAUD	24000000
 // send data: 320x240x2 = 153600 B = 1 228 800 bits
 // transfer time: 51 ms, real time: 70 ms
 #define DISP_FRAME_MS (320*240*2*9*1000/DISP_SPI_BAUD)	// transfer time of whole frame in [ms]
 
 // frame buffer in RGB 5-6-5 pixel format
-extern ALIGNED u16 FrameBuf[];
+extern ALIGNED FRAMETYPE FrameBuf[];
 
-extern u8 DispRot;	// current display rotation
-extern u16 DispWidth, DispHeight; // current display size
+//extern u8 DispRot;	// current display rotation
+//extern u16 /*DispWidth,*/ DispHeight; // current display size
 
 // dirty window to update
 extern int DispDirtyX1, DispDirtyX2, DispDirtyY1, DispDirtyY2;
@@ -47,7 +73,7 @@ extern int DispMaxY;		// maximal Y + 1; end of back buffer strip
 #define pDrawBuf FrameBuf	// current draw buffer
 #define DispStripInx  0		// current index of back buffer strip
 #define DispMinY  0		// minimal Y; base of back buffer strip
-#define DispMaxY DispHeight	// maximal Y + 1; end of back buffer strip
+#define DispMaxY HEIGHT		// maximal Y + 1; end of back buffer strip
 
 // LOW level control: start sending image data to display window (DispSendImg() must follow)
 void DispStartImg(u16 x1, u16 x2, u16 y1, u16 y2);
@@ -57,6 +83,16 @@ void DispSendImg(u8 data);
 
 // LOW level control: stop sending image data (follows after DispStartImg() and DispSendImg())
 void DispStopImg();
+
+// set strip of back buffer (-1 = use full FrameBuffer)
+INLINE void DispSetStrip(int inx) {}
+INLINE void DispSetStripNext() {}
+
+// switch off the back buffer, use only frame buffer to output
+INLINE void DispSetStripOff() {}
+
+// load back buffer from frame buffer
+INLINE void DispLoad() {}
 
 // set dirty all frame buffer
 void DispDirtyAll();

@@ -45,7 +45,7 @@ EXTRA (6 forward moves, 1 hour)
 #define BOARDW (2*FRAME + MAP0W*TILEW) // board total width (= 240)
 #define BOARDH (2*FRAME + MAP0H*TILEH) // board total height (= 240)
 
-#define FRAMECOL	RGBTO16(200, 0, 0) // border color
+#define FRAMECOL	COLOR(200, 0, 0) // border color
 #define LEGENDCOL	COL_WHITE // frame text color
 
 // piece indices

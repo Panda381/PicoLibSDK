@@ -11,8 +11,9 @@
 // ======== PicoinoMini
 #if USE_PICOINOMINI
 
-#ifndef QVGA_GPIO_HSYNC
-#define QVGA_GPIO_HSYNC	16	// VGA HSYNC GPIO (QVGA requires VSYNC = HSYNC+1)
+// display
+#ifndef VGA_GPIO_HSYNC
+#define VGA_GPIO_HSYNC	16	// VGA HSYNC GPIO (VGA requires VSYNC = HSYNC+1)
 #endif
 
 // UART stdio
@@ -69,8 +70,9 @@
 // ======== Picoino 1.0
 #else // USE_PICOINOMINI
 
-#ifndef QVGA_GPIO_HSYNC
-#define QVGA_GPIO_HSYNC	10	// VGA HSYNC GPIO (QVGA requires VSYNC = HSYNC+1)
+// display
+#ifndef VGA_GPIO_HSYNC
+#define VGA_GPIO_HSYNC	10	// VGA HSYNC GPIO (VGA requires VSYNC = HSYNC+1)
 #endif
 
 // UART stdio
@@ -124,58 +126,13 @@
 
 #endif // USE_PICOINOMINI
 
-// 126 MHz required by QVGA
-#ifndef PLL_KHZ
-#define PLL_KHZ		126000		// PLL system frequency in kHz (default 125000 kHz)
-#endif
 
-// === Display
-#ifndef WIDTH
-#define WIDTH	320		// display width
-#endif
-
-#ifndef HEIGHT
-#define HEIGHT	240		// display height
-#endif
-
-#ifndef FRAMESIZE
-#define FRAMESIZE (WIDTH*HEIGHT) // frame size in number of colors
-#endif
-
-#ifndef USE_QDRAW
-#define USE_QDRAW	1	// use QDRAW drawing
-#endif
-
-#ifndef USE_QVGA
-#define USE_QVGA	2	// use QVGA display 320x240/8, 1=use 1 frame buffer 76.8 KB, 2=use 2 frame buffers 153.6 KB (qvga.c, qvga.h)
-#endif
-
-#ifndef QVGA_PIO_OFF
-#define QVGA_PIO_OFF	0	// offset of QVGA program in PIO memory
-#endif
-
-#ifndef QVGA_GPIO_FIRST
-#define QVGA_GPIO_FIRST	2	// first VGA GPIO
-#endif
-
-#ifndef QVGA_GPIO_NUM
-#define QVGA_GPIO_NUM	8	// number of VGA color GPIOs, without HSYNC and VSYNC
-#endif
-
-#ifndef QVGA_PIO
-#define QVGA_PIO	0	// VGA PIO
-#endif
-
-#ifndef QVGA_SM
-#define QVGA_SM		0	// VGA state machine of base layer 0
-#endif
-
-#ifndef QVGA_DMA
-#define QVGA_DMA	8	// QVGA DMA base channel (QVGA requires 2 DMA channels)
+#ifndef USE_DRAW
+#define USE_DRAW	1	// use DRAW drawing
 #endif
 
 #ifndef USE_DRAW_STDIO
-#define USE_DRAW_STDIO	1		// use DRAW stdio (DrawPrint function)
+#define USE_DRAW_STDIO	1	// use DRAW stdio (DrawPrint function)
 #endif
 
 #ifndef SYSTICK_KEYSCAN
@@ -209,3 +166,45 @@
 #define BAT_PIN		29		// input from battery
 #define BAT_ADC		ADC_MUX_GPIO29	// ADC input
 #define BAT_MUL		3		// voltage multiplier
+
+// === Display
+
+#ifndef USE_MINIVGA
+#define USE_MINIVGA		2		// use mini-VGA display with simple frame buffer:
+						//	1=use only frame buffer
+						//	2=add full back buffer
+						//	3=add 1/2 back buffer
+						//	4=add 1/4 back buffer
+						//	5=add 1/8 back buffer
+#endif // USE_MINIVGA
+
+#ifndef WIDTH
+#define WIDTH	320		// display width
+#endif
+
+#ifndef COLBITS
+#define COLBITS 8		// number of output color bits (4, 8, 15 or 16)
+#endif
+
+#ifndef VGA_GPIO_FIRST
+#define VGA_GPIO_FIRST	2	// GPIO of first color pin
+#endif
+
+#ifndef VGA_GPIO_NUM
+#define VGA_GPIO_NUM	8	// number of VGA color GPIOs, without HSYNC and VSYNC
+#endif
+
+#ifndef VGA_PIO
+#define VGA_PIO		1	// VGA PIO
+#endif
+
+#ifndef VGA_SM
+#define VGA_SM		0	// VGA state machine of base layer 0
+#endif
+
+#ifndef VGA_DMA
+#define VGA_DMA		6	// VGA first DMA channel (use 2 channels)
+#endif
+
+// mini-VGA auto config
+#include "../../_display/minivga/_config.h"

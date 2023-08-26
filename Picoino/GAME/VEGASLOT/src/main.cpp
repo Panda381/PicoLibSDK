@@ -60,13 +60,13 @@ void DispVal(int val, int x, int dig)
 		// no digit
 		if ((val == 0) && !first)
 		{
-			DrawImg(DigitsImg, x, DIGITY, DIGITW, DIGITH, DIGITIMGW);
+			DrawImg(DigitsImg, 0, 0, x, DIGITY, DIGITW, DIGITH, DIGITIMGW);
 		}
 		else
 		{
 			k = val/10;
 			val -= k*10;
-			DrawImg(DigitsImg + (val+1)*DIGITW, x, DIGITY, DIGITW, DIGITH, DIGITIMGW);
+			DrawImg(DigitsImg, (val+1)*DIGITW, 0, x, DIGITY, DIGITW, DIGITH, DIGITIMGW);
 			val = k;
 			first = False;
 		}
@@ -96,7 +96,7 @@ void DispBet()
 	if (Bonus != 0) k = 0; // bonus game
 
 	if (k == BET_HIGH)
-		DrawImg(DigitsImg + 11*DIGITW, BETX, DIGITY, DIGITW, DIGITH, DIGITIMGW);
+		DrawImg(DigitsImg, 11*DIGITW, 0, BETX, DIGITY, DIGITW, DIGITH, DIGITIMGW);
 	else
 		DispVal(k, BETX, BETNUM);
 }
@@ -128,9 +128,9 @@ void DispReel(u8 inx)
 		if (h2 > h) h2 = h; // limit by remaining height
 		h -= h2;
 		if (r->speed >= REEL_BLURSPEED)
-			DrawImg(BlurImg + (tab[pos]*SYMBOLH + ys)*SYMBOLW, x, y, SYMBOLW, h2, SYMBOLW);
+			DrawImg(BlurImg, 0, tab[pos]*SYMBOLH + ys, x, y, SYMBOLW, h2, SYMBOLW);
 		else
-			DrawImg(SymbolsImg + (tab[pos]*SYMBOLH + ys)*SYMBOLW, x, y, SYMBOLW, h2, SYMBOLW);
+			DrawImg(SymbolsImg, 0, tab[pos]*SYMBOLH + ys, x, y, SYMBOLW, h2, SYMBOLW);
 		ys = 0; // new source Y coordinate in symbol
 		y += h2; // shift destination Y coordinate
 		pos++; // increase position on reel
@@ -993,7 +993,7 @@ void NewGame()
 	int i;
 
 	// display background
-	DrawImg(BackImg, 0, 0, WIDTH, HEIGHT, WIDTH);
+	DrawImg(BackImg, 0, 0, 0, 0, WIDTH, HEIGHT, WIDTH);
 
 	// initialize values
 	BankVal = 0; // current bank

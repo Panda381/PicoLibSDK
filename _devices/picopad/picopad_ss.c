@@ -19,7 +19,6 @@
 #include "../../_sdk/inc/sdk_timer.h"
 #include "../../_lib/inc/lib_fat.h"
 #include "../../_lib/inc/lib_sd.h"
-//#include "../../_lib/inc/lib_drawtft.h"
 #include "picopad_ss.h"
 
 #if USE_SCREENSHOT		// use screen shots

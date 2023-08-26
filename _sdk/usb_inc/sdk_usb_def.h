@@ -22,7 +22,6 @@
 #define _SDK_USB_DEF_H
 
 #include "../sdk_addressmap.h"		// Register address offsets
-//#include "../../_lib/inc/lib_drawtft.h"
 
 #ifdef __cplusplus
 extern "C" {

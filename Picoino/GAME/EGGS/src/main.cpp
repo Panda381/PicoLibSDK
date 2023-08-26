@@ -41,7 +41,7 @@ void DrawBoard()
 			b = Board[i*BOARDW + j];
 			x = j*TILEW;
 			y = i*TILEH;
-			DrawImg(TilesImg + b*TILEH*IMGWB(TILEW), x, y, TILEW, TILEH, IMGWB(TILEW));
+			DrawImg(TilesImg, 0, b*TILEH, x, y, TILEW, TILEH, IMGWB(TILEW));
 		}
 	}
 	DispUpdate();
@@ -151,7 +151,7 @@ void DispPos()
 char OpenScreen()
 {
 	// copy open image
-	DrawImg(OpenImg, 0, 0, WIDTH, HEIGHT, WIDTH);
+	DrawImg(OpenImg, 0, 0, 0, 0, WIDTH, HEIGHT, WIDTH);
 	DispUpdate();
 
 	// play music
@@ -192,13 +192,13 @@ void DispSel()
 	for (play = 0; play < 2; play++)
 	{
 		// draw background
-		DrawImg(FrameImg + y*FRAMEW, FRAMEX, y, FRAMEW, SELECTH, FRAMEW);
+		DrawImg(FrameImg, 0, y, FRAMEX, y, FRAMEW, SELECTH, FRAMEW);
 
 		// draw computer
-		if (Comp[play]) DrawImg(ComputerImg, COMPX, y+COMPY, COMPW, COMPH, COMPW);
+		if (Comp[play]) DrawImg(ComputerImg, 0, 0, COMPX, y+COMPY, COMPW, COMPH, COMPW);
 
 		// draw selection frame
-		if (play == Player) DrawBlit(SelectImg, SELECTX, y+SELECTY, SELECTW, SELECTH, SELECTW, COL_WHITE);
+		if (play == Player) DrawBlit(SelectImg, 0, 0, SELECTX, y+SELECTY, SELECTW, SELECTH, SELECTW, COL_WHITE);
 
 		// shift Y coordinate
 		y += FRAMEY;
@@ -254,7 +254,7 @@ void OpenGame(Bool comp1, Bool comp2)
 	DrawBoard();
 
 	// copy frame image
-	DrawImg(FrameImg, FRAMEX, 0, FRAMEW, FRAMEH, FRAMEW);
+	DrawImg(FrameImg, 0, 0, FRAMEX, 0, FRAMEW, FRAMEH, FRAMEW);
 
 	// initialize players
 	Stones[0] = 0;

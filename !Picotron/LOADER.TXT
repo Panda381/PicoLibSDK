@@ -1,0 +1,30 @@
+^YPicotron Boot3 Loader^0
+
+Boot Loader can be loaded
+only over USB interface.
+Do not run it directly.
+
+^WW/S^0 ... move cursor
+^WA/D^0 ... move page
+^WSpc^0 ... run program/dir
+^WM^0 ..... directory up
+^WCR^0 .... run last program
+^WL^0 ..... battery status
+
+
+loading text *.TXT
+	- text width = 26 characters
+	- text height = 14 or 30 rows
+	- ^ is prefix of control characters
+		^^ ... print ^ character
+		^1..^9 ... print character with code 1..9
+		^A..^V ... print character with code 10..31
+		^0 ... normal gray text
+		^W ... white text
+		^X ... green text
+		^Y ... yellow text
+		^Z ... red text
+		^[ ... start invert
+		^] ... stop invert
+
+Image BMP: paletted 4-bit with YRGB1111 palette

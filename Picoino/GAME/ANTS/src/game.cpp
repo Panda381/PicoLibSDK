@@ -154,7 +154,7 @@ void DispState1(int player)
 	p = &Players[player];
 
 	// display status background (size 72 x 256)
-	DrawImg(StateImg, StateX[player], STATEY, STATEW, STATEH, IMGWB(STATEW));
+	DrawImg(StateImg, 0, 0, StateX[player], STATEY, STATEW, STATEH, IMGWB(STATEW));
 
 	// display values
 	pDrawFont = FontCond6x8;
@@ -185,7 +185,7 @@ void DispState()
 void DispGrass(int player)
 {
 	// display grass
-	DrawBlit(GrassImg, CastleX[player] - GRASSW/2,
+	DrawBlit(GrassImg, 0, 0, CastleX[player] - GRASSW/2,
 		GRASSY, GRASSW, GRASSH, IMGWB(GRASSW), TRANSCOL);
 }
 
@@ -198,7 +198,7 @@ void DispCastle(int player)
 
 	// display castle
 	int pixh = h + CASTLEH-CASTLEMAX; // castle height
-	DrawBlit(CastleImg + player*CASTLEW, CastleX[player] - CASTLEW/2,
+	DrawBlit(CastleImg, player*CASTLEW, 0, CastleX[player] - CASTLEW/2,
 		GRASSY + 8 - pixh, CASTLEW, pixh, IMGWB(CASTLEALLW), TRANSCOL);
 }
 
@@ -211,17 +211,17 @@ void DispFence(int player)
 
 	// display fence
 	int pixh = h + FENCEH-CASTLEMAX;
-	DrawImg(FenceImg, FenceX[player] - FENCEW/2,
+	DrawImg(FenceImg, 0, 0, FenceX[player] - FENCEW/2,
 		GRASSY + 8 - pixh, FENCEW, pixh, IMGWB(FENCEW));
 }
 
 // display titles - player selection
 void DispTitle()
 {
-	DrawImg(BlacksRedsImg + ((Player == 0) ? BLACKSREDSH : 0)*BLACKSREDSWALL,
+	DrawImg(BlacksRedsImg, 0, (Player == 0) ? BLACKSREDSH : 0,
 		0, 0, BLACKSREDSW, BLACKSREDSH, IMGWB(BLACKSREDSWALL));
 
-	DrawImg(BlacksRedsImg + BLACKSREDSW + ((Player == 1) ? BLACKSREDSH : 0)*BLACKSREDSWALL,
+	DrawImg(BlacksRedsImg, BLACKSREDSW, (Player == 1) ? BLACKSREDSH : 0,
 		WIDTH-BLACKSREDSW, 0, BLACKSREDSW, BLACKSREDSH, IMGWB(BLACKSREDSWALL));
 }
 
@@ -246,11 +246,10 @@ void DispFlag()
 		int y = GRASSY + 8 - pixh;
 
 		// draw background
-		DrawImg(BackgroundImg + x + y*WIDTH,
-			x, y, FLAGSW, FLAGSH-5, IMGWB(WIDTH));
+		DrawImg(BackgroundImg, x, y, x, y, FLAGSW, FLAGSH-5, IMGWB(WIDTH));
 
 		// draw flag
-		DrawBlit(FlagsImg + (t + player*4)*FLAGSW, x, y,
+		DrawBlit(FlagsImg, (t + player*4)*FLAGSW, 0, x, y,
 			FLAGSW, FLAGSH, IMGWB(FLAGSALLW), TRANSCOL);
 	}
 }
@@ -273,28 +272,28 @@ void DispCard(int type, int x, int y, int shadow, Bool disable, Bool back, Bool 
 	if (type < 0) return;
 
 	// display card shadow
-	if (shadow != 0) DrawBlit(CardsImg + CARD_SHADOW*CARDW, x+shadow, y+shadow,
+	if (shadow != 0) DrawBlit(CardsImg, CARD_SHADOW*CARDW, 0, x+shadow, y+shadow,
 				CARDW, CARDH, IMGWB(CARDSALLW), TRANSCOL);
 
 	if (back)
 	{
 		// display card back side
-		DrawBlit(CardsImg + CARD_BACK*CARDW, x, y, CARDW, CARDH, IMGWB(CARDSALLW), TRANSCOL);
+		DrawBlit(CardsImg, CARD_BACK*CARDW, 0, x, y, CARDW, CARDH, IMGWB(CARDSALLW), TRANSCOL);
 	}
 
 	else
 	{
 		// display card
-		DrawBlit(CardsImg + type*CARDW, x, y, CARDW, CARDH, IMGWB(CARDSALLW), TRANSCOL);
+		DrawBlit(CardsImg, type*CARDW, 0, x, y, CARDW, CARDH, IMGWB(CARDSALLW), TRANSCOL);
 
 		// card is disabled
 		if (disable || discard)
-			DrawBlit(CardsImg + CARD_SHADOW*CARDW, x, y,
+			DrawBlit(CardsImg, CARD_SHADOW*CARDW, 0, x, y,
 				CARDW, CARDH, IMGWB(CARDSALLW), TRANSCOL);
 
 		// card is discarded
 		if (discard)
-			DrawBlit(CardsImg + CARD_DISCARD*CARDW, x, y,
+			DrawBlit(CardsImg, CARD_DISCARD*CARDW, 0, x, y,
 				CARDW, CARDH, IMGWB(CARDSALLW), TRANSCOL);
 	}
 }
@@ -348,8 +347,8 @@ void AnimCard(int type, int x1, int y1, int x2, int y2, Bool back, Bool discard)
 		DispUpdate();
 
 		// restore screen content
-		DrawImg(SaveCardBuf2, x, y, CARDW, CARDH, CARDW);
-		DrawImg(SaveCardBuf, xs, ys, CARDW, CARDH, CARDW);
+		DrawImg(SaveCardBuf2, 0, 0, x, y, CARDW, CARDH, CARDW);
+		DrawImg(SaveCardBuf, 0, 0, xs, ys, CARDW, CARDH, CARDW);
 
 		WaitMs(20);
 	}
@@ -364,7 +363,7 @@ void DispCards()
 	for (i = 0; i < CARDNUM; i++)
 	{
 		if (p->cards[i] < 0) // no card
-			DrawImg(BackgroundImg + x + (HEIGHT-CARDH)*WIDTH,
+			DrawImg(BackgroundImg, x, (HEIGHT-CARDH),
 				x, HEIGHT-CARDH, CARDW, CARDH, IMGWB(WIDTH));
 		else
 			DispCard(p->cards[i], x, HEIGHT-CARDH, 0, p->disable[i],
@@ -378,7 +377,7 @@ void CursorOn()
 {
 	if (Players[Player].player == PLAYER_HUMAN)
 	{
-		DrawBlit(CursorImg, SelCard*CARDW + (CARDW-CURSORW)/2,
+		DrawBlit(CursorImg, 0, 0, SelCard*CARDW + (CARDW-CURSORW)/2,
 			HEIGHT-CARDH + (CARDH-CURSORH)/2 + 6, CURSORW, CURSORH, IMGWB(CURSORW), TRANSCOL);
 	}
 }
@@ -455,7 +454,7 @@ void ChangeAnim()
 					}
 
 					// draw cloud
-					DrawBlit(CloudImg, x, y, CLOUDW, CLOUDH, IMGWB(CLOUDW), TRANSCOL);
+					DrawBlit(CloudImg, 0, 0, x, y, CLOUDW, CLOUDH, IMGWB(CLOUDW), TRANSCOL);
 
 					// draw value
 					if (p->add[par] >= 0)
@@ -497,7 +496,7 @@ void ChangeAnim()
 				if (p->add[par] != 0)
 				{
 					// pop screen
-					DrawImg(&SaveCloudBuf[save], x, y, CLOUDW, CLOUDH, IMGWB(CLOUDW));
+					DrawImg(&SaveCloudBuf[save], 0, 0, x, y, CLOUDW, CLOUDH, IMGWB(CLOUDW));
 					save += CLOUDW*CLOUDH;
 				}
 				y += STATEDY;
@@ -516,7 +515,7 @@ void ChangeAnim()
 void DispAll()
 {
 	// display background
-	DrawImg(BackgroundImg, 0, 0, WIDTH, HEIGHT, IMGWB(WIDTH));
+	DrawImg(BackgroundImg, 0, 0, 0, 0, WIDTH, HEIGHT, IMGWB(WIDTH));
 
 	// display titles - player selection
 	DispTitle();
@@ -1072,7 +1071,7 @@ Bool WinGame(int player)
 		DispFlag();
 
 		// draw trumpet image
-		DrawBlit(TrumpetImg + player*TRUMPETW,
+		DrawBlit(TrumpetImg, player*TRUMPETW, 0,
 			x, y, TRUMPETW, TRUMPETH, IMGWB(TRUMPETALLW), TRANSCOL);
 
 		// USB transfers
@@ -1112,7 +1111,7 @@ Bool WinGame(int player)
 		}
 
 		// draw image
-		DrawBlit(WinImg + player*4*WINW + (anim>>2)*128,
+		DrawBlit(WinImg, player*4*WINW + (anim>>2)*128, 0,
 			x, y, WINW, WINH, IMGWB(WINALLW), TRANSCOL);
 		anim++;
 		if (anim >= 16) anim = 0;
@@ -1130,7 +1129,7 @@ Bool WinGame(int player)
 		WaitMs(30);
 
 		// restore background
-		DrawImg(SaveWinBuf, x, y, WINW, WINH, IMGWB(WINW));
+		DrawImg(SaveWinBuf, 0, 0, x, y, WINW, WINH, IMGWB(WINW));
 	}
 
 	// stop sound

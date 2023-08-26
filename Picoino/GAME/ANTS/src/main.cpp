@@ -42,12 +42,12 @@ void DispOpen()
 	DrawClear();
 
 	// display ants
-	DrawImg(OpenImg, 0, 0, 120, 120, IMGWB(240));
-	DrawImg(OpenImg+120, WIDTH-120, 53, 120, 120, IMGWB(240));
+	DrawImg(OpenImg, 0, 0, 0, 0, 120, 120, IMGWB(240));
+	DrawImg(OpenImg+120, 0, 0, WIDTH-120, 53, 120, 120, IMGWB(240));
 
 	// display title
-	DrawImg(TitleImg, 120+20, 0, 140, 53, IMGWB(140));
-	DrawImg(Title2Img, 120+10, 53, 60, 50, IMGWB(60));
+	DrawImg(TitleImg, 0, 0, 120+20, 0, 140, 53, IMGWB(140));
+	DrawImg(Title2Img, 0, 0, 120+10, 53, 60, 50, IMGWB(60));
 
 	// display open text
 	SelFont5x8();
@@ -73,11 +73,11 @@ void DispOpen()
 // display open selection
 void DispOpenSel()
 {
-	DrawImg(OpenSelImg, 0, HEIGHT-40, WIDTH, 40, WIDTH);
+	DrawImg(OpenSelImg, 0, 0, 0, HEIGHT-40, WIDTH, 40, WIDTH);
 	if (OpenSelInx < 4)
-		DrawBlit(OpenSel2Img, OpenSelInx*60, HEIGHT-40, 60, 40, IMGWB(60), COL_BLACK);
+		DrawBlit(OpenSel2Img, 0, 0, OpenSelInx*60, HEIGHT-40, 60, 40, IMGWB(60), COL_BLACK);
 	else
-		DrawBlit(OpenSel3Img, (OpenSelInx-4)*40+4*60, HEIGHT-40, 40, 40, IMGWB(40), COL_BLACK);
+		DrawBlit(OpenSel3Img, 0, 0, (OpenSelInx-4)*40+4*60, HEIGHT-40, 40, 40, IMGWB(40), COL_BLACK);
 }
 
 // main function

@@ -9,7 +9,7 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../_display/st7789/st7789.h" // ST7789 display
-#include "../../_lib/inc/lib_drawtft.h" // drawing to TFT display buffer
+#include "../../_lib/inc/lib_draw.h" // drawing to display buffer
 #include "../../_lib/inc/lib_pwmsnd.h" // PWM sound
 #include "picopad_bat.h"	// battery
 #include "picopad_key.h"	// buttons

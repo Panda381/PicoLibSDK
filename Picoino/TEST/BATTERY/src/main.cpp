@@ -39,7 +39,7 @@ int main()
 		i = (bat - BATTERY_EMPTY)/(BATTERY_FULL-BATTERY_EMPTY)*8;
 		if (i < 0) i = 0;
 		if (i > 7) i = 7;
-		DrawImg(BatteryImg, 0, 0, 128, 240, 128);
+		DrawImg(BatteryImg, 0, 0, 0, 0, 128, 240, 128);
 
 		u16 col = BatCol[i];
 		if (i > 0)

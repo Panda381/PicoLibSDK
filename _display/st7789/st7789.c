@@ -94,8 +94,7 @@ ALIGNED u16 FrameBuf[FRAMESIZE];
 #endif // USE_FRAMEBUF
 
 const u8 RotationTab[4] = { 0x00, 0x60, 0xc0, 0xa0 }; // rotation mode for ST7789_MADCTL
-u8 DispRot;	// current display rotation
-u16 DispWidth, DispHeight; // current display size
+//u8 DispRot;	// current display rotation
 
 // dirty window to update
 int DispDirtyX1, DispDirtyX2, DispDirtyY1, DispDirtyY2;
@@ -197,19 +196,21 @@ void DispColorMode(u8 mode)
 //  3 Inverted Landscape
 void DispRotation(u8 rot)
 {
+/*
 	DispRot = rot;	// save current display rotation
 	if ((rot & 1) == 0)
 	{
 		// portrait
-		DispWidth = 240;
-		DispHeight = 320;
+//		DispWidth = 240;
+		HEIGHT = 320;
 	}
 	else
 	{
 		// landscape
-		DispWidth = 320;
-		DispHeight = 240;
+//		DispWidth = 320;
+		HEIGHT = 240;
 	}
+*/
 	DispWriteCmdData(ST7789_MADCTL, &RotationTab[rot], 1);
 }	
 
@@ -274,17 +275,17 @@ void DispStopImg()
 void DispDirtyAll()
 {
 	DispDirtyX1 = 0;
-	DispDirtyX2 = DispWidth;
+	DispDirtyX2 = WIDTH; //DispWidth;
 	DispDirtyY1 = 0;
-	DispDirtyY2 = DispHeight;
+	DispDirtyY2 = HEIGHT;
 }
 
 // set dirty none (clear after update)
 void DispDirtyNone()
 {
-	DispDirtyX1 = DispWidth;
+	DispDirtyX1 = WIDTH; //DispWidth;
 	DispDirtyX2 = 0;
-	DispDirtyY1 = DispHeight;
+	DispDirtyY1 = HEIGHT;
 	DispDirtyY2 = 0;
 }
 
@@ -296,7 +297,7 @@ void DispDirtyRect(int x, int y, int w, int h)
 		w += x;
 		x = 0;
 	}
-	if (x + w > DispWidth) w = DispWidth - x;
+	if (x + w > WIDTH) w = WIDTH - x;
 	if (w <= 0) return;
 
 	if (y < 0)
@@ -304,7 +305,7 @@ void DispDirtyRect(int x, int y, int w, int h)
 		h += y;
 		y = 0;
 	}
-	if (y + h > DispHeight) h = DispHeight - y;
+	if (y + h > HEIGHT) h = HEIGHT - y;
 	if (h <= 0) return;
 
 	if (x < DispDirtyX1) DispDirtyX1 = x;
@@ -316,7 +317,7 @@ void DispDirtyRect(int x, int y, int w, int h)
 // update dirty area by pixel (check valid range)
 void DispDirtyPoint(int x, int y)
 {
-	if (((u32)x < (u32)DispWidth) && ((u32)y < (u32)DispHeight))
+	if (((u32)x < (u32)WIDTH) && ((u32)y < (u32)HEIGHT))
 	{
 		if (x < DispDirtyX1) DispDirtyX1 = x;
 		if (x + 1 > DispDirtyX2) DispDirtyX2 = x + 1;
@@ -334,12 +335,12 @@ void DispUpdate()
 		DispWindow((u16)DispDirtyX1, (u16)DispDirtyX2, (u16)DispDirtyY1, (u16)DispDirtyY2);
 
 		// send data from frame buffer
-		u16* s0 = &FrameBuf[DispDirtyX1 + DispDirtyY1*DispWidth];
+		u16* s0 = &FrameBuf[DispDirtyX1 + DispDirtyY1*WIDTH];
 		int i;
 		for (i = DispDirtyY2 - DispDirtyY1; i > 0; i--)
 		{
 			DispWriteData(s0, (DispDirtyX2 - DispDirtyX1)*2);
-			s0 += DispWidth;
+			s0 += WIDTH;
 		}
 
 		// set dirty none

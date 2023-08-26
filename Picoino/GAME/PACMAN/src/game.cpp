@@ -54,13 +54,13 @@ void DispAll(u32 wait)
 	{
 		for (x = 0; x < MAPW; x++)
 		{
-			DrawImg(TilesImg + (*s++)*TILEW, x*TILEW+MAPX, y*TILEH+MAPY, TILEW, TILEH, TILESIMGW);
+			DrawImg(TilesImg, (*s++)*TILEW, 0, x*TILEW+MAPX, y*TILEH+MAPY, TILEW, TILEH, TILESIMGW);
 		}
 	}
 
 	// fruit
 	if (FruitSpriteImg >= 0)
-		DrawBlit(SpritesImg + FruitSpriteImg*SPRITEW, FruitSpriteX,
+		DrawBlit(SpritesImg, FruitSpriteImg*SPRITEW, 0, FruitSpriteX,
 			FruitSpriteY, SPRITEW, SPRITEH, SPRITEIMGW, COL_BLACK);
 
 	// display score
@@ -75,7 +75,7 @@ void DispAll(u32 wait)
 	for (i = 0; i < 5; i++)
 	{
 		if (i < Lives)
-			DrawImg(StatusImg, i*STATUSW+MAPX,
+			DrawImg(StatusImg, 0, 0, i*STATUSW+MAPX,
 				HEIGHT-STATUSH, STATUSW, STATUSH, STATUSIMGW);
 		else
 			DrawRect(i*STATUSW+MAPX, HEIGHT-STATUSH, STATUSW, STATUSH, COL_BLACK);
@@ -89,7 +89,7 @@ void DispAll(u32 wait)
 	{
 		if (j > FRUITTABMAX-1) j = FRUITTABMAX-1;
 		if (j <= k)
-			DrawImg(StatusImg + (FruitTab[j]+1)*STATUSW, MAPX+MAPWIDTH-(i+1)*STATUSW,
+			DrawImg(StatusImg, (FruitTab[j]+1)*STATUSW, 0, MAPX+MAPWIDTH-(i+1)*STATUSW,
 				HEIGHT-STATUSH, STATUSW, STATUSH, STATUSIMGW);
 		else
 			DrawRect(MAPX+MAPWIDTH-(i+1)*STATUSW, HEIGHT-STATUSH, STATUSW, STATUSH, COL_BLACK);
@@ -116,7 +116,7 @@ void DispAll(u32 wait)
 			k = SpriteInx[k*4*4 + ch->dir*4 + (moving ? Phase : 1)]; // get sprite index
 
 		// display sprite
-		DrawBlit(SpritesImg + k*SPRITEW, ch->x, ch->y, SPRITEW, SPRITEH, SPRITEIMGW, COL_BLACK);
+		DrawBlit(SpritesImg, k*SPRITEW, 0, ch->x, ch->y, SPRITEW, SPRITEH, SPRITEIMGW, COL_BLACK);
 	}
 
 	// update display

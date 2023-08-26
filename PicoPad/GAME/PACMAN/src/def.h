@@ -100,11 +100,11 @@ enum {
 // character colors
 #define COL_PACMAN	COL_YELLOW
 #define COL_BLINKY	COL_RED
-#define COL_PINKY	RGBTO16(255,166,195)
-#define COL_INKY	RGBTO16(0,230,255)
-#define COL_CLYDE	RGBTO16(255,166,0)
+#define COL_PINKY	COLOR(255,166,195)
+#define COL_INKY	COLOR(0,230,255)
+#define COL_CLYDE	COLOR(255,166,0)
 
-#define COL_SCORE	RGBTO16(0,0,195)	// score color of eaten ghost
+#define COL_SCORE	COLOR(0,0,195)	// score color of eaten ghost
 
 // ghost state
 enum {

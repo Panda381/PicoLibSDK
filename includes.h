@@ -40,8 +40,12 @@
 #include "_devices/pico/_include.h"
 #endif
 
-#if USE_DEMOVGA		// use DemoVGA device configuration
+#if USE_DEMOVGA			// use DemoVGA device configuration
 #include "_devices/demovga/_include.h"
+#endif
+
+#if USE_PICOTRON		// use Picotron device configuration
+#include "_devices/picotron/_include.h"
 #endif
 
 #if USE_PICOINO			// use Picoino device configuration

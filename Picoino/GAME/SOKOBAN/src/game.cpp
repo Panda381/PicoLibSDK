@@ -96,7 +96,7 @@ void SetTileMode(int tilesize)
 void DispTile(u8 x, u8 y)
 {
 	u8 tile = Board[x + y*MapW];
-	DrawImg(TilesImg + tile*TileSize,
+	DrawImg(TilesImg, tile*TileSize, 0,
 		x*TileSize + LevelX, y*TileSize + LevelY, TileSize, TileSize, TilesImgW);
 }
 
@@ -146,7 +146,7 @@ void SavePlayer(int x, int y)
 // restore player save screen
 void RestorePlayer()
 {
-	if (SaveScrOn) DrawImg(SaveScr, SaveScrX, SaveScrY, TileSize, TileSize, TileSize);
+	if (SaveScrOn) DrawImg(SaveScr, 0, 0, SaveScrX, SaveScrY, TileSize, TileSize, TileSize);
 }
 
 // set player graphics position
@@ -156,7 +156,7 @@ void SetPlayer(int x, int y, u8 tile)
 	y += LevelY;
 	RestorePlayer();
 	SavePlayer(x, y);
-	DrawBlit(TilesImg + tile*TileSize, x, y, TileSize, TileSize, TilesImgW, TRANSCOL);
+	DrawBlit(TilesImg, tile*TileSize, 0, x, y, TileSize, TileSize, TilesImgW, TRANSCOL);
 }
 
 // soft move player in direction

@@ -151,7 +151,7 @@ void SavePlayer(int x, int y)
 // restore player save screen
 void RestorePlayer()
 {
-	if (SaveScrOn) DrawImg(SaveScr, SaveScrX, SaveScrY, TileSize, TileSize, TileSize);
+	if (SaveScrOn) DrawImg(SaveScr, 0, 0, SaveScrX, SaveScrY, TileSize, TileSize, TileSize);
 }
 
 // set player graphics position

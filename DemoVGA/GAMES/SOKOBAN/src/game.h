@@ -17,7 +17,7 @@
 #define MOVESPEED	50	// step delay in [ms]
 #endif
 
-#define TRANSCOL	RGBTO16(84, 0, 84)	// transparent color
+#define TRANSCOL	COLOR(84, 0, 84)	// transparent color
 
 // Define game board, tiles 16x16
 #define MAPWMAX (WIDTH/4)	// max. width of game board

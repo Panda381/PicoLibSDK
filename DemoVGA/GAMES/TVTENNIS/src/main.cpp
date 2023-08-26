@@ -175,7 +175,7 @@ void NewGame()
 // display middle net
 void DispNet(int height)
 {
-	DrawRect((WIDTH - NETW)/2, 0, NETW, height, RGBTO16(0, 186, 255));
+	DrawRect((WIDTH - NETW)/2, 0, NETW, height, COLOR(0, 186, 255));
 }
 
 // display one score
@@ -265,7 +265,7 @@ void DispBall()
 void DispAll()
 {
 	int strip;
-	for (strip = VGA_STRIP_NUM; strip > 0; strip--)
+	for (strip = DISP_STRIP_NUM; strip > 0; strip--)
 	{
 		// next strip
 		DispSetStripNext();

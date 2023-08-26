@@ -592,7 +592,7 @@ void MoveEnemyMissile()
 // display sprite
 void DispSprite(int sprite, int x, int y)
 {
-	DrawBlitPal(SpritesImg + sprite*SPRITEH*SPRITEW, SpritesImg_Pal, x, y, SPRITEW, SPRITEH, SPRITEW, TRANSCOL);
+	DrawBlitPal(SpritesImg, SpritesImg_Pal, 0, sprite*SPRITEH, x, y, SPRITEW, SPRITEH, SPRITEW, TRANSCOL);
 }
 
 // display tile

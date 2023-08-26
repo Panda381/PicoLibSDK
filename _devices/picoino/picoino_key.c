@@ -334,7 +334,7 @@ void KeyInit()
 
 	// clear key map
 	memset((void*)KeyMap, 0, sizeof(KeyMap));
-	memset((void*)KeyRelMap, 0, sizeof(KeyMap));
+	memset((void*)KeyRelMap, 0, sizeof(KeyRelMap));
 
 	KeyCapsLock = False;
 	KeyInsert = False;

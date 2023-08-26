@@ -128,9 +128,9 @@ void DispReel(u8 inx)
 		if (h2 > h) h2 = h; // limit by remaining height
 		h -= h2;
 		if (r->speed >= REEL_BLURSPEED)
-			DrawImgPal(BlurImg + (tab[pos]*SYMBOLH + ys)*SYMBOLW, BlurImg_Pal, x, y, SYMBOLW, h2, SYMBOLW);
+			DrawImgPal(BlurImg, BlurImg_Pal, 0, tab[pos]*SYMBOLH + ys, x, y, SYMBOLW, h2, SYMBOLW);
 		else
-			DrawImgPal(SymbolsImg + (tab[pos]*SYMBOLH + ys)*SYMBOLW, SymbolsImg_Pal, x, y, SYMBOLW, h2, SYMBOLW);
+			DrawImgPal(SymbolsImg, SymbolsImg_Pal, 0, tab[pos]*SYMBOLH + ys, x, y, SYMBOLW, h2, SYMBOLW);
 		ys = 0; // new source Y coordinate in symbol
 		y += h2; // shift destination Y coordinate
 		pos++; // increase position on reel

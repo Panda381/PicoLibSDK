@@ -15,7 +15,7 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
-#include "../../_display/vga/vga.h"
+#include "../../_display/minivga/minivga.h"
 #include "../../_sdk/inc/sdk_timer.h"
 #include "../../_lib/inc/lib_fat.h"
 #include "../../_lib/inc/lib_sd.h"

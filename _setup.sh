@@ -7,9 +7,10 @@
 
 # Use configuration name as parameter of the script, to select target device:
 #   pico .......... base Raspberry Pico module, optionally with UART on pins GPIO0 and GPIO1
-#   picoinomini ... Picoino mini version with QVGA RGB332 output
-#   picoino10 ..... Picoino version 1.0 with QVGA RGB332 output
-#   demovga ....... DemoVGA board
+#   picotron ...... Picotron with VGA YRGB1111 output
+#   picoinomini ... Picoino mini version with VGA RGB332 output
+#   picoino10 ..... Picoino version 1.0 with VGA RGB332 output
+#   demovga ....... DemoVGA board with VGA RGB565 output
 #   picopad08 ..... PicoPad beta version 0.8
 #   picopad10 ..... PicoPad version 1.0 with TFT RGB565 output
 #   (empty) ....... default compilation
@@ -19,6 +20,11 @@ case "$1" in
 	export DEVICE="pico"
 	export DEVCLASS="pico"
 	export DEVDIR="!Pico"
+	;;
+    "picotron")
+	export DEVICE="picotron"
+	export DEVCLASS="picotron"
+	export DEVDIR="!Picotron"
 	;;
     "picoinomini")
 	export DEVICE="picoinomini"

@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
 ==================================================================
-SDK Programmer's Guide, Version 1.03, August 2023
+SDK Programmer's Guide, Version 1.04, August 2023
 
 Copyright (c) 2023 Miroslav Nemecek
 
@@ -32,11 +32,11 @@ easier to use. What you can find in the PicoLibSDK library:
 
 - Tool library: alarm, 32-bit Unix calendar, long 64-bit astronomic calendar,
   canvas drawing, RGBA color vector, CRC check with DMA support, decode numbers,
-  TFT drawing, escape packet protocol, event ring buffer, FAT file system,
-  doubly linked list, memory allocator, 2D transformation matrix, mini-ring
-  buffer, formatted print, PWM sound output, QVGA drawing, random generator,
-  rectangle, ring buffer, DMA ring buffer, SD card, streams, text strings, text
-  list, text print, tree list, video player.
+  escape packet protocol, event ring buffer, FAT file system, doubly linked
+  list, memory allocator, 2D transformation matrix, mini-ring buffer, formatted
+  print, PWM sound output, random generator, rectangle, ring buffer, DMA ring
+  buffer, SD card, streams, text strings, text list, text print, tree list,
+  VGA drawing, video player.
 
 - USB library: multiplayer mini-port, CDC device and host - serial communication,
   HID device and host - including external keyboard and mouse.
@@ -49,14 +49,13 @@ easier to use. What you can find in the PicoLibSDK library:
   calculation method - Ln, Exp, Sqrt, Sin, Cos, Tan, arcus, hyperbolic functions
   and many more. Linear factorials with accurate and fast calculation.
 
-- Display drivers: Prepared support of TFT and VGA display 320x240/16bits and
-  QVGA display 320x240/8 bits.
+- Display drivers: Prepared support of TFT and VGA display with resolution
+  320x240 up to 800x600, with 4, 8, 15 or 16 bits output.
 
 - Devices: Support of Picoino/PicoinoMini with 8-bit QVGA display, DemoVGA with
-  16-bit VGA display and PicoPad with 16-bit TFT display. Some samples are also
-  prepared for the basic Raspberry Pico without additional hardware.
-
-- Samples: Prepared 56 sample programs and games.
+  16-bit VGA display, Picotron with 4-bit VGA display and PicoPad with 16-bit
+  TFT display. Some samples are also prepared for the basic Raspberry Pico
+  without additional hardware.
 
 
 License
@@ -104,8 +103,9 @@ a parameter via the command line. A default target device is prepared in the
 c.bat file in case you do not specify it as a parameter. In the Pico folder, the
 default compilation is for the target device 'pico' (the Raspberry Pico module
 itself without any added hardware), in the DemoVGA folder the compilation is for
-'demovga', in the Picoino folder the compilation is for 'picoino10' and in the
-PicoPad folder the default compilation is for 'picopad10'.
+'demovga', in the Picoino folder the compilation is for 'picoino10', in the
+Picotron folder the compilation is for 'picotron' and in the PicoPad folder
+the default compilation is for 'picopad10'.
 
 If the target device is not passed to the compilation files, it is compiled for
 the default device set in the _setup.bat file. This also applies if you compile
@@ -445,11 +445,13 @@ How PicoLibSDK library files and directories are organized:
 
 !Picoino10 - SD card contents with sample programs and loader for Picoino.
 
-!Picoino08 - SD card contents with sample programs and loader for PicoPad
+!PicoPad08 - SD card contents with sample programs and loader for PicoPad
 	beta 0.8.
 
-!Picoino10 - SD card contents with sample programs and loader for PicoPad
+!PicoPad10 - SD card contents with sample programs and loader for PicoPad
 	version 1.0.
+
+!Picotron - SD card contents with sample programs and loader for Picotron.
 
 _boot2 - boot2 loader stage 2, which is placed at the beginning of each UF2
 	program and is used to initialize the Flash memory interface. The boot2
@@ -457,19 +459,17 @@ _boot2 - boot2 loader stage 2, which is placed at the beginning of each UF2
 	checksum program boot2crc.exe.
 
 _devices - device definitions and drivers. Currently, the ready devices are
-	Pico, Picoino 1.0, PicoinoMini, DemoVGA, PicoPad 0.8 and PicoPad 1.0.
-	The target device is selected at compile time with the c.bat file
-	parameter ('pico', 'picoino10', 'picoinomini', 'demovga', 'picopad08'
-	or 'picopad10'). If the target device is not specified when compiling
-	the application, the default device is selected by the _setup.bat file.
+	Pico, Picotron, Picoino 1.0, PicoinoMini, DemoVGA, PicoPad 0.8 and
+        PicoPad 1.0. The target device is selected at compile time with the
+        c.bat file parameter ('pico', 'picotron', 'picoino10', 'picoinomini',
+	'demovga', 'picopad08' or 'picopad10'). If the target device is not
+	specified when compiling the application, the default device is
+	selected by the _setup.bat file.
 
-_display - drivers for the displays. Currently, there is a QVGA display driver
-	for 8-bit output to a VGA monitor in RGB332 format and 320x240 pixel
-	resolution - this driver is used by the Picoino. Next is VGA display
-	driver for 16-bit output to VGA monitor in RGB565 format and 320x240
-	pixel resolution - this driver is used by the DemoVGA board. And last,
-	a TFT display driver for 16-bit RGB565 format at 320x240 pixel
-	resolution - this driver is used by PicoPad.
+_display - drivers for the displays. Currently, there is a mini-VGA display
+	driver for 4/8/15/16-bit output to a VGA monitor with 320x240 up to
+	800x600 pixel resolution. And TFT display driver for 16-bit RGB565
+	format at 320x240 pixel resolution - this driver is used by PicoPad.
 
 _doc - documentation, SDK Programmer's Guide.
 
@@ -507,6 +507,8 @@ Pico - sample programs for Raspberry Pico
 Picoino - sample programs for Picoino and PicoinoMini
 
 PicoPad - sample programs for PicoPad
+
+Picotron - sample programs for Picotron
 
 _setup.bat - setting parameters for compilation according to the selected target
 	device
@@ -748,6 +750,11 @@ History of versions
 	compilation scripts for Linux
 08/19/2023 version 1.03: SPI SD card speed fix, timer-alarm treatment for
 	short times
+08/26/2023 version 1.04: Replace qvga/vga/qdraw/drawtft libraries with
+	more versatile minivga/draw libraries with 4/8/15/16 bit output
+	and 320x240 to 800x600 pixel resolution. Slide-show player added.
+	Added Picotron device, with 4-bit VGA output. Added BOOTSEL to
+	boot3 loader (in Battery menu).
 
 
 Missing and @TODO

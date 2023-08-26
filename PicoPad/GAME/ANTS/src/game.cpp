@@ -154,7 +154,7 @@ void DispState1(int player)
 	p = &Players[player];
 
 	// display status background (size 72 x 256)
-	DrawImgPal(StateImg, StateImg_Pal, StateX[player], STATEY, STATEW, STATEH, STATEW);
+	DrawImgPal(StateImg, StateImg_Pal, 0, 0, StateX[player], STATEY, STATEW, STATEH, STATEW);
 
 	// display values
 	pDrawFont = FontCond6x8;
@@ -198,7 +198,7 @@ void DispCastle(int player)
 
 	// display castle
 	int pixh = h + CASTLEH-CASTLEMAX; // castle height
-	DrawBlitPal(CastleImg + player*CASTLEW, CastleImg_Pal, CastleX[player] - CASTLEW/2,
+	DrawBlitPal(CastleImg, CastleImg_Pal, player*CASTLEW, 0, CastleX[player] - CASTLEW/2,
 		GRASSY + 8 - pixh, CASTLEW, pixh, CASTLEALLW, TRANSCOL);
 }
 
@@ -278,13 +278,13 @@ void DispCard(int type, int x, int y, int shadow, Bool disable, Bool back, Bool 
 	if (back)
 	{
 		// display card back side
-		DrawBlitPal(CardsImg + CARD_BACK*CARDW, CardsImg_Pal, x, y, CARDW, CARDH, CARDSALLW, TRANSCOL);
+		DrawBlitPal(CardsImg, CardsImg_Pal, CARD_BACK*CARDW, 0, x, y, CARDW, CARDH, CARDSALLW, TRANSCOL);
 	}
 
 	else
 	{
 		// display card
-		DrawBlitPal(CardsImg + type*CARDW, CardsImg_Pal, x, y, CARDW, CARDH, CARDSALLW, TRANSCOL);
+		DrawBlitPal(CardsImg, CardsImg_Pal, type*CARDW, 0, x, y, CARDW, CARDH, CARDSALLW, TRANSCOL);
 
 		// card is disabled
 		if (disable || discard)
@@ -292,7 +292,7 @@ void DispCard(int type, int x, int y, int shadow, Bool disable, Bool back, Bool 
 
 		// card is discarded
 		if (discard)
-			DrawBlitPal(CardsImg + CARD_DISCARD*CARDW, CardsImg_Pal, x, y,
+			DrawBlitPal(CardsImg, CardsImg_Pal, CARD_DISCARD*CARDW, 0, x, y,
 				CARDW, CARDH, CARDSALLW, TRANSCOL);
 	}
 }
@@ -346,8 +346,8 @@ void AnimCard(int type, int x1, int y1, int x2, int y2, Bool back, Bool discard)
 		DispUpdate();
 
 		// restore screen content
-		DrawImg(SaveCardBuf2, x, y, CARDW, CARDH, CARDW);
-		DrawImg(SaveCardBuf, xs, ys, CARDW, CARDH, CARDW);
+		DrawImg(SaveCardBuf2, 0, 0, x, y, CARDW, CARDH, CARDW);
+		DrawImg(SaveCardBuf, 0, 0, xs, ys, CARDW, CARDH, CARDW);
 	}
 }
 
@@ -458,12 +458,12 @@ void ChangeAnim()
 					{
 						NumBuf[0] = '+';
 						n = DecNum(NumBuf+1, p->add[par], 0)+1;
-						DrawText(NumBuf, x+15-n*4, y+6, RGBTO16(0, 0, 220));
+						DrawText(NumBuf, x+15-n*4, y+6, COLOR(0, 0, 220));
 					}
 					else
 					{
 						n = DecNum(NumBuf, p->add[par], 0);
-						DrawText(NumBuf, x+15-n*4, y+6, RGBTO16(255, 0, 0));
+						DrawText(NumBuf, x+15-n*4, y+6, COLOR(255, 0, 0));
 					}
 					save += CLOUDW*CLOUDH;
 				}
@@ -493,7 +493,7 @@ void ChangeAnim()
 				if (p->add[par] != 0)
 				{
 					// pop screen
-					DrawImg(&SaveCloudBuf[save], x, y, CLOUDW, CLOUDH, CLOUDW);
+					DrawImg(&SaveCloudBuf[save], 0, 0, x, y, CLOUDW, CLOUDH, CLOUDW);
 					save += CLOUDW*CLOUDH;
 				}
 				y += STATEDY;
@@ -1122,7 +1122,7 @@ Bool WinGame(int player)
 		WaitMs(30);
 
 		// restore background
-		DrawImg(SaveWinBuf, x, y, WINW, WINH, WINW);
+		DrawImg(SaveWinBuf, 0, 0, x, y, WINW, WINH, WINW);
 	}
 
 	// stop sound

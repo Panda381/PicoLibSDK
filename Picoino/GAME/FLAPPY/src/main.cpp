@@ -10,7 +10,7 @@
 int main()
 {
 	// intro screen
-	DrawImg(IntroImg, 0, 0, WIDTH, HEIGHT, WIDTH);
+	DrawImg(IntroImg, 0, 0, 0, 0, WIDTH, HEIGHT, WIDTH);
 	DispUpdate();
 	WaitMs(2000);
 

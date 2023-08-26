@@ -23,9 +23,9 @@
 #include "../../_sdk/inc/sdk_multicore.h"
 #include "../inc/lib_video.h"
 #include "../inc/lib_pwmsnd.h"
-#include "../inc/lib_drawtft.h"
+#include "../inc/lib_draw.h"
 #include "../../_display/st7789/st7789.h"
-#include "../../_display/vga/vga.h"
+#include "../../_display/minivga/minivga.h"
 #include "../inc/lib_print.h"
 
 // frame buffer - used both to display and to load 2 video frames
@@ -62,7 +62,7 @@ void VideoDispFrame()
 			// height to display
 			h = VideoDispHeight;
 
-#if USE_VGA		// use VGA display 320x240/16; 1=use 1 frame buffer 153 KB, 2=add 1/2 back buffer 230 KB, 3=add 1/4 back buffer 192 KB (vga.c, vga.h)
+#if USE_MINIVGA		// use VGA display 320x240/16; 1=use 1 frame buffer 153 KB, 2=add 1/2 back buffer 230 KB, 3=add 1/4 back buffer 192 KB (vga.c, vga.h)
 
 			// prepare pointers
 			pal = (u16*)frm; // pointer to palettes
@@ -92,7 +92,7 @@ void VideoDispFrame()
 				*d++ = c2;
 			}
 
-#else // USE_VGA
+#else // USE_MINIVGA
 
 			// start sending image to the display
 			DispStartImg(0, WIDTH, 0, h);
@@ -134,7 +134,7 @@ void VideoDispFrame()
 			// stop sending image to the display
 			DispStopImg();
 
-#endif // USE_VGA
+#endif // USE_MINIVGA
 
 			// info core0 that work is done
 			dmb();
@@ -166,7 +166,7 @@ Bool VideoOpen(sVideo* video, const char* filename)
 	VideoDisp1Frame = NULL;
 	VideoDispBreak = False;
 	VideoDispHeight = HEIGHT;
-#if USE_VGA		// use VGA display 320x240/16; 1=use 1 frame buffer 153 KB, 2=add 1/2 back buffer 230 KB, 3=add 1/4 back buffer 192 KB (vga.c, vga.h)
+#if USE_MINIVGA		// use VGA display 320x240/16; 1=use 1 frame buffer 153 KB, 2=add 1/2 back buffer 230 KB, 3=add 1/4 back buffer 192 KB (vga.c, vga.h)
 	VgaCore1Exec(VideoDispFrame);
 #else
 	Core1Exec(VideoDispFrame);
@@ -246,7 +246,7 @@ Bool VideoPlayFrame(sVideo* video)
 	if (video->frame >= video->frames) return False;
 
 	// pointer to current frame buffer
-#if USE_VGA		// use VGA display 320x240/16; 1=use 1 frame buffer 153 KB, 2=add 1/2 back buffer 230 KB, 3=add 1/4 back buffer 192 KB (vga.c, vga.h)
+#if USE_MINIVGA		// use VGA display 320x240/16; 1=use 1 frame buffer 153 KB, 2=add 1/2 back buffer 230 KB, 3=add 1/4 back buffer 192 KB (vga.c, vga.h)
 	u8* frm = (u8*)FrameBuf + FRAMESIZE*2 + video->bufinx*VIDEO_FRAMESIZE_ALIGNED;
 #else // USE_VGA
 	u8* frm = (u8*)FrameBuf + video->bufinx*VIDEO_FRAMESIZE_ALIGNED;

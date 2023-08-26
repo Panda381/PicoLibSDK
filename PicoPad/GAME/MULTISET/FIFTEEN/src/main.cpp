@@ -616,8 +616,8 @@ int main()
 
 		DrawText("Press key 'A' to start the game", MENUX+16, MENUY2+5*MENUDY, COL_GREEN);
 
-		DrawText("Goal of", MENUX+16, MENUY2+7*MENUDY, RGBTO16(0, 186, 255));
-		DrawText("the game:", MENUX+16, MENUY2+8*MENUDY, RGBTO16(0, 186, 255));
+		DrawText("Goal of", MENUX+16, MENUY2+7*MENUDY, COLOR(0, 186, 255));
+		DrawText("the game:", MENUX+16, MENUY2+8*MENUDY, COLOR(0, 186, 255));
 		DrawImg4Rle(GoalImg, GoalImg_Pal, 150, MENUY2+7*MENUDY, GOALW, GOALH);
 
 		// display update

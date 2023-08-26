@@ -35,7 +35,7 @@ int main()
 		float voltage = ADC_SingleU()*BAT_MUL;
 
 		// print
-		Print("Vsys supply voltage: %.2f\n", voltage);
+		Print("Vsys supply voltage: %.2fV\n", voltage);
 
 		// 1 sec delay
 		WaitMs(1000);

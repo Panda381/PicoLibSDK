@@ -88,6 +88,7 @@ int main()
 			if (RandU8Max(1)==0)
 				DrawImg(
 					PeterImg,			// src
+					0, 0,				// xs, ys
 					RandS16MinMax(-50, WIDTH-10), // xd
 					RandS16MinMax(-50, HEIGHT-10), // yd
 					32,				// w
@@ -96,6 +97,7 @@ int main()
 			else
 				DrawBlit(
 					RPiImg,			// src
+					0, 0,				// xs, ys
 					RandS16MinMax(-50, WIDTH-10), // xd
 					RandS16MinMax(-50, HEIGHT-10), // yd
 					32,				// w

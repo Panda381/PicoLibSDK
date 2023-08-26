@@ -20,11 +20,10 @@
 
 #include "../inc/lib_print.h"
 #include "../inc/lib_text.h"
-#include "../inc/lib_drawtft.h"
-#include "../inc/lib_qdraw.h"
+#include "../inc/lib_draw.h"
 #include "../inc/lib_decnum.h"
 #include "../../_display/st7789/st7789.h"
-#include "../../_display/qvga/qvga.h"
+#include "../../_display/minivga/minivga.h"
 #include "../../_sdk/usb_inc/sdk_usb_dev_cdc.h"
 #include "../../_sdk/usb_inc/sdk_usb_host_hid.h"
 #include "../../_sdk/inc/sdk_uart.h"
@@ -1435,7 +1434,7 @@ int print(const char* fmt, ...)
 	return n;
 }
 
-#if USE_PICOPAD || USE_PICOINO 	// use PicoPad or Picoino device configuration
+#if USE_PICOPAD || USE_PICOINO || USE_PICOTRON	// use PicoPad or Picoino device configuration
 char KeyChar();
 #endif
 
@@ -1462,7 +1461,7 @@ char GetChar()
 	if (ch != NOCHAR) return ch;
 #endif
 
-#if USE_PICOPAD || USE_PICOINO 	// use PicoPad or Picoino device configuration
+#if USE_PICOPAD || USE_PICOINO || USE_PICOTRON 	// use PicoPad or Picoino device configuration
 	ch = KeyChar();
 	if (ch != NOCHAR) return ch;
 #endif

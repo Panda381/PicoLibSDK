@@ -201,7 +201,7 @@ void DispTile(u8 x, u8 y)
 	u8 tile = Board[x + y*MAPW];
 	int row = tile / TILESNUMX;
 	int col = tile - row*TILESNUMX;
-	DrawImg(TilesImg + col*TILESIZE + row*TILESIZE*TILESIMGW,
+	DrawImg(TilesImg, col*TILESIZE, row*TILESIZE,
 		x*TILESIZE, y*TILESIZE + MAPY, TILESIZE, TILESIZE, TILESIMGW);
 }
 
@@ -648,12 +648,12 @@ Bool HelpLevel()
 		if (Level == 0)
 		{
 			if (HeadY == 9)
-				DrawImg(TilesImg + 9*16*TILESIMGW, 0, 8*16+MAPY, HeadX*TILESIZE, 32, TILESIMGW);
+				DrawImg(TilesImg, 0, 9*16, 0, 8*16+MAPY, HeadX*TILESIZE, 32, TILESIMGW);
 			else if ((HeadY == 10) && (HeadX >= 13))
 			{
-				DrawImg(TilesImg + 11*16 + (HeadX-13)*16 + 8*16*TILESIMGW,
+				DrawImg(TilesImg, 11*16 + (HeadX-13)*16, 8*16,
 					(HeadX+1)*16, 10*16+MAPY, 6*16 - (HeadX-13), 16, TILESIMGW);
-				DrawImg(TilesImg + 9*16*TILESIMGW, 0, 8*16+MAPY, TILESIMGW, 32, TILESIMGW);
+				DrawImg(TilesImg, 0, 9*16, 0, 8*16+MAPY, TILESIMGW, 32, TILESIMGW);
 			}
 		}
 

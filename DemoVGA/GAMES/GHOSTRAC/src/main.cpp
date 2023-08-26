@@ -422,7 +422,7 @@ int main()
 
 	// ==== display
 
-		for (strip = VGA_STRIP_NUM; strip > 0; strip--)
+		for (strip = DISP_STRIP_NUM; strip > 0; strip--)
 		{
 			// next strip
 			DispSetStripNext();
@@ -431,8 +431,8 @@ int main()
 			InfoRow();
 
 			// update skyline
-			DrawImgPal(SkylineImg, SkylineImg_Pal, -offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
-			DrawImgPal(SkylineImg, SkylineImg_Pal, WIDTH-offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
+			DrawImgPal(SkylineImg, SkylineImg_Pal, 0, 0, -offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
+			DrawImgPal(SkylineImg, SkylineImg_Pal, 0, 0, WIDTH-offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
 
 			// update terrain
 			DrawTile4PalMap(TilesPalImg, TilesPalImg_Pal, TileMap, MAPWBITS, MAPHBITS,

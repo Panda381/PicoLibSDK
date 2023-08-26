@@ -15,7 +15,7 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
-#include "../../_display/qvga/qvga.h"
+#include "../../_display/minivga/minivga.h"
 #include "../../_sdk/inc/sdk_timer.h"
 #include "../../_lib/inc/lib_fat.h"
 #include "../../_lib/inc/lib_sd.h"
@@ -49,7 +49,7 @@ typedef struct {
 } sBmp;
 #pragma pack(pop)
 
-// BMP file header, 16 bits per pixel
+// BMP file header, 8 bits per pixel
 sBmp BmpHeader = {
 	// BMP file header (size 14 bytes)
 	0x4D42,			// u16	bfType;		// 0x00: magic, 'B' 'M' = 0x4D42

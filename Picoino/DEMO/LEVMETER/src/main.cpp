@@ -49,8 +49,8 @@ int main()
 	PlaySoundRep(TestSnd, SNDLEN);
 
 	// draw reproboxes
-	DrawImg(Repro1Img, REPRO1X, REPROY, REPROW, REPROH, REPROW);
-	DrawImg(Repro2Img, REPRO2X, REPROY, REPROW, REPROH, REPROW);
+	DrawImg(Repro1Img, 0, 0, REPRO1X, REPROY, REPROW, REPROH, REPROW);
+	DrawImg(Repro2Img, 0, 0, REPRO2X, REPROY, REPROW, REPROH, REPROW);
 
 	// main loop
 	while (True)
@@ -58,8 +58,8 @@ int main()
 		// membranes update (by sound offset)
 		int off = (SNDLEN - SoundCnt[0]) % BEATINT;
 		off = (off < BEATON) ? MEMBOFF : 0;
-		DrawBlit(Repro3Img, REPRO1X+MEMB1X+off, REPROY+MEMBY+off, MEMBW, MEMBH, MEMBW, COL_WHITE);
-		DrawBlit(Repro3Img, REPRO2X+MEMB1X+off, REPROY+MEMBY+off, MEMBW, MEMBH, MEMBW, COL_WHITE);
+		DrawBlit(Repro3Img, 0, 0, REPRO1X+MEMB1X+off, REPROY+MEMBY+off, MEMBW, MEMBH, MEMBW, COL_WHITE);
+		DrawBlit(Repro3Img, 0, 0, REPRO2X+MEMB1X+off, REPROY+MEMBY+off, MEMBW, MEMBH, MEMBW, COL_WHITE);
 
 		// generate samples
 		for (i = 0; i < SAMPNUM; i++)

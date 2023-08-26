@@ -596,27 +596,27 @@ void MoveEnemyMissile()
 // display sprite
 void DispSprite(int sprite, int x, int y)
 {
-	DrawBlit(SpritesImg + sprite*SPRITEH*SPRITEW, x, y, SPRITEW, SPRITEH, SPRITEW, TRANSCOL);
+	DrawBlit(SpritesImg, 0, sprite*SPRITEH, x, y, SPRITEW, SPRITEH, SPRITEW, TRANSCOL);
 }
 
 // display tile
 void DispTile(int tile, int x, int y)
 {
-	DrawBlit(TilesImg + tile*TILEH*TILEW, x, y, TILEW, TILEH, TILEW, TRANSCOL);
+	DrawBlit(TilesImg, 0, tile*TILEH, x, y, TILEW, TILEH, TILEW, TRANSCOL);
 }
 
 // display shadow
 void DispShadow(int shadow, int x, int y)
 {
-	DrawBlit(ShadowsImg + shadow*SHADOWH*SHADOWW, x+SHADOW_SHIFTX, y+SHADOW_SHIFTY, SHADOWW, SHADOWH, SHADOWW, COL_WHITE);
+	DrawBlit(ShadowsImg, 0, shadow*SHADOWH, x+SHADOW_SHIFTX, y+SHADOW_SHIFTY, SHADOWW, SHADOWH, SHADOWW, COL_WHITE);
 }
 
 // display landscape
 void DispLandscape()
 {
 	// display landscape
-	DrawImg(LandscapeImg, 0, LandscapeY, LANDSCAPEW, LANDSCAPEH, LANDSCAPEW);
-	DrawImg(LandscapeImg, 0, LandscapeY - LANDSCAPEH, LANDSCAPEW, LANDSCAPEH, LANDSCAPEW);
+	DrawImg(LandscapeImg, 0, 0, 0, LandscapeY, LANDSCAPEW, LANDSCAPEH, LANDSCAPEW);
+	DrawImg(LandscapeImg, 0, 0, 0, LandscapeY - LANDSCAPEH, LANDSCAPEW, LANDSCAPEH, LANDSCAPEW);
 }
 
 // display spaceship shadow

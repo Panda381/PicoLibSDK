@@ -57,7 +57,7 @@ const int TonesLen[4] = { sizeof(Tone1Snd), sizeof(Tone2Snd), sizeof(Tone3Snd), 
 // display sprite image
 void DispSprite(int xs, int ys, int x, int y, int w, int h)
 {
-	DrawImg(SpritesImg + xs + ys*SPRITESIMGW, x, y, w, h, SPRITESIMGW);
+	DrawImg(SpritesImg, xs, ys, x, y, w, h, SPRITESIMGW);
 }
 
 // display ship
@@ -258,7 +258,7 @@ void ShootHitHouse()
 		if (CheckHouse(ShootX, ShootY) > 15)
 		{
 			ShootOn = False;
-			DrawBlit(SpritesImg + SHOOTEXP2X + SHOOTEXP2Y*SPRITESIMGW,
+			DrawBlit(SpritesImg, SHOOTEXP2X, SHOOTEXP2Y,
 				ShootX, ShootY, SHOOTW, SHOOTH, SPRITESIMGW, COL_WHITE);
 		}
 	}
@@ -275,7 +275,7 @@ void MissileHitHouse()
 			if (CheckHouse(MissileX[i], MissileY[i]) > 10)
 			{
 				MissileOn[i] = False;
-				DrawBlit(SpritesImg + MISSILEINVIMGX + MISSILEINVIMGY*SPRITESIMGW,
+				DrawBlit(SpritesImg, MISSILEINVIMGX, MISSILEINVIMGY,
 					MissileX[i]-2, MissileY[i], MISSILEEXPW, MISSILEEXPH, SPRITESIMGW, COL_YELLOW);
 			}
 		}

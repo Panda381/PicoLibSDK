@@ -22,6 +22,8 @@
 // to change from the default configuration in config_def.h.
 // *********
 
+#define WIDTH		320		// screen width
+
 #define USE_SCREENSHOT	0		// use screen shots
 
 #define USE_DOUBLE	0		// use Double-floating point (sdk_double.c, sdk_double_asm.S, sdk_double.h)
@@ -44,7 +46,6 @@
 #define USE_MALLOC	0		// use Memory Allocator (lib_malloc.c, lib_malloc.h)
 #define USE_PRINT	0		// use Formatted print (lib_print.c, lib_print.h)
 #define USE_PWMSND	0		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
-#define USE_QDRAW	0		// use QVGA drawing (lib_qdraw.c, lib_qdraw.h)
 #define USE_RAND	0		// use Random number generator (lib_rand.c, lib_rand.h)
 #define USE_RECT	0		// use Rectangle (lib_rect.c, lib_rect.h)
 #define USE_RING	0		// use Ring buffer (lib_ring.c, lib_ring.h)

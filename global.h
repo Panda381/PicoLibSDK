@@ -17,7 +17,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-#define SDK_VER		103	// SDK library version in hundredths
+#define SDK_VER		104	// SDK library version in hundredths
 
 // ----------------------------------------------------------------------------
 //                               Attributes
@@ -67,20 +67,6 @@
 
 // minimal value
 #define MIN(val1,val2) ( ((val1)<(val2)) ? (val1) : (val2) )
-
-// convert 24-bit RGB to 16-bit color
-#define RGBTO16(r,g,b)	( (((r)&0xf8)<<8) | (((g)&0xfc)<<3) | (((b)&0xf8)>>3) )
-
-// convert 24-bit RGB to 15-bit color
-#define RGBTO15(r,g,b)	( (((r)&0xf8)<<7) | (((g)&0xf8)<<2) | (((b)&0xf8)>>3) )
-
-// blend 16-bit colors with 25%, 50% and 75% ratio
-//  @TODO: Fast, but not precise (may be darker with missing lowest bit)
-#define RGBBLEND25(a,b) ((((a)>>2) & ~(B3|B4|B9|B10|B14|B15)) + (((b)>>1) & ~(B4|B10|B15)) + (((b)>>2) & ~(B3|B4|B9|B10|B14|B15)))
-#define RGBBLEND50(a,b) ((((a)>>1) & ~(B4|B10|B15)) + (((b)>>1) & ~(B4|B10|B15)))
-#define RGBBLEND75(a,b) ((((a)>>1) & ~(B4|B10|B15)) + (((a)>>2) & ~(B3|B4|B9|B10|B14|B15)) + (((b)>>2) & ~(B3|B4|B9|B10|B14|B15)))
-
-#define RGBBLEND4(a,b,c,d) ((((a)>>2) & ~(B3|B4|B9|B10|B14|B15)) + (((b)>>2) & ~(B3|B4|B9|B10|B14|B15)) + (((c)>>2) & ~(B3|B4|B9|B10|B14|B15)) + (((d)>>2) & ~(B3|B4|B9|B10|B14|B15)))
 
 // default LED pin on Raspberry Pico
 #define LED_PIN 25
@@ -276,5 +262,95 @@ INLINE void CheckTypeSize()
 #include <string.h>		// memcpy
 #include <stdarg.h>		// va_list
 #include <math.h>		// HUGE_VAL
+
+// ----------------------------------------------------------------------------
+//                 Colors (must be used after "config.h")
+// ----------------------------------------------------------------------------
+
+// 4-bit color YRGB1111
+#if COLBITS == 4
+
+// - base colors
+#define COL_BLACK	COLOR4(0,0,0,0)
+#define COL_BLUE	COLOR4(0,0,0,1)
+#define COL_GREEN	COLOR4(0,0,1,0)
+#define COL_CYAN	COLOR4(0,0,1,1)
+#define COL_RED		COLOR4(0,1,0,0)
+#define COL_MAGENTA	COLOR4(0,1,0,1)
+#define COL_YELLOW	COLOR4(0,1,1,0)
+#define COL_GRAY	COLOR4(0,1,1,1)
+#define COL_WHITE	COLOR4(1,1,1,1)
+// - dark colors
+#define COL_DKBLUE	COLOR4(0,0,0,1)
+#define COL_DKGREEN	COLOR4(0,0,1,0)
+#define COL_DKCYAN	COLOR4(0,0,1,1)
+#define COL_DKRED	COLOR4(0,1,0,0)
+#define COL_DKMAGENTA	COLOR4(0,1,0,1)
+#define COL_DKYELLOW	COLOR4(0,1,1,0)
+#define COL_DKWHITE	COLOR4(0,1,1,1)
+#define COL_DKGRAY	COLOR4(1,0,0,0)
+// - light colors
+#define COL_LTBLUE	COLOR4(1,0,0,1)
+#define COL_LTGREEN	COLOR4(1,0,1,0)
+#define COL_LTCYAN	COLOR4(1,0,1,1)
+#define COL_LTRED	COLOR4(1,1,0,0)
+#define COL_LTMAGENTA	COLOR4(1,1,0,1)
+#define COL_LTYELLOW	COLOR4(1,1,1,0)
+#define COL_LTGRAY	COLOR4(1,1,1,1)
+
+#define COL_AZURE	COLOR4(1,0,1,1)
+#define COL_ORANGE	COLOR4(0,1,1,0)
+
+// other colors
+#else // COLBITS
+
+// - base colors
+#define COL_BLACK	COLOR(  0,  0,  0)
+#define COL_BLUE	COLOR(  0,  0,255)
+#define COL_GREEN	COLOR(  0,255,  0)
+#define COL_CYAN	COLOR(  0,255,255)
+#define COL_RED		COLOR(255,  0,  0)
+#define COL_MAGENTA	COLOR(255,  0,255)
+#define COL_YELLOW	COLOR(255,255,  0)
+#define COL_WHITE	COLOR(255,255,255)
+#define COL_GRAY	COLOR(128,128,128)
+// - dark colors
+#define COL_DKBLUE	COLOR(  0,  0,127)
+#define COL_DKGREEN	COLOR(  0,127,  0)
+#define COL_DKCYAN	COLOR(  0,127,127)
+#define COL_DKRED	COLOR(127,  0,  0)
+#define COL_DKMAGENTA	COLOR(127,  0,127)
+#define COL_DKYELLOW	COLOR(127,127,  0)
+#define COL_DKWHITE	COLOR(127,127,127)
+#define COL_DKGRAY	COLOR( 64, 64, 64)
+// - light colors
+#define COL_LTBLUE	COLOR(127,127,255)
+#define COL_LTGREEN	COLOR(127,255,127)
+#define COL_LTCYAN	COLOR(127,255,255)
+#define COL_LTRED	COLOR(255,127,127)
+#define COL_LTMAGENTA	COLOR(255,127,255)
+#define COL_LTYELLOW	COLOR(255,255,127)
+#define COL_LTGRAY	COLOR(192,192,192)
+
+#define COL_AZURE	COLOR(  0,127,255)
+#define COL_ORANGE	COLOR(255,127,  0)
+
+#endif // COLBITS
+
+#define COL_PRINT_DEF	COL_GRAY		// default console print color
+
+// convert 24-bit RGB to 16-bit color
+#define RGBTO16(r,g,b)	( (((r)&0xf8)<<8) | (((g)&0xfc)<<3) | (((b)&0xf8)>>3) )
+
+// convert 24-bit RGB to 15-bit color
+#define RGBTO15(r,g,b)	( (((r)&0xf8)<<7) | (((g)&0xf8)<<2) | (((b)&0xf8)>>3) )
+
+// blend 16-bit colors with 25%, 50% and 75% ratio
+//  @TODO: Fast, but not precise (may be darker with missing lowest bit)
+#define RGBBLEND25(a,b) ((((a)>>2) & ~(B3|B4|B9|B10|B14|B15)) + (((b)>>1) & ~(B4|B10|B15)) + (((b)>>2) & ~(B3|B4|B9|B10|B14|B15)))
+#define RGBBLEND50(a,b) ((((a)>>1) & ~(B4|B10|B15)) + (((b)>>1) & ~(B4|B10|B15)))
+#define RGBBLEND75(a,b) ((((a)>>1) & ~(B4|B10|B15)) + (((a)>>2) & ~(B3|B4|B9|B10|B14|B15)) + (((b)>>2) & ~(B3|B4|B9|B10|B14|B15)))
+
+#define RGBBLEND4(a,b,c,d) ((((a)>>2) & ~(B3|B4|B9|B10|B14|B15)) + (((b)>>2) & ~(B3|B4|B9|B10|B14|B15)) + (((c)>>2) & ~(B3|B4|B9|B10|B14|B15)) + (((d)>>2) & ~(B3|B4|B9|B10|B14|B15)))
 
 #endif // _GLOBAL_H

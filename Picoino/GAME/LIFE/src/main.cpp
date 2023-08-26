@@ -146,7 +146,7 @@ void DrawBoard()
 			b = Board[(i+MAPY)*MAPW0 + j+MAPX];
 			x = j*TILESIZE;
 			y = i*TILESIZE;
-			DrawImg(Tiles16Img + b*TILESIZE*TILESIZE, x, y, TILESIZE, TILESIZE, TILESIZE);
+			DrawImg(Tiles16Img, 0, b*TILESIZE, x, y, TILESIZE, TILESIZE, TILESIZE);
 		}
 	}
 	DispUpdate();
