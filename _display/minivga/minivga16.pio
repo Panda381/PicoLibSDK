@@ -1,6 +1,6 @@
 
 ; ============================================================================
-;                     Mini-VGA PIO, 16 bits (16 instructions)
+;            Mini-VGA PIO with HSYNC+VSYNC, 16 bits (16 instructions)
 ; ============================================================================
 ; Control word (right shifted):
 ;  - bit 0..26 (27 bits) loop counter N

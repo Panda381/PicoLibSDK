@@ -27,14 +27,15 @@ Required configuration from device setup:
   USE_MINIVGA .. config of back buffers
   COLBITS ... number of output color bits 4, 8, 15 or 16
   WIDTH ... width of videomode
-  ....(default 0) VGA_PIO_OFF ... offset of VGA program in PIO memory
+  ....(optional, default 0) VGA_PIO_OFF ... offset of VGA program in PIO memory
   VGA_PIO ... used PIO
   VGA_SM ... state machine
   VGA_DMA ... first DMA channel (use 2 channels)
   VGA_GPIO_FIRST ... GPIO of first color pin (colors are in order: blue, green, red)
   VGA_GPIO_NUM ... number of VGA color GPIOs, without HSYNC and VSYNC, including 1 pin if neede to be skipped
   VGA_GPIO_HSYNC ... VGA HSYNC GPIO (VGA requires VSYNC = HSYNC+1)
-  VGA_GPIO_SKIP ... skip this pin; comment out this line if you don't want the VGA pin to skip
+  ... VGA_GPIO_SKIP ... skip this pin; comment out this line if you don't want the VGA pin to skip
+  ... (optional, default 0) VGA_USECSYNC ... 1=use only CSYNC signal instead of HSYNC (VSYNC not used)
 
 Auto generated configuration:
   HEIGHT ... height of videomode

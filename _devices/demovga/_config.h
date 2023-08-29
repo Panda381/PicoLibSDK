@@ -99,6 +99,8 @@
 #define VGA_GPIO_HSYNC	16	// VGA HSYNC GPIO (VGA requires VSYNC = HSYNC+1)
 #endif
 
+//#define VGA_USECSYNC	1	// 1=use only CSYNC signal instead of HSYNC (VSYNC not used)
+
 #ifndef WIDTH
 #define WIDTH	320		// display width
 #endif
@@ -135,7 +137,7 @@
 #endif
 
 #ifndef VGA_DMA
-#define VGA_DMA		6	// VGA first DMA channel (use 2 channels)
+#define VGA_DMA		8	// VGA first DMA channel (use 2 channels)
 #endif
 
 // mini-VGA auto config

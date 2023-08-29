@@ -1,6 +1,6 @@
 
 ; ============================================================================
-;                     Mini-VGA PIO, 4 bits (16 instructions)
+;            Mini-VGA PIO with HSYNC+VSYNC, 4 bits (16 instructions)
 ; ============================================================================
 ; Control word (left shifted ... warning, this is different from 8 and 16 bits!):
 ;  - bit 0..4 (5 bits) jump address

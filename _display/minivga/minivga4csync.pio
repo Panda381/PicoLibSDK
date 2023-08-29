@@ -1,0 +1,65 @@
+
+; ============================================================================
+;               Mini-VGA PIO with CSYNC, 4 bits (16 instructions)
+; ============================================================================
+; Control word (left shifted ... warning, this is different from 8 and 16 bits!):
+;  - bit 0..4 (5 bits) jump address
+;  - bit 5..31 (27 bits) loop counter N
+; Clocks per pixel: minimum 2, maximum 9
+
+; Number of pixels must be multiple of 8.
+
+.program minivga
+.side_set	1	; HSYNC and VSYNC output (2 bits)
+.define NOSYNC	0	; no sync, output image or blanking
+.define HSYNC	1	; HSYNC pulse (or CSYNC pulse)
+.define VSYNC	1	; VSYNC pulse
+.define VHSYNC	0	; HSYNC and VSYNC pulse
+.define BPP	4	; number of bits per pixel
+
+; ===== [3 instructions] HSYNC pulse, N=delay in clock cycles - 3
+; starts HSYNC at time 0
+
+public hsync:
+	jmp	x--,hsync	side HSYNC	; [N+1] loop
+public entry:					; program entry point
+	out	x,27		side HSYNC	; [1] get next loop counter N
+	out	pc,5		side HSYNC	; [1] jump to next function
+
+; ===== [3 instructions] VSYNC pulse, N=delay in clock cycles - 3
+; starts VSYNC at time 0
+
+public vsync:
+	jmp	x--,vsync	side VSYNC	; [N+1] loop
+	out	x,27		side VSYNC	; [1] get next loop counter N
+	out	pc,5		side VSYNC	; [1] jump to next function
+
+; ===== [3 instructions] VSYNC and HSYNC pulse, N=delay in clock cycles - 3
+; starts HSYNC and VSYNC at time 0
+
+public vhsync:
+	jmp	x--,vhsync	side VHSYNC	; [N+1] loop
+	out	x,27		side VHSYNC	; [1] get next loop counter N
+	out	pc,5		side VHSYNC	; [1] jump to next function
+
+; ===== [4 instructions] DARK pulse, N=delay in clock cycles-4
+; sets blanking at time 0, starts NOSYNC at time 0
+
+public dark:
+	mov	pins,null	side NOSYNC	; [1] dark output
+dark_loop:
+	jmp	x--,dark_loop	side NOSYNC	; [N+1] loop
+.wrap_target					; wrap jump target
+	out	x,27		side NOSYNC	; [1] get next loop counter N
+	out	pc,5		side NOSYNC	; [1] jump to next function
+
+; ===== [3 instructions] output pixels and dark, N=number of pixels-1, + 3 dark clock cycles
+; number of pixels must be multiple of: 1 at BP=32, 2 at BPP=16, 4 at BPP=8, 8 at BPP=4, 16 at BPP=2, 32 at BPP=1
+; Output first pixel at time 0; adds additional 3 clock cycles of blanking after last pixel
+
+public output:
+public extra:
+	out	pins,BPP	side NOSYNC [0]	; [1+CPP-2] output pixel (set extra wait CPP-2; CPP=2..9)
+	jmp	x--,output	side NOSYNC	; [1] loop (N+1 pixels)
+	mov	pins,null	side NOSYNC	; [1] dark output
+.wrap						; wrap jump to .wrap_target

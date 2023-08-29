@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                              VGA sprites
+//                      VGA sprites - used in lib_canvas.c
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040

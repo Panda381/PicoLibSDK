@@ -29,8 +29,10 @@
 // Device init
 void DeviceInit()
 {
+#if USE_MINIVGA					// use mini-VGA display with simple frame buffer
 	// start VGA on CPU 1 (must be paired with VgaStop)
 	VgaStart();
+#endif
 
 	// init battery measurement
 	BatInit();
@@ -52,8 +54,10 @@ void DeviceInit()
 // Device terminate
 void DeviceTerm()
 {
+#if USE_MINIVGA					// use mini-VGA display with simple frame buffer
 	// terminate VGA on CPU 1 (must be paired with VgaStart)
 	VgaStop();
+#endif
 
 	// terminate keys
 	KeyTerm();

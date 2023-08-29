@@ -114,6 +114,9 @@ CFLAGS += -funsigned-char
 # generate debug informations
 #CFLAGS += -g3
 
+# warning as errors
+CFLAGS += -Werror
+
 # === C++ flags
 
 CPPFLAGS = $(CFLAGS)

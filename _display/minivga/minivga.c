@@ -32,6 +32,20 @@
 #include "../../_sdk/inc/sdk_timer.h"
 #include "../../_sdk/inc/sdk_multicore.h"
 
+#if VGA_USECSYNC	// 1=use only CSYNC signal instead of HSYNC (VSYNC not used)
+
+#if (COLBITS == 16) || (COLBITS == 15)
+#include "minivga16csync.pio.h"
+#elif COLBITS == 8
+#include "minivga8csync.pio.h"
+#elif COLBITS == 4
+#include "minivga4csync.pio.h"
+#else
+#error Invalid COLBITS!
+#endif
+
+#else // VGA_USECSYNC
+
 #if (COLBITS == 16) || (COLBITS == 15)
 #include "minivga16.pio.h"
 #elif COLBITS == 8
@@ -41,6 +55,8 @@
 #else
 #error Invalid COLBITS!
 #endif
+
+#endif // VGA_USECSYNC
 
 #ifndef VGA_PIO_OFF
 #define VGA_PIO_OFF	0	// offset of VGA program in PIO memory
@@ -208,7 +224,12 @@ void VgaPioInit()
 #else
 	PioSetupGPIO(VGA_PIO, VGA_GPIO_FIRST, VGA_GPIO_NUM);
 #endif
-	PioSetupGPIO(VGA_PIO, VGA_GPIO_HSYNC, 2);
+
+#if !VGA_USECSYNC	// 1=use only CSYNC signal instead of HSYNC (VSYNC not used)
+	PioSetupGPIO(VGA_PIO, VGA_GPIO_HSYNC, 2);	// use HSYNC + VSYNC
+#else
+	PioSetupGPIO(VGA_PIO, VGA_GPIO_HSYNC, 1);	// use only CSYNC
+#endif
 
 	// set pin direction to output
 #ifdef VGA_GPIO_SKIP
@@ -217,17 +238,28 @@ void VgaPioInit()
 #else
 	PioSetPinDir(VGA_PIO, VGA_SM, VGA_GPIO_FIRST, VGA_GPIO_NUM, 1);
 #endif
-	PioSetPinDir(VGA_PIO, VGA_SM, VGA_GPIO_HSYNC, 2, 1);
+
+#if !VGA_USECSYNC	// 1=use only CSYNC signal instead of HSYNC (VSYNC not used)
+	PioSetPinDir(VGA_PIO, VGA_SM, VGA_GPIO_HSYNC, 2, 1);	// use HSYNC + VSYNC
+#else
+	PioSetPinDir(VGA_PIO, VGA_SM, VGA_GPIO_HSYNC, 1, 1);	// use only CSYNC
+#endif
 
 	// negate HSYNC and VSYNC output
 	GPIO_OutOverInvert(VGA_GPIO_HSYNC);
-	GPIO_OutOverInvert(VGA_GPIO_VSYNC);
+#if !VGA_USECSYNC	// 1=use only CSYNC signal instead of HSYNC (VSYNC not used)
+	GPIO_OutOverInvert(VGA_GPIO_VSYNC);		// use HSYNC + VSYNC
+#endif
 
 	// map state machine's OUT and MOV pins	
 	PioSetupOut(VGA_PIO, VGA_SM, VGA_GPIO_FIRST, VGA_GPIO_NUM);
 
 	// set sideset pins (HSYNC and VSYNC, 2 bits, no optional, no pindirs)
-	PioSetupSideset(VGA_PIO, VGA_SM, VGA_GPIO_HSYNC, 2, False, False);
+#if !VGA_USECSYNC	// 1=use only CSYNC signal instead of HSYNC (VSYNC not used)
+	PioSetupSideset(VGA_PIO, VGA_SM, VGA_GPIO_HSYNC, 2, False, False);	// use HSYNC + VSYNC
+#else
+	PioSetupSideset(VGA_PIO, VGA_SM, VGA_GPIO_HSYNC, 1, False, False);	// use only CSYNC
+#endif
 
 	// join FIFO to send only
 	PioSetFifoJoin(VGA_PIO, VGA_SM, PIO_FIFO_JOIN_TX);
