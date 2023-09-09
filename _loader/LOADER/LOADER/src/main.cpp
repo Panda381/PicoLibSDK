@@ -1024,16 +1024,18 @@ void RunApp()
 }
 
 // display progress bar
-void Progress(int i, int n, u16 col)
+void Progress(int i, int n, int y, u16 col)
 {
 #define PROGRESS_X 32
-#define PROGRESS_Y 122
 #define PROGRESS_W 256
 #define PROGRESS_H 16
 
-	DrawFrame(PROGRESS_X-2, PROGRESS_Y-2, PROGRESS_W+4, PROGRESS_H+4, COL_WHITE);
-	DrawRect(PROGRESS_X, PROGRESS_Y, PROGRESS_W, PROGRESS_H, COL_GRAY);
-	DrawRect(PROGRESS_X, PROGRESS_Y, i*PROGRESS_W/n, PROGRESS_H, col);
+	int w = i*PROGRESS_W/n;
+	if (w > PROGRESS_W) w = PROGRESS_W;
+
+	DrawFrame(PROGRESS_X-2, y-2, PROGRESS_W+4, PROGRESS_H+4, COL_WHITE);
+	DrawRect(PROGRESS_X, y, PROGRESS_W, PROGRESS_H, COL_GRAY);
+	DrawRect(PROGRESS_X, y, w, PROGRESS_H, col);
 	DispUpdate();
 }
 
@@ -1053,9 +1055,9 @@ void ClearApp()
 	// display info
 	DispBigInfo("Erasing...");
 
-	// find end of memory
+	// find end of memory (last 4 KB are reserver for config)
 	u32 addr = XIP_BASE + BOOTLOADER_SIZE;
-	u32 count = 2*1024*1024 - BOOTLOADER_SIZE;
+	u32 count = 2*1024*1024 - 4096 - BOOTLOADER_SIZE;
 	const u32* s = (const u32*)(addr + count);
 	while (count >= 4)
 	{
@@ -1063,14 +1065,19 @@ void ClearApp()
 		s--;
 		count -= 4;
 	}
+
+	// align up to to 32 KB
 	count = (count + 0x8000-4) & ~0x7fff;
+
+	// limit to protect config on last 4 KB page
+	if (count > 2*1024*1024 - 4096 - BOOTLOADER_SIZE) count = 2*1024*1024 - 4096 - BOOTLOADER_SIZE;
 
 	// erase memory
 	int n = count;
 	int k;
 	while (count >= 0x1000)
 	{
-		Progress(n - count, n, COL_ORANGE);
+		Progress(n - count, n, 122, COL_ORANGE);
 
 		k = count;
 		if (((addr & 0xffff) == 0x8000) && (count >= 0x8000))
@@ -1082,7 +1089,7 @@ void ClearApp()
 		addr += k;
 		count -= k;
 	}
-	Progress(n, n, COL_ORANGE);
+	Progress(n, n, 122, COL_ORANGE);
 	WaitMs(50);
 }
 
@@ -1107,6 +1114,8 @@ void DispBigErr()
 	DispUpdate();
 }
 
+#ifdef KEY_X
+
 char BatTxt[] = "Battery 0.00V";
 
 void Battery()
@@ -1114,8 +1123,10 @@ void Battery()
 	DrawClear();
 	KeyFlush();
 	u8 key;
+	Bool cfg = False;
 
 	do {
+		// display battery voltage
 		int bat = (GetBatInt() + 5)/10;
 		int i = bat / 10;
 		BatTxt[11] = bat - i*10 + '0';
@@ -1123,36 +1134,99 @@ void Battery()
 		BatTxt[10] = i - bat*10 + '0';
 		BatTxt[8] = bat + '0';
 		SelFont8x16();
-		DrawTextBg2(BatTxt, (WIDTH - 13*16)/2, 86, COL_YELLOW, COL_BLACK);
+		DrawTextBg2(BatTxt, (WIDTH - 13*16)/2, 25, COL_YELLOW, COL_BLACK);
 
+		// display battery voltage progress bar
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+		bat = GetBatInt() - ConfigGetBatEmptyInt();
+		if (bat < 0) bat = 0;
+		if (bat > ConfigGetBatFullInt() - ConfigGetBatEmptyInt()) bat = ConfigGetBatFullInt() - ConfigGetBatEmptyInt();
+		Progress(bat, ConfigGetBatFullInt() - ConfigGetBatEmptyInt(), 57, COL_GREEN);
+#else
 		bat = GetBatInt() - BATTERY_EMPTY_INT;
 		if (bat < 0) bat = 0;
 		if (bat > BATTERY_FULL_INT - BATTERY_EMPTY_INT) bat = BATTERY_FULL_INT - BATTERY_EMPTY_INT;
-		Progress(bat, BATTERY_FULL_INT - BATTERY_EMPTY_INT, COL_GREEN);
+		Progress(bat, BATTERY_FULL_INT - BATTERY_EMPTY_INT, 57, COL_GREEN);
+#endif
 
+		// volume
+		DrawText("Volume UP/DOWN:", PROGRESS_X, 95, COL_WHITE);
+		COLTYPE col = COL_GREEN;
+		u8 vol = ConfigGetVolume();
+		if (vol > CONFIG_VOLUME_FULL) col = COL_YELLOW;
+		if (vol > (CONFIG_VOLUME_FULL+CONFIG_VOLUME_MAX)/2) col = COL_RED;
+		Progress(vol, CONFIG_VOLUME_MAX, 111, col);
+		DrawText("0%    50%   100%  150%  200%  250%", 26, 131, COL_WHITE);
+
+		// bright
+		DrawText("Backlight LEFT/RIGHT:", PROGRESS_X, 160, COL_WHITE);
+		Progress(ConfigGetBacklight(), CONFIG_BACKLIGHT_MAX, 176, COL_GREEN);
+		DrawText("0   1   2   3   4   5   6   7   8", 26, 196, COL_WHITE);
+
+		// help
 #if USE_PICOINO10 || USE_PICOTRON
-		DrawText("Press Z=BOOTSEL, other=back...", (WIDTH-30*8)/2, HEIGHT-16, COL_WHITE);
+		DrawText("Press Z=BOOTSEL, Back=back...", (WIDTH-29*8)/2, HEIGHT-16, COL_WHITE);
 #else
-		DrawText("Press B=BOOTSEL, other=back...", (WIDTH-30*8)/2, HEIGHT-16, COL_WHITE);
+		DrawText("Press B=BOOTSEL, Y=back...", (WIDTH-26*8)/2, HEIGHT-16, COL_WHITE);
 #endif
 
 		DispUpdate();
-		WaitMs(200);
+		WaitMs(100);
 
 		key = KeyGet();
-#ifdef KEY_B
-		if (key == KEY_B) ResetUsb(0, 0);
-#else
-		if (key == BTN_B) ResetUsb(0, 0);
-#endif
+		switch (key)
+		{
 
-	} while (key == NOKEY);
+		// BOOTSEL
+#ifdef KEY_B
+		case KEY_B:
+#else
+		case BTN_B:
+#endif
+			if (cfg) ConfigSave();
+			ResetUsb(0, 0);
+
+		// Up volume up
+		case KEY_UP:
+			ConfigIncVolume();
+			KeyFlush();
+			cfg = True;
+			break;
+
+		// Down volume down
+		case KEY_DOWN:
+			ConfigDecVolume();
+			KeyFlush();
+			cfg = True;
+			break;
+
+		// Left backlight down
+		case KEY_LEFT:
+			if (Config.backlight > CONFIG_BACKLIGHT_MIN)
+				ConfigDecBacklight();
+			KeyFlush();
+			cfg = True;
+			break;
+
+		// Right backlight up
+		case KEY_RIGHT:				
+			ConfigIncBacklight();
+			KeyFlush();
+			cfg = True;
+			break;	
+		}
+
+	} while (key != KEY_Y);
 	
+	if (cfg) ConfigSave();
+
 	PreviewClr();
 	FrameFileList();
 	DispFileList();
 	DispUpdate();
 }
+
+#endif // KEY_X
 
 int main()
 {
@@ -1464,7 +1538,7 @@ int main()
 							i = h[1]; 			// application length
 							if ((TempBufNum != 256) ||	// check segment length
 								(h[0] != 0x44415050) ||	// check magix
-								(i < 10) || (i > 2*1024*1024 - BOOTLOADER_SIZE - 51*4)) // check program length
+								(i < 10) || (i > 2*1024*1024 - 4096 - BOOTLOADER_SIZE - 51*4)) // check program length
 							{
 								// error - incompatible program
 								DispBigErr();
@@ -1488,7 +1562,7 @@ int main()
 									}
 
 									// progress bar
-									Progress(k - BOOTLOADER_SIZE, n, COL_GREEN);
+									Progress(k - BOOTLOADER_SIZE, n, 122, COL_GREEN);
 
 									// program four 256-byte pages
 									FlashProgram(k, (const u8*)TempBuf, m);
@@ -1556,7 +1630,7 @@ int main()
 					RunApp();
 				}
 				break;
-#endif
+#endif // KEY_Y
 
 #ifdef KEY_X
 			// battery
@@ -1567,7 +1641,7 @@ int main()
 				Battery();
 #endif
 				break;
-#endif
+#endif // KEY_X
 			}
 		}
 

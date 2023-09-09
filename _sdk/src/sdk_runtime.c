@@ -26,6 +26,7 @@
 #include "../inc/sdk_cpu.h"
 #include "../inc/sdk_float.h"
 #include "../../_lib/inc/lib_alarm.h"
+#include "../../_lib/inc/lib_config.h"
 #include "../../_lib/inc/lib_malloc.h"
 #include "../../_lib/inc/lib_rand.h"
 #include "../usb_inc/sdk_usb_phy.h" // physical layer
@@ -92,6 +93,11 @@ void RuntimeInit()
 #if USE_SPINLOCK	// use Spinlock (sdk_spinlock.c, sdk_spinlock.h)
 	// reset all spinlocks
 	SpinResetAll();
+#endif
+
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+	// load config from flash
+	ConfigLoad();
 #endif
 
 #if USE_RAND	// use Random number generator (lib_rand.c, lib_rand.h)

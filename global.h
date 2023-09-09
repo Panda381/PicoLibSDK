@@ -17,7 +17,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-#define SDK_VER		104	// SDK library version in hundredths
+#define SDK_VER		105	// SDK library version in hundredths
 
 // ----------------------------------------------------------------------------
 //                               Attributes
@@ -71,6 +71,13 @@
 // default LED pin on Raspberry Pico
 #define LED_PIN 25
 
+// compile-time check
+#ifdef __cplusplus
+#define STATIC_ASSERT(c, msg) static_assert((c), msg)
+#else
+#define STATIC_ASSERT(c, msg) _Static_assert((c), msg)
+#endif
+
 #define PICO_NO_HARDWARE 1	// this switch is not use in other places of the SDK,
 				//  it is used only in PIO program to cut-out some unwanted declarations
 
@@ -117,17 +124,15 @@ typedef unsigned char Bool;
 #endif
 #endif
 
-// Check size of types (will be omitted by the compiler if everything is OK)
-INLINE void CheckTypeSize()
-{	if (	(sizeof(s8) != 1) ||
-		(sizeof(u8) != 1) ||
-		(sizeof(s16) != 2) ||
-		(sizeof(u16) != 2) ||
-		(sizeof(s32) != 4) ||
-		(sizeof(u32) != 4) ||
-		(sizeof(s64) != 8) ||
-		(sizeof(u64) != 8))
-		while (True) {} }	// lock on error
+// compile-time check 
+STATIC_ASSERT(sizeof(s8) == 1, "Incorrect typedef s8!");
+STATIC_ASSERT(sizeof(u8) == 1, "Incorrect typedef u8!");
+STATIC_ASSERT(sizeof(s16) == 2, "Incorrect typedef s16!");
+STATIC_ASSERT(sizeof(u16) == 2, "Incorrect typedef u16!");
+STATIC_ASSERT(sizeof(s32) == 4, "Incorrect typedef s32!");
+STATIC_ASSERT(sizeof(u32) == 4, "Incorrect typedef u32!");
+STATIC_ASSERT(sizeof(s64) == 8, "Incorrect typedef s64!");
+STATIC_ASSERT(sizeof(u64) == 8, "Incorrect typedef u64!");
 
 // ----------------------------------------------------------------------------
 //                               Constants

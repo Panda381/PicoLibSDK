@@ -45,6 +45,18 @@ u16 Reverse16(u16 val)
 	return ((u32)Reverse16((u16)val) << 16) | Reverse16((u16)(val >> 16));
 }*/
 
+// get bit order of 8-bit value (logarithm, returns position of highest bit + 1: 1..8, 0=no bit)
+u8 Order8(u8 val)
+{
+	u8 i = 0;
+	if (val >= 0x10)
+	{
+		i += 4;
+		val >>= 4;
+	}
+	return OrdBitsTab[val] + i;
+}
+
 // get bit order of value (logarithm, returns position of highest bit + 1: 1..32, 0=no bit)
 u8 Order(u32 val)
 {

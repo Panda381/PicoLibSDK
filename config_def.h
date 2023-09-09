@@ -278,6 +278,10 @@ by VGA driver rendering service.
 #define USE_COLOR	1		// use color vector (lib_color.c, lib_color.h)
 #endif
 
+#ifndef USE_CONFIG
+#define USE_CONFIG	1		// use device configuration (lib_config.c, lib_config.h)
+#endif
+
 #ifndef USE_CRC
 #define USE_CRC		1		// use CRC Check Sum (lib_crc.c, lib_crc.h)
 #endif
@@ -735,19 +739,43 @@ by VGA driver rendering service.
 #endif
 
 #ifndef BATTERY_FULL
-#define BATTERY_FULL	4.2f		// voltage of full battery
+#define BATTERY_FULL	4.2f		// voltage of full battery (default value, use Config.bat_full)
 #endif
 
 #ifndef BATTERY_FULL_INT
-#define BATTERY_FULL_INT 4200		// voltage of full battery
+#define BATTERY_FULL_INT 4200		// voltage of full battery (default value, use Config.bat_full)
 #endif
 
 #ifndef BATTERY_EMPTY
-#define BATTERY_EMPTY	3.1f		// voltage of empty battery
+#define BATTERY_EMPTY	3.1f		// voltage of empty battery (default value, use Config.bat_empty)
 #endif
 
 #ifndef BATTERY_EMPTY_INT
-#define BATTERY_EMPTY_INT 3100		// voltage of empty battery
+#define BATTERY_EMPTY_INT 3100		// voltage of empty battery (default value, use Config.bat_empty)
+#endif
+
+#ifndef BAT_DIODE_FV
+#define BAT_DIODE_FV 	0.311f		// voltage drop in mV on diode (default value, use Config.bat_diode)
+#endif
+
+#ifndef BAT_DIODE_FV_INT
+#define BAT_DIODE_FV_INT 311		// voltage drop in mV on diode (default value, use Config.bat_diode)
+#endif
+
+#ifndef ADC_UREF
+#define ADC_UREF	3.3f		// ADC reference voltage (default value, use Config.adc_ref)
+#endif
+
+#ifndef ADC_UREF_INT
+#define ADC_UREF_INT	3300		// ADC reference voltage (default value, use Config.adc_ref)
+#endif
+
+#ifndef TEMP_BASE
+#define TEMP_BASE	0.706f		// temperature base voltage at 27°C (default value, use Config.temp_base)
+#endif
+
+#ifndef TEMP_SLOPE
+#define	TEMP_SLOPE	0.001721f	// temperature slope - voltage per 1 degree (default value, use Config.temp_slope)
 #endif
 
 // ----------------------------------------------------------------------------

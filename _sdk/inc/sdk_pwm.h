@@ -25,6 +25,7 @@
 #define _SDK_PWM_H
 
 #include "../sdk_addressmap.h"		// Register address offsets
+#include "../sdk_dreq.h"
 #include "sdk_gpio.h"
 #include "sdk_irq.h"
 
@@ -70,6 +71,9 @@ INLINE u8 PWM_GpioToChan(u8 gpio) { return gpio & 1; }
 // convert GPIO pin to PWM slice (returns 0 to 7)
 INLINE u8 PWM_GpioToSlice(u8 gpio) { return (u8)((gpio >> 1) & 7); }
 #define PWM_GPIOTOSLICE(gpio) (((gpio)>>1)&7)
+
+// get DREQ
+INLINE u8 PWM_GetDreq(u8 pwm) { return DREQ_PWM_WRAP0 + pwm; }
 
 // initialize GPIO to use as PWM pin
 INLINE void PWM_GpioInit(u8 gpio) { GPIO_Fnc(gpio, GPIO_FNC_PWM); }

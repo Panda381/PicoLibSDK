@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
 ==================================================================
-SDK Programmer's Guide, Version 1.04, August 2023
+SDK Programmer's Guide, Version 1.05, September 2023
 
 Copyright (c) 2023 Miroslav Nemecek
 
@@ -566,7 +566,8 @@ run the application.
 
 It is also possible to immediately start an application that is already loaded
 in memory - this is possible with the ‘Y’ button (the ‘Back’ button in Picoino),
-which is otherwise used to exit the application.
+which is otherwise used to exit the application. The ‘X’ button adjusts the
+volume and backlight of the display.
 
 When selecting an application to run, the boot3 loader displays a preview image
 and description text in addition to the file name. Whether the application has
@@ -755,6 +756,8 @@ History of versions
 	and 320x240 to 800x600 pixel resolution. Slide-show player added.
 	Added Picotron device, with 4-bit VGA output. Added BOOTSEL to
 	boot3 loader (in Battery menu).
+09/09/2023 version 1.05: CSYNC in VGA driver, added PicoVGA8 library,
+	added VREG library, setup volume and backlight, calibrate crystal.
 
 
 Missing and @TODO

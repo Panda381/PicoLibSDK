@@ -175,16 +175,16 @@ INLINE void DMA_SetWrite(u8 chan, volatile void* addr) { *DMA_WRITE(chan) = (u32
 INLINE void DMA_SetWriteTrig(u8 chan, volatile void* addr) { cb(); *DMA_WRITE_TRIG(chan) = (u32)addr; }
 
 // get DMA transfer count
-INLINE int DMA_GetCount(u8 chan) { return (int)*DMA_COUNT(chan); }
+INLINE u32 DMA_GetCount(u8 chan) { return (u32)*DMA_COUNT(chan); }
 
 // set DMA transfer count, without trigger
-INLINE void DMA_SetCount(u8 chan, int count) { *DMA_COUNT(chan) = (u32)count; }
+INLINE void DMA_SetCount(u8 chan, u32 count) { *DMA_COUNT(chan) = count; }
 
 // set DMA transfer count, with trigger
-INLINE void DMA_SetCountTrig(u8 chan, int count) { cb(); *DMA_COUNT_TRIG(chan) = (u32)count; }
+INLINE void DMA_SetCountTrig(u8 chan, u32 count) { cb(); *DMA_COUNT_TRIG(chan) = count; }
 
 // get DMA next transfer count (not updated during transfer, auto loaded to COUNT at trigger)
-INLINE int DMA_Next(u8 chan) { return (int)*DMA_NEXT(chan); }
+INLINE u32 DMA_Next(u8 chan) { return *DMA_NEXT(chan); }
 
 // get DMA control register
 INLINE u32 DMA_GetCtrl(u8 chan) { return *DMA_CTRL(chan); }
@@ -201,7 +201,7 @@ INLINE void DMA_SetCtrlTrig(u8 chan, u32 ctrl) { cb(); *DMA_CTRL_TRIG(chan) = ct
 //  dst = destination address
 //  count = number of transfers
 //  ctrl = control word
-void DMA_Config(u8 chan, const volatile void* src, volatile void* dst, int count, u32 ctrl);
+void DMA_Config(u8 chan, const volatile void* src, volatile void* dst, u32 count, u32 ctrl);
 
 // set DMA config, with trigger
 //  chan = channel 0..11
@@ -209,7 +209,7 @@ void DMA_Config(u8 chan, const volatile void* src, volatile void* dst, int count
 //  dst = destination address
 //  count = number of transfers
 //  ctrl = control word
-void DMA_ConfigTrig(u8 chan, const volatile void* src, volatile void* dst, int count, u32 ctrl);
+void DMA_ConfigTrig(u8 chan, const volatile void* src, volatile void* dst, u32 count, u32 ctrl);
 
 // get DMA base address of alias 0..3 of channel 0..11
 INLINE volatile u32* DMA_Alias(u8 chan, u8 alias) { return DMA_CHAN(chan) + alias*4; }

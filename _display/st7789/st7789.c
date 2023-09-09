@@ -22,6 +22,8 @@
 #include "../../_sdk/inc/sdk_spi.h"
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "../../_sdk/inc/sdk_timer.h"
+#include "../../_sdk/inc/sdk_pwm.h"
+#include "../../_lib/inc/lib_config.h"
 
 // ST7789 commands
 #define ST7789_NOP		0x00	// no operation
@@ -375,6 +377,22 @@ void DispUpdateAll()
 	DispUpdate();
 }
 
+// display backlight control
+void DispBacklight(u8 backlight)
+{
+	PWM_Comp(BACKLIGHT_SLICE, BACKLIGHT_CHAN, backlight);
+}
+
+// display backlight control config update
+void DispBacklightUpdate()
+{
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+	DispBacklight(Config.backlight);
+#else
+	DispBacklight(255);
+#endif
+}
+
 // initialize display
 //  rot ... rotation mode
 //		0 Portrait
@@ -388,11 +406,15 @@ void DispInit(u8 rot)
 	SPI_Pol(DISP_SPI, 1); // polarity 1
 	SPI_Phase(DISP_SPI, 1); // phase 1
 
-	// setup pins
-	GPIO_Out0(DISP_BLK_PIN);
-	GPIO_DirOut(DISP_BLK_PIN);
-	GPIO_Fnc(DISP_BLK_PIN, GPIO_FNC_SIO);
+	// setup backlight PWM
+	PWM_Reset(BACKLIGHT_SLICE);
+	PWM_GpioInit(DISP_BLK_PIN);
+	PWM_Clock(BACKLIGHT_SLICE, BACKLIGHT_CLOCK);
+	PWM_Top(BACKLIGHT_SLICE, 255);
+	DispBacklight(0);
+	PWM_Enable(BACKLIGHT_SLICE);
 
+	// setup pins
 	GPIO_Out1(DISP_DC_PIN);
 	GPIO_DirOut(DISP_DC_PIN);
 	GPIO_Fnc(DISP_DC_PIN, GPIO_FNC_SIO);
@@ -435,7 +457,8 @@ void DispInit(u8 rot)
 	DispRotation(rot);	// set rotation mode
 	DispInvEnable();	// enable inversion
 	WaitMs(10);
-	GPIO_Out1(DISP_BLK_PIN); // set backlight on
+
+	DispBacklightUpdate();	// update backlight
 
 	// strip of back buffer
 /*
@@ -470,8 +493,12 @@ void DispTerm()
 	// disable display
 	DispWriteCmd(ST7789_DISPOFF);
 
-	// terminate pins
+	// terminate backlight PWM
+	PWM_Disable(BACKLIGHT_SLICE);
+	PWM_Reset(BACKLIGHT_SLICE);
 	GPIO_Reset(DISP_BLK_PIN);
+
+	// terminate pins
 	GPIO_Reset(DISP_DC_PIN);
 	GPIO_Reset(DISP_SCK_PIN);
 	GPIO_Reset(DIDP_MOSI_PIN);

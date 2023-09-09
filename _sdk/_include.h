@@ -40,6 +40,7 @@
 #include "inc/sdk_systick.h"	// SysTick system timer
 #include "inc/sdk_timer.h"	// Timer
 #include "inc/sdk_uart.h"	// UART serial port
+#include "inc/sdk_vreg.h"	// voltage regulator
 #include "inc/sdk_watchdog.h"	// Watchdog timer
 #include "inc/sdk_xip.h"	// XIP flash control
 #include "inc/sdk_xosc.h"	// XOSC cystal oscillator

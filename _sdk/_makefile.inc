@@ -32,6 +32,7 @@ CSRC += ../../../_sdk/src/sdk_ssi.c
 CSRC += ../../../_sdk/src/sdk_systick.c
 CSRC += ../../../_sdk/src/sdk_timer.c
 CSRC += ../../../_sdk/src/sdk_uart.c
+CSRC += ../../../_sdk/src/sdk_vreg.c
 CSRC += ../../../_sdk/src/sdk_watchdog.c
 CSRC += ../../../_sdk/src/sdk_xip.c
 CSRC += ../../../_sdk/src/sdk_xosc.c

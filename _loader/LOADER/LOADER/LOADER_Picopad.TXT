@@ -9,7 +9,7 @@ Do not run it directly.
 ^WA^0 ... run program/direct.
 ^WB^0 ... directory up
 ^WY^0 ... run last program
-^WX^0 ... battery status
+^WX^0 ... setup and battery
 
 
 loading text *.TXT

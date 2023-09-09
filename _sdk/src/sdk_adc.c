@@ -24,6 +24,7 @@
 #include "../inc/sdk_clocks.h"
 #include "../inc/sdk_adc.h"
 #include "../inc/sdk_timer.h"
+#include "../../_lib/inc/lib_config.h"
 
 // temperature noise reduction
 #if TEMP_NOISE > 0
@@ -112,13 +113,21 @@ u16 ADC_SingleDenoise()
 // do single conversion and recalculate to voltage on 3.3V
 float ADC_SingleU()
 {
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+	return ADC_SingleDenoise() * ConfigGetAdcRef() / (4096*16);
+#else
 	return ADC_SingleDenoise() * 3.3f / (4096*16);
+#endif
 }
 
 // do single conversion and recalculate to voltage on 3.3V, integer in mV (range 0..3300)
 int ADC_SingleUint()
 {
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+	return ADC_SingleDenoise() * ConfigGetAdcRefInt() / (4096*16);
+#else
 	return ADC_SingleDenoise() * 3300 / (4096*16);
+#endif
 }
 
 // set ADC sampling frequency of repeated conversions
@@ -224,7 +233,11 @@ float ADC_Temp()
 #endif // TEMP_NOISE
 
 	// do single conversion (T = 27 - (ADC_voltage - 0.706) / 0.001721)
-	return 27 - (t*3.3f/(4096*16) - 0.706f) / 0.001721f;
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+	return 27 - (t*ConfigGetAdcRef()/(4096*16) - ConfigGetTempBase()) / ConfigGetTempSlope();
+#else
+	return 27 - (t*ADC_UREF/(4096*16) - TEMP_BASE) / TEMP_SLOPE;
+#endif
 }
 
 #endif // USE_ADC		// use ADC controller (sdk_adc.c, sdk_adc.h)

@@ -1,0 +1,16 @@
+
+; ============================================================================
+;                               Analyzer
+; ============================================================================
+
+; capture input from GPIO
+.program analyzer
+.wrap_target
+	in	pins,1		; [1] load 1 bit
+.wrap
+
+; send samples to GPIO
+.program generator
+.wrap_target
+	out	pins,1		; [1] output 1 bit
+.wrap

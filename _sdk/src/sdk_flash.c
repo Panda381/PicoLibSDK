@@ -61,7 +61,7 @@ void NOFLASH(FlashErase)(u32 addr, u32 count)
 	FlashExitXip();
 
 	// erase flash memory (first erase 32KB block)
-	if (((addr & 0xffff) == FLASH_32KBLOCK_SIZE) || (count < FLASH_64KBLOCK_SIZE))
+	if (((addr & 0xffff) == FLASH_32KBLOCK_SIZE) && (count >= FLASH_32KBLOCK_SIZE))
 	{
 		RomFlashErase(addr, FLASH_32KBLOCK_SIZE, FLASH_32KBLOCK_SIZE, FLASH_32KBLOCK_ERASE_CMD);
 		addr += FLASH_32KBLOCK_SIZE;

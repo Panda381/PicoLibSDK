@@ -18,6 +18,7 @@
 #include "../../_sdk/inc/sdk_adc.h"
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "../../_sdk/inc/sdk_timer.h"
+#include "../../_lib/inc/lib_config.h"
 #include "picopad_bat.h"
 
 // init battery measurement
@@ -43,7 +44,11 @@ float GetBat()
 	ADC_Mux(BAT_ADC);
 
 	// get battery voltage
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+	float voltage = ADC_SingleU()*BAT_MUL+ConfigGetBatDiode();
+#else
 	float voltage = ADC_SingleU()*BAT_MUL+BAT_DIODE_FV;
+#endif
 	GPIO_Out0(LED_PIN); 
 	return voltage;
 }
@@ -61,7 +66,11 @@ int GetBatInt()
 	ADC_Mux(BAT_ADC);
 
 	// get battery voltage
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+	int voltage = ADC_SingleUint()*BAT_MUL+ConfigGetBatDiodeInt();
+#else
 	int voltage = ADC_SingleUint()*BAT_MUL+BAT_DIODE_FV_INT;
+#endif
 	GPIO_Out0(LED_PIN); 
 	return voltage;
 }

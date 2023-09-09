@@ -121,6 +121,9 @@ void DrawCharBgW(char ch, int x, int y, COLTYPE col, COLTYPE bgcol);
 // Draw character double sized with background
 void DrawCharBg2(char ch, int x, int y, COLTYPE col, COLTYPE bgcol);
 
+// Draw character quadruple sized with background
+void DrawCharBg4(char ch, int x, int y, COLTYPE col, COLTYPE bgcol);
+
 // Draw text normal (transparent background)
 void DrawText(const char* text, int x, int y, COLTYPE col);
 
@@ -144,6 +147,9 @@ void DrawTextBgW(const char* text, int x, int y, COLTYPE col, COLTYPE bgcol);
 
 // Draw text double sized with background
 void DrawTextBg2(const char* text, int x, int y, COLTYPE col, COLTYPE bgcol);
+
+// Draw text quadruple sized with background
+void DrawTextBg4(const char* text, int x, int y, COLTYPE col, COLTYPE bgcol);
 
 // Draw text buffer (size TEXTSIZE), draw all screen with update
 void DrawTextBuf(const char* textbuf, COLTYPE col, COLTYPE bgcol);

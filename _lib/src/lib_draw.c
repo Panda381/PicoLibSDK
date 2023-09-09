@@ -1034,6 +1034,115 @@ void DrawCharBg2(char ch, int x, int y, COLTYPE col, COLTYPE bgcol)
 	}
 }
 
+// Draw character quadruple sized with background
+void DrawCharBg4(char ch, int x, int y, COLTYPE col, COLTYPE bgcol)
+{
+	int x0 = x;
+	int i, j;
+	u16 c;
+	int w = WIDTH;
+
+	// prepare pointer to font sample
+	const u8* s = &pDrawFont[ch];
+
+// fast mode not with 4-bits per pixel
+#if COLBITS != 4
+
+	FRAMETYPE* d;
+
+	// check if drawing is safe to use fast drawing
+	if ((x >= 0) && (y >= DispMinY) && (x + 4*DrawFontWidth <= w) && (y + 4*DrawFontHeight <= DispMaxY))
+	{
+		// update dirty rectangle
+		DispDirtyRect(x, y, 4*DrawFontWidth, 4*DrawFontHeight);
+
+		// destination address
+		d = &pDrawBuf[(y-DispMinY)*w + x];
+
+		// loop through lines of one character
+		for (i = DrawFontHeight; i > 0; i--)
+		{
+			// get one font sample
+			ch = *s;
+			s += 256;
+
+			// loop through pixels of one character line
+			for (j = DrawFontWidth; j > 0; j--)
+			{
+				// pixel is set
+				c = ((ch & 0x80) != 0) ? col : bgcol;
+
+				// draw pixel
+				*d = c;
+				d[1] = c;
+				d[2] = c;
+				d[3] = c;
+				d[w] = c;
+				d[w+1] = c;
+				d[w+2] = c;
+				d[w+3] = c;
+				d[2*w] = c;
+				d[2*w+1] = c;
+				d[2*w+2] = c;
+				d[2*w+3] = c;
+				d[3*w] = c;
+				d[3*w+1] = c;
+				d[3*w+2] = c;
+				d[3*w+3] = c;
+
+				d += 4;
+				ch <<= 1;
+			}
+			d += 4*w - 4*DrawFontWidth;
+		}
+	}
+
+	// use slow safe drawing
+	else
+
+#endif // COLBITS != 4
+
+	{
+		// loop through lines of one character
+		for (i = DrawFontHeight; i > 0; i--)
+		{
+			// get one font sample
+			ch = *s;
+			s += 256;
+
+			// loop through pixels of one character line
+			x = x0;
+			for (j = DrawFontWidth; j > 0; j--)
+			{
+				// pixel is set
+				c = ((ch & 0x80) != 0) ? col : bgcol;
+
+				// draw pixel
+				DrawPoint(x, y, c);
+				DrawPoint(x+1, y, c);
+				DrawPoint(x+2, y, c);
+				DrawPoint(x+3, y, c);
+				DrawPoint(x, y+1, c);
+				DrawPoint(x+1, y+1, c);
+				DrawPoint(x+2, y+1, c);
+				DrawPoint(x+3, y+1, c);
+				DrawPoint(x, y+2, c);
+				DrawPoint(x+1, y+2, c);
+				DrawPoint(x+2, y+2, c);
+				DrawPoint(x+3, y+2, c);
+				DrawPoint(x, y+3, c);
+				DrawPoint(x+1, y+3, c);
+				DrawPoint(x+2, y+3, c);
+				DrawPoint(x+3, y+3, c);
+
+				x += 4;
+				ch <<= 1;
+			}
+			y += 4;
+		}
+	}
+}
+
 // Draw text (transparent background)
 void DrawText(const char* text, int x, int y, COLTYPE col)
 {
@@ -1191,6 +1300,26 @@ void DrawTextBg2(const char* text, int x, int y, COLTYPE col, COLTYPE bgcol)
 
 		// shift to next character position
 		x += DrawFontWidth*2;
+	}
+}
+
+// Draw text quadruple sized with background
+void DrawTextBg4(const char* text, int x, int y, COLTYPE col, COLTYPE bgcol)
+{
+	u8 ch;
+
+	// loop through characters of text
+	for (;;)
+	{
+		// get next character of the text
+		ch = (u8)*text++;
+		if (ch == 0) break;
+
+		// draw character
+		DrawCharBg4(ch, x, y, col, bgcol);
+
+		// shift to next character position
+		x += DrawFontWidth*4;
 	}
 }
 

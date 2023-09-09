@@ -49,6 +49,13 @@ extern "C" {
 #define COLOR_R_MASK	0xF800			// red color mask
 #define COLOR(r,g,b)	((u16)( (((r)&0xf8)<<8) | (((g)&0xfc)<<3) | (((b)&0xf8)>>3) ))
 
+// backlight control
+#define BACKLIGHT_SLICE	PWM_GPIOTOSLICE(DISP_BLK_PIN) // backlight slice index
+#define BACKLIGHT_CHAN	PWM_GPIOTOCHAN(DISP_BLK_PIN) // backlight channel index
+#define BACKLIGHT_RATE	22050		// backlight rate [Hz] (use the same frequency as the audio output,
+					//	to reduce interference to the audio output)
+#define BACKLIGHT_CLOCK	(BACKLIGHT_RATE*256) // PWM clock (= 22050*256 = 5644800)
+
 // DISP_SPI_BAUD	24000000
 // send data: 320x240x2 = 153600 B = 1 228 800 bits
 // transfer time: 51 ms, real time: 70 ms
@@ -114,6 +121,12 @@ void DispAutoUpdate(u32 ms);
 
 // refresh update all display
 void DispUpdateAll();
+
+// display backlight control
+void DispBacklight(u8 backlight);
+
+// display backlight control config update
+void DispBacklightUpdate();
 
 // initialize display
 //  rot ... rotation mode

@@ -3,6 +3,7 @@ CSRC += ../../../_lib/src/lib_calendar.c
 CSRC += ../../../_lib/src/lib_calendar64.c
 CSRC += ../../../_lib/src/lib_canvas.c
 CSRC += ../../../_lib/src/lib_color.c
+CSRC += ../../../_lib/src/lib_config.c
 CSRC += ../../../_lib/src/lib_crc.c
 CSRC += ../../../_lib/src/lib_decnum.c
 CSRC += ../../../_lib/src/lib_draw.c

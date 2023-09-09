@@ -22,6 +22,7 @@
 
 #include "../../_sdk/inc/sdk_irq.h"
 #include "../inc/lib_pwmsnd.h"
+#include "../inc/lib_config.h"
 
 // current sound
 const u8* CurSound[USE_PWMSND]; // current playing sound
@@ -31,6 +32,7 @@ volatile int SoundAcc[USE_PWMSND]; // pointer accumulator
 const u8* NextSound[USE_PWMSND]; // next sound to play repeated sound
 int NextSoundCnt[USE_PWMSND]; // counter of next sound (0=no repeated sound)
 int SoundVol[USE_PWMSND]; // sound volume (SNDINT = normal)
+float SoundVol0[USE_PWMSND]; // initial sound volume (1.0 = normal)
 
 Bool GlobalSoundOff = False;	// global sound OFF
 
@@ -180,7 +182,12 @@ void PlaySoundChan(u8 chan, const u8* snd, int len, Bool rep, float speed, float
 	SoundAcc[chan] = 0;
 
 	// sound volume
+	SoundVol0[chan] = volume;
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+	SoundVol[chan] = (int)(SNDINT*volume*Config.volume/CONFIG_VOLUME_FULLSTEP + 0.5f);
+#else
 	SoundVol[chan] = (int)(SNDINT*volume + 0.5f);
+#endif
 
 	// start current sound
 	CurSound[chan] = snd;
@@ -217,7 +224,12 @@ void SpeedSound(float speed)
 // update sound volume (1=normal volume)
 void VolumeSoundChan(u8 chan, float volume)
 {
+	SoundVol0[chan] = volume;
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+	SoundVol[chan] = (int)(SNDINT*volume*Config.volume/CONFIG_VOLUME_FULLSTEP + 0.5f);
+#else
 	SoundVol[chan] = (int)(SNDINT*volume + 0.5f);
+#endif
 }
 
 void VolumeSound(float volume)
@@ -283,6 +295,18 @@ void GlobalSoundSetOn()
 	PWMSndTerm();
 	GlobalSoundOff = False;
 	PWMSndInit();
+}
+
+// update sound volume after changing global volume
+void GlobalVolumeUpdate()
+{
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+	int i;
+	for (i = 0; i < USE_PWMSND; i++)
+	{
+		SoundVol[i] = (int)(SNDINT*SoundVol0[i]*Config.volume/CONFIG_VOLUME_FULLSTEP + 0.5f);
+	}
+#endif
 }
 
 #endif // USE_PWMSND		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)

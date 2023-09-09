@@ -81,7 +81,13 @@ void Battery()
 
 		// draw battery
 		float bat = GetBat();
-		i = (bat - BATTERY_EMPTY)/(BATTERY_FULL-BATTERY_EMPTY)*8;
+
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+		i = (int)((bat - ConfigGetBatEmpty())/(ConfigGetBatFull()-ConfigGetBatEmpty())*8);
+#else
+		i = (int)((bat - BATTERY_EMPTY)/(BATTERY_FULL-BATTERY_EMPTY)*8);
+#endif
+
 		if (i < 0) i = 0;
 		if (i > 7) i = 7;
 		DrawImgRle(BatteryImg, BatteryImg_Pal, 0, 0, 128, 240);

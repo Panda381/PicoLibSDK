@@ -18,6 +18,7 @@
 /* How to use PIO:
 - initialize PIO and all SMs with PioInit
 - load program with PioLoadProg
+- set wrap address with PioSetWrap
 - set start address with PioSetAddr if not 0
 - setup GPIO pins to use PIO with PioSetupGPIO
 - setup state machine parameters with PioSet*

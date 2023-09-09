@@ -1,0 +1,153 @@
+
+; ============================================================================
+;              Frequency Meter - PIO 0 program (17 instructions)
+; ============================================================================
+
+.program freqmet1
+
+; ===== SM0, SM1: [11 instructions] frequency meter for medium frequencies
+; To get result values:
+;	mov	y,osr		; get saved time counter to Y
+;	in	y,32		; send time counter to ISR (0xffffffff = time overflow or no pulses)
+;	in	x,32		; send pulse counter to ISR (negate value, 0 = no pulses)
+; number of pulses = -x (0 = no pulses)
+; delta time = 0xffffffff - y (0 = time overflow or no pulses)
+; With sys_clk = 220MHz is maximum measurable time 2/220000000*4294967295 = 39 seconds, 0.0256Hz
+
+public medium_start:
+
+	; reset counters
+	set	x,0		; set pulse counter to 0
+	mov	y,~null		; set time counter to 0xffffffff
+
+	; wait for end of HIGH
+medium1:jmp	pin,medium1	; jump if pin is HIGH
+
+	; wait for end of LOW
+medium2:jmp	pin,medium3 	; jump if pin is HIGH
+	jmp	medium2		; wait
+
+public medium_target:
+
+	; wait for end of HIGH (2 clock cycles per one Y value)
+medium3:jmp	y--,medium4	; time counter (counts time in 2-clock cycles)
+medium4:jmp	pin,medium3	; jump if pin is HIGH
+
+	; wait for end of LOW (2 clock cycles per one Y value)
+medium5:jmp	pin,medium6 	; jump if pin is HIGH
+	jmp	y--,medium5	; time counter (counts time in 2-clock cycles)
+
+; This jump adds 3 clock cycles per one X pulse
+
+	; mark rising edge
+medium6:mov	osr,y		; save time counter
+
+public medium_wrap:
+	jmp	x--,medium3	; pulse counter
+
+
+; ===== SM2, SM3: [6 instructions] frequency meter for low frequencies
+; To get result values:
+;	input Y from PIO
+; time of cycle = 0xffffffff - y + 1 = -y (1 = time overflow)
+; With sys_clk = 220MHz is maximum measurable time 2/220000000*4294967295 = 39 seconds, 0.0256Hz
+
+public low_start:
+public low_target:
+
+	; reset time counter
+	mov	y,~null		; set time counter to 0xffffffff
+
+	; wait for end of HIGH (2 clock cycles per one Y value)
+low1:	jmp	y--,low2	; time counter (counts time in 2-clock cycles)
+low2:	jmp	pin,low1	; jump if pin is HIGH
+
+	; wait for end of LOW (2 clock cycles per one Y value)
+low3:	jmp	pin,low4 	; jump if pin is HIGH
+	jmp	y--,low3	; time counter (counts time in 2-clock cycles)
+
+; This jump adds 2 clock cycles
+; Y is 0xffffffff on time overflow
+
+	; send period length
+public low_wrap:
+low4:	in	y,32		; send time counter
+
+
+; ============================================================================
+;                Frequency Meter - PIO 1 program (18 instructions)
+; ============================================================================
+
+.program freqmet2
+
+; ===== SM0, SM1: [1 instruction] record input signal with high frequency
+
+public high_start:
+public high_target:
+public high_wrap:
+
+	in	pins,1		; [1] load 1 bit
+
+
+; ===== SM0, SM1: [12 instructions] processing, count time between first and last rising edge
+; To get result time:
+;	mov	y,isr		; get saved time counter to Y
+;	in	y,32		; send pulse counter to ISR
+; result time = -res (0 = no pulse)
+; With sys_clk = 220MHz is maximum measurable time 4294967295/220000000 = 19 seconds, 0.05Hz
+
+public time_start:
+
+	; reset time counter
+	set	y,0		; set time counter to 0
+
+	; skip initial state 1
+time1:	out	x,1		; load 1 bit
+	jmp	x--,time1	; jump if X is 1
+
+	; skip initial state 0
+time2:	out	x,1		; load 1 bit
+	jmp	!x,time2	; jump if X is 0
+
+public time_target:
+
+	; record time of last rising edge
+	mov	isr,y		; save time counter to ISR
+
+	; count state 1
+time3:	jmp	y--,time4	; count time
+time4:	out	x,1		; load 1 bit
+	jmp	x--,time3	; jump if X is 1
+
+	; count state 0
+time5:	jmp	y--,time6	; count time
+time6:	out	x,1		; load 1 bit
+public time_wrap:		; wrap loop to label time_target: (only if jmp contition is False)
+	jmp	!x,time5	; jump if X is 0
+
+
+; ===== SM2, SM3: [6 instructions] processing, count pulses (counts rising edges)
+; To get result count:
+;	in	y,32		; send edge counter to ISR
+; result edges = - res
+; no edge if res = 0
+; result pulses = res - 1 (first edge is not counted)
+
+public pulse_start:
+
+	; reset edge counter
+	set	y,0		; set edge counter to 0
+
+public pulse_target:
+
+	; skip state 1
+pulse1:	out	x,1		; load 1 bit
+	jmp	x--,pulse1	; jump if X is 1
+
+	; skip state 0
+pulse2:	out	x,1		; load 1 bit
+	jmp	!x,pulse2	; jump if X is 0
+
+	; count pulse
+public pulse_wrap:
+	jmp	y--,pulse1	; count edge

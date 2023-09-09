@@ -28,6 +28,7 @@ extern "C" {
 
 #define FLASH_PAGE_SIZE (1u << 8)	// Flash page size 256 B (to program)
 #define FLASH_SECTOR_SIZE (1u << 12)	// Flash sector size 4 KB (to erase)
+#define FLASH_PAGES_PER_SECTOR (FLASH_SECTOR_SIZE/FLASH_PAGE_SIZE) // number of flash pages per flash sector (= 16)
 #define FLASH_64KBLOCK_SIZE (1u << 16)	// Flash block size 64 KB (to fast erase)
 #define FLASH_32KBLOCK_SIZE (1u << 15)	// Flash block size 32 KB (to fast erase)
 

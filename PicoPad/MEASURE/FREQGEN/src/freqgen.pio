@@ -1,0 +1,80 @@
+
+; ============================================================================
+;                              Frequency Generator
+; ============================================================================
+
+; Slow generator
+.program generator_slow
+.side_set	1	; output 1 bit
+; send samples to GPIO; N1=delay of "1" in clock cycles-2, N2=delay of "0" in clock cycles-2
+;  Minimal period on N1=0/N2=0 ... 4 clock cycles
+.wrap_target					; wrap jump target
+	out	x,32		side 1		; [1] load bit counter N1
+loop1:	jmp	x--,loop1	side 1		; [N+1] loop
+	out	x,32		side 0		; [1] load bit counter N2
+loop2:	jmp	x--,loop2	side 0		; [N+1] loop
+.wrap						; wrap jump to .wrap_target
+
+; Fast short generator
+.program generator_short
+.side_set	1	; output 1 bit
+; short periods, WAIT1=0..15 (delay 1..16), WAIT2=0..15 (delay 1..16), period 2..32
+.wrap_target					; wrap jump target
+	nop			side 1	[0]	; [1+WAIT1], delay 1..16
+	nop			side 0	[0]	; [1+WAIT2], delay 1..16
+.wrap						; wrap jump to .wrap_target
+
+; Fast long generator
+.program generator_long
+.side_set	1	; output 1 bit
+; short periods, WAIT1=0..15 (delay 1..16), WAIT2=0..15 (delay 1..16), period 2..32
+.wrap_target					; wrap jump target
+	nop			side 1	[0]	; [1+WAIT1], delay 1..16
+	nop			side 0	[0]	; [1+WAIT2], delay 1..16
+	nop			side 1	[0]	; [1+WAIT3], delay 1..16
+	nop			side 0	[0]	; [1+WAIT4], delay 1..16
+	nop			side 1	[0]	; [1+WAIT5], delay 1..16
+	nop			side 0	[0]	; [1+WAIT6], delay 1..16
+	nop			side 1	[0]	; [1+WAIT7], delay 1..16
+	nop			side 0	[0]	; [1+WAIT8], delay 1..16
+	nop			side 1	[0]	; [1+WAIT9], delay 1..16
+	nop			side 0	[0]	; [1+WAIT10], delay 1..16
+	nop			side 1	[0]	; [1+WAIT11], delay 1..16
+	nop			side 0	[0]	; [1+WAIT12], delay 1..16
+	nop			side 1	[0]	; [1+WAIT13], delay 1..16
+	nop			side 0	[0]	; [1+WAIT14], delay 1..16
+	nop			side 1	[0]	; [1+WAIT15], delay 1..16
+	nop			side 0	[0]	; [1+WAIT16], delay 1..16
+	nop			side 1	[0]	; [1+WAIT17], delay 1..16
+	nop			side 0	[0]	; [1+WAIT18], delay 1..16
+	nop			side 1	[0]	; [1+WAIT19], delay 1..16
+	nop			side 0	[0]	; [1+WAIT20], delay 1..16
+	nop			side 1	[0]	; [1+WAIT21], delay 1..16
+	nop			side 0	[0]	; [1+WAIT22], delay 1..16
+	nop			side 1	[0]	; [1+WAIT23], delay 1..16
+	nop			side 0	[0]	; [1+WAIT24], delay 1..16
+	nop			side 1	[0]	; [1+WAIT25], delay 1..16
+	nop			side 0	[0]	; [1+WAIT26], delay 1..16
+	nop			side 1	[0]	; [1+WAIT27], delay 1..16
+	nop			side 0	[0]	; [1+WAIT28], delay 1..16
+	nop			side 1	[0]	; [1+WAIT29], delay 1..16
+	nop			side 0	[0]	; [1+WAIT30], delay 1..16
+	nop			side 1	[0]	; [1+WAIT31], delay 1..16
+	nop			side 0	[0]	; [1+WAIT32], delay 1..16
+.wrap						; wrap jump to .wrap_target
+
+; Bit noise fast generator (1 clock cycle per bit)
+.program generator_fastbit
+.wrap_target					; wrap jump target
+	out			pins,1		; [1] output bit
+.wrap						; wrap jump to .wrap_target
+
+; Bit noise slow generator (10000 clock cycles per bit)
+.program generator_slowbit
+.wrap_target					; wrap jump target
+	out			pins,1	[5]	; [6] output bit
+	set			x,21	[5]	; [6] X <- 21
+loop1:	set			y,20	[11]	; [12] Y <- 20
+loop2:	jmp			y--,loop2 [20]	; [21*21=441], inner loop: delay 441 clock cycles
+	jmp			x--,loop1	; [1] outer loop: delay (12+441+1)*22=9988 clock cycles
+.wrap						; wrap jump to .wrap_target

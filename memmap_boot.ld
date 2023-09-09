@@ -23,11 +23,12 @@
 
 MEMORY
 {
-    FLASH(rx) : ORIGIN = 0x10000000, LENGTH = 2048K /* flash ROM memory */
-    RAM(rwx) : ORIGIN =  0x20000000, LENGTH = 256k /* main RAM */
-    SCRATCH_X(rwx) : ORIGIN = 0x20040000, LENGTH = 4k /* core 0 stack */
-    BOOTRAM(rwx) : ORIGIN = 0x20041000, LENGTH = 32 /* boot loader resident RAM */
-    SCRATCH_Y(rwx) : ORIGIN = 0x20041020, LENGTH = 4k-32 /* core 1 stack */
+    FLASH(rx) : ORIGIN = 0x10000000, LENGTH = 2M - 4K /* flash ROM memory 2MB-4KB */
+    CONFIG(r) : ORIGIN = 0x101FF000, LENGTH = 4K /* device configuration 4KB */
+    RAM(rwx) : ORIGIN =  0x20000000, LENGTH = 256k /* main RAM 256KB */
+    SCRATCH_X(rwx) : ORIGIN = 0x20040000, LENGTH = 4k /* core 0 stack 4KB */
+    BOOTRAM(rwx) : ORIGIN = 0x20041000, LENGTH = 32 /* boot loader resident RAM 32B */
+    SCRATCH_Y(rwx) : ORIGIN = 0x20041020, LENGTH = 4k-32 /* core 1 stack 4KB-32B */
 }
 
 ENTRY(_reset_handler)

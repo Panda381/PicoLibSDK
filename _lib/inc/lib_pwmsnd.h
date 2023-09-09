@@ -42,7 +42,7 @@ extern "C" {
 #define PWMSND_CLOCK	(SOUNDRATE*(PWMSND_TOP+1)) // PWM clock (= 22050*256 = 5644800)
 
 #define SNDFRAC	10	// number of fraction bits
-#define SNDINT (1<<SNDFRAC) // integer part of sound fraction
+#define SNDINT (1<<SNDFRAC) // integer part of sound fraction (= 1024)
 
 // current sound
 extern const u8* CurSound[USE_PWMSND];	// current playing sound
@@ -51,7 +51,8 @@ extern int SoundInc[USE_PWMSND];	// pointer increment
 extern volatile int SoundAcc[USE_PWMSND]; // pointer accumulator
 extern const u8* NextSound[USE_PWMSND];	// next sound to play repeated sound
 extern int NextSoundCnt[USE_PWMSND];	// counter of next sound (0=no repeated sound)
-extern int SoundVol[USE_PWMSND]; // sound volume (SNDINT = normal)
+extern int SoundVol[USE_PWMSND]; // sound volume (SNDINT = normal = 1024)
+extern float SoundVol0[USE_PWMSND]; // initial sound volume (1.0 = normal)
 
 extern Bool GlobalSoundOff;	// global sound OFF
 
@@ -101,6 +102,9 @@ void GlobalSoundSetOff();
 
 // global sound set ON
 void GlobalSoundSetOn();
+
+// update sound volume after changing global volume
+void GlobalVolumeUpdate();
 
 #ifdef __cplusplus
 }

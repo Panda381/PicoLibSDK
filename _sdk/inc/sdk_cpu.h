@@ -238,6 +238,9 @@ u16 Reverse16(u16 val);
 // reverse 32 bits (takes 50 ns) ... use faster ROM function reverse()
 //u32 Reverse32(u32 val);
 
+// get bit order of 8-bit value (logarithm, returns position of highest bit + 1: 1..8, 0=no bit)
+u8 Order8(u8 val);
+
 // get bit order of value (logarithm, returns position of highest bit + 1: 1..32, 0=no bit)
 u8 Order(u32 val);
 

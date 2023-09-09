@@ -46,7 +46,7 @@ void DMA_Abort(u8 chan)
 //  dst = destination address
 //  count = number of transfers
 //  ctrl = control word
-void DMA_Config(u8 chan, const volatile void* src, volatile void* dst, int count, u32 ctrl)
+void DMA_Config(u8 chan, const volatile void* src, volatile void* dst, u32 count, u32 ctrl)
 {
 	DMA_SetRead(chan, src);
 	DMA_SetWrite(chan, dst);
@@ -60,7 +60,7 @@ void DMA_Config(u8 chan, const volatile void* src, volatile void* dst, int count
 //  dst = destination address
 //  count = number of transfers
 //  ctrl = control word
-void DMA_ConfigTrig(u8 chan, const volatile void* src, volatile void* dst, int count, u32 ctrl)
+void DMA_ConfigTrig(u8 chan, const volatile void* src, volatile void* dst, u32 count, u32 ctrl)
 {
 	DMA_SetRead(chan, src);
 	DMA_SetWrite(chan, dst);

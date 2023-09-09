@@ -13,6 +13,7 @@
 #include "inc/lib_calendar64.h"		// calendar 64-bit
 #include "inc/lib_canvas.h"		// canvas
 #include "inc/lib_color.h"		// color vector
+#include "inc/lib_config.h"		// device configuration
 #include "inc/lib_crc.h"		// CRC Check Sum
 #include "inc/lib_decnum.h"		// decode number
 #include "inc/lib_draw.h"		// draw to frame buffer
