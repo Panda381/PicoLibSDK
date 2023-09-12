@@ -1,0 +1,43 @@
+
+; ============================================================================
+;                        Pulse-gram (15 instructions)
+; ============================================================================
+; Max. input frequency: 10 MHz
+
+; HIGH impulse: clock cycles/2 = 0xffffffff - x + 1 = -x
+; LOW impulse: clock cycles/2 = 0xffffffff - x + 1 = -x
+
+; Min. time on 125 MHz: 32 ns (15 MHz), resolution: 16 ns, max. time: 68 seconds
+
+.program pulsgram
+
+.wrap_target
+
+public start:
+
+; HIGH impulse (1 loop = 1 clock cycles)
+
+	; reset HIGH time counter
+	mov	x,~null		; set time counter to 0xffffffff
+
+	; wait for end of HIGH impulse (2 clock cycles per one X value)
+time1:	jmp	x--,time2	; time counter (counts time in 2-clock cycles)
+time2:	jmp	pin,time1	; jump if pin is HIGH
+
+	; send HIGH impulse length
+	in	x,32		; send time counter
+
+; LOW impulse
+
+	; reset LOW time counter
+	mov	x,~null		; set time counter to 0xffffffff
+
+	; wait for end of LOW (2 clock cycles per one Y value)
+time3:	jmp	pin,time4 	; jump if pin is HIGH
+	jmp	x--,time3	; time counter (counts time in 2-clock cycles)
+
+	; send LOW pulse length
+time4:	in	x,32		; send time counter
+	jmp	start		; this instruction is not needed, it is used only
+				;  to get the same timings as HIGH value
+.wrap

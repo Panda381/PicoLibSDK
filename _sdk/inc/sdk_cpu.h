@@ -19,6 +19,7 @@
 
 //#include "resource.h"	// resources
 #include "../sdk_addressmap.h"		// Register address offsets
+#include "sdk_bootrom.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -229,36 +230,41 @@ INLINE u32 Rol(u32 val, u8 num)
 	return val;
 }
 
-// reverse 8 bits (takes 10 ns)
-u8 Reverse8(u8 val);
+// reverse 8 bits
+u8 Reverse8(u8 val); // takes 170 ns
+//INLINE u8 Reverse8(u8 val) { return (u8)(reverse(val) >> 24); } // takes 257 ns
 
-// reverse 16 bits (takes 17 ns)
-u16 Reverse16(u16 val);
+// reverse 16 bits ... use faster ROM function reverse()
+//u16 Reverse16(u16 val); // takes 670 ns
+INLINE u16 Reverse16(u16 val) { return (u16)(reverse(val) >> 16); } // takes 257 ns
 
-// reverse 32 bits (takes 50 ns) ... use faster ROM function reverse()
-//u32 Reverse32(u32 val);
+// reverse 32 bits ... use faster ROM function reverse()
+//u32 Reverse32(u32 val); // takes 1120 ns
+INLINE u32 Reverse32(u32 val) { return reverse(val); } // takes 250 ns
 
-// get bit order of 8-bit value (logarithm, returns position of highest bit + 1: 1..8, 0=no bit)
+// get number of leading zeros of u32 number
+// takes 296 ns ... better to use bootrom version clz(), it takes 161 ns
+//u8 Clz(u32 val);
+INLINE u8 Clz(u32 val) { return (u8)clz(val); }
+
+// get number of leading zeros of u64 number
+u8 clz64(u64 num);
+
+// get bit order of 8-bit value (takes 152 ns) (logarithm, returns position of highest bit + 1: 1..8, 0=no bit)
 u8 Order8(u8 val);
 
-// get bit order of value (logarithm, returns position of highest bit + 1: 1..32, 0=no bit)
-u8 Order(u32 val);
+// get bit order of value (logarithm, returns position of highest bit + 1: 1..32, 0=no bit) ... use faster ROM function 32-clz()
+//u8 Order(u32 val); // takes 217 ns
+INLINE u8 Order(u32 val) { return (u8)(32 - clz(val)); } // takes 176 ns
 
 // get bit order of 64-bit value (logarithm, returns position of highest bit + 1: 1..64, 0=no bit)
 u8 Order64(u64 val);
 
 // get mask of value (0x123 returns 0x1FF)
-INLINE u32 Mask(u32 val) { return (u32)-1 >> (32 - Order(val)); }
+INLINE u32 Mask(u32 val) { return (u32)-1 >> clz(val); }
 
 // range mask - returns bits set to '1' on range 'first' to 'last' (RangeMask(7,14) returns 0x7F80)
 INLINE u32 RangeMask(u8 first, u8 last) { return (~((u32)-1 << (last+1))) & ((u32)-1 << first); }
-
-// get number of leading zeros of u32 number
-// takes 350 ns ... use bootrom version, it takes 170 ns
-u8 Clz(u32 val);
-
-// get number of leading zeros of u64 number
-u8 clz64(u64 num);
 
 #if USE_STACKCHECK	// use Stack check (sdk_cpu.c, sdk_cpu.h)
 
