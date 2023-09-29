@@ -205,16 +205,13 @@ Bool LoadFileList()
 	return True;
 }
 
-// display file list
+// display file list (not clearing display)
 void DispFileList()
 {
 	int i, j, x, y;
 	u16 fgcol, bgcol;
 	sImgFile* img;
 	const char* s;
-
-	// clear display
-	DrawClear();
 
 	// set font 8x16
 	SelFont8x16();
@@ -559,10 +556,13 @@ int main()
 		// load file list (returns False to break)
 		if (!LoadFileList()) ResetToBootLoader();
 
+		// clear display
+		DrawClear();
+
 		// display file list
 		DispFileList();
 
-		// video selection
+		// image selection
 		ok = False;
 		while (!ok)
 		{
@@ -619,6 +619,7 @@ int main()
 				DispFileList();
 				break;
 
+			// select image
 			case KEY_A:
 				if (FileListSel < FileListNum) ok = True;
 				break;

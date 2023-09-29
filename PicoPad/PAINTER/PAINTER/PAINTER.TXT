@@ -1,0 +1,13 @@
+^YPainter-USB^0
+
+Use extern USB mouse
+with additional +5V
+power source adapter.
+
+^WX^0 ....... alternate
+^WA^0 ....... previous
+^WB^0 ....... next
+^WY^0 ....... quit
+^WL-mouse^0 . paint
+^WR-mouse^0 . menu
+^WM-mouse^0 . alternate
