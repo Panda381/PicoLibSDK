@@ -215,6 +215,36 @@ void CurMouse()
 	if ((dx != 0) || (dy != 0)) CurMove(dx, dy);
 }
 
+// cursor mouse or key move
+void CurMouseKey()
+{
+	switch (KeyGet())
+	{
+	// cursor left
+	case KEY_LEFT:
+		CurMove(-4, 0);
+		break;
+
+	// cursor right
+	case KEY_RIGHT:
+		CurMove(+4, 0);
+		break;
+
+	// cursor up
+	case KEY_UP:
+		CurMove(0, -4);
+		break;
+
+	// cursor down
+	case KEY_DOWN:
+		CurMove(0, +4);
+		break;
+	}
+
+	// cursor mouse move
+	CurMouse();
+}
+
 // wait mounting SD card (return False to break)
 Bool WaitMount()
 {
@@ -382,7 +412,7 @@ void DispFileList()
 	}
 
 	// info
-	DrawText("B = create new image", (WIDTH-20*8)/2, HEIGHT-16, COL_WHITE);
+	DrawText("A = select, B = create new image", (WIDTH-32*8)/2, HEIGHT-16, COL_WHITE);
 
 	// display update
 	DispUpdate();
@@ -518,14 +548,47 @@ void ColSel()
 		// cursor mouse move
 		CurMouse();
 
+		// keyboard
+		key = KeyGet();
+		if (key == KEY_Y)
+		{
+#if USE_SCREENSHOT		// use screen shots
+			ScreenShot();
+#endif
+			break;
+		}
+
+		switch (key)
+		{
+		// cursor left
+		case KEY_LEFT:
+			CurMove(-4, 0);
+			break;
+
+		// cursor right
+		case KEY_RIGHT:
+			CurMove(+4, 0);
+			break;
+
+		// cursor up
+		case KEY_UP:
+			CurMove(0, -4);
+			break;
+
+		// cursor down
+		case KEY_DOWN:
+			CurMove(0, +4);
+			break;
+		}
+
 		// display update
 		DispUpdate();
 
 		// right mouse button - return
-		if ((MousePress & MOUSE_RBTN) != 0) break;
+		if ((key == KEY_B) || ((MousePress & MOUSE_RBTN) != 0)) break;
 
 		// left mouse button - select
-		if ((MousePress & MOUSE_LBTN) != 0)
+		if ((key == KEY_A) || ((MousePress & MOUSE_LBTN) != 0))
 		{
 			// select color
 			if (CurY >= HEIGHT-PALETTE_IMG_H)
@@ -572,7 +635,6 @@ void ColSel()
 		}
 
 		// flip tools (key X or middle mouse button)
-		key = KeyGet();
 		if ((key == KEY_X) || ((MousePress & MOUSE_MBTN) != 0))
 		{
 			// synchornize
@@ -593,15 +655,6 @@ void ColSel()
 
 			// destoy key
 			key = NOKEY;
-		}
-
-		// any button - exit
-		if (key != NOKEY)
-		{
-#if USE_SCREENSHOT		// use screen shots
-			if (key == KEY_Y) ScreenShot();
-#endif
-			break;
 		}
 	}
 
@@ -717,10 +770,10 @@ void EditBrush(int width)
 	int oldy = CurY;
 
 	// while left mouse button is pressed
-	while ((MouseBtn & MOUSE_LBTN) != 0) 
+	while (KeyPressed(KEY_A) || ((MouseBtn & MOUSE_LBTN) != 0))
 	{
-		// cursor mouse move
-		CurMouse();
+		// cursor mouse or key move
+		CurMouseKey();
 
 		// display update
 		DispUpdate();
@@ -770,10 +823,10 @@ void EditLine(int width)
 	DispUpdate();		// display update
 
 	// while left mouse button is pressed
-	while ((MouseBtn & MOUSE_LBTN) != 0) 
+	while (KeyPressed(KEY_A) || ((MouseBtn & MOUSE_LBTN) != 0))
 	{
-		// cursor mouse move
-		CurMouse();
+		// cursor mouse or key move
+		CurMouseKey();
 
 		// display update
 		DispUpdate();
@@ -826,10 +879,10 @@ void EditRect(int width)
 	DispUpdate();		// display update
 
 	// while left mouse button is pressed
-	while ((MouseBtn & MOUSE_LBTN) != 0) 
+	while (KeyPressed(KEY_A) || ((MouseBtn & MOUSE_LBTN) != 0))
 	{
-		// cursor mouse move
-		CurMouse();
+		// cursor mouse or key move
+		CurMouseKey();
 
 		// display update
 		DispUpdate();
@@ -891,10 +944,10 @@ void EditRing(int width)
 	DispUpdate();		// display update
 
 	// while left mouse button is pressed
-	while ((MouseBtn & MOUSE_LBTN) != 0) 
+	while (KeyPressed(KEY_A) || ((MouseBtn & MOUSE_LBTN) != 0))
 	{
-		// cursor mouse move
-		CurMouse();
+		// cursor mouse or key move
+		CurMouseKey();
 
 		// display update
 		DispUpdate();
@@ -953,10 +1006,10 @@ void EditBox()
 	DispUpdate();		// display update
 
 	// while left mouse button is pressed
-	while ((MouseBtn & MOUSE_LBTN) != 0) 
+	while (KeyPressed(KEY_A) || ((MouseBtn & MOUSE_LBTN) != 0))
 	{
-		// cursor mouse move
-		CurMouse();
+		// cursor mouse or key move
+		CurMouseKey();
 
 		// display update
 		DispUpdate();
@@ -1018,10 +1071,10 @@ void EditRound()
 	DispUpdate();		// display update
 
 	// while left mouse button is pressed
-	while ((MouseBtn & MOUSE_LBTN) != 0) 
+	while (KeyPressed(KEY_A) || ((MouseBtn & MOUSE_LBTN) != 0))
 	{
-		// cursor mouse move
-		CurMouse();
+		// cursor mouse or key move
+		CurMouseKey();
 
 		// display update
 		DispUpdate();
@@ -1113,12 +1166,16 @@ void EditDrop()
 void EditImg()
 {
 	int i;
+	u8 key;
 
 	// connectint USB mouse
-	printf("\f\27Connecting USB mouse (Y=quit)...");
+	printf("\f\27Connecting USB mouse...\n");
+	printf("Y = cancel\nA = continue without mouse\n");
 	while (!UsbMouseIsMounted())
 	{
-		if (KeyGet() == KEY_Y) return;
+		i = KeyGet();
+		if (i == KEY_Y) return;
+		if (i == KEY_A) break;
 	}
 
 	// load selected image
@@ -1127,9 +1184,9 @@ void EditImg()
 	// edit loop
 	while (True)
 	{
-		switch (KeyGet())
+		key = KeyGet();
+		switch (key)
 		{
-		// Y exit
 		case KEY_Y:
 #if USE_SCREENSHOT		// use screen shots
 			ScreenShot();
@@ -1138,50 +1195,24 @@ void EditImg()
 			SaveImg();
 			return;
 
-		// A previous image
-		case KEY_A:
-			// save image (if modified)
-			SaveImg();
-
-			// previous image
-			DrawClear(); // clear screen
-			DispUpdate();
-			i = FileListSel;
-			i--;
-			if (i < 0) i = FileListNum - 1;
-			FileListSel = i;
-			LoadImg(); // load image
+		// cursor left
+		case KEY_LEFT:
+			CurMove(-4, 0);
 			break;
 
-		// B next image
-		case KEY_B:
-			// save image (if modified)
-			SaveImg();
-
-			// next image
-			DrawClear(); // clear screen
-			DispUpdate();
-			i = FileListSel;
-			i++;
-			if (i >= FileListNum) i = 0;
-			FileListSel = i;
-			LoadImg(); // load image
+		// cursor right
+		case KEY_RIGHT:
+			CurMove(+4, 0);
 			break;
 
-		// X flip tools
-		case KEY_X:
-			// synchronize
-			VgaWaitVSync();
+		// cursor up
+		case KEY_UP:
+			CurMove(0, -4);
+			break;
 
-			// set cursor off
-			CurOff();
-
-			// flip tools
-			ToolFlip();
-
-			// cursor on
-			CurImg = CurImgList[ToolSel]; // current cursor image
-			CurOn();
+		// cursor down
+		case KEY_DOWN:
+			CurMove(0, +4);
 			break;
 		}
 
@@ -1191,8 +1222,8 @@ void EditImg()
 		// display update
 		DispUpdate();
 
-		// left mouse button - edit
-		if ((MousePress & MOUSE_LBTN) != 0) 
+		// A or left mouse button - edit
+		if ((key == KEY_A) || ((MousePress & MOUSE_LBTN) != 0))
 		{
 			switch (ToolSel)
 			{
@@ -1268,15 +1299,15 @@ void EditImg()
 			}
 		}
 
-		// right mouse button - select color or tool
-		if ((MousePress & MOUSE_RBTN) != 0) 
+		// B or right mouse button - select color or tool
+		if ((key == KEY_B) || ((MousePress & MOUSE_RBTN) != 0))
 		{
 			// select color or tool
 			ColSel();
 		}
 
-		// middle mouse button - flip tools
-		if ((MousePress & MOUSE_MBTN) != 0)
+		// X or middle mouse button - flip tools
+		if ((key == KEY_X) || ((MousePress & MOUSE_MBTN) != 0))
 		{
 			// synchronize
 			VgaWaitVSync();
