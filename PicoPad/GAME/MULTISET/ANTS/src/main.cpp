@@ -82,6 +82,8 @@ int main()
 
 		} while (!sel);
 
+		StopSound();
+		DispSetStripOff();
 		KeyFlush();
 	}
 }

@@ -12,3 +12,5 @@ call c.bat picopad08
 call d.bat
 call c.bat picopad10
 call d.bat
+call c.bat picopadvga
+call d.bat

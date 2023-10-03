@@ -91,38 +91,51 @@ const u8 SolverTab[] = {
 // draw board
 void DrawBoard()
 {
-	int i, j, x, y, b, bx, by;
-	for (i = 0; i < TILESY; i++)
-	{
-		for (j = 0; j < TILESX; j++)
-		{
-			x = j*TILEW+BOARDX;
-			y = i*TILEH+BOARDY;
-			b = Board[i*TILESX + j];
-			if ((b == TILE_EMPTY_INX) && !GameEnd) // empty tile in game
-			{
-				DrawImgPal(TilesImg, TilesImg_Pal, 0, TILE_EMPTY*TILEH, x, y, TILEW, TILEH, TILEW);
-			}
-			else
-			{
-				// draw result tile
-				bx = b & 3;
-				by = b >> 2;
-				DrawImgPal(Img, Pal, bx*TILEW, by*TILEH, x, y, TILEW, TILEH, IMGW);
+	int strip;
 
-				// draw frame
-				if ((PuzzleInx != 0) && DispTileNum && (b != TILE_EMPTY_INX) && !GameEnd)
+	for (strip = DISP_STRIP_NUM; strip > 0; strip--)
+	{
+		// next strip
+		DispSetStripNext();
+
+		int i, j, x, y, b, bx, by;
+		for (i = 0; i < TILESY; i++)
+		{
+			for (j = 0; j < TILESX; j++)
+			{
+				x = j*TILEW+BOARDX;
+				y = i*TILEH+BOARDY;
+				b = Board[i*TILESX + j];
+				if ((b == TILE_EMPTY_INX) && !GameEnd) // empty tile in game
 				{
-					DrawRect(x, y, 1, TILEH-1, COL_WHITE);
-					DrawRect(x+1, y, TILEW-2, 1, COL_WHITE);
-					DrawRect(x+TILEW-1, y+1, 1, TILEH-1, COL_BLACK);
-					DrawRect(x+1, y+TILEH-1, TILEW-2, 1, COL_BLACK);
-					DrawTextBg(TileNumTxt[b], x+TILEW-((b < 9) ? 8 : 16), y+TILEH-16, COL_WHITE, COL_BLACK);
+					DrawImgPal(TilesImg, TilesImg_Pal, 0, TILE_EMPTY*TILEH, x, y, TILEW, TILEH, TILEW);
+				}
+				else
+				{
+					// draw result tile
+					bx = b & 3;
+					by = b >> 2;
+					DrawImgPal(Img, Pal, bx*TILEW, by*TILEH, x, y, TILEW, TILEH, IMGW);
+
+					// draw frame
+					if ((PuzzleInx != 0) && DispTileNum && (b != TILE_EMPTY_INX) && !GameEnd)
+					{
+						DrawRect(x, y, 1, TILEH-1, COL_WHITE);
+						DrawRect(x+1, y, TILEW-2, 1, COL_WHITE);
+						DrawRect(x+TILEW-1, y+1, 1, TILEH-1, COL_BLACK);
+						DrawRect(x+1, y+TILEH-1, TILEW-2, 1, COL_BLACK);
+						DrawTextBg(TileNumTxt[b], x+TILEW-((b < 9) ? 8 : 16), y+TILEH-16, COL_WHITE, COL_BLACK);
+					}
 				}
 			}
 		}
+
+		// update screen
+		DispUpdate();
 	}
-	DispUpdate();
+
+	// set off back buffers
+	DispSetStripOff();
 }
 
 // wait icon ON
@@ -281,7 +294,11 @@ void NewGame(Bool shuffle)
 			}
 
 			// draw board
-			if ((i & 0x7f) == 0) DrawBoard();
+			if ((i & 0x7f) == 0)
+			{
+				DrawBoard();
+				WaitMs(20);
+			}
 		}
 
 		// stop shuffling sound

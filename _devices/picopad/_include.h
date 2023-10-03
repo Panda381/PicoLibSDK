@@ -9,11 +9,11 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../_display/st7789/st7789.h" // ST7789 display
+#include "../../_display/minivga/minivga.h" // miniVGA display
 #include "../../_lib/inc/lib_draw.h" // drawing to display buffer
 #include "../../_lib/inc/lib_pwmsnd.h" // PWM sound
 #include "picopad_bat.h"	// battery
 #include "picopad_key.h"	// buttons
 #include "picopad_led.h"	// LEDs
-#include "picopad_spk.h"	// speaker
 #include "picopad_init.h"	// initialize
 #include "picopad_ss.h"		// screen shot

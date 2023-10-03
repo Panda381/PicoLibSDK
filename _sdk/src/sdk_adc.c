@@ -93,7 +93,7 @@ void ADC_TempEnable()
 	}
 }
 
-// do single conversion (takes 96 clock cycles = 2 us on 48 MHz clock)
+// do single conversion (takes 96 clock cycles = min. 2 us on 48 MHz clock, real 2.6 us)
 u16 ADC_Single()
 {
 	ADC_StartOnce(); // start single conversion
@@ -101,7 +101,7 @@ u16 ADC_Single()
 	return ADC_Result(); // get conversion result
 }
 
-// do single conversion with denoise (returns value 0..0xffff; takes 32 us on 48 MHz clock
+// do single conversion with denoise (returns value 0..0xffff; takes min. 32 us on 48 MHz clock, real 43 us)
 u16 ADC_SingleDenoise()
 {
 	int i;

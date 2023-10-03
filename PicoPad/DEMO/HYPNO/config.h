@@ -13,6 +13,15 @@
 // to change from the default configuration in config_def.h.
 // *********
 
+#if USE_PICOPADVGA
+#define USE_MINIVGA		1		// use mini-VGA display with simple frame buffer:
+						//	1=use only frame buffer
+						//	2=add full back buffer
+						//	3=add 1/2 back buffer
+						//	4=add 1/4 back buffer
+						//	5=add 1/8 back buffer
+#endif
+
 //#define FONT			FontBold8x8	// default system font
 //#define FONTW			8		// width of system font
 //#define FONTH			8		// height of system font

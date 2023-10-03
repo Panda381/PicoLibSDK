@@ -64,7 +64,7 @@ Bool Ok[HEIGHT];
 // Mandelbrot state
 int CurY = HEIGHT; // current Y (HEIGHT = not active)
 int IncY = 1; // current increment Y
-fixed X0i, Y0i, SXi, SYi; // increment in fixed format
+fix X0i, Y0i, SXi, SYi; // increment in fixed format
 float X0f, Y0f, SXf, SYf; // increment in float format
 double X0d, Y0d, SXd, SYd, Cid; // increment in double format
 big X0b, Y0b, SXb, SYb; // increment in big fixed format
@@ -91,7 +91,7 @@ void MandelUpdate()
 	// ci = y*sy + y0;
 	SYd = -3*Size/HEIGHT * IncY;
 	SYf = (float)SYd;
-	SYi = DblToFixed(SYd);
+	SYi = DblToFix(SYd);
 	SYb = DblToBig(SYd);
 
 	// start Ci
@@ -125,8 +125,8 @@ void MandelStart()
 	X0d = OffX - 2*Size;
 	SXf = (float)SXd;
 	X0f = (float)X0d;
-	SXi = DblToFixed(SXd);
-	X0i = DblToFixed(X0d);
+	SXi = DblToFix(SXd);
+	X0i = DblToFix(X0d);
 	SXb = DblToBig(SXd);
 	X0b = DblToBig(X0d);
 
@@ -134,7 +134,7 @@ void MandelStart()
 	// ci = y*sy + y0;
 	Y0d = OffY + 1.5f*Size;
 	Y0f = (float)Y0d;
-	Y0i = DblToFixed(Y0d);
+	Y0i = DblToFix(Y0d);
 	Y0b = DblToBig(Y0d);
 
 	// clear buffer
@@ -233,10 +233,10 @@ void NOFLASH(MandelDouble)(u8* dst, double ci)
 // calculate Mandelbrot fixed integer
 //  default render time (X,Y=[0,0], scale=1, steps=64, sysclk=125MHz, res=264x200): 0.32 sec
 //  Note: This function is realized in assembly, but speed is almost the same.
-void NOFLASH(MandelFixedC)(u8* dst, fixed ci)
+void NOFLASH(MandelFixC)(u8* dst, fix ci)
 {
 	int x, i;
-	fixed zr, zi, zr2, zi2, cr, sx;
+	fix zr, zi, zr2, zi2, cr, sx;
 	int steps = Steps;
 	int w = WIDTH;
 	const u8* g = Grad;
@@ -254,11 +254,11 @@ void NOFLASH(MandelFixedC)(u8* dst, fixed ci)
 
 		for (i = steps; i > 0; i--)
 		{
-			zr2 = FixedSqr(zr);
-			zi2 = FixedSqr(zi);
-			if (FixedGr(FixedAdd(zr2, zi2), (4 << 25))) break;
-			zi = FixedAdd(FixedMul2(FixedMul(zr, zi)), ci);
-			zr = FixedAdd(FixedSub(zr2, zi2), cr);
+			zr2 = FixSqr(zr);
+			zi2 = FixSqr(zi);
+			if (FixGr(FixAdd(zr2, zi2), (4 << 25))) break;
+			zi = FixAdd(FixMul2(FixMul(zr, zi)), ci);
+			zr = FixAdd(FixSub(zr2, zi2), cr);
 		}
 
 		if (i == 0)
@@ -267,7 +267,7 @@ void NOFLASH(MandelFixedC)(u8* dst, fixed ci)
 			*dst = g[(steps - i) >> s];
 
 		dst++;
-		cr = FixedAdd(cr, sx);
+		cr = FixAdd(cr, sx);
 	}
 }
 
@@ -351,10 +351,10 @@ void NOFLASH(MandelBig)(u8* dst, big ci)
 // calculate Mandelbrot fixed integer
 //  default render time (X,Y=[0,0], scale=1, steps=64, sysclk=125MHz, res=264x200): 0.32 sec
 //  Note: This function is realized in assembly, but speed is almost the same.
-void NOFLASH(MandelFixed)(u8* dst, fixed ci)
+void NOFLASH(MandelFix)(u8* dst, fix ci)
 {
 	int x, i;
-	fixed zr, zi, zr2, zi2, cr, sx;
+	fix zr, zi, zr2, zi2, cr, sx;
 	int steps = Steps;
 	int w = WIDTH;
 	const u8* g = Grad;
@@ -372,11 +372,11 @@ void NOFLASH(MandelFixed)(u8* dst, fixed ci)
 
 		for (i = steps; i > 0; i--)
 		{
-			zr2 = FixedSqr(zr);
-			zi2 = FixedSqr(zi);
-			if (FixedGr(FixedAdd(zr2, zi2), (4 << 25))) break;
-			zi = FixedAdd(FixedMul2(FixedMul(zr, zi)), ci);
-			zr = FixedAdd(FixedSub(zr2, zi2), cr);
+			zr2 = FixSqr(zr);
+			zi2 = FixSqr(zi);
+			if (FixGr(FixAdd(zr2, zi2), (4 << 25))) break;
+			zi = FixAdd(FixMul2(FixMul(zr, zi)), ci);
+			zr = FixAdd(FixSub(zr2, zi2), cr);
 		}
 
 		if (i == 0)
@@ -385,7 +385,7 @@ void NOFLASH(MandelFixed)(u8* dst, fixed ci)
 			*dst = g[(steps - i) >> s];
 
 		dst++;
-		cr = FixedAdd(cr, sx);
+		cr = FixAdd(cr, sx);
 	}
 }
 
@@ -397,9 +397,9 @@ void MandelCore1()
 	{
 		if (SizeN <= 17)
 #if RENDER_FIXASM	// 1 = use fixed int in assembler
-			MandelFixed(Core1Dst, DblToFixed(Core1Cid));
+			MandelFix(Core1Dst, DblToFix(Core1Cid));
 #else
-			MandelFixedC(Core1Dst, DblToFixed(Core1Cid));
+			MandelFixC(Core1Dst, DblToFix(Core1Cid));
 #endif
 		else
 			MandelBig(Core1Dst, DblToBig(Core1Cid));
@@ -408,9 +408,9 @@ void MandelCore1()
 	{
 		if (Arithm == USE_INT)
 #if RENDER_FIXASM	// 1 = use fixed int in assembler
-			MandelFixed(Core1Dst, DblToFixed(Core1Cid));
+			MandelFix(Core1Dst, DblToFix(Core1Cid));
 #else
-			MandelFixedC(Core1Dst, DblToFixed(Core1Cid));
+			MandelFixC(Core1Dst, DblToFix(Core1Cid));
 #endif
 		else if (Arithm == USE_BIG)
 			MandelBig(Core1Dst, DblToBig(Core1Cid));
@@ -526,9 +526,9 @@ int main()
 				{
 					if (SizeN <= 17)
 #if RENDER_FIXASM	// 1 = use fixed int in assembler
-						MandelFixed(Dst, DblToFixed(Cid));
+						MandelFix(Dst, DblToFix(Cid));
 #else
-						MandelFixedC(Dst, DblToFixed(Cid));
+						MandelFixC(Dst, DblToFix(Cid));
 #endif
 					else
 						MandelBig(Dst, DblToBig(Cid));
@@ -537,9 +537,9 @@ int main()
 				{
 					if (Arithm == USE_INT)
 #if RENDER_FIXASM	// 1 = use fixed int in assembler
-						MandelFixed(Dst, DblToFixed(Cid));
+						MandelFix(Dst, DblToFix(Cid));
 #else
-						MandelFixedC(Dst, DblToFixed(Cid));
+						MandelFixC(Dst, DblToFix(Cid));
 #endif
 					else if (Arithm == USE_BIG)
 						MandelBig(Dst, DblToBig(Cid));

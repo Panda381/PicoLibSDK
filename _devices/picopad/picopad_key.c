@@ -15,10 +15,13 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "../../_sdk/inc/sdk_timer.h"
+#include "../../_display/minivga/minivga.h"
 #include "picopad_key.h"
 
+#if !USE_PICOPADVGA
 // buttons GPIOs
 const u8 KeyGpioTab[KEY_NUM] = {
 	BTN_UP_PIN,		// up
@@ -30,6 +33,7 @@ const u8 KeyGpioTab[KEY_NUM] = {
 	BTN_A_PIN,		// A
 	BTN_B_PIN,		// B
 };
+#endif
 
 // remap key to characters
 const char KeyMapToChar[KEY_NUM+1] = {
@@ -64,8 +68,10 @@ void KeyInit()
 	int i;
 	for (i = 0; i < KEY_NUM; i++)
 	{
+#if !USE_PICOPADVGA
 		GPIO_Init(KeyGpioTab[i]); // initialize GPIO to input
 		GPIO_PullUp(KeyGpioTab[i]); // pull-up
+#endif
 		KeyPressMap[i] = False;
 	}
 
@@ -77,11 +83,13 @@ void KeyInit()
 // terminate keys
 void KeyTerm()
 {
+#if !USE_PICOPADVGA
 	int i;
 	for (i = 0; i < KEY_NUM; i++)
 	{
 		GPIO_Reset(KeyGpioTab[i]); // reset GPIO
 	}
+#endif
 }
 
 // write key to keyboard buffer
@@ -106,7 +114,11 @@ void KeyScan()
 	for (i = 0; i < KEY_NUM; i++)
 	{
 		// check if button is pressed
+#if USE_PICOPADVGA
+		if ((VgaKeyScan & (1UL << i)) != 0)
+#else
 		if (GPIO_In(KeyGpioTab[i]) == 0)
+#endif
 		{
 			// button is pressed for the first time
 			if (!KeyPressMap[i])
@@ -206,6 +218,11 @@ void KeyRet(char key)
 // check no pressed key
 Bool KeyNoPressed()
 {
+#if !SYSTICK_KEYSCAN	// call KeyScan() function from SysTick system timer
+	// scan keyboard
+	KeyScan();
+#endif
+
 	int i;
 	for (i = 0; i < KEY_NUM; i++) if (KeyPressMap[i]) return False;
 	return True;

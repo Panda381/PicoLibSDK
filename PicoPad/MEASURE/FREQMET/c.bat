@@ -1,6 +1,8 @@
 @echo off
 rem Compilation...
 
+if "%1" == "picopadvga" goto stop
+
 set TARGET=FREQMET
 set GRPDIR=MEASURE
 

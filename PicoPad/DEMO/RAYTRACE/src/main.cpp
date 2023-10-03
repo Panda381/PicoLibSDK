@@ -13,7 +13,11 @@ int main()
 #if RENDER_BOTHCORES	// 1 = use both cores to render, 0 = use only core 0
 
 	// start render on core 1
+#if USE_MINIVGA
+	VgaCore1Exec(Render3D);
+#else
 	Core1Exec(Render3D);
+#endif
 
 	// leaving little head start for core 1 so that both lines can be displayed simultaneously
 	WaitMs(100);
@@ -28,6 +32,8 @@ int main()
 
 	// update display
 	DispUpdateAll();
+
+	KeyFlush();
 
 	while(True)
 	{

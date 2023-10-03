@@ -62,7 +62,7 @@ const u16 BatCol[8] = {
 
 void Battery()
 {
-	int i;
+	int i, j;
 
 	DrawClear();
 
@@ -73,11 +73,17 @@ void Battery()
 	pDrawFont = FontBold8x16; // font 8x8
 	DrawFontHeight = 16; // font height
 
+	// draw background
+	DrawImgRle(BatteryImg, BatteryImg_Pal, 0, 0, 128, 240);
+
 	int k = 0;
 
 	while (True)
 	{
 		if (KeyGet() != NOKEY) return;
+
+		// wait for VSync
+		VgaWaitVSync();
 
 		// draw battery
 		float bat = GetBat();
@@ -90,8 +96,12 @@ void Battery()
 
 		if (i < 0) i = 0;
 		if (i > 7) i = 7;
-		DrawImgRle(BatteryImg, BatteryImg_Pal, 0, 0, 128, 240);
 
+		if (i < 7)
+		{
+			j = 6;
+			for (; j < i-1; j--) DrawRect(25, 198 - j*26, 77, 19, COL_BLACK);
+		}
 		u16 col = BatCol[i];
 		if (i > 0)
 		{
@@ -186,7 +196,7 @@ int GameSel = 0;
 
 int main()
 {
-	int i, x, y;
+	int i, x, y, strip;
 
 	// main loop
 	while (True)
@@ -194,24 +204,36 @@ int main()
 		// set font
 		SelFont8x8();
 
-		// draw menu image
-		DrawImgRle(MenuImg, MenuImg_Pal, 0, 0, WIDTH, HEIGHT);
+		// wait for VSync
+		//VgaWaitVSync();
 
-		// draw text	
-		for (i = 0; i < MENUNUM; i++)
+		for (strip = DISP_STRIP_NUM; strip > 0; strip--)
 		{
-			y = (i/MENUW)*ICONH + TEXTY;
-			x = (i % MENUW)*ICONW;
-			x += (ICONW - StrLen(Titles[i])*8)/2;
-			DrawText(Titles[i], x, y, COL_WHITE);
+			// next strip
+			DispSetStripNext();
+
+			// draw menu image
+			DrawImgRle(MenuImg, MenuImg_Pal, 0, 0, WIDTH, HEIGHT);
+
+			// draw text	
+			for (i = 0; i < MENUNUM; i++)
+			{
+				y = (i/MENUW)*ICONH + TEXTY;
+				x = (i % MENUW)*ICONW;
+				x += (ICONW - StrLen(Titles[i])*8)/2;
+				DrawText(Titles[i], x, y, COL_WHITE);
+			}
+
+			// draw selection frame
+			y = (GameSel/MENUW)*ICONH;
+			x = (GameSel % MENUW)*ICONW;
+			DrawFrame(x, y, ICONW, ICONH, COL_RED);
+			DrawFrame(x+1, y+1, ICONW-2, ICONH-2, COL_RED);
+			DispUpdate();
 		}
 
-		// draw selection frame
-		y = (GameSel/MENUW)*ICONH;
-		x = (GameSel % MENUW)*ICONW;
-		DrawFrame(x, y, ICONW, ICONH, COL_RED);
-		DrawFrame(x+1, y+1, ICONW-2, ICONH-2, COL_RED);
-		DispUpdate();
+		// set off back buffers
+		DispSetStripOff();
 
 		// keyboard service
 		switch (KeyGet())
@@ -242,6 +264,8 @@ int main()
 			MenuFnc[GameSel]();
 			DrawClear();
 			KeyFlush();
+			StopSound();
+			DispSetStripOff();
 			break;
 
 		// battery

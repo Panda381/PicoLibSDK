@@ -19,15 +19,12 @@ u8 GetTile(u8 x, u8 y) { return Board[x + y*MAPW]; }
 // Display all
 void DispAll(u32 wait)
 {
-	int i, j, k, n, x, y;
+	int i, j, k, n, x, y, strip;
 	u8 *s;
 	sChar* ch;
 	Bool moving;
 	u8 b, tile;
 	u32 t;
-
-	// clear screen
-	DrawClear();
 
 	// update blink pellets
 	b = Blink + 1;
@@ -48,79 +45,92 @@ void DispAll(u32 wait)
 	}
 	Blink = b;
 
-	// display board
-	s = Board;
-	for (y = 0; y < MAPH; y++)
+	// display
+	for (strip = DISP_STRIP_NUM; strip > 0; strip--)
 	{
-		for (x = 0; x < MAPW; x++)
+		// next strip
+		DispSetStripNext();
+
+		// clear screen
+		DrawClear();
+
+		// display board
+		s = Board;
+		for (y = 0; y < MAPH; y++)
 		{
-			DrawImg4Pal(TilesImg, TilesImg_Pal, (*s++)*TILEW, 0, x*TILEW+MAPX, y*TILEH+MAPY, TILEW, TILEH, TILESIMGW);
+			for (x = 0; x < MAPW; x++)
+			{
+				DrawImg4Pal(TilesImg, TilesImg_Pal, (*s++)*TILEW, 0, x*TILEW+MAPX, y*TILEH+MAPY, TILEW, TILEH, TILESIMGW);
+			}
 		}
+
+		// fruit
+		if (FruitSpriteImg >= 0)
+			DrawBlit4Pal(SpritesImg, SpritesImg_Pal, FruitSpriteImg*SPRITEW, 0, FruitSpriteX,
+				FruitSpriteY, SPRITEW, SPRITEH, SPRITEIMGW, COL_BLACK);
+
+		// display score
+		n = DecUNum(NumBuf, Score, 0);
+		DrawText(NumBuf, 115 - n*4, HEIGHT-9, COL_WHITE);
+
+		// max. score
+		n = DecUNum(NumBuf, MaxScore, 0);
+		DrawText(NumBuf, 185 - n*4, HEIGHT-9, ((MaxScore == Score) && (MaxScore > 0)) ? COL_GREEN : COL_WHITE);
+
+		// display remaining lives
+		for (i = 0; i < 5; i++)
+		{
+			if (i < Lives)
+				DrawImg4Pal(StatusImg, StatusImg_Pal, 0, 0, i*STATUSW+MAPX,
+					HEIGHT-STATUSH, STATUSW, STATUSH, STATUSIMGW);
+			else
+				DrawRect(i*STATUSW+MAPX, HEIGHT-STATUSH, STATUSW, STATUSH, COL_BLACK);
+		}	
+
+		// display level
+		j = 0;
+		k = Level;
+		if (k > 6) j = k - 6;
+		for (i = 0; i < 7; i++)
+		{
+			if (j > FRUITTABMAX-1) j = FRUITTABMAX-1;
+			if (j <= k)
+				DrawImg4Pal(StatusImg, StatusImg_Pal, (FruitTab[j]+1)*STATUSW, 0, MAPX+MAPWIDTH-(i+1)*STATUSW,
+					HEIGHT-STATUSH, STATUSW, STATUSH, STATUSIMGW);
+			else
+				DrawRect(MAPX+MAPWIDTH-(i+1)*STATUSW, HEIGHT-STATUSH, STATUSW, STATUSH, COL_BLACK);
+			j++;
+		}	
+
+		// display sprites
+		for (i = 0; i < 5; i++)
+		{
+			ch = &Chars[i];
+			moving = (ch->dx != 0) || (ch->dy != 0);
+			k = i;
+			if (ch->state == S_FRIGHTEN)
+			{
+				k = CH_FRIGHTEN;
+				if ((FrightenCnt < 3000/SPEED) && ((FrightenCnt & 4) == 0)) k = CH_FROZEN;
+			}
+			else if (ch->state == S_EATEN)
+				k = CH_EYES;
+
+			if ((i == CH_PACMAN) && (ch->state != 0)) // pacman dead
+				k = ch->state;
+			else
+				k = SpriteInx[k*4*4 + ch->dir*4 + (moving ? Phase : 1)]; // get sprite index
+
+			// display sprite
+			DrawBlit4Pal(SpritesImg, SpritesImg_Pal, k*SPRITEW, 0, ch->x, ch->y, SPRITEW, SPRITEH, SPRITEIMGW, COL_BLACK);
+		}
+
+		// update display
+		DispUpdate();
 	}
 
-	// fruit
-	if (FruitSpriteImg >= 0)
-		DrawBlit4Pal(SpritesImg, SpritesImg_Pal, FruitSpriteImg*SPRITEW, 0, FruitSpriteX,
-			FruitSpriteY, SPRITEW, SPRITEH, SPRITEIMGW, COL_BLACK);
-
-	// display score
-	n = DecUNum(NumBuf, Score, 0);
-	DrawText(NumBuf, 115 - n*4, HEIGHT-9, COL_WHITE);
-
-	// max. score
-	n = DecUNum(NumBuf, MaxScore, 0);
-	DrawText(NumBuf, 185 - n*4, HEIGHT-9, ((MaxScore == Score) && (MaxScore > 0)) ? COL_GREEN : COL_WHITE);
-
-	// display remaining lives
-	for (i = 0; i < 5; i++)
-	{
-		if (i < Lives)
-			DrawImg4Pal(StatusImg, StatusImg_Pal, 0, 0, i*STATUSW+MAPX,
-				HEIGHT-STATUSH, STATUSW, STATUSH, STATUSIMGW);
-		else
-			DrawRect(i*STATUSW+MAPX, HEIGHT-STATUSH, STATUSW, STATUSH, COL_BLACK);
-	}	
-
-	// display level
-	j = 0;
-	k = Level;
-	if (k > 6) j = k - 6;
-	for (i = 0; i < 7; i++)
-	{
-		if (j > FRUITTABMAX-1) j = FRUITTABMAX-1;
-		if (j <= k)
-			DrawImg4Pal(StatusImg, StatusImg_Pal, (FruitTab[j]+1)*STATUSW, 0, MAPX+MAPWIDTH-(i+1)*STATUSW,
-				HEIGHT-STATUSH, STATUSW, STATUSH, STATUSIMGW);
-		else
-			DrawRect(MAPX+MAPWIDTH-(i+1)*STATUSW, HEIGHT-STATUSH, STATUSW, STATUSH, COL_BLACK);
-		j++;
-	}	
-
-	// display sprites
-	for (i = 0; i < 5; i++)
-	{
-		ch = &Chars[i];
-		moving = (ch->dx != 0) || (ch->dy != 0);
-		k = i;
-		if (ch->state == S_FRIGHTEN)
-		{
-			k = CH_FRIGHTEN;
-			if ((FrightenCnt < 3000/SPEED) && ((FrightenCnt & 4) == 0)) k = CH_FROZEN;
-		}
-		else if (ch->state == S_EATEN)
-			k = CH_EYES;
-
-		if ((i == CH_PACMAN) && (ch->state != 0)) // pacman dead
-			k = ch->state;
-		else
-			k = SpriteInx[k*4*4 + ch->dir*4 + (moving ? Phase : 1)]; // get sprite index
-
-		// display sprite
-		DrawBlit4Pal(SpritesImg, SpritesImg_Pal, k*SPRITEW, 0, ch->x, ch->y, SPRITEW, SPRITEH, SPRITEIMGW, COL_BLACK);
-	}
-
-	// update display
-	DispUpdate();
+	// set off back buffers
+	DispSetStripOff();
 
 	// wait
 	wait *= 1000;

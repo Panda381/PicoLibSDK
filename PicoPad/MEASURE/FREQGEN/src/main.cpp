@@ -5,15 +5,23 @@
 //
 // ****************************************************************************
 // Frequency generator
-// - output to GPIO14 or GPIO15 (Speaker)
+// - PicoPad: output to GPIO14 or GPIO15 (Speaker)
+// - PicoPadVGA: output to GPIO1 or GPIO0 (Speaker)
 
 #include "include.h"
 
 #define GENERATOR_PIO		0		// used PIO
 #define GENERATOR_SM		0		// used state machine
 #define GENERATOR_OFF		0		// PIO program offset
+
+#if USE_PICOPADVGA
+#define GENERATOR_GPIO1		1		// used GPIO output 1 (better to be on same PWM slice as GENERATOR_GPIO2)
+#else
 #define GENERATOR_GPIO1		14		// used GPIO output 1 (better to be on same PWM slice as GENERATOR_GPIO2)
+#endif
+
 #define GENERATOR_GPIO2		PWMSND_GPIO	// used GPIO output 2 (speaker) (better to be on same PWM slice as GENERATOR_GPIO1)
+
 #define GENERATOR_DMA		0		// used DMA channel
 #define GENERATOR_DIV		1		// clock divider to divide clk_sys to sample rate
 
@@ -91,7 +99,12 @@ typedef struct {
 #define OUTPUT_NUM	2	// number of outputs
 u8 Output = 0;			// selected output
 const u8 OutputGPIO[OUTPUT_NUM] = { GENERATOR_GPIO1, GENERATOR_GPIO2 };
+
+#if USE_PICOPADVGA
+const char* OutputText[OUTPUT_NUM] = { "GPIO1            ", "GPIO0 (Speaker)  " };
+#else
 const char* OutputText[OUTPUT_NUM] = { "GPIO14           ", "GPIO15 (Speaker) " };
+#endif
 
 sPLL AllSysClk[SYSCLK_NUM];	// system clock
 int AllSysClkNum;		// number of system clock
@@ -699,6 +712,11 @@ void Setup(double freq)
 	pll = &AllSysClk[ibest];
 	ClockPllSysSetup(pll->fbdiv, pll->pd1, pll->pd2);
 
+#if USE_PICOPADVGA
+	// retune VGA
+	VgaRetune(ClockGetHz(CLK_PLL_SYS));
+#endif
+
 	// setup PIO
 	SetupPIO(clkbest, modebest);
 
@@ -727,6 +745,11 @@ void SetupBitNoise(u32 freq)
 
 	// setup system clock to 100 MHz
 	ClockPllSysFreq(100000);
+
+#if USE_PICOPADVGA
+	// retune VGA
+	VgaRetune(ClockGetHz(CLK_PLL_SYS));
+#endif
 
 	// restart PIO state machine to flush delay from OSR register
 	// Without a reset, X will load old delay from OSR and may remain in delay for a long time
@@ -861,6 +884,11 @@ void SetupPulseNoise()
 
 	// setup system clock to 200 MHz
 	ClockPllSysFreq(200000);
+
+#if USE_PICOPADVGA
+	// retune VGA
+	VgaRetune(ClockGetHz(CLK_PLL_SYS));
+#endif
 
 	// restart PIO state machine to flush delay from OSR register
 	// Without a reset, X will load old delay from OSR and may remain in delay for a long time
@@ -999,6 +1027,11 @@ void SetupSineNote(double freq)
 
 	// setup system clock to 200 MHz
 	ClockPllSysFreq(SINENOTE_FREQ/1000);
+
+#if USE_PICOPADVGA
+	// retune VGA
+	VgaRetune(ClockGetHz(CLK_PLL_SYS));
+#endif
 
 	// prepare increment
 	SineNoteInx = 0;

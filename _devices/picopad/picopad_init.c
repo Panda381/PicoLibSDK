@@ -16,23 +16,27 @@
 
 #include "../../global.h"	// globals
 #include "../../_lib/inc/lib_pwmsnd.h"
+#include "../../_display/minivga/minivga.h"
 #include "../../_display/st7789/st7789.h"
 #include "../../_lib/inc/lib_fat.h"
 #include "../../_lib/inc/lib_sd.h"
 #include "picopad_bat.h"
 #include "picopad_key.h"
 #include "picopad_led.h"
-#include "picopad_spk.h"
 
 // Device init
 void DeviceInit()
 {
+#if USE_MINIVGA					// use mini-VGA display with simple frame buffer
+	// start VGA on CPU 1 (must be paired with VgaStop)
+	VgaStart();
+#else
 	// initialize LEDs
 	LedInit();
 
 	// initialize display
 	DispInit(1);
-
+#endif
 	// initilize keys
 	KeyInit();
 
@@ -53,12 +57,16 @@ void DeviceInit()
 // Device terminate
 void DeviceTerm()
 {
+#if USE_MINIVGA					// use mini-VGA display with simple frame buffer
+	// terminate VGA on CPU 1 (must be paired with VgaStart)
+	VgaStop();
+#else
 	// terminate LEDs
 	LedTerm();
 
 	// terminate display
 	DispTerm();
-
+#endif
 	// terminate keys
 	KeyTerm();
 

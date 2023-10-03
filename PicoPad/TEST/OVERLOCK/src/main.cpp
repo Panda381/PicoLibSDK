@@ -28,6 +28,12 @@ int main()
 
 	while (True)
 	{
+#if USE_PICOPADVGA
+		// retune VGA
+		VgaRetune(f*1000);
+		WaitMs(2500);
+#endif
+
 		// set system clock frequency
 		ClockPllSysFreq(f);
 		printf("freq %'d Hz\n", ClockGetHz(CLK_PLL_SYS));
@@ -48,7 +54,11 @@ int main()
 		}
 
 		// shift frequency
+#if USE_PICOPADVGA
+		f += 1000;
+#else
 		f += 200;
+#endif
 
 		// quit program
 		if (KeyGet() == KEY_Y)

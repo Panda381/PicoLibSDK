@@ -1026,6 +1026,9 @@ void RunApp()
 // display progress bar
 void Progress(int i, int n, int y, u16 col)
 {
+	// wait for VSync scanline
+	VgaWaitVSync();
+
 #define PROGRESS_X 32
 #define PROGRESS_W 256
 #define PROGRESS_H 16
@@ -1134,7 +1137,7 @@ void Battery()
 		BatTxt[10] = i - bat*10 + '0';
 		BatTxt[8] = bat + '0';
 		SelFont8x16();
-		DrawTextBg2(BatTxt, (WIDTH - 13*16)/2, 25, COL_YELLOW, COL_BLACK);
+		DrawTextBg2(BatTxt, (WIDTH - 13*16)/2, 23, COL_YELLOW, COL_BLACK);
 
 		// display battery voltage progress bar
 #if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)

@@ -34,6 +34,9 @@ const char* SoundTextSel[3]  = { "OFF ", "SOME", "ALL " };
 // display open screen
 void DispOpen()
 {
+	// wait for VSync
+	VgaWaitVSync();
+
 	// clear screen
 	DrawClear();
 
@@ -78,6 +81,9 @@ int main()
 	char ch;
 	// u32 t;
 
+	// set off back buffers
+	DispSetStripOff();
+
 	// display open screen
 	DispOpen();
 	DispOpenSel();
@@ -121,6 +127,7 @@ int main()
 			case 5: Game(PLAYER_USB, PLAYER_HUMAN, False); UsbPortTerm(); RandShift(); break;
 			}
 			StopSound();
+			DispSetStripOff();
 			DispOpen();
 			DispOpenSel();
 			KeyFlush();

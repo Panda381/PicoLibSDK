@@ -12,6 +12,6 @@
 // image width: 320 pixels
 // image height: 20 lines
 // image pitch: 640 bytes
-//extern const u16 GradientImg[6400] __attribute__ ((aligned(4)));
+extern const u16 GradientImg[6400] __attribute__ ((aligned(4)));
 
 #endif // _MAIN_H

@@ -316,6 +316,9 @@ void ClockPllSysSetup(int fbdiv, u8 div1, u8 div2)
 //   freq ... required frequency in [kHz]
 void ClockPllSysFreq(u32 freq)
 {
+	// check current frequency
+	if (freq == ClockGetHz(CLK_PLL_SYS)/1000) return;
+
 	// temporary reconnect CLK_SYS to PLL_USB
 	ClockSetup(CLK_SYS, CLK_PLL_USB, 0, 0);
 

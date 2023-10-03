@@ -222,7 +222,11 @@ void NewGame(Bool shuffle)
 			}
 
 			// draw board
-			if ((i & 0x7f) == 0) DrawBoard();
+			if ((i & 0x7f) == 0)
+			{
+				DrawBoard();
+				WaitMs(20);
+			}
 		}
 
 		// stop shuffling sound
@@ -592,41 +596,50 @@ void game()
 	}
 }
 
-// main function
-int main()
+// open draw
+void OpenDraw()
 {
-	u8 ch;
-	while (True)
-	{
-		// draw title
-		DrawClear();
-		SelFont8x16();
-		DrawText2("Fifteen", (WIDTH - 7*16)/2, 0, COL_YELLOW);
+	// draw title
+	DrawClear();
+	SelFont8x16();
+	DrawText2("Fifteen", (WIDTH - 7*16)/2, 0, COL_YELLOW);
 
 #define MENUX 10
 #define MENUY (32+4)
 #define MENUDY 16
 #define MENUY2 (MENUY+4)
-		// draw game control
-		DrawText("Game control:", MENUX+16, MENUY2+0*MENUDY, COL_GREEN);
-		DrawText("arrows .... Move tile", MENUX, MENUY2+1*MENUDY, COL_WHITE);
-		DrawText("A ......... Restart game", MENUX, MENUY2+2*MENUDY, COL_WHITE);
-		DrawText("X ......... Show solution", MENUX, MENUY2+3*MENUDY, COL_WHITE);
-		DrawText("Y ......... Quit the game", MENUX, MENUY2+4*MENUDY, COL_WHITE);
+	// draw game control
+	DrawText("Game control:", MENUX+16, MENUY2+0*MENUDY, COL_GREEN);
+	DrawText("arrows .... Move tile", MENUX, MENUY2+1*MENUDY, COL_WHITE);
+	DrawText("A ......... Restart game", MENUX, MENUY2+2*MENUDY, COL_WHITE);
+	DrawText("X ......... Show solution", MENUX, MENUY2+3*MENUDY, COL_WHITE);
+	DrawText("Y ......... Quit the game", MENUX, MENUY2+4*MENUDY, COL_WHITE);
 
-		DrawText("Press key 'A' to start the game", MENUX+16, MENUY2+5*MENUDY, COL_GREEN);
+	DrawText("Press key 'A' to start the game", MENUX+16, MENUY2+5*MENUDY, COL_GREEN);
 
-		DrawText("Goal of", MENUX+16, MENUY2+7*MENUDY, COLOR(0, 186, 255));
-		DrawText("the game:", MENUX+16, MENUY2+8*MENUDY, COLOR(0, 186, 255));
-		DrawImg4Rle(GoalImg, GoalImg_Pal, 150, MENUY2+7*MENUDY, GOALW, GOALH);
+	DrawText("Goal of", MENUX+16, MENUY2+7*MENUDY, COLOR(0, 186, 255));
+	DrawText("the game:", MENUX+16, MENUY2+8*MENUDY, COLOR(0, 186, 255));
+	DrawImg4Rle(GoalImg, GoalImg_Pal, 150, MENUY2+7*MENUDY, GOALW, GOALH);
 
-		// display update
-		DispUpdate();
+	// display update
+	DispUpdate();
+}
+
+// main function
+int main()
+{
+	// open draw
+	OpenDraw();
+
+	u8 ch;
+	while (True)
+	{
 
 		ch = KeyGet();
 		if (ch == KEY_A)
 		{
 			game();
+			OpenDraw();
 		}
 		else
 			if (ch == KEY_Y) break;

@@ -125,9 +125,8 @@ int main()
 			if (Off[x] - Len[x] > TEXTHEIGHT) NewDrop(x);
 		}
 
-		// display text screen
+		// display text screen (with update)
 		DrawFTextBuf(TextBuf, COL_BLACK);
-		DispUpdate();
 
 		switch (KeyGet())
 		{

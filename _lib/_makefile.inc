@@ -30,6 +30,12 @@ CSRC += ../../../_lib/src/lib_tprint.c
 CSRC += ../../../_lib/src/lib_tree.c
 CSRC += ../../../_lib/src/lib_video.c
 
+#CSRC += ../../../_lib/3d_src/lib_d3fixed.c
+#CSRC += ../../../_lib/3d_src/lib_d3mat.c
+#CSRC += ../../../_lib/3d_src/lib_d3obj.c
+#CSRC += ../../../_lib/3d_src/lib_d3vect.c
+#CSRC += ../../../_lib/3d_src/lib_d3world.c
+
 # C big integers
 CSRC += ../../../_lib/bigint/bigint.c
 CSRC += ../../../_lib/bigint/bernoulli.c
@@ -39,3 +45,5 @@ CSRC += ../../../_lib/real/real.c
 
 # ASM sdk
 ASRC += ../../../_lib/src/vga_blitkey.S
+
+#ASRC += ../../../_lib/3d_src/lib_d3fixed_asm.S

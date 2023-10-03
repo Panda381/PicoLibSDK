@@ -33,12 +33,22 @@ const Bool LedGpioTabInv[LED_NUM] = {
 // set LED ON (inx = LED index LED?)
 void LedOn(u8 inx)
 {
+#if USE_PICOPADVGA
+	if (LedGpioTabInv[inx])
+		GPIO_Out0(LedGpioTab[inx]);
+	else
+#endif
 	GPIO_Out1(LedGpioTab[inx]);
 }
 
 // set LED OFF (inx = LED index LED?)
 void LedOff(u8 inx)
 {
+#if USE_PICOPADVGA
+	if (LedGpioTabInv[inx])
+		GPIO_Out1(LedGpioTab[inx]);
+	else
+#endif
 	GPIO_Out0(LedGpioTab[inx]);
 }
 

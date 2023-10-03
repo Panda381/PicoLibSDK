@@ -44,10 +44,16 @@ float GetBat()
 	ADC_Mux(BAT_ADC);
 
 	// get battery voltage
+#if USE_PICOPADVGA
+	float voltage = ADC_SingleU()*BAT_MUL;
+#else
+
 #if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
 	float voltage = ADC_SingleU()*BAT_MUL+ConfigGetBatDiode();
 #else
 	float voltage = ADC_SingleU()*BAT_MUL+BAT_DIODE_FV;
+#endif
+
 #endif
 	GPIO_Out0(LED_PIN); 
 	return voltage;
@@ -66,10 +72,16 @@ int GetBatInt()
 	ADC_Mux(BAT_ADC);
 
 	// get battery voltage
+#if USE_PICOPADVGA
+	int voltage = ADC_SingleUint()*BAT_MUL;
+#else
+
 #if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
 	int voltage = ADC_SingleUint()*BAT_MUL+ConfigGetBatDiodeInt();
 #else
 	int voltage = ADC_SingleUint()*BAT_MUL+BAT_DIODE_FV_INT;
+#endif
+
 #endif
 	GPIO_Out0(LED_PIN); 
 	return voltage;

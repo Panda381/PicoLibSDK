@@ -826,6 +826,8 @@ void WaitTime(u32 ms)
 // main function
 void game()
 {
+	int strip;
+
 // ---- initialize
 
 	// initialize new game
@@ -865,38 +867,48 @@ void game()
 
 // --- display
 
-		// display landscape
-		DispLandscape();
+		// display
+		for (strip = DISP_STRIP_NUM; strip > 0; strip--)
+		{
+			// next strip
+			DispSetStripNext();
 
-		// display spaceship shadow
-		DispShipShadow();
+			// display landscape
+			DispLandscape();
 
-		// display enemy shadows
-		DispEnemyShadow();
+			// display spaceship shadow
+			DispShipShadow();
 
-		// display spaceship shooting
-		DispShooting();
+			// display enemy shadows
+			DispEnemyShadow();
 
-		// display enemies
-		DispEnemy();
+			// display spaceship shooting
+			DispShooting();
 
-		// display spaceship
-		DispShip();
+			// display enemies
+			DispEnemy();
 
-		// display enemy missiles
-		DispEnemyShooting();
+			// display spaceship
+			DispShip();
 
-		// display shields
-		DispShields();
+			// display enemy missiles
+			DispEnemyShooting();
 
-		// dispay score
-		DispScore();
+			// display shields
+			DispShields();
 
-		// display current selected weapon
-		DispSelWeapon();
+			// dispay score
+			DispScore();
 
-		// display energy
-		DispEnergy();
+			// display current selected weapon
+			DispSelWeapon();
+
+			// display energy
+			DispEnergy();
+
+			// display update
+			DispUpdate();
+		}
 
 // --- main loop
 
@@ -933,7 +945,13 @@ int main()
 
 		do ch = KeyGet(); while (ch == NOKEY);
 		if (ch == KEY_Y) break;
-		if (ch == KEY_A) game();
+		if (ch == KEY_A)
+		{
+			game();
+			DispSetStripOff();
+			KeyFlush();
+			StopSound();
+		}
 	}
 	return 0;
 }

@@ -29,4 +29,8 @@ rem Compilation... Compile all projects of device "PicoPad version 1.0"
 call d_all.bat
 call c_all.bat picopad10
 
+rem Compilation... Compile all projects of device "PicoPadVGA"
+call d_all.bat
+call c_all.bat picopadvga
+
 call d_all.bat

@@ -803,6 +803,8 @@ by VGA driver rendering service.
 #define USE_PLL 1
 #undef USE_MULTICORE
 #define USE_MULTICORE 1
+#undef USE_FIFO
+#define USE_FIFO 1
 #endif
 
 #if USE_SCREENSHOT
@@ -816,6 +818,10 @@ by VGA driver rendering service.
 #undef USE_SD
 #define USE_SD 1
 #endif
+
+/*
+// Note: The following auto-configurations are disabled because they are enabled by default,
+//       so that the user will be warned if he wants to disable them on purpose.
 
 #if USE_SD
 #undef USE_SPI
@@ -915,6 +921,7 @@ by VGA driver rendering service.
 #undef USE_DMA
 #define USE_DMA 1
 #endif
+*/
 
 #if USE_USB_DEV_AUDIO || USE_USB_DEV_BTH || USE_USB_DEV_CDC || USE_USB_DEV_DFU || USE_USB_DEV_HID || \
      USE_USB_DEV_MIDI || USE_USB_DEV_MSC || USE_USB_DEV_NET || USE_USB_DEV_TMC || USE_USB_DEV_VENDOR
@@ -961,6 +968,10 @@ by VGA driver rendering service.
 #endif
 #endif
 
+/*
+// Note: The following auto-configurations are disabled because they are enabled by default,
+//       so that the user will be warned if he wants to disable them on purpose.
+
 #if USE_USB_HOST
 #undef USE_SYSTICK
 #define USE_SYSTICK 1
@@ -990,6 +1001,7 @@ by VGA driver rendering service.
 #undef USE_STREAM
 #define USE_STREAM 1
 #endif
+*/
 
 #if USE_REAL16 || USE_REAL32 || USE_REAL48 || USE_REAL64 || USE_REAL80 || USE_REAL96 || USE_REAL128 \
 	|| USE_REAL160 || USE_REAL192 || USE_REAL256 || USE_REAL384 || USE_REAL512 || USE_REAL768 \

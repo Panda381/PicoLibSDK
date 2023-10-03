@@ -993,6 +993,9 @@ MOVE_AGAIN:
 			ok = True; // can move
 		}
 
+		// wait for VSync
+		VgaWaitVSync();
+
 		// display cursor
 		t = Time();
 		DispField(p->curpos, ((((t - BlinkTime) >> 16) & 3) == 3) ? 0 : 4, col, False, False);
@@ -1098,6 +1101,9 @@ MOVE_AGAIN:
 			col = COLOR(0, 64, 255);
 			ok = True; // can move
 		}
+
+		// wait for VSync
+		VgaWaitVSync();
 
 		// display cursor
 		t = Time();

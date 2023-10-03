@@ -17,6 +17,7 @@ if "%1"=="" goto default
 
 :default
 rem ..\..\..\_c1.bat picopad08
+rem ..\..\..\_c1.bat picopadvga
 ..\..\..\_c1.bat picopad10
 
 :stop

@@ -21,7 +21,7 @@ const u16 BatCol[8] = {
 
 int main()
 {
-	int i;
+	int i, j;
 
 	pText txt;
 	TextInit(&txt);	
@@ -30,10 +30,16 @@ int main()
 	pDrawFont = FontBold8x16; // font 8x8
 	DrawFontHeight = 16; // font height
 
+	// draw background
+	DrawImgRle(BatteryImg, BatteryImg_Pal, 0, 0, 128, 240);
+
 	int k = 0;
 
 	while (True)
 	{
+		// wait for VSync
+		VgaWaitVSync();
+
 		// draw battery
 		float bat = GetBat();
 
@@ -45,8 +51,12 @@ int main()
 
 		if (i < 0) i = 0;
 		if (i > 7) i = 7;
-		DrawImgRle(BatteryImg, BatteryImg_Pal, 0, 0, 128, 240);
 
+		if (i < 7)
+		{
+			j = 6;
+			for (; j < i-1; j--) DrawRect(25, 198 - j*26, 77, 19, COL_BLACK);
+		}
 		u16 col = BatCol[i];
 		if (i > 0)
 		{

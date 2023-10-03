@@ -44,7 +44,7 @@ int main()
 		}
 
 		// display duck
-		DrawBlitPal(DuckImg+(duckx & 3)*64, DuckImg_Pal, 0, 0, duckx, 180, 64, 29, 256, 0xA158);
+		DrawBlitPal(DuckImg, DuckImg_Pal, (duckx & 3)*64, 0, duckx, 180, 64, 29, 256, 0xA158);
 
 		// increase animation phase
 		phase += ANIMSPEED;

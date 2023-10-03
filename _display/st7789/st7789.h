@@ -139,6 +139,9 @@ void DispInit(u8 rot);
 // terminate display
 void DispTerm();
 
+// wait for VSync scanline
+INLINE void VgaWaitVSync() {}
+
 #ifdef __cplusplus
 }
 #endif

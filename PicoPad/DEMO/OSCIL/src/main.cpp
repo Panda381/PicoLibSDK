@@ -9,7 +9,7 @@
 
 int main()
 {
-	int i;
+	int i, strip;
 	float f1, f2, f3; // animation phase
 	int lasty0, lasty, y;
 	u32 t, t2, dt;
@@ -23,35 +23,51 @@ int main()
 	lasty0 = GRIDY+GRIDH/2;
 	while (True)
 	{
-		// draw grid
-		DrawImg4Rle(GridImg, GridImg_Pal, GRIDX, GRIDY, GRIDW, GRIDH);
+
+	// ==== draw graphics
+
+		for (strip = DISP_STRIP_NUM; strip > 0; strip--)
+		{
+			// next strip
+			DispSetStripNext();
+
+			// load back buffer
+			DispLoad();
+
+			// draw grid
+			DrawImg4Rle(GridImg, GridImg_Pal, GRIDX, GRIDY, GRIDW, GRIDH);
+
+			// draw samples
+			lasty = lasty0;
+			for (i = 1; i < GRIDW; i++)
+			{
+				y = GRIDY + (u8)(GRIDH*(
+					sin(i*0.08 + f1)*0.25 + 
+					sin(i*0.11 + f2)*0.13 + 
+					sin(i*0.19 + f3)*0.08 + 
+					0.5));
+				DrawLine(GRIDX+i-1, lasty, GRIDX+i, y, COL_GREEN);
+				lasty = y;
+				if (i == 1) lasty0 = lasty;
+			}
+
+			// display update
+			DispUpdate();
+		}
+
+	// ==== shift graphics
 
 		// delta time
 		t2 = Time();
 		dt = t2 - t;
 		t = t2;
 
-		// draw samples
-		lasty = lasty0;
-		for (i = 1; i < GRIDW; i++)
-		{
-			y = GRIDY + (u8)(GRIDH*(
-				sin(i*0.08 + f1)*0.25 + 
-				sin(i*0.11 + f2)*0.13 + 
-				sin(i*0.19 + f3)*0.08 + 
-				0.5));
-			DrawLine(GRIDX+i-1, lasty, GRIDX+i, y, COL_GREEN);
-			lasty = y;
-			if (i == 1) lasty0 = lasty;
-		}
-
 		// increase phases
 		f1 += 0.3*dt/100000;
 		f2 += 0.58*dt/100000;
 		f3 += 1.22*dt/100000;
 
-		// display update
-		DispUpdate();
+	// ==== control
 
 		switch (KeyGet())
 		{

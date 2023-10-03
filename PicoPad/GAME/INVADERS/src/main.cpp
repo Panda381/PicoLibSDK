@@ -773,6 +773,7 @@ void Game()
 			DrawTextBg(" GAME OVER ", (WIDTH-11*8)/2, (HEIGHT-16)/2, COL_RED, COL_WHITE);
 			DispUpdate();
 			WaitMs(500);
+			StopSound();
 			KeyFlush();
 			while (KeyGet() == NOKEY) {}
 			return;
@@ -786,6 +787,9 @@ int main()
 	{
 		// new game
 		NewGame(0);
+
+		// delay
+		WaitMs(2000);
 
 		// game loop
 		Game();

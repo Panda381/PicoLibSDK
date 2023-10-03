@@ -574,7 +574,10 @@ CALIB_REDRAW:
 	// display update
 	DispUpdate();
 
+#if USE_ST7789		// use ST7789 TFT display (st7789.c, st7789.h)
+			// display backlight control config update
 	DispBacklightUpdate();
+#endif
 
 	while (True)
 	{
@@ -623,7 +626,10 @@ CALIB_REDRAW:
 		case KEY_X:
 			DrawClear();
 			DispUpdate();
+#if USE_ST7789		// use ST7789 TFT display (st7789.c, st7789.h)
+			// display backlight control config update
 			DispBacklight(0);
+#endif
 			dispoff = True;
 			break;
 

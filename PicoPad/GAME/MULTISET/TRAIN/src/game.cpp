@@ -120,6 +120,9 @@ void Psw()
 	buf2[1] = 0;
 	for (;;)
 	{
+		// wait for VSync
+		VgaWaitVSync();
+
 		// display password
 		InfoDispText(x, buf, COL_YELLOW);
 		buf2[0] = buf[pos];

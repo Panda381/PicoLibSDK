@@ -6,7 +6,7 @@
 // ****************************************************************************
 // Simple logic analyzer and noise generator.
 
-//  Analyzer input: GPIO0
+//  Analyzer input: PicoPad GPIO0, PicoPadVGA GPIO12
 //  Analyzer sample rate: 125 MHz
 //  Displays: 9600 samples
 //  Total sampling time: 76.8 us
@@ -22,10 +22,15 @@
 #define ANALYZER_PIO		0	// used PIO (common to analyzer and generator)
 #define ANALYZER_SM		0	// used sample state machine
 #define ANALYZER_OFF		0	// PIO input sample program offset
-#define ANALYZER_GPIO		0	// used GPIO input
 #define ANALYZER_DMA		0	// used DMA channel
 #define ANALYZER_DIV		1	// clock divider to divide CLK_SYS=125 MHz to sample rate
 #define ANALYZER_SAMPLES	300	// number of 32-bit samples
+
+#if USE_PICOPADVGA
+#define ANALYZER_GPIO		12	// used GPIO input
+#else
+#define ANALYZER_GPIO		0	// used GPIO input
+#endif
 
 u32 AnalyzerSamples[ANALYZER_SAMPLES];		// input samples from analyzer
 

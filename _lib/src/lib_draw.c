@@ -97,6 +97,19 @@ void SelFont5x8()
 // draw rectangle
 void DrawRect(int x, int y, int w, int h, COLTYPE col)
 {
+	// flip rectangle
+	if (w < 0)
+	{
+		x += w;
+		w = -w;
+	}
+
+	if (h < 0)
+	{
+		y += h;
+		h = -h;
+	}
+
 	// limit x
 	if (x < 0)
 	{
@@ -144,7 +157,7 @@ void DrawRect(int x, int y, int w, int h, COLTYPE col)
 			i--;
 		}
 
-		// store innder pixels
+		// store inner pixels
 		for (; i > 1; i -= 2) *d++ = col2;
 
 		// store last even pixel
@@ -169,14 +182,159 @@ void DrawRect(int x, int y, int w, int h, COLTYPE col)
 #endif // COLBITS == 4
 }
 
+// draw rectangle inverted
+void DrawRectInv(int x, int y, int w, int h)
+{
+	// flip rectangle
+	if (w < 0)
+	{
+		x += w;
+		w = -w;
+	}
+
+	if (h < 0)
+	{
+		y += h;
+		h = -h;
+	}
+
+	// limit x
+	if (x < 0)
+	{
+		w += x;
+		x = 0;
+	}
+
+	// limit w
+	if (x + w > WIDTH) w = WIDTH - x;
+	if (w <= 0) return;
+
+	// limit y
+	if (y < DispMinY)
+	{
+		h -= DispMinY - y;
+		y = DispMinY;
+	}
+
+	// limit h
+	if (y + h > DispMaxY) h = DispMaxY - y;
+	if (h <= 0) return;
+
+	// update dirty rectangle
+	DispDirtyRect(x, y, w, h);
+
+	// draw
+
+// 4 bits per pixel
+#if COLBITS == 4
+
+	u8* d0 = &pDrawBuf[x/2 + (y-DispMinY)*WIDTHLEN];
+	u8* d;
+	int i;
+	for (; h > 0; h--)
+	{
+		d = d0;
+		i = w;
+
+		// invert first odd pixel
+		if ((x & 1) != 0)
+		{
+			INVPIXEL4_ODD(d);
+			d++;
+			i--;
+		}
+
+		// invert inner pixels
+		for (; i > 1; i -= 2)
+		{
+			*d = ~*d;
+			d++;
+		}
+
+		// store last even pixel
+		if (i > 0) INVPIXEL4_EVEN(d);
+
+		// shift buffer address
+		d0 += WIDTHLEN;
+	}
+
+// 8 or 16 bits per pixel
+#else // COLBITS == 4
+
+	FRAMETYPE* d = &pDrawBuf[x + (y-DispMinY)*WIDTH];
+	int wb = WIDTH - w;
+	int i;
+	for (; h > 0; h--)
+	{
+		for (i = w; i > 0; i--)
+		{
+			*d = ~*d;
+			d++;
+		}
+		d += wb;
+	}
+
+#endif // COLBITS == 4
+}
+
+// Draw frame with width
+void DrawFrameW(int x, int y, int w, int h, COLTYPE col, int width)
+{
+	// flip frame
+	if (w < 0)
+	{
+		x += w;
+		w = -w;
+	}
+
+	if (h < 0)
+	{
+		y += h;
+		h = -h;
+	}
+
+	if ((w == 0) || (h == 0)) return;
+
+	DrawRect(x, y, w-width, width, col);
+	DrawRect(x+w-width, y, width, h-width, col);
+	DrawRect(x+width, y+h-width, w-width, width, col);
+	DrawRect(x, y+width, width, h-width, col);
+}
+
 // Draw frame
 void DrawFrame(int x, int y, int w, int h, COLTYPE col)
 {
-	if ((w <= 0) || (h <= 0)) return;
-	DrawRect(x, y, w-1, 1, col);
-	DrawRect(x+w-1, y, 1, h-1, col);
-	DrawRect(x+1, y+h-1, w-1, 1, col);
-	DrawRect(x, y+1, 1, h-1, col);
+	DrawFrameW(x, y, w, h, col, 1);
+}
+
+// Draw frame inverted with width
+void DrawFrameInvW(int x, int y, int w, int h, int width)
+{
+	// flip frame
+	if (w < 0)
+	{
+		x += w;
+		w = -w;
+	}
+
+	if (h < 0)
+	{
+		y += h;
+		h = -h;
+	}
+
+	if ((w == 0) || (h == 0)) return;
+
+	DrawRectInv(x, y, w-width, width);
+	DrawRectInv(x+w-width, y, width, h-width);
+	DrawRectInv(x+width, y+h-width, w-width, width);
+	DrawRectInv(x, y+width, width, h-width);
+}
+
+// Draw frame inverted
+void DrawFrameInv(int x, int y, int w, int h)
+{
+	DrawFrameInvW(x, y, w, h, 1);
 }
 
 // clear canvas with color
@@ -216,9 +374,61 @@ void DrawPoint(int x, int y, COLTYPE col)
 	DispDirtyPoint(x, y);
 }
 
-// Draw line
-void DrawLine(int x1, int y1, int x2, int y2, COLTYPE col)
+// Draw point inverted
+void DrawPointInv(int x, int y)
 {
+	// check coordinates
+	if (((u32)x >= (u32)WIDTH) || (y < DispMinY) || (y >= DispMaxY)) return;
+
+	// draw pixel
+
+// 4 bits per pixel
+#if COLBITS == 4
+
+	u8* d = &pDrawBuf[x/2 + (y-DispMinY)*WIDTHLEN];
+	INVPIXEL4(d,x);
+
+// 8 or 16 bits per pixel
+#else // COLBITS == 4
+
+	FRAMETYPE* d = &pDrawBuf[x + (y-DispMinY)*WIDTH];
+	*d = ~*d;
+
+#endif // COLBITS == 4
+
+	// update dirty area by rectangle (must be in valid limits)
+	DispDirtyPoint(x, y);
+}
+
+// only for 8, 15 or 16-bit color bits
+#if COLBITS >= 8
+
+// get point from frame buffer (returns black color if out on range)
+COLTYPE DrawGetPoint(int x, int y)
+{
+	// check coordinates
+	if (((u32)x >= (u32)WIDTH) || ((u32)y >= (u32)HEIGHT)) return COL_BLACK;
+
+	// get color
+	return FrameBuf[x + y*WIDTHLEN];
+}
+
+#endif // COLBITS >= 8
+
+// Draw line with clipping
+void DrawLineClip(int x1, int y1, int x2, int y2, COLTYPE col, int xmin, int xmax, int ymin, int ymax)
+{
+	// limit clipping
+	if (xmin < 0) xmin = 0;
+	if (xmax < 0) xmax = 0;
+	if (xmax > WIDTH) xmax = WIDTH;
+	if (xmin > xmax) xmin = xmax;
+
+	if (ymin < DispMinY) ymin = DispMinY;
+	if (ymax < DispMinY) ymax = DispMinY;
+	if (ymax > DispMaxY) ymax = DispMaxY;
+	if (ymin > ymax) ymin = ymax;
+
 	// difference of coordinates
 	int dx = x2 - x1;
 	int dy = y2 - y1;
@@ -257,7 +467,7 @@ void DrawLine(int x1, int y1, int x2, int y2, COLTYPE col)
 		x2 += sx;
 		for (; x1 != x2; x1 += sx)
 		{
-			if (((u32)x1 < (u32)WIDTH) && (y1 >= DispMinY) && (y1 < DispMaxY))
+			if ((x1 >= xmin) && (x1 < xmax) && (y1 >= ymin) && (y1 < ymax))
 			{
 				d = &d0[x1/2];
 				SETPIXEL4(d, x1, col);
@@ -283,7 +493,7 @@ void DrawLine(int x1, int y1, int x2, int y2, COLTYPE col)
 		y2 += sy;
 		for (; y1 != y2; y1 += sy)
 		{
-			if (((u32)x1 < (u32)WIDTH) && (y1 >= DispMinY) && (y1 < DispMaxY))
+			if ((x1 >= xmin) && (x1 < xmax) && (y1 >= ymin) && (y1 < ymax))
 			{
 				d = &d0[x1/2];
 				SETPIXEL4(d, x1, col);
@@ -315,7 +525,7 @@ void DrawLine(int x1, int y1, int x2, int y2, COLTYPE col)
 		x2 += sx;
 		for (; x1 != x2; x1 += sx)
 		{
-			if (((u32)x1 < (u32)WIDTH) && (y1 >= DispMinY) && (y1 < DispMaxY))
+			if ((x1 >= xmin) && (x1 < xmax) && (y1 >= ymin) && (y1 < ymax))
 			{
 				*d = col;
 				DispDirtyPoint(x1, y1);
@@ -341,7 +551,7 @@ void DrawLine(int x1, int y1, int x2, int y2, COLTYPE col)
 		y2 += sy;
 		for (; y1 != y2; y1 += sy)
 		{
-			if (((u32)x1 < (u32)WIDTH) && (y1 >= DispMinY) && (y1 < DispMaxY))
+			if ((x1 >= xmin) && (x1 < xmax) && (y1 >= ymin) && (y1 < ymax))
 			{
 				*d = col;
 				DispDirtyPoint(x1, y1);
@@ -362,6 +572,409 @@ void DrawLine(int x1, int y1, int x2, int y2, COLTYPE col)
 
 }
 
+// Draw line
+void DrawLine(int x1, int y1, int x2, int y2, COLTYPE col)
+{
+	DrawLineClip(x1, y1, x2, y2, col, 0, WIDTH, 0, HEIGHT);
+}
+
+// Draw line with width
+// - Lines are drawn extended, with the same one coordinate,
+//   to ensure the same progression of increments. The ends of
+//   the lines are clipped to the correct length.
+// w ... width of line in pixels
+// round ... draw round ends
+void DrawLineW(int x1, int y1, int x2, int y2, COLTYPE col, int w, Bool round)
+{
+	int k, w2, w4, x1e, x2e, y1e, y2e, d;
+	if (w <= 1)
+	{
+		if (w == 1) DrawLine(x1, y1, x2, y2, col);
+		return;
+	}
+
+	// difference of coordinates
+	int dx = x2 - x1;
+	int dy = y2 - y1;
+	int dxabs = (dx < 0) ? -dx : dx;
+	int dyabs = (dy < 0) ? -dy : dy;
+
+	// draw round ends
+	if (round)
+	{
+		DrawFillCircle(x1, y1, w/2, col);
+		DrawFillCircle(x2, y2, w/2, col);
+	}
+
+	// steeply in X direction, X is prefered as base
+	if (dxabs >= dyabs)
+	{
+		// provide direction from left to right (increase x)
+		if (dx < 0)
+		{
+			dx = dxabs;
+			k = x1; x1 = x2; x2 = k;
+			k = y1; y1 = y2; y2 = k;
+			dy = y2 - y1;
+		}
+
+		// width correction
+		w += (w*dyabs + dxabs)/(dxabs*3);
+		w2 = w/2;
+		w4 = w/4;
+
+		// extended coordinates
+		x1e = x1 - w4;
+		x2e = x2 + w4;
+		if (dy > 0)
+			d = (w4*dy + dx/2)/dx;
+		else
+			d = (w4*dy - dx/2)/dx;
+		y1e = y1 - w2 - d;
+		y2e = y2 - w2 + d;
+
+		// draw lines shifted in Y direction, X coordinate is constant
+		for (; w > 0; w--)
+		{
+			// delta X of clipping
+			d = (w - w2)*dy;
+			if (d > 0)
+				d = (d + dx)/(dx*2);
+			else
+				d = (d - dx)/(dx*2);
+
+			// draw line with clipping
+			DrawLineClip(x1e, y1e, x2e, y2e, col, x1+d, x2+d+1, 0, HEIGHT);
+			y1e++;
+			y2e++;
+		}
+	}
+
+	// steeply in Y direction, Y is prefered as base
+	else
+	{
+		// provide direction from top to bottom (increase y)
+		if (dy < 0)
+		{
+			dy = dyabs;
+			k = x1; x1 = x2; x2 = k;
+			k = y1; y1 = y2; y2 = k;
+			dx = x2 - x1;
+		}
+
+		// width correction
+		w += (w*dxabs + dyabs)/(dyabs*3);
+		w2 = w/2;
+		w4 = w/4;
+
+		// extended coordinates
+		y1e = y1 - w4;
+		y2e = y2 + w4;
+		if (dx > 0)
+			d = (w4*dx + dy/2)/dy;
+		else
+			d = (w4*dx - dy/2)/dy;
+		x1e = x1 - w2 - d;
+		x2e = x2 - w2 + d;
+
+		// draw lines shifted in X direction, Y coordinate is constant
+		for (; w > 0; w--)
+		{
+			// delta Y of clipping
+			d = (w - w2)*dx;
+			if (d > 0)
+				d = (d + dy)/(dy*2);
+			else
+				d = (d - dy)/(dy*2);
+
+			// draw line with clipping
+			DrawLineClip(x1e, y1e, x2e, y2e, col, 0, WIDTH, y1+d, y2+d+1);
+			x1e++;
+			x2e++;
+		}
+	}
+}
+
+// Draw line inverted with clipping
+void DrawLineInvClip(int x1, int y1, int x2, int y2, int xmin, int xmax, int ymin, int ymax)
+{
+	// limit clipping
+	if (xmin < 0) xmin = 0;
+	if (xmax < 0) xmax = 0;
+	if (xmax > WIDTH) xmax = WIDTH;
+	if (xmin > xmax) xmin = xmax;
+
+	if (ymin < DispMinY) ymin = DispMinY;
+	if (ymax < DispMinY) ymax = DispMinY;
+	if (ymax > DispMaxY) ymax = DispMaxY;
+	if (ymin > ymax) ymin = ymax;
+
+	// difference of coordinates
+	int dx = x2 - x1;
+	int dy = y2 - y1;
+
+	// increment X
+	int sx = 1;
+	if (dx < 0)
+	{
+		sx = -1;
+		dx = -dx;
+	}
+
+	// increment Y
+	int sy = 1;
+	int ddy = WIDTHLEN;
+	if (dy < 0)
+	{
+		sy = -1;
+		ddy = -ddy;
+		dy = -dy;
+	}
+
+// 4 bits per pixel
+#if COLBITS == 4
+
+	// destination address
+	FRAMETYPE* d0 = &pDrawBuf[(y1-DispMinY)*WIDTHLEN];
+	FRAMETYPE* d;
+
+	// steeply in X direction, X is prefered as base
+	if (dx > dy)
+	{
+		int m = 2*dy;
+		int p = m - dx;
+		dx = 2*dx;
+		x2 += sx;
+		for (; x1 != x2; x1 += sx)
+		{
+			if ((x1 >= xmin) && (x1 < xmax) && (y1 >= ymin) && (y1 < ymax))
+			{
+				d = &d0[x1/2];
+				INVPIXEL4(d, x1);
+				DispDirtyPoint(x1, y1);
+			}
+
+			if (p > 0)
+			{
+				d0 += ddy;
+				y1 += sy;;
+				p -= dx;
+			}
+			p += m;
+		}
+	}
+
+	// steeply in Y direction, Y is prefered as base
+	else
+	{
+		int m = 2*dx;
+		int p = m - dy;
+		dy = 2*dy;
+		y2 += sy;
+		for (; y1 != y2; y1 += sy)
+		{
+			if ((x1 >= xmin) && (x1 < xmax) && (y1 >= ymin) && (y1 < ymax))
+			{
+				d = &d0[x1/2];
+				INVPIXEL4(d, x1);
+				DispDirtyPoint(x1, y1);
+			}
+
+			if (p > 0)
+			{
+				x1 += sx;
+				p -= dy;
+			}
+			p += m;
+			d0 += ddy;
+		}
+	}
+
+// 8 or 16 bits per pixel
+#else // COLBITS == 4
+
+	// destination address
+	FRAMETYPE* d = &pDrawBuf[x1 + (y1-DispMinY)*WIDTHLEN];
+
+	// steeply in X direction, X is prefered as base
+	if (dx > dy)
+	{
+		int m = 2*dy;
+		int p = m - dx;
+		dx = 2*dx;
+		x2 += sx;
+		for (; x1 != x2; x1 += sx)
+		{
+			if ((x1 >= xmin) && (x1 < xmax) && (y1 >= ymin) && (y1 < ymax))
+			{
+				*d = ~*d;
+				DispDirtyPoint(x1, y1);
+			}
+
+			if (p > 0)
+			{
+				d += ddy;
+				y1 += sy;;
+				p -= dx;
+			}
+			p += m;
+			d += sx;
+		}
+	}
+
+	// steeply in Y direction, Y is prefered as base
+	else
+	{
+		int m = 2*dx;
+		int p = m - dy;
+		dy = 2*dy;
+		y2 += sy;
+		for (; y1 != y2; y1 += sy)
+		{
+			if ((x1 >= xmin) && (x1 < xmax) && (y1 >= ymin) && (y1 < ymax))
+			{
+				*d = ~*d;
+				DispDirtyPoint(x1, y1);
+			}
+
+			if (p > 0)
+			{
+				d += sx;
+				x1 += sx;
+				p -= dy;
+			}
+			p += m;
+			d += ddy;
+		}
+	}
+
+#endif // COLBITS == 4
+
+}
+
+// Draw line inverted
+void DrawLineInv(int x1, int y1, int x2, int y2)
+{
+	DrawLineInvClip(x1, y1, x2, y2, 0, WIDTH, 0, HEIGHT);
+}
+
+// Draw line inverted with width
+// - Lines are drawn extended, with the same one coordinate,
+//   to ensure the same progression of increments. The ends of
+//   the lines are clipped to the correct length.
+// w ... width of line in pixels
+// round ... draw round ends
+void DrawLineInvW(int x1, int y1, int x2, int y2, int w, Bool round)
+{
+	int k, w2, w4, x1e, x2e, y1e, y2e, d;
+	if (w <= 1)
+	{
+		if (w == 1) DrawLineInv(x1, y1, x2, y2);
+		return;
+	}
+
+	// difference of coordinates
+	int dx = x2 - x1;
+	int dy = y2 - y1;
+	int dxabs = (dx < 0) ? -dx : dx;
+	int dyabs = (dy < 0) ? -dy : dy;
+
+	// draw round ends
+	if (round)
+	{
+		DrawFillCircleInv(x1, y1, w/2);
+		DrawFillCircleInv(x2, y2, w/2);
+	}
+
+	// steeply in X direction, X is prefered as base
+	if (dxabs >= dyabs)
+	{
+		// provide direction from left to right (increase x)
+		if (dx < 0)
+		{
+			dx = dxabs;
+			k = x1; x1 = x2; x2 = k;
+			k = y1; y1 = y2; y2 = k;
+			dy = y2 - y1;
+		}
+
+		// width correction
+		w += (w*dyabs + dxabs)/(dxabs*3);
+		w2 = w/2;
+		w4 = w/4;
+
+		// extended coordinates
+		x1e = x1 - w4;
+		x2e = x2 + w4;
+		if (dy > 0)
+			d = (w4*dy + dx/2)/dx;
+		else
+			d = (w4*dy - dx/2)/dx;
+		y1e = y1 - w2 - d;
+		y2e = y2 - w2 + d;
+
+		// draw lines shifted in Y direction, X coordinate is constant
+		for (; w > 0; w--)
+		{
+			// delta X of clipping
+			d = (w - w2)*dy;
+			if (d > 0)
+				d = (d + dx)/(dx*2);
+			else
+				d = (d - dx)/(dx*2);
+
+			// draw line with clipping
+			DrawLineInvClip(x1e, y1e, x2e, y2e, x1+d, x2+d+1, 0, HEIGHT);
+			y1e++;
+			y2e++;
+		}
+	}
+
+	// steeply in Y direction, Y is prefered as base
+	else
+	{
+		// provide direction from top to bottom (increase y)
+		if (dy < 0)
+		{
+			dy = dyabs;
+			k = x1; x1 = x2; x2 = k;
+			k = y1; y1 = y2; y2 = k;
+			dx = x2 - x1;
+		}
+
+		// width correction
+		w += (w*dxabs + dyabs)/(dyabs*3);
+		w2 = w/2;
+		w4 = w/4;
+
+		// extended coordinates
+		y1e = y1 - w4;
+		y2e = y2 + w4;
+		if (dx > 0)
+			d = (w4*dx + dy/2)/dy;
+		else
+			d = (w4*dx - dy/2)/dy;
+		x1e = x1 - w2 - d;
+		x2e = x2 - w2 + d;
+
+		// draw lines shifted in X direction, Y coordinate is constant
+		for (; w > 0; w--)
+		{
+			// delta Y of clipping
+			d = (w - w2)*dx;
+			if (d > 0)
+				d = (d + dy)/(dy*2);
+			else
+				d = (d - dy)/(dy*2);
+
+			// draw line with clipping
+			DrawLineInvClip(x1e, y1e, x2e, y2e, 0, WIDTH, y1+d, y2+d+1);
+			x1e++;
+			x2e++;
+		}
+	}
+}
+
 // Draw filled circle
 void DrawFillCircle(int x0, int y0, int r, COLTYPE col)
 {
@@ -376,6 +989,24 @@ void DrawFillCircle(int x0, int y0, int r, COLTYPE col)
 		for (x = -r; x <= r; x++)
 		{
 			if ((x*x + y*y) <= r2) DrawPoint(x+x0, y+y0, col);
+		}
+	}
+}
+
+// Draw filled circle inverted
+void DrawFillCircleInv(int x0, int y0, int r)
+{
+	int x, y;
+	if (r <= 0) return;
+	int r2 = r*(r-1);
+	r--;
+
+	// full circle
+	for (y = -r; y <= r; y++)
+	{
+		for (x = -r; x <= r; x++)
+		{
+			if ((x*x + y*y) <= r2) DrawPointInv(x+x0, y+y0);
 		}
 	}
 }
@@ -411,6 +1042,226 @@ void DrawCircle(int x0, int y0, int r, COLTYPE col)
 		p += 2*x + 1;
 	}
 }
+
+// Draw circle inverted
+void DrawCircleInv(int x0, int y0, int r)
+{
+	int x, y;
+	if (r <= 0) return;
+	r--;
+
+	x = 0;
+	y = r;
+	int p = 1 - r;
+
+	while (x <= y)
+	{
+		DrawPointInv(x0+y, y0-x);
+		DrawPointInv(x0+x, y0-y);
+		DrawPointInv(x0-x, y0-y);
+		DrawPointInv(x0-y, y0-x);
+		DrawPointInv(x0-y, y0+x);
+		DrawPointInv(x0-x, y0+y);
+		DrawPointInv(x0+x, y0+y);
+		DrawPointInv(x0+y, y0+x);
+
+		x++;
+		if (p > 0)
+		{
+			y--;
+			p -= 2*y;
+		}
+		p += 2*x + 1;
+	}
+}
+
+// Draw ring
+void DrawRing(int x0, int y0, int rin, int rout, COLTYPE col)
+{
+	int x, y, d;
+
+	// draw circle
+	if (rin == rout)
+	{
+		DrawCircle(x0, y0, rout, col);
+		return;
+	}
+
+	// check radius order
+	if (rin > rout)
+	{
+		x = rin;
+		rin = rout;
+		rout = x;
+	}
+
+	// inner radius is 0, draw fill circle
+	if (rin <= 0)
+	{
+		DrawFillCircle(x0, y0, rout, col);
+		return;
+	}
+
+	// prepare radius
+	int rin2 = rin*(rin-1);
+	int rout2 = rout*(rout-1);
+	rout--;
+
+	// full circle
+	for (y = -rout; y <= rout; y++)
+	{
+		for (x = -rout; x <= rout; x++)
+		{
+			d = x*x + y*y;
+			if ((d >= rin2) && (d <= rout2)) DrawPoint(x+x0, y+y0, col);
+		}
+	}
+}
+
+// Draw ring inverted
+void DrawRingInv(int x0, int y0, int rin, int rout)
+{
+	int x, y, d;
+
+	// draw circle
+	if (rin == rout)
+	{
+		DrawCircleInv(x0, y0, rout);
+		return;
+	}
+
+	// check radius order
+	if (rin > rout)
+	{
+		x = rin;
+		rin = rout;
+		rout = x;
+	}
+
+	// inner radius is 0, draw fill circle
+	if (rin <= 0)
+	{
+		DrawFillCircleInv(x0, y0, rout);
+		return;
+	}
+
+	// prepare radius
+	int rin2 = rin*(rin-1);
+	int rout2 = rout*(rout-1);
+	rout--;
+
+	// full circle
+	for (y = -rout; y <= rout; y++)
+	{
+		for (x = -rout; x <= rout; x++)
+		{
+			d = x*x + y*y;
+			if ((d >= rin2) && (d <= rout2)) DrawPointInv(x+x0, y+y0);
+		}
+	}
+}
+
+// only for 8, 15 or 16-bit color bits
+#if COLBITS >= 8
+
+int DrawFillMinX, DrawFillMaxX, DrawFillMinY, DrawFillMaxY;
+
+// Fill sub-area
+static void DrawSubFill(int x, int y, COLTYPE fnd, COLTYPE col)
+{
+	// address in FrameBuf
+	COLTYPE* s = &FrameBuf[x + y*WIDTHLEN];
+
+	// save start position -> x2, s2
+	int x2 = x;
+	COLTYPE* s2 = s;
+
+	// fill start point
+	*s = col;
+
+	// update dirty area
+	if (y < DrawFillMinY) DrawFillMinY = y;
+	if (y > DrawFillMaxY) DrawFillMaxY = y;
+
+	// search start of segment -> x1, s1
+	while ((x > 0) && (s[-1] == fnd))
+	{
+		x--;
+		s--;
+		*s = col;
+	}
+	int x1 = x;
+	COLTYPE* s1 = s;
+
+	// search end of segment -> x2, s2
+	while ((x2 < WIDTH-1) && (s2[1] == fnd))
+	{
+		x2++;
+		s2++;
+		*s2 = col;
+	}
+
+	// search UP segments
+	if (y > 0)
+	{
+		x = x1;
+		s = s1 - WIDTHLEN;
+		y--;
+		while (x <= x2)
+		{
+			if (*s == fnd) DrawSubFill(x, y, fnd, col);
+			x++;
+			s++;
+		}
+		y++;
+	}
+
+	// search DOWN segments
+	if (y < HEIGHT-1)
+	{
+		x = x1;
+		s = s1 + WIDTHLEN;
+		y++;
+		while (x <= x2)
+		{
+			if (*s == fnd) DrawSubFill(x, y, fnd, col);
+			x++;
+			s++;
+		}
+	}
+
+	// update dirty arrea
+	if (x1 < DrawFillMinX) DrawFillMinX = x1;
+	if (x2 > DrawFillMaxX) DrawFillMaxX = x2;
+}
+
+// Fill area in FrameBuf with color
+//  x ... X coordinate
+//  y ... Y coordinate
+//  col ... color to fill
+void DrawFill(int x, int y, COLTYPE col)
+{
+	// check coordinates
+	if (((u32)x >= (u32)WIDTH) || ((u32)y >= (u32)HEIGHT)) return;
+
+	// get color to search
+	COLTYPE fnd = FrameBuf[x + y*WIDTHLEN];
+
+	// fill
+	if (fnd != col)
+	{
+		DrawFillMinX = WIDTH;
+		DrawFillMaxX = 0;
+		DrawFillMinY = HEIGHT;
+		DrawFillMaxY = 0;
+
+		DrawSubFill(x, y, fnd, col);
+
+		DispDirtyRect(DrawFillMinX, DrawFillMinY, DrawFillMaxX+1-DrawFillMinX, DrawFillMaxY+1-DrawFillMinY);
+	}
+}
+
+#endif // COLBITS >= 8
 
 // Draw character (transparent background)
 void DrawChar(char ch, int x, int y, COLTYPE col)
@@ -1530,6 +2381,55 @@ void DrawImg(const COLTYPE* src, int xs, int ys, int xd, int yd, int w, int h, i
 
 }
 
+// only for 8, 15 or 16-bit color bits
+#if COLBITS >= 8
+
+// get image content from frame buffer (remaining area fills black)
+void DrawGetImg(COLTYPE* dst, int x, int y, int w, int h)
+{
+	// fill destination buffer black
+	memset(dst, 0, w*h*sizeof(COLTYPE));
+
+	// limit coordinate X
+	int wd = w;
+	const COLTYPE* src = &FrameBuf[x + y*WIDTHLEN];
+	if (x < 0)
+	{
+		w += x;
+		src -= x;
+		dst -= x;
+		x = 0;
+	}
+
+	// limit w
+	if (x + w > WIDTH) w = WIDTH - x;
+	if (w <= 0) return;
+
+	// limit coordinate Y
+	if (y < 0)
+	{
+		h += y;
+		y *= WIDTHLEN;
+		src -= y;
+		dst -= y;
+		y = 0;
+	}
+
+	// limit h
+	if (y + h > HEIGHT) h = HEIGHT - y;
+	if (h <= 0) return;
+
+	// copy image
+	for (; h > 0; h--)
+	{
+		memcpy(dst, src, w*sizeof(COLTYPE));
+		src += WIDTHLEN;
+		dst += wd;
+	}
+}
+
+#endif // COLBITS >= 8
+
 // only for 15 or 16-bit color bits
 #if COLBITS >= 15
 
@@ -2165,7 +3065,7 @@ void DrawImgRle(const u8* src, int xd, int yd, int w, int h)
 //  w .... width
 //  h .... height
 //  ws ... source total width (in pixels)
-//  col = transparency key color
+//  col ... transparency key color
 void DrawBlit(const COLTYPE* src, int xs, int ys, int xd, int yd, int w, int h, int ws, COLTYPE col)
 {
 	// limit coordinate X
@@ -2287,6 +3187,91 @@ void DrawBlit(const COLTYPE* src, int xs, int ys, int xd, int yd, int w, int h, 
 #endif // COLBITS != 4
 
 }
+
+// only for 8, 15 or 16-bit color bits
+#if COLBITS >= 8
+
+// Draw image with transparency and color substitution
+//  src ... image data
+//  xs ... source X
+//  ys ... source Y
+//  xd ... destination X
+//  yd ... destination Y
+//  w .... width
+//  h .... height
+//  ws ... source total width (in pixels)
+//  col ... transparency key color
+//  fnd ... color to find
+//  subst ... replaced color
+void DrawBlitSubst(const COLTYPE* src, int xs, int ys, int xd, int yd, int w, int h, int ws, COLTYPE col, COLTYPE fnd, COLTYPE subst)
+{
+	// limit coordinate X
+	if (xs < 0)
+	{
+		w += xs;
+		xd += -xs;
+		xs = 0;
+	}
+
+	if (xd < 0)
+	{
+		w += xd;
+		xs += -xd;
+		xd = 0;
+	}
+
+	// limit w
+	if (xd + w > WIDTH) w = WIDTH - xd;
+	if (xs + w > ws) w = ws - xs;
+	if (w <= 0) return;
+
+	// limit coordinate Y
+	if (ys < 0)
+	{
+		h += ys;
+		yd += -ys;
+		ys = 0;
+	}
+
+	if (yd < DispMinY)
+	{
+		h -= DispMinY-yd;
+		ys += DispMinY-yd;
+		yd = DispMinY;
+	}
+
+	// limit h
+	if (yd + h > DispMaxY) h = DispMaxY - yd;
+	if (h <= 0) return;
+
+	// update dirty rectangle
+	DispDirtyRect(xd, yd, w, h);
+
+	// draw image
+	FRAMETYPE* d = &pDrawBuf[xd + (yd-DispMinY)*WIDTHLEN];
+	int i;
+	COLTYPE c;
+	const COLTYPE* s = &src[xs + ys*ws];
+	int wbd = WIDTHLEN - w;
+	int wbs = ws - w;
+	for (; h > 0; h--)
+	{
+		for (i = w; i > 0; i--)
+		{
+			c = *s++;
+			if (c != col)
+			{
+				if (c == fnd) c = subst;
+				*d = c;
+			}
+			d++;
+		}
+		d += wbd;
+		s += wbs;
+	}
+}
+
+#endif // COLBITS >= 8
 
 // only for 15 or 16-bit color bits
 #if COLBITS >= 15

@@ -26,63 +26,63 @@ extern "C" u64 SqrU32(u32 a);
 extern "C" u64 SqrS32(s32 a);
 
 // fixed integer type
-typedef s32 fixed;
+typedef s32 fix;
 
 // convert double number to fixed-point number
-INLINE fixed DblToFixed(double num)
+INLINE fix DblToFix(double num)
 {
-	return (fixed)(num * (1 << 25));
+	return (fix)(num * (1 << 25));
 }
 
 // check if fixed point number is negative
-INLINE Bool FixedIsNeg(fixed a)
+INLINE Bool FixIsNeg(fix a)
 {
 	return a < 0;
 }
 
 // add two fixed point numbers
-INLINE fixed FixedAdd(fixed a, fixed b)
+INLINE fix FixAdd(fix a, fix b)
 {
 	return a + b;
 }
 
 // subtract two fixed point numbers
-INLINE fixed FixedSub(fixed a, fixed b)
+INLINE fix FixSub(fix a, fix b)
 {
 	return a - b;
 }
 
 // check if number is greater
-INLINE Bool FixedGr(fixed a, fixed b)
+INLINE Bool FixGr(fix a, fix b)
 {
 	return a > b;
 }
 
 // negate fixed point number
-INLINE fixed FixedNeg(fixed a)
+INLINE fix FixNeg(fix a)
 {
 	return -a;
 }
 
 // multiply fixed point number by 2
-INLINE fixed FixedMul2(fixed a)
+INLINE fix FixMul2(fix a)
 {
 	return a << 1;
 }
 
 // multiply two unsigned fixed point integers
-extern "C" fixed FixedUMul(fixed a, fixed b);
+extern "C" fix FixUMul(fix a, fix b);
 
 // multiply two signed fixed point integers
-extern "C" fixed FixedMul(fixed a, fixed b);
+extern "C" fix FixMul(fix a, fix b);
 
 // square power of unsigned fixed point integer
-extern "C" fixed FixedUSqr(fixed a);
+extern "C" fix FixUSqr(fix a);
 
 // square power of signed fixed point integer
-extern "C" fixed FixedSqr(fixed a);
+extern "C" fix FixSqr(fix a);
 
 // calculate Mandelbrot fixed integer
-extern "C" void MandelFixed2(u8* dst, fixed ci);
+extern "C" void MandelFix(u16* dst, fix ci);
 
 #endif // _FIXED_H

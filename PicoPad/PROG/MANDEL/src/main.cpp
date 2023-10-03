@@ -92,7 +92,7 @@ Bool Ok[HEIGHT];
 // Mandelbrot state
 int CurY = HEIGHT; // current Y (HEIGHT = not active)
 int IncY = 1; // current increment Y
-fixed X0i, Y0i, SXi, SYi; // increment in fixed format
+fix X0i, Y0i, SXi, SYi; // increment in fixed format
 float X0f, Y0f, SXf, SYf; // increment in float format
 double X0d, Y0d, SXd, SYd, Cid; // increment in double format
 big X0b, Y0b, SXb, SYb; // increment in big fixed format
@@ -106,10 +106,12 @@ double Core1Cid; // increment in double format
 
 #if RENDER_2CORES // use both cores
 
-void (* volatile QCore1Fnc)() = NULL; // core 1 remote function
+#if !USE_PICOPADVGA
+
+void (* volatile VgaCore1Fnc)() = NULL; // core 1 remote function
 
 // core 1 remote
-void QCore1()
+void VgaCore1()
 {
 	void (*fnc)();
 
@@ -120,36 +122,38 @@ void QCore1()
 		dmb();
 
 		// execute remote function
-		fnc = QCore1Fnc;
+		fnc = VgaCore1Fnc;
 		if (fnc != NULL)
 		{
 			fnc();
 			dmb();
-			QCore1Fnc = NULL;
+			VgaCore1Fnc = NULL;
 		}
 	}
 }
 
 // execute core 1 remote function (QVGA must be running)
-void QCore1Exec(void (*fnc)())
+void VgaCore1Exec(void (*fnc)())
 {
 	dmb();
-	QCore1Fnc = fnc;
+	VgaCore1Fnc = fnc;
 	dmb();
 }
 
 // check if core 1 is busy (executing remote function)
-Bool QCore1Busy()
+Bool VgaCore1Busy()
 {
 	dmb();
-	return QCore1Fnc != NULL;
+	return VgaCore1Fnc != NULL;
 }
 
 // wait if core 1 is busy (executing remote function)
-void QCore1Wait()
+void VgaCore1Wait()
 {
-	while (QCore1Busy()) {}
+	while (VgaCore1Busy()) {}
 }
+
+#endif // !USE_PICOPADVGA
 
 #endif // RENDER_2CORES // use both cores
 
@@ -158,7 +162,7 @@ void MandelUpdate()
 {
 #if RENDER_2CORES // use both cores
 	// wait for core1
-	QCore1Wait();
+	VgaCore1Wait();
 #endif
 
 	// current Y
@@ -168,7 +172,7 @@ void MandelUpdate()
 	// ci = y*sy + y0;
 	SYd = -3*Size/HEIGHT * IncY;
 	SYf = (float)SYd;
-	SYi = DblToFixed(SYd);
+	SYi = DblToFix(SYd);
 	SYb = DblToBig(SYd);
 
 	// start Ci
@@ -184,7 +188,7 @@ void MandelStart()
 {
 #if RENDER_2CORES // use both cores
 	// wait for core1
-	QCore1Wait();
+	VgaCore1Wait();
 #endif
 
 	// current Y increment
@@ -202,8 +206,8 @@ void MandelStart()
 	X0d = OffX - 2*Size;
 	SXf = (float)SXd;
 	X0f = (float)X0d;
-	SXi = DblToFixed(SXd);
-	X0i = DblToFixed(X0d);
+	SXi = DblToFix(SXd);
+	X0i = DblToFix(X0d);
 	SXb = DblToBig(SXd);
 	X0b = DblToBig(X0d);
 
@@ -211,7 +215,7 @@ void MandelStart()
 	// ci = y*sy + y0;
 	Y0d = OffY + 1.5f*Size;
 	Y0f = (float)Y0d;
-	Y0i = DblToFixed(Y0d);
+	Y0i = DblToFix(Y0d);
 	Y0b = DblToBig(Y0d);
 
 	// clear buffer
@@ -310,10 +314,10 @@ void NOFLASH(MandelDouble)(u16* dst, double ci)
 // calculate Mandelbrot fixed integer
 //  default render time (X,Y=[0,0], scale=1, steps=64, sysclk=125MHz, res=264x200): 0.32 sec
 //  Note: This function is realized in assembly, but speed is almost the same.
-void NOFLASH(MandelFixedC)(u16* dst, fixed ci)
+void NOFLASH(MandelFixC)(u16* dst, fix ci)
 {
 	int x, i;
-	fixed zr, zi, zr2, zi2, cr, sx;
+	fix zr, zi, zr2, zi2, cr, sx;
 	int steps = Steps;
 	int w = WIDTH;
 	const u16* g = Grad;
@@ -331,11 +335,11 @@ void NOFLASH(MandelFixedC)(u16* dst, fixed ci)
 
 		for (i = steps; i > 0; i--)
 		{
-			zr2 = FixedSqr(zr);
-			zi2 = FixedSqr(zi);
-			if (FixedGr(FixedAdd(zr2, zi2), (4 << 25))) break;
-			zi = FixedAdd(FixedMul2(FixedMul(zr, zi)), ci);
-			zr = FixedAdd(FixedSub(zr2, zi2), cr);
+			zr2 = FixSqr(zr);
+			zi2 = FixSqr(zi);
+			if (FixGr(FixAdd(zr2, zi2), (4 << 25))) break;
+			zi = FixAdd(FixMul2(FixMul(zr, zi)), ci);
+			zr = FixAdd(FixSub(zr2, zi2), cr);
 		}
 
 		if (i == 0)
@@ -344,7 +348,7 @@ void NOFLASH(MandelFixedC)(u16* dst, fixed ci)
 			*dst = g[(steps - i) >> s];
 
 		dst++;
-		cr = FixedAdd(cr, sx);
+		cr = FixAdd(cr, sx);
 	}
 }
 
@@ -433,9 +437,9 @@ void MandelCore1()
 	{
 		if (SizeN <= 17)
 #if RENDER_FIXASM	// 1 = use fixed int in assembler
-			MandelFixed(Core1Dst, DblToFixed(Core1Cid));
+			MandelFix(Core1Dst, DblToFix(Core1Cid));
 #else
-			MandelFixedC(Core1Dst, DblToFixed(Core1Cid));
+			MandelFixC(Core1Dst, DblToFix(Core1Cid));
 #endif
 		else
 			MandelBig(Core1Dst, DblToBig(Core1Cid));
@@ -444,9 +448,9 @@ void MandelCore1()
 	{
 		if (Arithm == USE_INT)
 #if RENDER_FIXASM	// 1 = use fixed int in assembler
-			MandelFixed(Core1Dst, DblToFixed(Core1Cid));
+			MandelFix(Core1Dst, DblToFix(Core1Cid));
 #else
-			MandelFixedC(Core1Dst, DblToFixed(Core1Cid));
+			MandelFixC(Core1Dst, DblToFix(Core1Cid));
 #endif
 		else if (Arithm == USE_BIG)
 			MandelBig(Core1Dst, DblToBig(Core1Cid));
@@ -463,8 +467,10 @@ int main()
 	int c;
 
 #if RENDER_2CORES // use both cores
+#if !USE_PICOPADVGA
 	// run core 1
-	Core1Exec(QCore1);
+	Core1Exec(VgaCore1);
+#endif
 #endif
 
 	// start new image
@@ -555,11 +561,11 @@ int main()
 		
 				// render line
 #if RENDER_2CORES // use both cores
-				if (!QCore1Busy())
+				if (!VgaCore1Busy())
 				{
 					Core1Dst = Dst;
 					Core1Cid = Cid;
-					QCore1Exec(MandelCore1);
+					VgaCore1Exec(MandelCore1);
 				}
 				else 
 #endif
@@ -567,9 +573,9 @@ int main()
 				{
 					if (SizeN <= 17)
 #if RENDER_FIXASM	// 1 = use fixed int in assembler
-						MandelFixed(Dst, DblToFixed(Cid));
+						MandelFix(Dst, DblToFix(Cid));
 #else
-						MandelFixedC(Dst, DblToFixed(Cid));
+						MandelFixC(Dst, DblToFix(Cid));
 #endif
 					else
 						MandelBig(Dst, DblToBig(Cid));
@@ -578,9 +584,9 @@ int main()
 				{
 					if (Arithm == USE_INT)
 #if RENDER_FIXASM	// 1 = use fixed int in assembler
-						MandelFixed(Dst, DblToFixed(Cid));
+						MandelFix(Dst, DblToFix(Cid));
 #else
-						MandelFixedC(Dst, DblToFixed(Cid));
+						MandelFixC(Dst, DblToFix(Cid));
 #endif
 					else if (Arithm == USE_BIG)
 						MandelBig(Dst, DblToBig(Cid));

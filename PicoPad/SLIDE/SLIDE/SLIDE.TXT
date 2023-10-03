@@ -2,6 +2,6 @@
 
 Displays BMP files
 from /SLIDE folder
-with 256*240/16-bit
+with 320*240/16-bit
 
 ^WY^0 ....... quit

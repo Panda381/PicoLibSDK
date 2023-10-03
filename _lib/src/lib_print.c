@@ -570,7 +570,7 @@ u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 PrintRestart:
 				// check if use exponent mode
 				useexp = (ch == 'E') || (ch == 'e') || (ch == 't') || // Eet exponent mode always
-					(((ch == 'F') || (ch == 'f')) && ((expI <= -prec))) || // Ff exponent if exp < -precision
+					(((ch == 'F') || (ch == 'f')) && ((expI < -prec))) || // Ff exponent if exp < -precision
 					(((ch == 'G') || (ch == 'g')) && ((expI < -3) || (expI > prec))); // Gg exponent if too big or too small
 
 				if (useexp && ((ch == 'G') || (ch == 'g'))) prec--; // without first digit

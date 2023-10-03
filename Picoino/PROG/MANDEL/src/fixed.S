@@ -271,14 +271,14 @@ MulS32:
 
 
 // multiply two unsigned fixed point integers
-// extern "C" fixed FixedUMul(fixed a, fixed b);
+// extern "C" fix FixUMul(fix a, fix b);
 
 // R0 ... first number 'a', output result
 // R1 ... second number 'b'
 
 .thumb_func
-.global FixedUMul
-FixedUMul:
+.global FixUMul
+FixUMul:
 
 //       a1a0
 // x     b1b0
@@ -367,14 +367,14 @@ FixedUMul:
 
 
 // multiply two signed fixed point integers
-// extern "C" fixed FixedMul(fixed a, fixed b);
+// extern "C" fix FixMul(fix a, fix b);
 
 // R0 ... first number 'a', output result
 // R1 ... second number 'b'
 
 .thumb_func
-.global FixedMul
-FixedMul:
+.global FixMul
+FixMul:
 
 	// check if R0 is negative
 	tst	r0,r0		// check R0
@@ -389,18 +389,18 @@ FixedMul:
 
 	// negate R1
 	negs	r1,r1		// negate R1
-	b	FixedUMul	// multiply numbers, result will be positive
+	b	FixUMul		// multiply numbers, result will be positive
 
 	// R0 is not negative, check if R1 is negative
 2:	tst	r1,r1		// check R1
-	bpl	FixedUMul	// both number are positive, result will be positive
+	bpl	FixUMul		// both number are positive, result will be positive
 
 	// negate R1
 	negs	r1,r1		// negate R1
 
 	// multiply numbers
 3:	push	{lr}
-	bl	FixedUMul	// multiply numbers
+	bl	FixUMul		// multiply numbers
 
 	// negate result
 	negs	r0,r0		// negate result LOW
@@ -482,29 +482,29 @@ SqrU32:
 
 
 // square power of signed fixed point integer
-// extern "C" fixed FixedSqr(fixed a);
+// extern "C" fix FixSqr(fix a);
 
 // R0 ... number 'a', output result
 
 .thumb_func
-.global FixedSqr
-FixedSqr:
+.global FixSqr
+FixSqr:
 	// absolute value
 	tst	r0,r0		// test input number
-	bpl	FixedUSqr	// number is not negative
+	bpl	FixUSqr		// number is not negative
 	negs	r0,r0		// negate number
 
-// FixedUSqr must follow
+// FixUSqr must follow
 
 
 // square power of unsigned fixed point integer
-// extern "C" fixed FixedUSqr(fixed a);
+// extern "C" fix FixUSqr(fix a);
 
 // R0 ... number 'a', output result
 
 .thumb_func
-.global FixedUSqr
-FixedUSqr:
+.global FixUSqr
+FixUSqr:
 
 //       a1a0
 // x     a1a0
@@ -559,7 +559,7 @@ FixedUSqr:
 
 // calculate Mandelbrot fixed integer
 //  default render time (X,Y=[0,0], scale=1, steps=64, sysclk=125MHz, res=264x200): 0.32 sec
-// extern "C" void MandelFixed2(u8* dst, fixed ci);
+// extern "C" void MandelFix(u8* dst, fix ci);
 
 // Input registers:
 //  R0 ... dst destination buffer
@@ -582,7 +582,7 @@ FixedUSqr:
 //  [SP+4] ... R9
 //  [SP+8] ... R10
 //  [SP+12] ... R11
-//  [SP+16] ... (R0) gradient
+//  [SP+16] ... (R0) pointer to gradient
 //  [SP+20] ... (R1) shift
 //  [SP+24] ... (R2) number of steps
 //  [SP+28] ... (R3) width counter
@@ -593,8 +593,8 @@ FixedUSqr:
 //  [SP+48] ... lr
 
 .thumb_func
-.global MandelFixed2
-MandelFixed2:
+.global MandelFix
+MandelFix:
 
 // ---- prepare variables
 
@@ -680,12 +680,12 @@ MandelFixed2:
 4:
 	// square power of zr -> zr2 (R4)
 	mov	r0,r5		// zr -> R0
-	bl	FixedSqr	// square of zr -> R0
+	bl	FixSqr		// square of zr -> R0
 	mov	r4,r0		// save zr2
 
 	// square power of zi -> zi2 (R0)
 	mov	r0,r6		// zi -> R0
-	bl	FixedSqr	// square of zi -> R0
+	bl	FixSqr		// square of zi -> R0
 
 	// check overflow if rz2 + zi2 >= 4.0
 	adds	r1,r0,r4	// zr2 + zi2 -> R1
@@ -701,7 +701,7 @@ MandelFixed2:
 	// multiply zr*zi
 	mov	r0,r5		// zr -> R0
 	mov	r1,r6		// zi -> R1
-	bl	FixedMul	// multiply zr * zi, result R0
+	bl	FixMul		// multiply zr * zi, result R0
 
 	// multiply * 2 -> R6
 	lsls	r6,r0,#1	// multiply 2*zr*zi -> R6
@@ -728,14 +728,15 @@ MandelFixed2:
 
 	// get gradient
 	ldr	r2,[sp,#16]	// get pointer to gradient -> R2
-	ldrb	r0,[r2,r0]	// get gradient color -> R1
+	lsls	r0,#1		// index * 2
+	ldrh	r0,[r2,r0]	// get gradient color -> R1
 
 	// store color
 7:	mov	r1,r11		// destination buffer
-	strb	r0,[r1]		// store black color
+	strh	r0,[r1]		// store black color
 
 	// shift destination pointer
-	movs	r0,#1
+	movs	r0,#2
 	add	r11,r0		// shift pointer
 
 	// shift cr coordinate

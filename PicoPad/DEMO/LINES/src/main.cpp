@@ -73,6 +73,9 @@ int main()
 	// main loop
 	while (True)
 	{
+		// wait for VSync
+		VgaWaitVSync();
+
 		// draw lines
 		j = Head;
 		for (i = 0; i < LINENUM; i++)

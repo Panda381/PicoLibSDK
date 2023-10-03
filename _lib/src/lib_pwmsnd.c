@@ -155,6 +155,12 @@ void StopSound()
 	StopSoundChan(0);
 }
 
+void StopAllSound()
+{
+	int i;
+	for (i = 0; i < USE_PWMSND; i++) StopSoundChan(i);
+}
+
 // output PWM sound (sound must be PCM 8-bit mono 22050Hz)
 //  chan = channel 0..
 //  snd = pointer to sound

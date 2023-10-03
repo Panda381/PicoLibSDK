@@ -15,6 +15,7 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+#include "../../_display/minivga/minivga.h"
 #include "../../_display/st7789/st7789.h"
 #include "../../_sdk/inc/sdk_timer.h"
 #include "../../_lib/inc/lib_fat.h"
@@ -54,7 +55,7 @@ typedef struct {
 #pragma pack(pop)
 
 // BMP file header, 16 bits per pixel
-sBmp BmpHeader = {
+const sBmp BmpHeader = {
 	// BMP file header (size 14 bytes)
 	0x4D42,			// u16	bfType;		// 0x00: magic, 'B' 'M' = 0x4D42
 	70 + WIDTH*HEIGHT*2 + 2, // u32	bfSize;		// 0x02: file size, aligned to DWORD = 70 + 320*240*2 + 2 = 153672 = 0x25848
@@ -82,7 +83,7 @@ sBmp BmpHeader = {
 };
 
 // small BMP file header, 16 bits per pixel
-sBmp SmallBmpHeader = {
+const sBmp SmallBmpHeader = {
 	// BMP file header (size 14 bytes)
 	0x4D42,			// u16	bfType;		// 0x00: magic, 'B' 'M' = 0x4D42
 	70 + WIDTH/2*HEIGHT/2*2 + 2, // u32	bfSize;		// 0x02: file size, aligned to DWORD = 70 + 160*120*2 + 2 = 38472 = 0x9648

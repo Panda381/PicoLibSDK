@@ -232,9 +232,18 @@ void InfoRow()
 // main function
 int main()
 {
-	int t0, t2, i, dif, x, y, offx, turn;
+	int t0, t2, i, dif, xi, yi, offx, turn, strip;
 	u8 tile;
 	float dt;
+
+	float x1, x2, x;
+	float y1, y2, y;
+	float d, a, a0;
+	float k, s;
+	int wd, hd;
+	const u8* img;
+	const u16* pal;
+	int x0, y0;
 
 	// time mark
 	t0 = Time();
@@ -326,26 +335,21 @@ int main()
 		CarX += Speed * dt * s;
 
 		// get current tile
-		x = (int)((CarX+1024*TILESIZE)/TILESIZE) & (MAPW-1);
-		y = (int)((CarY+1024*TILESIZE)/TILESIZE) & (MAPH-1);
-		CurTile = x + y*MAPW;
+		xi = (int)((CarX+1024*TILESIZE)/TILESIZE) & (MAPW-1);
+		yi = (int)((CarY+1024*TILESIZE)/TILESIZE) & (MAPH-1);
+		CurTile = xi + yi*MAPW;
 
 		// DEBUG: check tile coordinates (visible as blinking tile under car) ... necessary to remove "const" in TileMap
 		//TileMap[CurTile] ^= 1;
 
-		// info row
-		InfoRow();
+	// ==== calculations
 
-		// update skyline
+		// move skyline
 		offx = CarDir*2*SKYLINEW/PI;
 		while (offx >= SKYLINEW) offx -= SKYLINEW;
-		DrawImgPal(SkylineImg, SkylineImg_Pal, 0, 0, -offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
-		DrawImgPal(SkylineImg, SkylineImg_Pal, 0, 0, WIDTH-offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
 
 		// update terrain
 		Mat2D_PrepDrawImg(&Mat, TILESIZE, TILESIZE, CarX, CarY, WIDTH, WIDTH, 0, 0, CarDir, 0, TILESIZE);
-		DrawTile4PalMap(TilesPalImg, TilesPalImg_Pal, TileMap, MAPWBITS, MAPHBITS,
-			TILEBITS, 0, MAPY, WIDTH, HEIGHT-HORIZONH, &Mat, HORIZ);
 
 		// record step delta
 		dif = (int)(Time() - RecordStep);
@@ -356,26 +360,26 @@ int main()
 			i = RecordInx;
 
 			// X coordinate
-			float x1 = RecordBestX[i];
-			float x2 = RecordBestX[i+1];
-			float x = (x2 - x1)*dif/1000000 + x1;
+			x1 = RecordBestX[i];
+			x2 = RecordBestX[i+1];
+			x = (x2 - x1)*dif/1000000 + x1;
 			x = x - CarX;
 
 			// Y coordinate
-			float y1 = RecordBestY[i];
-			float y2 = RecordBestY[i+1];
-			float y = (y2 - y1)*dif/1000000 + y1;
+			y1 = RecordBestY[i];
+			y2 = RecordBestY[i+1];
+			y = (y2 - y1)*dif/1000000 + y1;
 			y = y - CarY;
 
 			// direction
-			float d = RecordBestDir[i];
+			d = RecordBestDir[i];
 
 			// angle of vector to ghost
-			float a = atan2f(y, x);
-			float a0 = a;
+			a = atan2f(y, x);
+			a0 = a;
 
 			// distane of vector to ghost
-			float k = sqrtf(y*y + x*x);
+			k = sqrtf(y*y + x*x);
 
 			// view angle
 			a = a - CarDir + PI/2;
@@ -386,9 +390,9 @@ int main()
 			if ((a >= -PI/3) && (a <= PI/3))
 			{
 				// ghost size
-				float s = 200/(k+50);
-				int wd = (int)(GHOSTW*s);
-				int hd = (int)(GHOSTH*s);
+				s = 200/(k+50);
+				wd = (int)(GHOSTW*s);
+				hd = (int)(GHOSTH*s);
 				if ((wd < 30) || (wd > 160)) wd = 0;
 
 				// ghost direction
@@ -401,30 +405,62 @@ int main()
 				i = (int)((d + PI)*8/PI2);
 				if (i < 0) i = 0;
 				if (i > 7) i = 7;
-				const u8* img = GhostImgList[i];
-				const u16* pal = GhostImgPalList[i];
+				img = GhostImgList[i];
+				pal = GhostImgPalList[i];
 
 				// ghost position on the screen
-				int x0 = (int)((tan(a) + 1)*WIDTH/2) - wd/2;
-				int y0 = INFOH + SKYLINEH - 20 + hd/2;
-
-				// check if coordinates are valid
-				if ((wd > 0) && (hd > 0) && 
-					(x0 >= -wd) && (x0 < WIDTH) && 
-					(y0 >= -hd) && (y0 < HEIGHT))
-				{
-					// display ghost image
-					Mat2D_PrepDrawImg(&Mat2, GHOSTW, GHOSTH, GHOSTW/2, GHOSTH/2, wd, hd, 0, 0, 0, 0, 0);
-					DrawImg4PalMat(img, pal, GHOSTW, GHOSTH, x0, y0, wd, hd, &Mat2, DRAWIMG_TRANSP, CARTRANS);
-				}
+				x0 = (int)((tan(a) + 1)*WIDTH/2) - wd/2;
+				y0 = INFOH + SKYLINEH - 20 + hd/2;
 			}
 		}
 
-		// display car
+		// car
 		turn = (int)((CarTurn + TURNMAX)/(2*TURNMAX)*CARIMGNUM - 0.5);
 		if (turn < 0) turn = 0;
 		if (turn >= CARIMGNUM) turn = CARIMGNUM-1;
-		DrawBlit4Pal(CarImgList[turn], CarImgPalList[turn], 0, 0, CARIMGX, CARIMGY, CARIMGW, CARIMGH, CARIMGW, CARTRANS);
+
+	// ==== display
+
+		for (strip = DISP_STRIP_NUM; strip > 0; strip--)
+		{
+			// next strip
+			DispSetStripNext();
+
+			// info row
+			InfoRow();
+
+			// update skyline
+			DrawImgPal(SkylineImg, SkylineImg_Pal, 0, 0, -offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
+			DrawImgPal(SkylineImg, SkylineImg_Pal, 0, 0, WIDTH-offx, SKYLINEY, SKYLINEW, SKYLINEH, SKYLINEW);
+
+			// update terrain
+			DrawTile4PalMap(TilesPalImg, TilesPalImg_Pal, TileMap, MAPWBITS, MAPHBITS,
+				TILEBITS, 0, MAPY, WIDTH, HEIGHT-HORIZONH, &Mat, HORIZ);
+
+			// display ghost
+			if ((RecordBestNum > 0) && (RecordInx+1 < RecordBestNum))
+			{
+				// check if view angle is out of view frustum (frustrum is +- 45 deg)
+				if ((a >= -PI/3) && (a <= PI/3))
+				{
+					// check if coordinates are valid
+					if ((wd > 0) && (hd > 0) && 
+						(x0 >= -wd) && (x0 < WIDTH) && 
+						(y0 >= -hd) && (y0 < HEIGHT))
+					{
+						// display ghost image
+						Mat2D_PrepDrawImg(&Mat2, GHOSTW, GHOSTH, GHOSTW/2, GHOSTH/2, wd, hd, 0, 0, 0, 0, 0);
+						DrawImg4PalMat(img, pal, GHOSTW, GHOSTH, x0, y0, wd, hd, &Mat2, DRAWIMG_TRANSP, CARTRANS);
+					}
+				}
+			}
+
+			// display car
+			DrawBlit4Pal(CarImgList[turn], CarImgPalList[turn], 0, 0, CARIMGX, CARIMGY, CARIMGW, CARIMGH, CARIMGW, CARTRANS);
+
+			// update display
+			DispUpdate();
+		}
 
 		// update time counter
 		if (CheckNext != GRASS) // game started

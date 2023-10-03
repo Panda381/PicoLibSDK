@@ -441,15 +441,17 @@ How PicoLibSDK library files and directories are organized:
 
 !Pico - sample programs for base Raspberry Pico module.
 
-!PicoinoMini - SD card contents with sample programs and loader for PicoinoMini.
-
 !Picoino10 - SD card contents with sample programs and loader for Picoino.
+
+!PicoinoMini - SD card contents with sample programs and loader for PicoinoMini.
 
 !PicoPad08 - SD card contents with sample programs and loader for PicoPad
 	beta 0.8.
 
 !PicoPad10 - SD card contents with sample programs and loader for PicoPad
 	version 1.0.
+
+!PicoPadVGA - SD card contents with sample programs and loader for PicoPadVGA.
 
 !Picotron - SD card contents with sample programs and loader for Picotron.
 
@@ -459,12 +461,12 @@ _boot2 - boot2 loader stage 2, which is placed at the beginning of each UF2
 	checksum program boot2crc.exe.
 
 _devices - device definitions and drivers. Currently, the ready devices are
-	Pico, Picotron, Picoino 1.0, PicoinoMini, DemoVGA, PicoPad 0.8 and
-        PicoPad 1.0. The target device is selected at compile time with the
-        c.bat file parameter ('pico', 'picotron', 'picoino10', 'picoinomini',
-	'demovga', 'picopad08' or 'picopad10'). If the target device is not
-	specified when compiling the application, the default device is
-	selected by the _setup.bat file.
+	DemoVGA, Pico, Picoino 1.0, PicoinoMini, PicoPad 0.8, PicoPad 1.0,
+	PicoPadVGA, Picotron.  The target device is selected at compile time
+	with the c.bat file parameter ('demovga', 'pico', 'picoino10',
+	'picoinomini', 'picopad08', 'picopad10', 'picopadvga', 'picotron').
+	If the target device is not specified when compiling the application,
+	the default device is selected by the _setup.bat file.
 
 _display - drivers for the displays. Currently, there is a mini-VGA display
 	driver for 4/8/15/16-bit output to a VGA monitor with 320x240 up to
@@ -758,6 +760,7 @@ History of versions
 	boot3 loader (in Battery menu).
 09/09/2023 version 1.05: CSYNC in VGA driver, added PicoVGA8 library,
 	added VREG library, setup volume and backlight, calibrate crystal.
+10/03/2023 version 1.06: added PicoPadVGA device and some drawing functions.
 
 
 Missing and @TODO
@@ -774,5 +777,4 @@ SDK supports that are missing in the library and are needed @TODO:
 - DDS compression image format
 - ADPCM sound compression
 - add multiple cache sector buffers to FAT file system module
-- calibrations to flash: quartz frequency, ADC voltage, temperature
 - encapsulation of text strings into C++ objects

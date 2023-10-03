@@ -13,6 +13,10 @@
 // to change from the default configuration in config_def.h.
 // *********
 
+#if USE_PICOPADVGA
+#define VGA_GPIO_SKIP	1	// VGA this GPIO skips
+#endif
+
 //#define FONT			FontBold8x8	// default system font
 //#define FONTW			8		// width of system font
 //#define FONTH			8		// height of system font

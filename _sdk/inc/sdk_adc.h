@@ -16,7 +16,7 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 /*
-Conversion speed: 500 kS/s (using 48 MHz clock)
+Conversion speed: 500 kS/s (using 48 MHz clock CLK_ADC)
 Capturing a sample takes 96 clock cycles (91 x 1/48MHz) = 2 us per sample (500 kS/s)
 4 inpus on GPIO26 .. GPIO29, 1 input internal temperature sensor
 Temperature: T = 27 - (ADC_voltage - 0.706) / 0.001721
@@ -109,10 +109,10 @@ INLINE void ADC_Wait() { while (!ADC_Ready()) {} }
 // get last conversion result
 INLINE u16 ADC_Result() { return (u16)(*ADC_RESULT & 0xfff); }
 
-// do single conversion (takes 96 clock cycles = 2 us on 48 MHz clock)
+// do single conversion (takes 96 clock cycles = min. 2 us on 48 MHz clock, real 2.6 us)
 u16 ADC_Single();
 
-// do single conversion with denoise (returns value 0..0xffff; takes 32 us on 48 MHz clock)
+// do single conversion with denoise (returns value 0..0xffff; takes min. 32 us on 48 MHz clock, real 43 us)
 u16 ADC_SingleDenoise();
 
 // do single conversion and recalculate to voltage on 3.3V

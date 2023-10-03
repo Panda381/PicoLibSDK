@@ -253,6 +253,10 @@ int main()
 		LedFlip(LED1);
 		DispUpdate();
 
+#if USE_PICOPADVGA
+		WaitMs(1000);
+#endif
+
 		// key input
 		for (i = 10; i > 0; i--)
 		{

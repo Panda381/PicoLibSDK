@@ -225,6 +225,7 @@ void WaitFlag(u8 del)
 {
 	for (; del > 0; del--)
 	{
+		VgaWaitVSync();
 		DispFlag();
 		DispUpdate();
 		WaitMs(50);
@@ -239,7 +240,7 @@ void DispCard(int type, int x, int y, int shadow, Bool disable, Bool back, Bool 
 
 	// display card shadow
 	if (shadow != 0) DrawBlit1Shadow(ShadowImg, 0, 0, x + shadow, y + shadow,
-				CARDW, CARDH, CARDW, 12);
+				CARDW, CARDH, CARDW, 10);
 	if (back)
 	{
 		// display card back side
@@ -253,7 +254,7 @@ void DispCard(int type, int x, int y, int shadow, Bool disable, Bool back, Bool 
 
 		// card is disabled
 		if (disable || discard)
-			DrawBlit1Shadow(ShadowImg, 0, 0, x, y, CARDW, CARDH, CARDW, 12);
+			DrawBlit1Shadow(ShadowImg, 0, 0, x, y, CARDW, CARDH, CARDW, 10);
 
 		// card is discarded
 		if (discard)
@@ -309,6 +310,9 @@ void AnimCard(int type, int x1, int y1, int x2, int y2, Bool back, Bool discard)
 
 		// display update
 		DispUpdate();
+
+		// wait for VSync
+		VgaWaitVSync();
 
 		// restore screen content
 		DrawImg(SaveCardBuf2, 0, 0, x, y, CARDW, CARDH, CARDW);
@@ -390,6 +394,9 @@ void ChangeAnim()
 	// length of animtaion
 	for (i = 3; i > 0; i--)
 	{
+		// wait for VSync
+		VgaWaitVSync();
+
 		// display values
 		save = 0;
 		for (player = 0; player < 2; player++)
@@ -442,6 +449,9 @@ void ChangeAnim()
 		// delay with flag animation
 		WaitFlag(5);
 
+		// wait for VSync
+		VgaWaitVSync();
+
 		// pop screen
 		save = 0;
 		for (player = 0; player < 2; player++)
@@ -476,33 +486,47 @@ void ChangeAnim()
 // display whole game area
 void DispAll()
 {
-	// display background
-	DrawImg4Pal(BackgroundImg, BackgroundImg_Pal, 0, 0, 0, 0, WIDTH, HEIGHT, WIDTH);
+	int strip;
 
-	// display titles - player selection
-	DispTitle();
+	for (strip = DISP_STRIP_NUM; strip > 0; strip--)
+	{
+		// next strip
+		DispSetStripNext();
 
-	// display castles and fences
-	DispGrass(0);
-	DispCastle(0);
-	DispFence(0);
+		// display background
+		DrawImg4Pal(BackgroundImg, BackgroundImg_Pal, 0, 0, 0, 0, WIDTH, HEIGHT, WIDTH);
 
-	DispGrass(1);
-	DispCastle(1);
-	DispFence(1);
+		// display titles - player selection
+		DispTitle();
 
-	// display flags
-	DispFlag();
+		// display castles and fences
+		DispGrass(0);
+		DispCastle(0);
+		DispFence(0);
 
-	// display middle cards
-	DispCard(0, MIDX1, 0, 0, False, True, False);
-	DispCard(Last, MIDX2, 0, 0, False, False, LastDiscard);
+		DispGrass(1);
+		DispCastle(1);
+		DispFence(1);
 
-	// display state
-	DispState();
+		// display flags
+		DispFlag();
 
-	// display cards
-	DispCards();
+		// display middle cards
+		DispCard(0, MIDX1, 0, 0, False, True, False);
+		DispCard(Last, MIDX2, 0, 0, False, False, LastDiscard);
+
+		// display state
+		DispState();
+
+		// display cards
+		DispCards();
+
+		// update screen
+		DispUpdate();
+	}
+
+	// set off back buffers
+	DispSetStripOff();
 }
 
 // start new game
@@ -578,6 +602,9 @@ void WinGame(int player)
 	// delay - wait for sounds
 	while (PlayingSound())
 	{
+		// wait for VSync
+		VgaWaitVSync();
+
 		// animate flags
 		DispFlag();
 
@@ -605,6 +632,9 @@ void WinGame(int player)
 	u16 *s, *d;
 	for (; i > 0; i--)
 	{
+		// wait for VSync
+		VgaWaitVSync();
+
 		// key
 		if (KeyGet() != NOKEY) break;
 
@@ -871,6 +901,9 @@ void PutCard(int pos, Bool discard)
 			}
 		}
 
+		// wait for VSync
+		VgaWaitVSync();
+
 		// display state
 		DispState();
 
@@ -929,6 +962,9 @@ void PutCard(int pos, Bool discard)
 		}
 		else
 		{
+			// wait for VSync
+			VgaWaitVSync();
+
 			// display state
 			DispState();
 
@@ -1165,6 +1201,9 @@ void Game(Bool comp1, Bool comp2, Bool autodemo)
 				break;
 			}
 		}
+
+		// wait for VSync
+		VgaWaitVSync();
 
 		// flag animation
 		DispFlag();

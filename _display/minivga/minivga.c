@@ -126,6 +126,10 @@ u32* ScanLineCBNext;	// next control buffer
 volatile int VgaScanLine; // current processed scan line 0... (next displayed scan line)
 volatile u32 VgaFrame;	// frame counter
 
+#ifdef VGA_KEYSCAN_GPIO		// scan keyboard
+volatile u32 VgaKeyScan;	// key scan
+#endif
+
 // VGA DMA handler - called on end of every scanline
 void NOFLASH(VgaLine)()
 {
@@ -152,6 +156,32 @@ void NOFLASH(VgaLine)()
 		line = 0; 	// restart scanline
 	}
 	VgaScanLine = line;	// store new scanline
+
+	// scan keyboard
+#ifdef VGA_KEYSCAN_GPIO		// scan keyboard
+#define VGA_KEYSCAN_LINE	(MINIVGA_VSYNC+6)	// first valid scanline
+	if ((line >= VGA_KEYSCAN_LINE) && (line < VGA_KEYSCAN_LINE+8))
+	{
+		// disable output from PIO
+		GPIO_OEOverDisable(VGA_KEYSCAN_GPIO);
+
+		// wait 2 us (do not use WaitUs() from Flash - collision during flash write)
+		u32 start = Time();
+		while ((u32)(Time() - start) < 2) {}
+
+		// prepare key mask
+		u32 m = 1UL << (line - VGA_KEYSCAN_LINE);
+		u32 key = VgaKeyScan;
+		key &= ~m;
+
+		// input
+		if (GPIO_In(VGA_KEYSCAN_GPIO)) key |= m;
+		VgaKeyScan = key;
+
+		// set normal output from PIO
+		GPIO_OEOverNormal(VGA_KEYSCAN_GPIO);
+	}
+#endif
 
 	// check scanline
 	line -= MINIVGA_VSYNC;
@@ -238,6 +268,16 @@ void VgaPioInit()
 #else
 	PioSetPinDir(VGA_PIO, VGA_SM, VGA_GPIO_FIRST, VGA_GPIO_NUM, 1);
 #endif
+
+	// high current output
+	int i;
+	for (i = VGA_GPIO_FIRST; i < VGA_GPIO_FIRST+VGA_GPIO_NUM; i++)
+	{
+#ifdef VGA_GPIO_SKIP
+		if (i != VGA_GPIO_SKIP)
+#endif
+		GPIO_Drive12mA(i);
+	}
 
 #if !VGA_USECSYNC	// 1=use only CSYNC signal instead of HSYNC (VSYNC not used)
 	PioSetPinDir(VGA_PIO, VGA_SM, VGA_GPIO_HSYNC, 2, 1);	// use HSYNC + VSYNC
@@ -429,11 +469,80 @@ void VgaTerm()
 	PioInit(VGA_PIO);
 }
 
+#if USE_DOUBLE		// use double support
+
+// required frequency to retune (in Hz)
+volatile int VgaReqFreq = PLL_KHZ*1000;
+int VgaCurFreq = PLL_KHZ*1000; // current frequency
+
+// request to retune VGA to different system frequency
+void VgaRetuneReq()
+{
+	// check current frequency
+	int f = VgaReqFreq;
+	if (f == VgaCurFreq) return;
+	VgaCurFreq = f;
+
+	// retuning coefficient
+	double k = (double)f/PLL_KHZ/1000;
+
+	// clock divider * 256 (CPP will be = 2)
+	int clkdiv = (int)(256*k*MINIVGA_CLKDIV*MINIVGA_CPP/2 + 0.5);
+	if (clkdiv < 256) clkdiv = 256;
+	double clk = (double)clkdiv/256;
+
+	// horizontal
+	int hsync = (int)(k*MINIVGA_HSYNC*MINIVGA_CLKDIV/clk + 0.5);
+	int hback = (int)(k*MINIVGA_HBACK*MINIVGA_CLKDIV/clk + 0.5);
+	int hfront = (int)(k*MINIVGA_HFRONT*MINIVGA_CLKDIV/clk + 0.5);
+	int htotal = hsync + hback + hfront + WIDTH*2;
+
+	// disable IRQ
+	IRQ_LOCK;
+
+	// pause SM	
+	PioSMDisable(VGA_PIO, VGA_SM);
+
+	// load PIO program (with default CPP = 2)
+	PioLoadProg(VGA_PIO, minivga_program_instructions, count_of(minivga_program_instructions), VGA_PIO_OFF);
+
+	// set PIO clock divider
+	PioSetClkdiv(VGA_PIO, VGA_SM, clkdiv);
+
+	// image scanline data buffer: HSYNC ... back porch ... image command
+	ScanLineImg[0] = VGACMD(minivga_offset_hsync, hsync-3); // HSYNC
+	ScanLineImg[1] = VGACMD(minivga_offset_dark, hback-4); // back porch
+
+	// front porch
+	ScanLineFp = VGACMD(minivga_offset_dark, hfront-4-3); // front porch (3 clocks after image)
+
+	// dark scanline: HSYNC ... back porch + dark + front porch
+	ScanLineDark[0] = VGACMD(minivga_offset_hsync, hsync-3); // HSYNC
+	ScanLineDark[1] = VGACMD(minivga_offset_dark, htotal-hsync-4); // back porch + dark + front porch
+
+	// vertical sync: VHSYNC ... VSYNC(back porch + dark + front porch)
+	ScanLineSync[0] = VGACMD(minivga_offset_vhsync, hsync-3); // VHSYNC
+	ScanLineSync[1] = VGACMD(minivga_offset_vsync, htotal-hsync-3); // VSYNC(back porch + dark + front porch)
+
+	// unpause state machine
+	PioSMEnable(VGA_PIO, VGA_SM);
+
+	// enable IRQ
+	IRQ_UNLOCK;
+}
+
+#else
+
+INLINE void VgaRetuneReq() {}
+
+#endif
+
 void (* volatile VgaCore1Fnc)() = NULL; // core 1 remote function
 
 #define VGA_REQNO 	0	// request - no
 #define VGA_REQINIT     1	// request - init
 #define VGA_REQTERM	2	// request - terminate
+#define VGA_REQRETUNE	3	// request - retune frequency
 volatile int VgaReq = VGA_REQNO;	// current VGA request
 
 // VGA core
@@ -452,7 +561,9 @@ void NOFLASH(VgaCore)()
 		req = VgaReq;
 		if (req != VGA_REQNO)
 		{
-			if (req == VGA_REQINIT)
+			if (req == VGA_REQRETUNE)
+				VgaRetuneReq(); // returne
+			else if (req == VGA_REQINIT)
 				VgaInit(); // initialize
 			else
 				VgaTerm(); // terminate
@@ -532,6 +643,22 @@ void VgaStop()
 	// core 1 reset
 	Core1Reset();
 }
+
+#if USE_DOUBLE		// use double support
+
+// retune VGA to different system frequency (freq = new system frequency in Hz)
+void VgaRetune(int freq)
+{
+	// required frequency
+	VgaReqFreq = freq;
+
+	// request to retune
+	VgaReq = VGA_REQRETUNE;
+	dmb();
+	while (VgaReq != VGA_REQNO) { dmb(); }
+}
+
+#endif
 
 // use back buffer
 #if BACKBUFSIZE > 0

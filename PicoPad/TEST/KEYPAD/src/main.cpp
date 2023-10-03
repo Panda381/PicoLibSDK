@@ -47,6 +47,9 @@ int main()
 
 	while (True)
 	{
+		// wait for VSync
+		VgaWaitVSync();
+	
 		// left
 		DispKey(WIDTH/8*1, HEIGHT/4*2, "Left", KeyPressed(KEY_LEFT));
 

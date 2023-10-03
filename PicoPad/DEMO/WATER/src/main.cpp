@@ -9,7 +9,7 @@
 
 int main()
 {
-	float phase;
+	float phase, duckx2;
 	int y, y0, y2, duckx;
 
 	// play sound
@@ -20,9 +20,12 @@ int main()
 
 	// main loop
 	phase = 0;
-	duckx = 330;
+	duckx2 = 330;
 	while (True)
 	{
+		// wait for VSync
+		VgaWaitVSync();
+
 		// animate water
 		for (y = IMGH; y < HEIGHT; y++)
 		{
@@ -30,7 +33,12 @@ int main()
 #define WAVEAMP		0.1f	// wave amplitude
 #define WAVEPERSP	20.0f	// perspective deformation
 #define WAVELEN		100	// wave length
+
+#if USE_MINIVGA
+#define ANIMSPEED	0.1f	// animation speed
+#else
 #define ANIMSPEED	0.2f	// animation speed
+#endif
 
 			y0 = y - IMGH; // Y relative to top of water
 			y2 = (int)(IMGH - 1 - (sinf(phase + WAVELEN/sqrtf(y0/WAVEPERSP + 1))*WAVEAMP + 1)*y0);
@@ -40,14 +48,15 @@ int main()
 		}
 
 		// display duck
+		duckx = float2int(duckx2 + 0.5f);
 		DrawBlitPal(DuckImg, DuckImg_Pal, (duckx & 3)*64, 0, duckx, 180, 64, 29, 256, 0xA158);
 
 		// increase animation phase
 		phase += ANIMSPEED;
 
 		// shift duck
-		duckx--;
-		if (duckx < -100) duckx = 330;
+		duckx2 -= 5*ANIMSPEED;
+		if (duckx2 < -100) duckx2 = 330;
 
 		// update display
 		DispUpdate();

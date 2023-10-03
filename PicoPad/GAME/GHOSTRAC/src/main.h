@@ -65,7 +65,7 @@
 #define TURNACCEL	0.02f	// turn acceleration
 #define AUTOTURN	0.01f	// auto turn
 #define TURNMAX		0.02f	// max. turn
-#define SPEEDMAX	300	// max. speed
+#define SPEEDMAX	400	// max. speed
 
 #define RECORDMAX	1000	// record max. length
 

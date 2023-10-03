@@ -65,6 +65,7 @@ void PWMSndTerm();
 // stop playing sound
 void StopSoundChan(u8 chan);
 void StopSound();
+void StopAllSound();
 
 // output PWM sound (sound must be PCM 8-bit mono 22050Hz)
 //  chan = channel 0..

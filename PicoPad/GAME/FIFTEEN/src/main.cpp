@@ -222,7 +222,11 @@ void NewGame(Bool shuffle)
 			}
 
 			// draw board
-			if ((i & 0x7f) == 0) DrawBoard();
+			if ((i & 0x7f) == 0)
+			{
+				DrawBoard();
+				WaitMs(20);
+			}
 		}
 
 		// stop shuffling sound

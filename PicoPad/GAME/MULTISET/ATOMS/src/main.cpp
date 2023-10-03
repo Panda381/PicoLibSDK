@@ -27,9 +27,9 @@ u8	Owner[MAPSIZE]; // owner of field
 
 // player type
 const char* const PlayerTypeTxt[3] = {
-	"not playing",
-	"HUMAN",
-	"COMPUTER",
+	"not playing ",
+	"HUMAN       ",
+	"COMPUTER    ",
 };
 
 // open screen (returns True to quit)
@@ -40,10 +40,11 @@ Bool Open()
 	Player = 0;
 	KeyFlush();
 
+	DrawClear();
+	SelFont8x16();
+
 	while (True)
 	{
-		DrawClear();
-		SelFont8x16();
 		DrawText2("Exploding Atoms", (WIDTH - 15*16)/2, 0, COL_YELLOW);
 
 #define MENUX 10
@@ -58,8 +59,8 @@ Bool Open()
 		DrawText("A ........ Start the game", MENUX, MENUY+6*MENUDY, COL_WHITE);
 		DrawText("Y ........ Return to game selection", MENUX, MENUY+7*MENUDY, COL_WHITE);
 
-		for (i = 0; i < PLAYER_NUM; i++) DrawText(PlayerTypeTxt[Players[i].type],
-							MENUX+23*8, MENUY+(i+1)*MENUDY, Players[i].color);
+		for (i = 0; i < PLAYER_NUM; i++) DrawTextBg(PlayerTypeTxt[Players[i].type],
+							MENUX+23*8, MENUY+(i+1)*MENUDY, Players[i].color, COL_BLACK);
 
 #define MENUY2 (MENUY+8*MENUDY+4)
 		// draw game control
@@ -138,30 +139,37 @@ void DispScore(u8 player)
 
 char PlayerText[] = "Player 1";
 
-// display score table
-void DispScoreTab()
+// display score table with selection (blinking on end of game)
+void DispScoreSel()
 {
 	int i;
-	DrawRect(INFOX, 0, INFOW, HEIGHT, INFOBG);
 	for (i = 0; i < PLAYER_NUM; i++)
 	{
 		if (Players[i].type != PLAYER_OFF) // player is in game
 		{
+			// wait for VSync
+			VgaWaitVSync();
+
+			// clear background
+			DrawRect(INFOX+2, Players[i].scorey - 2, INFOW-5, 36, INFOBG);
+
+			// display player's name
 			PlayerText[7] = i + '1';
 			DrawText(PlayerText, INFOX + (INFOW - 8*8)/2, Players[i].scorey, Players[i].color);
-			DispScore(i);
-		}
-	}
-}
 
-// display score table with selection (blinking on end of game)
-void DispScoreSel()
-{
-	DispScoreTab();
-	if ((PlayerNum > 1) || (((Time() >> 17) & 1) == 1))
-	{
-		int y = Players[Player].scorey - 2;
-		DrawFrame(INFOX+2, y, INFOW-5, 36, Players[Player].color);
+			// display score
+			DispScore(i);
+
+			// display selection
+			if (i == Player)
+			{
+				if ((PlayerNum > 1) || (((Time() >> 17) & 1) == 1))
+				{
+					int y = Players[Player].scorey - 2;
+					DrawFrame(INFOX+2, y, INFOW-5, 36, Players[Player].color);
+				}
+			}
+		}
 	}
 }
 
@@ -248,6 +256,9 @@ void NewGame()
 			Players[i].atoms = 0; // player is not active, no atoms
 	}
 
+	// clear score background
+	DrawRect(INFOX, 0, INFOW, HEIGHT, INFOBG);
+
 	// display board
 	DispBoard();
 
@@ -269,10 +280,12 @@ void Catch(u8 inx)
 	{
 		// subtract atoms from enemy
 		Players[own].atoms -= n;
+		VgaWaitVSync();
 		DispScore(own);
 
 		// add atoms to player
 		Players[Player].atoms += n;
+		VgaWaitVSync();
 		DispScore(Player);
 
 		// enemy lost
@@ -360,7 +373,7 @@ void Explo()
 		}
 
 	// if 1 player left and board is too full, the explosions might never end
-	}while (PlayerNum > 1);
+	} while (PlayerNum > 1);
 }
 
 // auto-play (search cursor)
@@ -370,7 +383,6 @@ void Auto()
 	int bestnum = 0;
 	int i;
 	DispCurOff();
-
 
 	// find best atom size and count
 	for (i = 0; i < MAPSIZE; i++)
@@ -479,6 +491,7 @@ void Game()
 				Atoms[cur]++;
 				Players[Player].atoms++;
 				DispTile(cur, False);
+				VgaWaitVSync();
 				DispScore(Player);
 
 				// explosions
@@ -520,6 +533,9 @@ void Game()
 
 		}
 		Players[Player].cursor = cur;
+
+		// wait for VSync
+		VgaWaitVSync();
 
 		// blinking cursor
 		DispCur();

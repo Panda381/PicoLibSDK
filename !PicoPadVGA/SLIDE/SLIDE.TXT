@@ -1,0 +1,7 @@
+^YSlideShow^0
+
+Displays BMP files
+from /SLIDE folder
+with 400*300/16-bit
+
+^WC^0 ....... quit

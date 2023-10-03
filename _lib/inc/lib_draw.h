@@ -32,9 +32,11 @@ extern "C" {
 
 // set even 4-bit pixel
 #define SETPIXEL4_EVEN(ddd,ccc) { *(ddd) = (*(ddd) & 0x0f) | ((ccc) << 4); }
+#define INVPIXEL4_EVEN(ddd) { *(ddd) ^= 0xf0; }
 
 // set odd 4-bit pixel
 #define SETPIXEL4_ODD(ddd,ccc) { *(ddd) = (*(ddd) & 0xf0) | (ccc); }
+#define INVPIXEL4_ODD(ddd) { *(ddd) ^= 0x0f; }
 
 // set 4-bit pixel by x coordinate
 #define SETPIXEL4(ddd,xxx,ccc) {				\
@@ -42,6 +44,12 @@ extern "C" {
 		SETPIXEL4_EVEN(ddd,ccc)				\
 	else							\
 		SETPIXEL4_ODD(ddd,ccc); }
+
+#define INVPIXEL4(ddd,xxx) {					\
+	if (((xxx) & 1) == 0)					\
+		INVPIXEL4_EVEN(ddd)				\
+	else							\
+		INVPIXEL4_ODD(ddd); }
 
 // get even 4-bit pixel
 #define GETPIXEL4_EVEN(sss) (*(sss) >> 4)
@@ -76,8 +84,20 @@ void SelFont8x16();
 // draw rectangle
 void DrawRect(int x, int y, int w, int h, COLTYPE col);
 
+// draw rectangle inverted
+void DrawRectInv(int x, int y, int w, int h);
+
 // Draw frame
 void DrawFrame(int x, int y, int w, int h, COLTYPE col);
+
+// Draw frame with width
+void DrawFrameW(int x, int y, int w, int h, COLTYPE col, int width);
+
+// Draw frame inverted
+void DrawFrameInv(int x, int y, int w, int h);
+
+// Draw frame inverted with width
+void DrawFrameInvW(int x, int y, int w, int h, int width);
 
 // clear canvas with color
 void DrawClearCol(COLTYPE col);
@@ -88,14 +108,67 @@ void DrawClear();
 // Draw point
 void DrawPoint(int x, int y, COLTYPE col);
 
+// Draw point inverted
+void DrawPointInv(int x, int y);
+
+// only for 8, 15 or 16-bit color bits
+#if COLBITS >= 8
+
+// get point from frame buffer (returns black color if out on range)
+COLTYPE DrawGetPoint(int x, int y);
+
+#endif // COLBITS >= 8
+
+// Draw line with clipping
+void DrawLineClip(int x1, int y1, int x2, int y2, COLTYPE col, int xmin, int xmax, int ymin, int ymax);
+
 // Draw line
 void DrawLine(int x1, int y1, int x2, int y2, COLTYPE col);
+
+// Draw line with width
+// w ... width of line in pixels
+// round ... draw round ends
+void DrawLineW(int x1, int y1, int x2, int y2, COLTYPE col, int w, Bool round);
+
+// Draw line inverted with clipping
+void DrawLineInvClip(int x1, int y1, int x2, int y2, int xmin, int xmax, int ymin, int ymax);
+
+// Draw line inverted
+void DrawLineInv(int x1, int y1, int x2, int y2);
+
+// Draw line inverted with width
+// w ... width of line in pixels
+// round ... draw round ends
+void DrawLineInvW(int x1, int y1, int x2, int y2, int w, Bool round);
 
 // Draw filled circle
 void DrawFillCircle(int x0, int y0, int r, COLTYPE col);
 
+// Draw filled circle inverted
+void DrawFillCircleInv(int x0, int y0, int r);
+
 // Draw circle
 void DrawCircle(int x0, int y0, int r, COLTYPE col);
+
+// Draw circle inverted
+void DrawCircleInv(int x0, int y0, int r);
+
+// Draw ring
+void DrawRing(int x0, int y0, int rin, int rout, COLTYPE col);
+
+// Draw ring inverted
+void DrawRingInv(int x0, int y0, int rin, int rout);
+
+// only for 8, 15 or 16-bit color bits
+#if COLBITS >= 8
+
+// Fill area in FrameBuf with color
+//  x ... X coordinate
+//  y ... Y coordinate
+//  col ... color to fill
+void DrawFill(int x, int y, COLTYPE col);
+
+#endif // COLBITS >= 8
 
 // Draw character normal (transparent background)
 void DrawChar(char ch, int x, int y, COLTYPE col);
@@ -168,6 +241,14 @@ void DrawFTextBuf(const char* textbuf, COLTYPE bgcol);
 //  ws ... source total width (in pixels)
 void DrawImg(const COLTYPE* src, int xs, int ys, int xd, int yd, int w, int h, int ws);
 
+// only for 8, 15 or 16-bit color bits
+#if COLBITS >= 8
+
+// get image content from frame buffer (remaining area fills black)
+void DrawGetImg(COLTYPE* dst, int x, int y, int w, int h);
+
+#endif
+
 // only for 15 or 16-bit color bits
 #if COLBITS >= 15
 
@@ -221,8 +302,27 @@ void DrawImgRle(const u8* src, int xd, int yd, int w, int h);
 //  w .... width
 //  h .... height
 //  ws ... source total width (in pixels)
-//  col = transparency key color
+//  col ... transparency key color
 void DrawBlit(const COLTYPE* src, int xs, int ys, int xd, int yd, int w, int h, int ws, COLTYPE col);
+
+// only for 8, 15 or 16-bit color bits
+#if COLBITS >= 8
+
+// Draw image with transparency and color substitution
+//  src ... image data
+//  xs ... source X
+//  ys ... source Y
+//  xd ... destination X
+//  yd ... destination Y
+//  w .... width
+//  h .... height
+//  ws ... source total width (in pixels)
+//  col ... transparency key color
+//  fnd ... color to find
+//  subst ... replaced color
+void DrawBlitSubst(const COLTYPE* src, int xs, int ys, int xd, int yd, int w, int h, int ws, COLTYPE col, COLTYPE fnd, COLTYPE subst);
+
+#endif // COLBITS >= 8
 
 // only for 15 or 16-bit color bits
 #if COLBITS >= 15
@@ -237,7 +337,7 @@ void DrawBlit(const COLTYPE* src, int xs, int ys, int xd, int yd, int w, int h, 
 //  w .... width
 //  h .... height
 //  ws ... source total width (in pixels)
-//  col = transparency key color
+//  col ... transparency key color
 void DrawBlitPal(const u8* src, const u16* pal, int xs, int ys, int xd, int yd, int w, int h, int ws, COLTYPE col);
 
 // Draw 4-bit paletted image with transparency

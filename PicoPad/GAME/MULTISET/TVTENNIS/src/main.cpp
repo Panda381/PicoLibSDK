@@ -264,25 +264,33 @@ void DispBall()
 // display all
 void DispAll()
 {
-	int i, j, row, col, k, x, y;
+	int strip;
+	for (strip = DISP_STRIP_NUM; strip > 0; strip--)
+	{
+		// next strip
+		DispSetStripNext();
 
-	// clear screen
-	DrawClear();
+		// clear screen
+		DrawClear();
 
-	// display middle net
-	DispNet(HEIGHT);
+		// display middle net
+		DispNet(HEIGHT);
 
-	// display both scores
-	DispScores();
+		// display both scores
+		DispScores();
 
-	// display both paddles
-	DispPaddles();
+		// display both paddles
+		DispPaddles();
 
-	// display ball
-	DispBall();
+		// display ball
+		DispBall();
 
-        // display update
-	DispUpdate();
+	        // display update
+		DispUpdate();
+	}
+
+	// set off back buffers
+	DispSetStripOff();
 }
 
 // game control
@@ -438,6 +446,8 @@ void GameBall()
 	}
 }
 
+#if !USE_PICOPADVGA
+
 // game display update
 void GameUpdate()
 {
@@ -461,8 +471,8 @@ void GameUpdate()
 		}
 
 		// ball is near middle net
-		else if ((BallX >= (WIDTH - NETW)/2 - BALLSIZE) &&
-				(BallX <= (WIDTH + NETW)/2 + BALLSIZE))
+		else if ((BallX >= (WIDTH - NETW)/2 - 2*BALLSIZE) &&
+				(BallX <= (WIDTH + NETW)/2 + 2*BALLSIZE))
 		{
 			// clear old ball
 			ClearBall();
@@ -559,6 +569,43 @@ void GameUpdate()
 	}
 }
 
+#endif // !USE_PICOPADVGA
+
+// draw open screen
+void OpenDraw()
+{
+	// set font
+	pDrawFont = FontBold8x16;
+	DrawFontHeight = 16;
+	DrawFontWidth = 8;
+
+	// draw title
+	DrawClear();
+	DrawText2("TV Tennis", (WIDTH - 9*16)/2, 5, COL_YELLOW);
+
+#define MENUX 10
+#define MENUY 45
+#define MENUDY 16
+	// draw menu
+	DrawText("Press key to start the game:", MENUX, MENUY + 0*MENUDY, COL_GREEN);
+	DrawText("LEFT ...... Play with left paddle", MENUX, MENUY+1*MENUDY, COL_WHITE);
+	DrawText("RIGHT ..... Play with right paddle", MENUX, MENUY+2*MENUDY, COL_WHITE);
+	DrawText("DOWN ...... 2 players", MENUX, MENUY+3*MENUDY, COL_WHITE);
+	DrawText("UP ........ Demo", MENUX, MENUY+4*MENUDY, COL_WHITE);
+	DrawText("A ......... Play with tied paddles", MENUX, MENUY+5*MENUDY, COL_WHITE);
+
+#define MENUY2 (MENUY+7*MENUDY)
+	// draw game control
+	DrawText("Game control:", MENUX, MENUY2+0*MENUDY, COL_GREEN);
+	DrawText("LEFT or RIGHT ... Throw the ball", MENUX, MENUY2+1*MENUDY, COL_WHITE);
+	DrawText("UP/DOWN ......... Left paddle", MENUX, MENUY2+2*MENUDY, COL_WHITE);
+	DrawText("X/A ............. Right paddle", MENUX, MENUY2+3*MENUDY, COL_WHITE);
+	DrawText("Y ............... Quit the game", MENUX, MENUY2+4*MENUDY, COL_WHITE);
+
+	// display update
+	DispUpdate();
+}
+
 // play on game
 void Game(Bool comp1, Bool comp2, Bool tied)
 {
@@ -601,6 +648,7 @@ void Game(Bool comp1, Bool comp2, Bool tied)
 		// exit
 		case KEY_Y:
 			KeyFlush();
+			OpenDraw();
 			return;
 
 		// serve ball
@@ -648,46 +696,22 @@ void Game(Bool comp1, Bool comp2, Bool tied)
 		GameBall();
 
 		// game display update
+#if USE_PICOPADVGA
+		DispAll();
+#else
 		GameUpdate();
+#endif
 	}
 }
 
 // open screen
 void Open()
 {
-	// set font
-	pDrawFont = FontBold8x16;
-	DrawFontHeight = 16;
-	DrawFontWidth = 8;
+	// draw open screen
+	OpenDraw();
 
 	while (True)
 	{
-		// draw title
-		DrawClear();
-		DrawText2("TV Tennis", (WIDTH - 9*16)/2, 5, COL_YELLOW);
-
-#define MENUX 10
-#define MENUY 45
-#define MENUDY 16
-		// draw menu
-		DrawText("Press key to start the game:", MENUX, MENUY + 0*MENUDY, COL_GREEN);
-		DrawText("LEFT ...... Play with left paddle", MENUX, MENUY+1*MENUDY, COL_WHITE);
-		DrawText("RIGHT ..... Play with right paddle", MENUX, MENUY+2*MENUDY, COL_WHITE);
-		DrawText("DOWN ...... 2 players", MENUX, MENUY+3*MENUDY, COL_WHITE);
-		DrawText("UP ........ Demo", MENUX, MENUY+4*MENUDY, COL_WHITE);
-		DrawText("A ......... Play with tied paddles", MENUX, MENUY+5*MENUDY, COL_WHITE);
-
-#define MENUY2 (MENUY+7*MENUDY)
-		// draw game control
-		DrawText("Game control:", MENUX, MENUY2+0*MENUDY, COL_GREEN);
-		DrawText("LEFT or RIGHT ... Throw the ball", MENUX, MENUY2+1*MENUDY, COL_WHITE);
-		DrawText("UP/DOWN ......... Left paddle", MENUX, MENUY2+2*MENUDY, COL_WHITE);
-		DrawText("X/A ............. Right paddle", MENUX, MENUY2+3*MENUDY, COL_WHITE);
-		DrawText("Y ............... Quit the game", MENUX, MENUY2+4*MENUDY, COL_WHITE);
-
-		// display update
-		DispUpdate();
-
 		// key
 		switch (KeyGet())
 		{

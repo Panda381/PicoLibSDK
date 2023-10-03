@@ -50,7 +50,7 @@ typedef struct {
 #pragma pack(pop)
 
 // BMP file header, 8 bits per pixel
-sBmp BmpHeader = {
+const sBmp BmpHeader = {
 	// BMP file header (size 14 bytes)
 	0x4D42,			// u16	bfType;		// 0x00: magic, 'B' 'M' = 0x4D42
 	14 + 40 + 4*256 + WIDTH*HEIGHT + 2,	// u32	bfSize;	// 0x02: file size, aligned to DWORD = 14 + 40 + 4*256 + 320*240 + 2 = 77880 = 0x13038

@@ -7,6 +7,7 @@ CSRC +=
 
 # C++ source files
 SRC += src/main.cpp
+SRC += img/gradient.cpp
 
 # Makefile includes
 include ../../../Makefile.inc

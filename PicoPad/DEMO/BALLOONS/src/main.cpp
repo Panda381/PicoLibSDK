@@ -25,7 +25,7 @@ int baldy[BALLOON_NUM];
 // main function
 int main()
 {
-	int i, j, x, y;
+	int i, j, x, y, strip;
 
 	// current sky animation
 	int skyx = 0;
@@ -56,17 +56,46 @@ int main()
 	// main loop
 	while (True)
 	{
-		// animate sky
-		DrawImg4Pal(CloudsImg, CloudsImg_Pal, 0, 0, skyx - CLOUDSW, skyy - CLOUDSH, CLOUDSW, CLOUDSH, CLOUDSW);
-		DrawImg4Pal(CloudsImg, CloudsImg_Pal, 0, 0, skyx, skyy - CLOUDSH, CLOUDSW, CLOUDSH, CLOUDSW);
-		DrawImg4Pal(CloudsImg, CloudsImg_Pal, 0, 0, skyx - CLOUDSW, skyy, CLOUDSW, CLOUDSH, CLOUDSW);
-		DrawImg4Pal(CloudsImg, CloudsImg_Pal, 0, 0, skyx, skyy, CLOUDSW, CLOUDSH, CLOUDSW);
+		// wait for VSync (LCD does nothing)
+		VgaWaitVSync();
+
+	// ==== draw graphics
+
+		for (strip = DISP_STRIP_NUM; strip > 0; strip--) // VGA loop all strips; LCD has only 1 strip
+		{
+			// next strip
+			DispSetStripNext();
+
+			// animate sky
+			DrawImg4Pal(CloudsImg, CloudsImg_Pal, 0, 0, skyx - CLOUDSW, skyy - CLOUDSH, CLOUDSW, CLOUDSH, CLOUDSW);
+			DrawImg4Pal(CloudsImg, CloudsImg_Pal, 0, 0, skyx, skyy - CLOUDSH, CLOUDSW, CLOUDSH, CLOUDSW);
+			DrawImg4Pal(CloudsImg, CloudsImg_Pal, 0, 0, skyx - CLOUDSW, skyy, CLOUDSW, CLOUDSH, CLOUDSW);
+			DrawImg4Pal(CloudsImg, CloudsImg_Pal, 0, 0, skyx, skyy, CLOUDSW, CLOUDSH, CLOUDSW);
+
+			// animate hot-air balloons
+			for (i = 0; i < HOTAIR_NUM; i++)
+			{
+				DrawBlitPal(HotairImg, HotairImg_Pal, 0, 0, hotx[i], hoty[i], HOTAIRW, HOTAIRH, HOTAIRW, COL_WHITE);
+			}
+
+			// animate party balloons
+			for (i = 0; i < BALLOON_NUM; i++)
+			{
+				DrawBlitPal(balimg[i], balimgpal[i], 0, 0, balx[i], baly[i], BALLOONW, BALLOONH, BALLOONW, COL_WHITE);
+			}
+
+			// update screen
+			DispUpdate();
+		}
+
+	// ==== shift graphics
+
 		skyx += 4;
 		if (skyx >= CLOUDSW) skyx -= CLOUDSW;
 		skyy += 1;
 		if (skyy >= CLOUDSH) skyy -= CLOUDSH;
 
-		// animate hot-air balloons
+		// shift hot-air balloons
 		for (i = 0; i < HOTAIR_NUM; i++)
 		{
 			x = hotx[i] + hotdx[i];
@@ -96,22 +125,17 @@ int main()
 				hotdy[i] = -RandU8MinMax(HOTAIR_MINSPEED, HOTAIR_MAXSPEED);
 			}
 			hoty[i] = y;
-
-			DrawBlitPal(HotairImg, HotairImg_Pal, 0, 0, hotx[i], hoty[i], HOTAIRW, HOTAIRH, HOTAIRW, COL_WHITE);
 		}
 
-		// animate party balloons
+		// shift party balloons
 		for (i = 0; i < BALLOON_NUM; i++)
 		{
 			y = baly[i] - baldy[i];
 			if (y < -BALLOONH) y += HEIGHT+BALLOONH;
 			baly[i] = y;
-
-			DrawBlitPal(balimg[i], balimgpal[i], 0, 0, balx[i], baly[i], BALLOONW, BALLOONH, BALLOONW, COL_WHITE);
 		}
 
-		// update display
-		DispUpdateAll();
+	// ==== control
 
 		switch (KeyGet())
 		{

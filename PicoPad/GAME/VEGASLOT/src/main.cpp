@@ -120,6 +120,8 @@ void DispReel(u8 inx)
 	int ys = ((r->pos & 0xff) * SYMBOLH + 100) / 256; // source Y coordinate in symbol
 	const u8* tab = &ReelTab[inx*REEL_POS]; // reel table
 
+	VgaWaitVSync();
+
 	// draw reel
 	while (h > 0)
 	{

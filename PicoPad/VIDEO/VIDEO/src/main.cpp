@@ -29,23 +29,23 @@ s8 Volume = VIDEO_VOLUMEDEF; // current volume
 // wait mounting SD card (return False to break)
 Bool WaitMount()
 {
+	// clear display
+	DrawClear();
+
+	// set font 8x16
+	SelFont8x16();
+
+	// prompt
+	DrawText2("Insert SD card", (WIDTH-14*8*2)/2, (HEIGHT-8*2)/2, COL_WHITE);
+
+	// display update
+	DispUpdate();
+
 	// waiting for mounting SD card
 	while (!DiskMount())
 	{
-		// clear display
-		DrawClear();
-
 		// break
 		if (KeyGet() == KEY_Y) return False;
-
-		// set font 8x16
-		SelFont8x16();
-
-		// prompt
-		DrawText2("Insert SD card", (WIDTH-14*8*2)/2, (HEIGHT-8*2)/2, COL_WHITE);
-
-		// display update
-		DispUpdate();
 	}
 
 	return True;

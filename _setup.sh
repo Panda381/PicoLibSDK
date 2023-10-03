@@ -13,6 +13,7 @@
 #   demovga ....... DemoVGA board with VGA RGB565 output
 #   picopad08 ..... PicoPad beta version 0.8
 #   picopad10 ..... PicoPad version 1.0 with TFT RGB565 output
+#   picopadvga .... PicoPad with VGA RGB565 output
 #   (empty) ....... default compilation
 
 case "$1" in
@@ -50,6 +51,11 @@ case "$1" in
 	export DEVICE="picopad10"
 	export DEVCLASS="picopad"
 	export DEVDIR="!PicoPad10"
+	;;
+    "picopadvga")
+	export DEVICE="picopadvga"
+	export DEVCLASS="picopad"
+	export DEVDIR="!PicoPadVGA"
 	;;
      *) 
 	export DEVICE="picopad10"

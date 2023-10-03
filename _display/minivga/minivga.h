@@ -88,6 +88,14 @@ extern int DispMaxY;		// maximal Y + 1; end of back buffer strip
 // dirty window to update (used only with full back buffer, USE_MINIVGA = 2)
 extern int DispDirtyX1, DispDirtyX2, DispDirtyY1, DispDirtyY2;
 
+// handler variables
+extern volatile int VgaScanLine; // current processed scan line 0... (next displayed scan line)
+extern volatile u32 VgaFrame;	// frame counter
+
+#ifdef VGA_KEYSCAN_GPIO		// scan keyboard
+extern volatile u32 VgaKeyScan;	// key scan
+#endif
+
 // last system time of auto update
 extern u32 DispAutoUpdateLast;
 
@@ -117,6 +125,11 @@ void VgaStart();
 
 // terminate VGA on core 1 from core 0 (must be paired with VgaStart())
 void VgaStop();
+
+#if USE_DOUBLE		// use double support
+// retune VGA to different system frequency (freq = new system frequency in Hz)
+void VgaRetune(int freq);
+#endif
 
 // use back buffer
 #if BACKBUFSIZE > 0

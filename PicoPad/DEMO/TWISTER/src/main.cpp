@@ -21,6 +21,9 @@ int main()
 	aa = 0; // angle counter
 	while (True)
 	{
+		// wait for VSync
+		VgaWaitVSync();
+
 		ang = (sinf(aa)-1)*PI;
 		amp = sinf(cosf(aa)*0.3)*1000 + 350;
 
@@ -58,7 +61,11 @@ int main()
 		}
 
 		// increment angle of animation
+#if USE_MINIVGA
+		aa += 0.02f;
+#else
 		aa += 0.05f;
+#endif
 
 		// update display
 		DispUpdateAll();

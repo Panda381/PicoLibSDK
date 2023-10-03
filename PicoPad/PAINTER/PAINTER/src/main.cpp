@@ -1290,6 +1290,9 @@ void EditImg()
 
 				// cursor on
 				CurOn();
+
+				// modified
+				Modi = True;
 				break;
 
 			// dropper

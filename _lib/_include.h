@@ -38,3 +38,10 @@
 #include "inc/lib_textlist.h"		// list of text strings
 #include "inc/lib_tree.h"		// tree list
 #include "inc/lib_video.h"		// video player
+
+//#include "3d_inc/lib_d3def.h"		// 3D definitions
+//#include "3d_inc/lib_d3fixed.h"		// 3D fixed point
+//#include "3d_inc/lib_d3mat.h"		// 3D matrices
+//#include "3d_inc/lib_d3obj.h"		// 3D objects
+//#include "3d_inc/lib_d3vect.h"		// 3D vectors
+//#include "3d_inc/lib_d3world.h"		// 3D world
