@@ -429,7 +429,7 @@ CH_RIGHT	0x1C	'\34'	FS	^\ Right (+Shift: End, +Ctrl: Word right)
 CH_UP		0x1D	'\35'	GS	^] Up (+Shift: PageUp, +Ctrl: Text start)
 CH_LEFT		0x1E	'\36'	RS	^^ Left (+Shift: Home, +Ctrl: Word left)
 CH_DOWN		0x1F	'\37'	US	^_ Down (+Shift: PageDn, +Ctrl: Text end)
-CH_SPC		0x20	‘ ‘	SPC	space
+CH_SPC		0x20	' '	SPC	space
 CH_DEL		0x7F	'\x7F'	DEL	delete character on cursor
 
 
@@ -567,8 +567,8 @@ valid header and a valid checksum. If everything is OK, the boot3 loader will
 run the application.
 
 It is also possible to immediately start an application that is already loaded
-in memory - this is possible with the ‘Y’ button (the ‘Back’ button in Picoino),
-which is otherwise used to exit the application. The ‘X’ button adjusts the
+in memory - this is possible with the 'Y' button (the 'Back' button in Picoino),
+which is otherwise used to exit the application. The 'X' button adjusts the
 volume and backlight of the display.
 
 When selecting an application to run, the boot3 loader displays a preview image
@@ -661,7 +661,7 @@ in which case the boot3 loader will jump to start the application.
 
 Whether the application starts via the boot3 loader or just via the boot2
 loader, in both cases it starts with the start address stored in the second
-entry of the vector table “_reset_handler“ (the first entry is the stack
+entry of the vector table "_reset_handler" (the first entry is the stack
 pointer). This code is located in the crt0.S file.
 
 If core1 is detected, it jumps back to BootROM to go sleep, waiting to be
