@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
 ==================================================================
-SDK Programmer's Guide, Version 1.05, September 2023
+SDK Programmer's Guide, Version 1.06, October 2023
 
 Copyright (c) 2023 Miroslav Nemecek
 
