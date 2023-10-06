@@ -3,6 +3,7 @@ rem Compilation...
 
 set TARGET=OVERLOCK
 set GRPDIR=TEST
+set MEMMAP=
 
 if "%1"=="" goto default
 ..\..\..\_c1.bat %1

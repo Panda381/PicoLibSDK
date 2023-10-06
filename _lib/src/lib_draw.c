@@ -5485,6 +5485,8 @@ void DrawPrintText(const char* txt)
 	DispUpdate();
 }
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // callback - write data to drawing console
 u32 StreamWriteDrawPrint(sStream* str, const void* buf, u32 num)
 {
@@ -5525,6 +5527,8 @@ NOINLINE u32 DrawPrint(const char* fmt, ...)
 	va_end(args);
 	return n;
 }
+
+#endif // USE_STREAM
 
 
 /*

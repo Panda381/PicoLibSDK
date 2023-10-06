@@ -16,12 +16,6 @@
 
 #include "../../global.h"	// globals
 
-#if USE_TEXT	// use Text strings, except StrLen and StrComp (lib_text.c, lib_text.h)
-
-#include "../../_sdk/inc/sdk_cpu.h"
-#include "../../_sdk/inc/sdk_bootrom.h"
-#include "../inc/lib_text.h"
-
 #if USE_FLOAT		// use float support
 // round coefficients, used in SetFloat function
 const float SetFloatCoeff[11] = { 5e0f, 5e-1f, 5e-2f, 5e-3f, 5e-4f, 5e-5f, 5e-6f,
@@ -33,6 +27,12 @@ const float SetFloatCoeff[11] = { 5e0f, 5e-1f, 5e-2f, 5e-3f, 5e-4f, 5e-5f, 5e-6f
 const double SetDoubleCoeff[19] = { 5e0, 5e-1, 5e-2, 5e-3, 5e-4, 5e-5, 5e-6, 5e-7,
 	5e-8, 5e-9, 5e-10, 5e-11, 5e-12, 5e-13, 5e-14, 5e-15, 5e-16 };
 #endif // USE_DOUBLE		// use double support
+
+#if USE_TEXT	// use Text strings, except StrLen and StrComp (lib_text.c, lib_text.h)
+
+#include "../../_sdk/inc/sdk_cpu.h"
+#include "../../_sdk/inc/sdk_bootrom.h"
+#include "../inc/lib_text.h"
 
 // ============================================================================
 //                           Set decadic integer

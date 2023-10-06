@@ -21,12 +21,14 @@
 #include "../inc/sdk_flash.h"
 #include "../inc/sdk_cpu.h"
 #include "../inc/sdk_qspi.h"
+#include "../inc/sdk_ssi.h"
 #include "../inc/sdk_bootrom.h"
 #include "../../_lib/inc/lib_crc.h"
 
 #define FLASH_64KBLOCK_ERASE_CMD 0xd8	// flash erase command of 64KB block
 #define FLASH_32KBLOCK_ERASE_CMD 0x52	// flash erase command of 32KB block
 
+#if !NO_FLASH
 // check boot 2 crc code, if it is valid
 Bool NOINLINE Boot2Check()
 {
@@ -34,6 +36,7 @@ Bool NOINLINE Boot2Check()
 	u32 crc = Crc32ASlow(Boot2, BOOT2_SIZE_BYTES-4);
 	return crc == Boot2[BOOT2_SIZE_BYTES/4-1];
 }
+#endif // !NO_FLASH
 
 // erase flash memory
 //  addr = start address to erase (offset from start of flash XIP_BASE; must be aligned to 4 KB FLASH_SECTOR_SIZE)
@@ -41,12 +44,16 @@ Bool NOINLINE Boot2Check()
 // If core 1 is running, lockout it or reset it!
 void NOFLASH(FlashErase)(u32 addr, u32 count)
 {
+#if !NO_FLASH
+
 	// check boot 2 loader (this function can be run from Flash memory)
 	Bool ok = Boot2Check();
 
 	// copy boot 2 loader into temporary buffer - it is located in the stack, but it will fit OK
 	u32 boot2[BOOT2_SIZE_BYTES/4-1];
 	memcpy(boot2, Boot2, BOOT2_SIZE_BYTES-4);
+
+#endif // !NO_FLASH
 
 	// compiler barrier
 	cb();
@@ -72,6 +79,13 @@ void NOFLASH(FlashErase)(u32 addr, u32 count)
 	// flush flash cache (and remove CSn IO force)
 	FlashFlush();
 
+#if NO_FLASH
+
+	// set flash to fast QSPI mode
+	SSI_FlashQspi(FLASHQSPI_CLKDIV_DEF);
+
+#else // NO_FLASH
+
 	// check if boot 2 loader is valid
 	if (ok && (boot2[0] != 0) && (boot2[0] != (u32)-1))
 	{
@@ -81,6 +95,8 @@ void NOFLASH(FlashErase)(u32 addr, u32 count)
 	else
 		// enter XIP mode
 		FlashEnterXip();
+
+#endif // NO_FLASH
 
 	// enable interrupts
 	IRQ_UNLOCK;
@@ -93,12 +109,16 @@ void NOFLASH(FlashErase)(u32 addr, u32 count)
 // If core 1 is running, lockout it or reset it!
 void NOFLASH(FlashProgram)(u32 addr, const u8* data, u32 count)
 {
+#if !NO_FLASH
+
 	// check boot 2 loader (this function can be run from Flash memory)
 	Bool ok = Boot2Check();
 
 	// copy boot 2 loader into temporary buffer - it is located in the stack, but it will fit OK
 	u32 boot2[BOOT2_SIZE_BYTES/4-1];
 	memcpy(boot2, Boot2, BOOT2_SIZE_BYTES-4);
+
+#endif // !NO_FLASH
 
 	// compiler barrier
 	cb();
@@ -118,6 +138,13 @@ void NOFLASH(FlashProgram)(u32 addr, const u8* data, u32 count)
 	// flush flash cache (and remove CSn IO force)
 	FlashFlush();
 
+#if NO_FLASH
+
+	// set flash to fast QSPI mode
+	SSI_FlashQspi(FLASHQSPI_CLKDIV_DEF);
+
+#else // NO_FLASH
+
 	// check if boot 2 loader is valid
 	if (ok && (boot2[0] != 0) && (boot2[0] != (u32)-1))
 	{
@@ -127,6 +154,8 @@ void NOFLASH(FlashProgram)(u32 addr, const u8* data, u32 count)
 	else
 		// enter XIP mode
 		FlashEnterXip();
+
+#endif // !NO_FLASH
 
 	// enable interrupts
 	IRQ_UNLOCK;

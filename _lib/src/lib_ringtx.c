@@ -334,6 +334,8 @@ void RingTxWriteSend(sRingTx* ring, const void* src, u32 len)
 	if (DMA_GetCount(ring->dma) < 0x70000000) RingTxSend(ring);
 }
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // callback - close stream, send rest of data
 static void StreamCloseRingTx(sStream* str)
 {
@@ -391,5 +393,7 @@ NOINLINE u32 RingTxPrint(sRingTx* ring, const char* fmt, ...)
 	va_end(args);
 	return n;
 }
+
+#endif // USE_STREAM
 
 #endif // USE_RINGTX	// use Ring buffer with DMA transmitter (lib_ringtx.c, lib_ringtx.h)

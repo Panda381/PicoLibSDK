@@ -142,6 +142,8 @@ void RingTxWrite32Wait(sRingTx* ring, u32 data);
 // write data into ring buffer and send remaining data
 void RingTxWriteSend(sRingTx* ring, const void* src, u32 len);
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // initialize stream to write to ring buffer
 void StreamWriteRingTxInit(sStream* str, sRingTx* ring);
 
@@ -150,6 +152,8 @@ u32 RingTxPrintArg(sRingTx* ring, const char* fmt, va_list args);
 
 // formatted print string into ring buffer, with variadic arguments
 NOINLINE u32 RingTxPrint(sRingTx* ring, const char* fmt, ...);
+
+#endif // USE_STREAM
 
 #ifdef __cplusplus
 }

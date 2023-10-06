@@ -424,6 +424,8 @@ u32 RingRead32Wait(sRing* ring)
 	return data;
 }
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // callback - write data to ring buffer
 static u32 StreamWriteRing(sStream* str, const void* buf, u32 num)
 {
@@ -470,5 +472,7 @@ NOINLINE u32 RingPrint(sRing* ring, const char* fmt, ...)
 	va_end(args);
 	return n;
 }
+
+#endif // USE_STREAM
 
 #endif // USE_RING	// use Ring buffer (lib_ring.c, lib_ring.h)

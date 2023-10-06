@@ -5,6 +5,7 @@ if "%1" == "picopadvga" goto stop
 
 set TARGET=FREQMET
 set GRPDIR=MEASURE
+set MEMMAP=
 
 if exist freqmet.pio.h del freqmet.pio.h
 ..\..\..\_tools\pioasm.exe -o c-sdk src\freqmet.pio freqmet.pio.h

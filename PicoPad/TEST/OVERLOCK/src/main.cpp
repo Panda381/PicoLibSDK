@@ -11,8 +11,16 @@
 int main()
 {
 	// set maximum voltage
+	// - enables overlocking up to 310 MHz
 	VregSetVoltage(VREG_VOLTAGE_1_30);
 	printf("Vreg Voltage = 1.30V\n");
+
+#if NO_FLASH
+	// initialize Flash interface (clkdiv = clock divider, must be even number, 4 is default)
+	// - enables overlocking up to 420 MHz
+	SSI_InitFlash(6);
+	printf("Flash clkdiv=6\n");
+#endif
 
 	// initial system clock frequency 125 MHz
 	u32 f = PLL_KHZ;
@@ -21,6 +29,7 @@ int main()
 	// CRC of the flash memory
 	u32 crc = Crc32ADMA((void*)XIP_BASE, 2*1024*1024);
 	printf("Flash memory CRC = 0x%08X\n", crc);
+	WaitMs(1000);
 
 	// check calculations
 	double s, c, s2, c2;

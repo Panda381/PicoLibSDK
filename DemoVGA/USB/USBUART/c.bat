@@ -3,6 +3,7 @@ rem Compilation...
 
 set TARGET=USBUART
 set GRPDIR=USB
+set MEMMAP=
 
 if "%1"=="" goto default
 ..\..\..\_c1.bat %1

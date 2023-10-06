@@ -3,6 +3,7 @@ rem Compilation...
 
 set TARGET=PULSGRAM
 set GRPDIR=MEASURE
+set MEMMAP=
 
 if exist pulsgram.pio.h del pulsgram.pio.h
 ..\..\..\_tools\pioasm.exe -o c-sdk src\pulsgram.pio pulsgram.pio.h

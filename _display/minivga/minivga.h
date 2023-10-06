@@ -74,7 +74,7 @@ extern "C" {
 extern ALIGNED FRAMETYPE FrameBuf[];
 
 // back buffer
-#if BACKBUFSIZE > 0
+#if USE_FRAMEBUF && (BACKBUFSIZE > 0)
 //  Planar mode: Lines are interlaced in order blue, green and red.
 extern ALIGNED FRAMETYPE BackBuf[BACKBUFSIZE]; // back buffer strip
 #endif

@@ -139,6 +139,7 @@ typedef void (*irq_handler_t)();
 #define SCB_ICSR ((volatile u32*)(PPB_BASE + 0xED04))
 
 // address of register of Cortex M0+ interrupt vector table VTOR
+// - vector table must be aligned to 256 bytes
 #define SCB_VTOR ((volatile u32*)(PPB_BASE + 0xED08))
 
 // address of reset control register of Cortex M0+
@@ -151,7 +152,12 @@ typedef void (*irq_handler_t)();
 #define SCB_SHPR3 ((volatile u32*)(PPB_BASE + 0xED20))
 
 // copy of vector table in RAM
-extern u32 __attribute__((section(".ram_vector_table"))) RamVectorTable[48];
+#if !NO_FLASH	// In the RAM version, the vector table is already in RAM
+#if USE_IRQ	// use IRQ interrupts (sdk_irq.c, sdk_irq.h)
+// copy of vector table in RAM ... must be aligned to 256 bytes
+extern u32 __attribute__((section(".ram_vector_table"))) __attribute__((aligned(256))) RamVectorTable[48];
+#endif
+#endif
 
 // get address of interrupt vector table of this CPU core
 INLINE irq_handler_t* GetVTOR() { return (irq_handler_t*)*SCB_VTOR; }
@@ -161,6 +167,7 @@ INLINE void SetVTOR(irq_handler_t* addr) { cb(); *SCB_VTOR = (u32)addr; cb(); }
 
 // set interrupt service handler (irq = interrupt request indice IRQ_* -15..+25)
 // - vector table must be located in RAM
+// - vector table must be aligned to 256 bytes
 // - if vector table is not in RAM, use services with names isr_*
 // - vector table in this SDK is shared between both CPU cores
 // - can be used to set Cortex-M0+ exception handlers (irq < 0)

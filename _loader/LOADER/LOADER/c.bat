@@ -3,6 +3,7 @@ rem Compilation...
 
 set TARGET=LOADER
 set GRPDIR=.
+set MEMMAP=
 
 call ..\..\..\_c1.bat %1
 

@@ -540,11 +540,15 @@ void DrawPrintChar(char ch);
 //  split text to more parts: use "\4" "1" instead of "\41".
 void DrawPrintText(const char* txt);
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // formatted print string to drawing console, with argument list (returns number of characters, without terminating 0)
 u32 DrawPrintArg(const char* fmt, va_list args);
 
 // formatted print string to drawing console, with variadic arguments (returns number of characters, without terminating 0)
 NOINLINE u32 DrawPrint(const char* fmt, ...);
+
+#endif // USE_STREAM
 
 #ifdef __cplusplus
 }

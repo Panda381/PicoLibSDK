@@ -11,13 +11,14 @@
 #define PPB_BASE		0xe0000000	// Cortex M0 control block
 #define M0PLUS_VTOR_OFFSET	0x0000ed08	// offset of VTOR control register
 #define BOOTLOADER_SIZE		0x8000		// size of boot loader
+#define SCB_VTOR		0xe000ed08	// address of register of Cortex M0+ interrupt vector table VTOR
 
 	.syntax unified
 	.cpu cortex-m0plus
 	.thumb
 
 	.section .vectors, "ax"
-	.align 2		// align data to 4 bytes
+	.align 8		// aligned to 256 bytes
 
 // ==== Vector table
 
@@ -170,6 +171,17 @@ unhandled_irq_3:
 .global _reset_handler
 _reset_handler:
 
+// set stack pointer (may be uninitialized from BOOTROM when starting RAM version)
+
+	ldr	r0,=__StackTop			// top of the stack
+	msr	MSP,r0				// set stack pointer
+
+// set vector table address (may be uninitialized from BOOTROM when starting RAM version)
+
+	ldr	r0,=__vectors			// vectors
+	ldr	r1,=SCB_VTOR			// SCB_VTOR register (PPB_BASE + 0xED08)
+	str	r0,[r1,#0]			// set VTOR address
+
 // Only core 0 should run the C runtime startup code; core 1 is normally
 // sleeping in the bootrom at this point but check to be sure
 
@@ -178,7 +190,9 @@ _reset_handler:
 	cmp	r0,#0				// is running on CPU 0 ?
 	bne	hold_non_core0_in_bootrom	// run CPU 1 back to bootrom
 
-// Copy read-only data from Flash to RAM
+// Copy read-only data from Flash to RAM (only if not RAM version)
+
+#if !NO_FLASH
 
 	ldr	r1,=__etext			// read address of data in Flash
 	ldr	r2,=__data_start__		// write address of data to RAM
@@ -192,12 +206,15 @@ data_cpy:
 	cmp	r2,r3				// check limit of write address
 	blo	data_cpy_loop			// repeat until R2 >= R3
 
+#endif
+
 // Zero out the BSS segment
 
 2:	ldr	r1,=__bss_start__		// start of BSS segment -> R1 (get from linker script *.ld)
 	ldr	r2,=__bss_end__			// end of BSS segment -> R2 (get from linker script *.ld)
 	movs	r0,#0				// clear value 0 -> R0
 	b	bss_fill_test
+
 bss_fill_loop:
 	stm	r1!,{r0}			// store 0 from R0 to [R1] and increment R1
 bss_fill_test:

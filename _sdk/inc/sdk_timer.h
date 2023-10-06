@@ -77,6 +77,8 @@ void WaitUs(u32 us);
 // wait for delay in [ms] (max. 71 minutes, 4'294'967 ms)
 void WaitMs(int ms);
 
+#if USE_IRQ	// use IRQ interrupts (sdk_irq.c, sdk_irq.h)
+
 // start alarm
 //   alarm = alarm number 0..3
 //   handler = interrupt handler
@@ -110,6 +112,8 @@ void AlarmRestart(u8 alarm, u32 time);
 
 // stop alarm - can be called from an interrupt if no next interrupt is required
 void AlarmStop(u8 alarm);
+
+#endif // USE_IRQ
 
 #ifdef __cplusplus
 }

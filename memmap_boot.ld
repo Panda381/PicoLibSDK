@@ -125,10 +125,6 @@ SECTIONS
     /* End of .text-like segments */
     __etext = .;
 
-   .ram_vector_table (COPY): {
-        *(.ram_vector_table)
-    } > RAM
-
     .data : {
         __data_start__ = .;
         *(vtable)
@@ -178,6 +174,11 @@ SECTIONS
         /* All data end */
         __data_end__ = .;
     } > RAM AT> FLASH
+
+   .ram_vector_table (COPY): {
+        . = ALIGN(256);
+        *(.ram_vector_table)
+    } > RAM
 
     .uninitialized_data (COPY): {
         . = ALIGN(4);

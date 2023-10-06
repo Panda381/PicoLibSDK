@@ -3,6 +3,7 @@ rem Compilation...
 
 set TARGET=PAINTER
 set GRPDIR=PAINTER
+set MEMMAP=
 
 if "%1"=="" goto default
 ..\..\..\_c1.bat %1

@@ -3,6 +3,7 @@ rem Compilation...
 
 set TARGET=INVADERS
 set GRPDIR=GAME
+set MEMMAP=
 
 if "%1"=="" goto default
 ..\..\..\_c1.bat %1

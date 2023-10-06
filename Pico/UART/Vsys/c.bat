@@ -3,6 +3,7 @@ rem Compilation...
 
 set TARGET=Vsys
 set GRPDIR=UART
+set MEMMAP=
 
 if "%1"=="" goto default
 ..\..\..\_c1.bat %1

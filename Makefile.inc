@@ -12,11 +12,18 @@
 # Command to select class of target device (to use common compilation setup).
 #    set DEVCLASS=picopad
 
+# Command to select linker script NO_FLASH ('noflash' = use only RAM, #define flag NO_FLASH)
+#    set MEMMAP=noflash
+
 
 ##############################################################################
 # Input files
 
 # ASM source files
+ifeq (${MEMMAP},noflash)
+# NOFLASH - no loader if located in RAM
+DEFINE += -D NO_FLASH=1
+else
 ifeq (${TARGET},LOADER)
 ASRC += ../../../_boot2/boot2_w25q080_bin.S
 else
@@ -24,6 +31,7 @@ ifeq (${DEVCLASS},pico)
 ASRC += ../../../_boot2/boot2_w25q080_bin.S
 else
 ASRC += ../../../_loader/loader_${DEVICE}.S
+endif
 endif
 endif
 
@@ -61,10 +69,14 @@ CONFIGFILE = ./config.h
 ifeq (${TARGET},LOADER)
 LDSCRIPT = ../../../memmap_boot.ld
 else
+ifeq (${MEMMAP},noflash)
+LDSCRIPT = ../../../memmap_noflash.ld
+else
 ifeq (${DEVCLASS},pico)
 LDSCRIPT = ../../../memmap_default.ld
 else
 LDSCRIPT = ../../../memmap_app.ld
+endif
 endif
 endif
 

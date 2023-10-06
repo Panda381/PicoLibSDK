@@ -125,6 +125,8 @@ enum {
 	CANVASIMG_PERSP,	// perspective floor
 };
 
+#if USE_MAT2D			// use 2D transformation matrix (lib_mat2d.c, lib_mat2d.h)
+
 // draw 8-bit image with 2D transformation matrix
 //  canvas ... destination canvas
 //  src ... source canvas with image
@@ -154,6 +156,8 @@ void CanvasImgMat(sCanvas* canvas, const sCanvas* src, int x, int y, int w, int 
 //  horizon ... horizon offset (0=do not use perspective projection)
 void CanvasTileMap(sCanvas* canvas, const sCanvas* src, const u8* map, int mapwbits, int maphbits,
 	int tilebits, int x, int y, int w, int h, const sMat2D* mat, u8 horizon);
+
+#endif // USE_MAT2D
 
 // draw image line interpolated
 //  canvas = destination canvas (8-bit pixel format)

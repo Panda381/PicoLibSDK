@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
 ==================================================================
-SDK Programmer's Guide, Version 1.06, October 2023
+SDK Programmer's Guide, Version 1.07, October 2023
 
 Copyright (c) 2023 Miroslav Nemecek
 
@@ -761,6 +761,8 @@ History of versions
 09/09/2023 version 1.05: CSYNC in VGA driver, added PicoVGA8 library,
 	added VREG library, setup volume and backlight, calibrate crystal.
 10/03/2023 version 1.06: added PicoPadVGA device and some drawing functions.
+10/06/2023 version 1.07: support for RAM programs, support for saving and
+	loading Flash boot loader
 
 
 Missing and @TODO
@@ -768,9 +770,7 @@ Missing and @TODO
 SDK supports that are missing in the library and are needed @TODO:
 
 - Get Flash unique ID
-- XIP control
 - run double-floating-point from bootrom
-- SSI interface
 - bluetooth and wifi
 - more USB drivers (audio, bluetooth, dfu, midi, msc, net, tmc, video)
 - mutex

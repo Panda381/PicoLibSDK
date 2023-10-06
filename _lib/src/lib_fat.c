@@ -1697,6 +1697,7 @@ u32 FilePrintText(sFile* file, const char* txt)
 	return n;
 }
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
 // callback - write data to file
 u32 StreamWriteFile(sStream* str, const void* buf, u32 num)
 {
@@ -1733,6 +1734,7 @@ NOINLINE u32 FilePrint(sFile* file, const char* fmt, ...)
 	va_end(args);
 	return n;
 }
+#endif // USE_STREAM
 
 // flush file writes and flush disk buffers (returns False on error)
 Bool FileFlush(sFile* file)

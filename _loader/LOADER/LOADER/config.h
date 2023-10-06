@@ -24,6 +24,8 @@
 
 #define WIDTH		320		// screen width
 
+#define USE_FRAMEBUF	0		// use default frame buffer
+
 #define USE_SCREENSHOT	0		// use screen shots
 
 #define USE_DOUBLE	0		// use Double-floating point (sdk_double.c, sdk_double_asm.S, sdk_double.h)

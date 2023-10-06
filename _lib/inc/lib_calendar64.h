@@ -221,6 +221,7 @@ void DateTime64UnpackUnixTime(sDateTime64* dt, u32 ut, s16 ms, s16 us);
 //  Takes 7 us.
 void DateTime64UnpackAbsTime(sDateTime64* dt, s64 time);
 
+#if USE_PRINT		// use Formatted print (lib_print.c, lib_print.h)
 // debug test date time structure
 extern sDateTime64 DebTestDateTime;
 extern sDateTime64 DebTestDateTime2;
@@ -249,9 +250,12 @@ int DebTestCalendar64Step();
 
 // Calendar test loop (using printf output)
 void DebTestCalendar64();
+#endif // USE_PRINT
 
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 // datetime64 fast check (returns year on error or 0 if OK)
 s16 DateTime64FastCheck(int loops);
+#endif
 
 #ifdef __cplusplus
 }

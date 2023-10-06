@@ -26,11 +26,11 @@
 extern "C" {
 #endif
 
-// === SSI control registers (RP2040 datasheet page 609)
+// === SSI control registers
 
 //#define XIP_SSI_BASE		0x18000000	// SSI flash interface
 #define SSI_CTRLR0	((volatile u32*)(XIP_SSI_BASE+0))	// control register 0
-#define SSI_CTRLR1	((volatile u32*)(XIP_SSI_BASE+4))	// master controlr register 1
+#define SSI_CTRLR1	((volatile u32*)(XIP_SSI_BASE+4))	// master control register 1
 #define SSI_SSIENR	((volatile u32*)(XIP_SSI_BASE+8))	// SSI enable
 #define SSI_MWCR	((volatile u32*)(XIP_SSI_BASE+0x0C))	// Microwire control
 #define SSI_SER		((volatile u32*)(XIP_SSI_BASE+0x10))	// slave enable
@@ -54,23 +54,54 @@ extern "C" {
 #define SSI_IDR		((volatile u32*)(XIP_SSI_BASE+0x58))	// identification register
 #define SSI_VERSION_ID	((volatile u32*)(XIP_SSI_BASE+0x5C))	// version ID
 #define SSI_DR0		((volatile u32*)(XIP_SSI_BASE+0x60))	// data register 0 (od 36)
-
 #define SSI_RX_SAMP_DLY	((volatile u32*)(XIP_SSI_BASE+0xF0))	// RX sample delay
 #define SSI_SPI_CTRLR0	((volatile u32*)(XIP_SSI_BASE+0xF4))	// SPI control
 #define SSI_TX_DRV_EDGE	((volatile u32*)(XIP_SSI_BASE+0xF8))	// TX drive edge
 
-// set SSI data frame size to 1..32 bits
-INLINE void SSI_SetDataFrameSize(u8 dfs) { RegMask(SSI_CTRLR0, (u32)(dfs-1)<<16, B16|B17|B18|B19|B20); }
+typedef struct {
+	io32	ctrlr0;		// control register 0
+	io32	ctrlr1;		// master control register 1
+	io32	ssienr;		// SSI enable
+	io32	mwcr;		// Microwire control
+	io32	ser;		// slave enable
+	io32	baudr;		// baud rate
+	io32	txftlr;		// TX FIFO threshold level
+	io32	rxftlr;		// RX FIFO threshold level
+	io32	txflr;		// TX FIFO level
+	io32	rxflr;		// RX FIFO level
+	io32	sr;		// status register
+	io32	imr;		// interrupt mask
+	io32	isr;		// interrupt status
+	io32	risr;		// raw interrupt status
+	io32	txoicr;		// TX FIFO overflow interrupt clear
+	io32	rxoicr;		// RX FIFO overflow interrupt clear
+	io32	rxuicr;		// RX FIFO underflow interrupt clear
+	io32	msticr;		// multi-master interrupt clear
+	io32	icr;		// interrupt clear
+	io32	dmacr;		// DMA control
+	io32	dmatdlr;	// DMA TX data level
+	io32	dmardlr;	// DMA RX data level
+	io32	idr;		// identification register
+	io32	version_id;	// version ID
+	io32	dr0;		// data register 0 (od 36)
+	io32	dr[35];		// ... other data registers are not used
+	io32	rx_sample_dly;	// RX sample delay
+	io32	spi_ctrlr0;	// SPI control
+	io32	txd_drive_edge;	// TX drive edge
+} ssi_hw_t;
 
-// get SSI data frame size (returns 1..32)
-INLINE u8 SSI_GetDataFrameSize() { return (u8)(((*SSI_CTRLR0 >> 16) & 0x1f)+1); }
+#define ssi_hw ((ssi_hw_t*)XIP_SSI_BASE)
 
-// set frame format
-INLINE void SSI_SetFrameFormat(u8 form) { RegMask(SSI_CTRLR0, (u32)form<<4, B4|B5); }
+// set flash to fast QSPI mode (clkdiv = clock divider, must be even number, FLASHQSPI_CLKDIV_DEF=4 is default)
+//   Supported devices: Winbond W25Q080, W25Q16JV, AT25SF081, S25FL132K0
+//   Raspberry Pico cointains W25Q16JVUXIQ
+#define FLASHQSPI_CLKDIV_DEF	4
+void NOFLASH(SSI_FlashQspi)(int clkdiv);
 
-// get frame format
-INLINE u8 SSI_GetFrameFormat() { return (u8)((*SSI_CTRLR0 >> 4) & 3); }
-
+// initialize Flash interface (clkdiv = clock divider, must be even number, FLASHQSPI_CLKDIV_DEF=4 is default)
+//   Supported devices: Winbond W25Q080, W25Q16JV, AT25SF081, S25FL132K0
+//   Raspberry Pico cointains W25Q16JVUXIQ
+void NOFLASH(SSI_InitFlash)(int clkdiv);
 
 #ifdef __cplusplus
 }

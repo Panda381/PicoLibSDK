@@ -17,7 +17,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-#define SDK_VER		106	// SDK library version in hundredths
+#define SDK_VER		107	// SDK library version in hundredths
 
 // ----------------------------------------------------------------------------
 //                               Attributes
@@ -114,6 +114,11 @@ typedef u16 uint16_t;		// used only by PIO program
 typedef unsigned char Bool;
 #define True 1
 #define False 0
+
+// hw registers
+typedef volatile u32 io32;
+typedef volatile u16 io16;
+typedef volatile u8 io8;
 
 // NULL
 #ifndef NULL

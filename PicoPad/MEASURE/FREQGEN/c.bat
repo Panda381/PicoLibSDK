@@ -3,6 +3,7 @@ rem Compilation...
 
 set TARGET=FREQGEN
 set GRPDIR=MEASURE
+set MEMMAP=
 
 if exist freqgen.pio.h del freqgen.pio.h
 ..\..\..\_tools\pioasm.exe -o c-sdk src\freqgen.pio freqgen.pio.h

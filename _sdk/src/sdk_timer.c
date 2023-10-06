@@ -70,6 +70,8 @@ void WaitMs(int ms)
 	WaitUs((u32)ms*1000);
 }
 
+#if USE_IRQ	// use IRQ interrupts (sdk_irq.c, sdk_irq.h)
+
 // start alarm
 //   alarm = alarm number 0..3
 //   handler = interrupt handler
@@ -132,5 +134,7 @@ void AlarmStop(u8 alarm)
 	// disable interrupt on NVIC
 	NVIC_IRQDisable(ALARM_IRQ(alarm));
 }
+
+#endif // USE_IRQ
 
 #endif // USE_TIMER	// use Timer with alarm (sdk_timer.c, sdk_timer.h)

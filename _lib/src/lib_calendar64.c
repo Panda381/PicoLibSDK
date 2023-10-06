@@ -576,6 +576,8 @@ void DateTime64UnpackAbsTime(sDateTime64* dt, s64 time)
 	if (dt->dayofweek == 7) dt->dayofweek = 0;
 }
 
+#if USE_PRINT		// use Formatted print (lib_print.c, lib_print.h)
+
 // initialize debug test calendar - default set MINYEAR2 (returns False on error)
 void DebTestCalendar64Init(int year)
 {
@@ -693,6 +695,10 @@ void DebTestCalendar64()
 	}
 }
 
+#endif // USE_PRINT
+
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
+
 // datetime64 fast check (returns year on error or 0 if OK)
 s16 DateTime64FastCheck(int loops)
 {
@@ -735,5 +741,7 @@ s16 DateTime64FastCheck(int loops)
 	}
 	return 0;
 }
+
+#endif // USE_RAND
 
 #endif // USE_CALENDAR64	// use 64-bit calendar (lib_calendar64.c, lib_calendar64.h)

@@ -151,6 +151,8 @@ u16 RingRead16Wait(sRing* ring);
 // read 32-bit data from ring buffer and wait until ready
 u32 RingRead32Wait(sRing* ring);
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // initialize stream to write to ring buffer
 void StreamWriteRingInit(sStream* str, sRing* ring);
 
@@ -159,6 +161,8 @@ u32 RingPrintArg(sRing* ring, const char* fmt, va_list args);
 
 // formatted print string into ring buffer, with variadic arguments
 NOINLINE u32 RingPrint(sRing* ring, const char* fmt, ...);
+
+#endif // USE_STREAM
 
 #ifdef __cplusplus
 }

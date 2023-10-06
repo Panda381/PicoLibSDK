@@ -17,6 +17,9 @@
 #ifndef _MAIN_H
 #define _MAIN_H
 
+// custom frame buffer - used as buffer to load UF2 program into RAM
+#define CUSTOM_FRAMEBUF_SIZE (220000/sizeof(FRAMETYPE))
+
 // text of file list
 //#define FONTW		8	// font width
 //#define FONTH		16	// font height
@@ -32,7 +35,7 @@
 // files
 #define PATHMAX		240	// max. length of path (it must be <= 256 with CRC and magic)
 #define MAXFILES	1024	// max files in one directory
-#define NAMELEN		9	// max. length if filename without extension and with terminating 0
+#define NAMELEN		9	// max. length of filename without extension and with terminating 0
 #define FILEROWS	(TEXTH-2) // rows of files (=13)
 #define FILECOLW	20	// width of file panel
 
@@ -100,5 +103,37 @@ typedef struct {
 					// 0x46
 } sBmp;
 #pragma pack(pop)
+
+// UF2 sector (size 512 bytes)
+#define UF2_MAGIC_START0		0x0A324655
+#define UF2_MAGIC_START1		0x9E5D5157
+#define UF2_MAGIC_END			0x0AB16F30
+
+#define UF2_FLAG_NOT_MAIN_FLASH		0x00000001
+#define UF2_FLAG_FILE_CONTAINER		0x00001000
+#define UF2_FLAG_FAMILY_ID_PRESENT	0x00002000
+#define UF2_FLAG_MD5_PRESENT		0x00004000
+
+#define RP2040_FAMILY_ID		0xe48bff56
+
+typedef struct {
+	// header size 32 bytes
+	u32	magic_start0;		// 0x000: UF2_MAGIC_START0 (0x0A324655)
+	u32	magic_start1;		// 0x004: UF2_MAGIC_START1 (0x9E5D5157)
+	u32	flags;			// 0x008: UF2_FLAG_FAMILY_ID_PRESENT (0x00002000)
+	u32	target_addr;		// 0x00C: address flash 0x10000000, 0x10000100,... or RAM 0x20000000, 0x20000100,...
+	u32	payload_size;		// 0x010: data size 0x00000100 (256)
+	u32	block_no;		// 0x014: block number 0, 1,...
+	u32	num_blocks;		// 0x018: total number of blocks
+	u32	file_size; // or familyID; // 0x01C: family ID RP2040_FAMILY_ID (0xe48bff56)
+
+	// sector data
+	u8	data[476];
+
+	// sector end magic
+	u32	magic_end;		// 0x1FC: UF2_MAGIC_END (0x0AB16F30)
+} sUf2;
+
+STATIC_ASSERT(sizeof(sUf2) == 512, "sUf2 not sector sized!");
 
 #endif // _MAIN_H

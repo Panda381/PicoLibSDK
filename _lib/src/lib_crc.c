@@ -112,12 +112,14 @@ u32 Crc32AByteSlow(u32 crc, u8 data)
 	return crc;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-32 Normal (CRC32A), 1 byte - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u32 Crc32AByteDMA(u32 crc, u8 data)
 {
 	return DMA_CRC(DMA_CRC_CRC32, crc, DMA_TEMP_CHAN(), &data, 1);
 }
+#endif // USE_DMA
 
 // Calculate CRC-32 Normal (CRC32A), buffer - tabled version (requires 1 KB of flash memory)
 u32 Crc32ABufTab(u32 crc, const void* buf, int len)
@@ -152,12 +154,14 @@ u32 Crc32ABufSlow(u32 crc, const void* buf, int len)
 	return crc;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-32 Normal (CRC32A), buffer - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u32 Crc32ABufDMA(u32 crc, const void* buf, int len)
 {
 	return DMA_CRC(DMA_CRC_CRC32, crc, DMA_TEMP_CHAN(), buf, len);
 }
+#endif // USE_DMA
 
 // Calculate CRC-32 Normal (CRC32A) - tabled version (requires 1 KB of flash memory)
 //   Calculation speed: 160 us per 1 KB
@@ -173,6 +177,7 @@ u32 Crc32ASlow(const void* buf, int len)
 	return Crc32ABufSlow(CRC32A_INIT, buf, len);
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-32 Normal (CRC32A) - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 //   Calculation speed: 2 us per 1 KB
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
@@ -180,6 +185,7 @@ u32 Crc32ADMA(const void* buf, int len)
 {
 	return Crc32ABufDMA(CRC32A_INIT, buf, len);
 }
+#endif // USE_DMA
 
 // Check CRC-32 Normal (CRC32A) calculations (returns False on error)
 Bool Crc32ACheck()
@@ -203,9 +209,11 @@ Bool Crc32ACheck()
 	if (Crc32ASlow(CrcPat2, CRCPAT2LEN) != CRC32A_RES2) return False;
 	if (Crc32ASlow(CrcPat3, CRCPAT3LEN) != CRC32A_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	if (Crc32ADMA(CrcPat1, CRCPAT1LEN) != CRC32A_RES1) return False;
 	if (Crc32ADMA(CrcPat2, CRCPAT2LEN) != CRC32A_RES2) return False;
 	if (Crc32ADMA(CrcPat3, CRCPAT3LEN) != CRC32A_RES3) return False;
+#endif // USE_DMA
 
 	// CRC-32 buffer version
 #define CRC32A_SPLIT 503
@@ -217,9 +225,11 @@ Bool Crc32ACheck()
 	crc = Crc32ABufSlow(crc, (const u8*)CrcPat3+CRC32A_SPLIT, CRCPAT3LEN-CRC32A_SPLIT);
 	if (crc != CRC32A_RES3) return False;
 	
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	crc = Crc32ABufDMA(CRC32A_INIT, CrcPat3, CRC32A_SPLIT);
 	crc = Crc32ABufDMA(crc, (const u8*)CrcPat3+CRC32A_SPLIT, CRCPAT3LEN-CRC32A_SPLIT);
 	if (crc != CRC32A_RES3) return False;
+#endif // USE_DMA
 	
 	// CRC-32 byte version
 	crc = CRC32A_INIT;
@@ -232,10 +242,12 @@ Bool Crc32ACheck()
 	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc32AByteSlow(crc, *src++);
 	if (crc != CRC32A_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	crc = CRC32A_INIT;
 	src = (const u8*)CrcPat3;
 	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc32AByteDMA(crc, *src++);
 	if (crc != CRC32A_RES3) return False;
+#endif // USE_DMA
 
 	return True;
 }
@@ -326,12 +338,14 @@ u32 Crc32BByteSlow(u32 crc, u8 data)
 	return ~crc;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-32 Reversed (CRC32B), 1 byte - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u32 Crc32BByteDMA(u32 crc, u8 data)
 {
 	return DMA_CRC(DMA_CRC_CRC32REV | DMA_CRC_REV | DMA_CRC_INV, reverse(~crc), DMA_TEMP_CHAN(), &data, 1);
 }
+#endif // USE_DMA
 
 // Calculate CRC-32 Reversed (CRC32B), buffer - tabled version (requires 1 KB of flash memory)
 u32 Crc32BBufTab(u32 crc, const void* buf, int len)
@@ -368,12 +382,14 @@ u32 Crc32BBufSlow(u32 crc, const void* buf, int len)
 	return ~crc;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-32 Reversed (CRC32B), buffer - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u32 Crc32BBufDMA(u32 crc, const void* buf, int len)
 {
 	return DMA_CRC(DMA_CRC_CRC32REV | DMA_CRC_REV | DMA_CRC_INV, reverse(~crc), DMA_TEMP_CHAN(), buf, len);
 }
+#endif // USE_DMA
 
 // Calculate CRC-32 Reversed (CRC32B) - tabled version (requires 1 KB of flash memory)
 //   Calculation speed: 160 us per 1 KB
@@ -389,6 +405,7 @@ u32 Crc32BSlow(const void* buf, int len)
 	return Crc32BBufSlow(CRC32B_INIT, buf, len);
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-32 Reversed (CRC32B) - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 //   Calculation speed: 2 us per 1 KB
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
@@ -396,6 +413,7 @@ u32 Crc32BDMA(const void* buf, int len)
 {
 	return Crc32BBufDMA(CRC32B_INIT, buf, len);
 }
+#endif // USE_DMA
 
 // Check CRC-32 Reversed (CRC32B) calculations (returns False on error)
 Bool Crc32BCheck()
@@ -419,9 +437,11 @@ Bool Crc32BCheck()
 	if (Crc32BSlow(CrcPat2, CRCPAT2LEN) != CRC32B_RES2) return False;
 	if (Crc32BSlow(CrcPat3, CRCPAT3LEN) != CRC32B_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	if (Crc32BDMA(CrcPat1, CRCPAT1LEN) != CRC32B_RES1) return False;
 	if (Crc32BDMA(CrcPat2, CRCPAT2LEN) != CRC32B_RES2) return False;
 	if (Crc32BDMA(CrcPat3, CRCPAT3LEN) != CRC32B_RES3) return False;
+#endif // USE_DMA
 
 	// CRC-32 buffer version
 #define CRC32B_SPLIT 503
@@ -433,9 +453,11 @@ Bool Crc32BCheck()
 	crc = Crc32BBufSlow(crc, (const u8*)CrcPat3+CRC32B_SPLIT, CRCPAT3LEN-CRC32B_SPLIT);
 	if (crc != CRC32B_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	crc = Crc32BBufDMA(CRC32B_INIT, CrcPat3, CRC32B_SPLIT);
 	crc = Crc32BBufDMA(crc, (const u8*)CrcPat3+CRC32B_SPLIT, CRCPAT3LEN-CRC32B_SPLIT);
 	if (crc != CRC32B_RES3) return False;
+#endif // USE_DMA
 
 	// CRC-32 byte version
 	crc = CRC32B_INIT;
@@ -448,10 +470,12 @@ Bool Crc32BCheck()
 	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc32BByteSlow(crc, *src++);
 	if (crc != CRC32B_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	crc = CRC32B_INIT;
 	src = (const u8*)CrcPat3;
 	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc32BByteDMA(crc, *src++);
 	if (crc != CRC32B_RES3) return False;
+#endif // USE_DMA
 
 	return True;
 }
@@ -555,12 +579,14 @@ u16 Crc16AByteSlow(u16 crc, u8 data)
 	return crc;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-16 CCITT Normal (CRC16A), 1 byte - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u16 Crc16AByteDMA(u16 crc, u8 data)
 {
 	return (u16)DMA_CRC(DMA_CRC_CRC16, crc, DMA_TEMP_CHAN(), &data, 1);
 }
+#endif // USE_DMA
 
 // Calculate CRC-16 CCITT Normal (CRC16A), buffer - tabled version (requires 512 B of flash memory)
 u16 Crc16ABufTab(u16 crc, const void* buf, int len)
@@ -611,12 +637,14 @@ u16 Crc16ABufSlow(u16 crc, const void* buf, int len)
 	return crc;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-16 CCITT Normal (CRC16A), buffer - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u16 Crc16ABufDMA(u16 crc, const void* buf, int len)
 {
 	return (u16)DMA_CRC(DMA_CRC_CRC16, crc, DMA_TEMP_CHAN(), buf, len);
 }
+#endif // USE_DMA
 
 // Calculate CRC-16 CCITT Normal (CRC16A) - tabled version (requires 512 B of flash memory)
 //   Calculation speed: 170 us per 1 KB
@@ -639,6 +667,7 @@ u16 Crc16ASlow(const void* buf, int len)
 	return Crc16ABufSlow(CRC16A_INIT, buf, len);
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-16 CCITT Normal (CRC16A) - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 //   Calculation speed: 2 us per 1 KB
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
@@ -646,6 +675,7 @@ u16 Crc16ADMA(const void* buf, int len)
 {
 	return Crc16ABufDMA(CRC16A_INIT, buf, len);
 }
+#endif // USE_DMA
 
 // Check CRC-16 CCITT Normal (CRC16A) fast method (return False on error)
 //  Very slow (takes a few seconds) - do not use usually
@@ -696,9 +726,11 @@ Bool Crc16ACheck()
 	if (Crc16ASlow(CrcPat2, CRCPAT2LEN) != CRC16A_RES2) return False;
 	if (Crc16ASlow(CrcPat3, CRCPAT3LEN) != CRC16A_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	if (Crc16ADMA(CrcPat1, CRCPAT1LEN) != CRC16A_RES1) return False;
 	if (Crc16ADMA(CrcPat2, CRCPAT2LEN) != CRC16A_RES2) return False;
 	if (Crc16ADMA(CrcPat3, CRCPAT3LEN) != CRC16A_RES3) return False;
+#endif // USE_DMA
 
 	// CRC-16 buffer version
 #define CRC16A_SPLIT 503
@@ -714,9 +746,11 @@ Bool Crc16ACheck()
 	crc = Crc16ABufSlow(crc, (const u8*)CrcPat3+CRC16A_SPLIT, CRCPAT3LEN-CRC16A_SPLIT);
 	if (crc != CRC16A_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	crc = Crc16ABufDMA(CRC16A_INIT, CrcPat3, CRC16A_SPLIT);
 	crc = Crc16ABufDMA(crc, (const u8*)CrcPat3+CRC16A_SPLIT, CRCPAT3LEN-CRC16A_SPLIT);
 	if (crc != CRC16A_RES3) return False;
+#endif // USE_DMA
 
 	// CRC-16 byte version
 	crc = CRC16A_INIT;
@@ -734,10 +768,12 @@ Bool Crc16ACheck()
 	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc16AByteSlow(crc, *src++);
 	if (crc != CRC16A_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	crc = CRC16A_INIT;
 	src = (const u8*)CrcPat3;
 	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc16AByteDMA(crc, *src++);
 	if (crc != CRC16A_RES3) return False;
+#endif // USE_DMA
 
 	return True;
 }
@@ -828,6 +864,7 @@ u16 Crc16BByteSlow(u16 crc, u8 data)
 	return ~crc;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-16 CCITT Reversed (CRC16B), 1 byte - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u16 Crc16BByteDMA(u16 crc, u8 data)
@@ -835,6 +872,7 @@ u16 Crc16BByteDMA(u16 crc, u8 data)
 	return (u16)(DMA_CRC(DMA_CRC_CRC16REV | DMA_CRC_REV | DMA_CRC_INV,
 		Reverse16(~crc), DMA_TEMP_CHAN(), &data, 1) >> 16);
 }
+#endif // USE_DMA
 
 // Calculate CRC-16 CCITT Reversed (CRC16B), buffer - tabled version (requires 512 B of flash memory)
 u16 Crc16BBufTab(u16 crc, const void* buf, int len)
@@ -871,6 +909,7 @@ u16 Crc16BBufSlow(u16 crc, const void* buf, int len)
 	return ~crc;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-16 CCITT Reversed (CRC16B), buffer - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u16 Crc16BBufDMA(u16 crc, const void* buf, int len)
@@ -878,6 +917,7 @@ u16 Crc16BBufDMA(u16 crc, const void* buf, int len)
 	return (u16)(DMA_CRC(DMA_CRC_CRC16REV | DMA_CRC_REV | DMA_CRC_INV,
 			Reverse16(~crc), DMA_TEMP_CHAN(), buf, len) >> 16);
 }
+#endif // USE_DMA
 
 // Calculate CRC-16 CCITT Reversed (CRC16B) - tabled version (requires 512 B of flash memory)
 //   Calculation speed: 160 us per 1 KB
@@ -893,6 +933,7 @@ u16 Crc16BSlow(const void* buf, int len)
 	return Crc16BBufSlow(CRC16B_INIT, buf, len);
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-16 CCITT Reversed (CRC16B) - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 //   Calculation speed: 2 us per 1 KB
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
@@ -900,6 +941,7 @@ u16 Crc16BDMA(const void* buf, int len)
 {
 	return Crc16BBufDMA(CRC16B_INIT, buf, len);
 }
+#endif // USE_DMA
 
 // Check CRC-16 CCITT Reversed (CRC16B) calculations (returns False on error)
 Bool Crc16BCheck()
@@ -923,9 +965,11 @@ Bool Crc16BCheck()
 	if (Crc16BSlow(CrcPat2, CRCPAT2LEN) != CRC16B_RES2) return False;
 	if (Crc16BSlow(CrcPat3, CRCPAT3LEN) != CRC16B_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	if (Crc16BDMA(CrcPat1, CRCPAT1LEN) != CRC16B_RES1) return False;
 	if (Crc16BDMA(CrcPat2, CRCPAT2LEN) != CRC16B_RES2) return False;
 	if (Crc16BDMA(CrcPat3, CRCPAT3LEN) != CRC16B_RES3) return False;
+#endif // USE_DMA
 
 	// CRC-16 buffer version
 #define CRC16B_SPLIT 503
@@ -937,9 +981,11 @@ Bool Crc16BCheck()
 	crc = Crc16BBufSlow(crc, (const u8*)CrcPat3+CRC16B_SPLIT, CRCPAT3LEN-CRC16B_SPLIT);
 	if (crc != CRC16B_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	crc = Crc16BBufDMA(CRC16B_INIT, CrcPat3, CRC16B_SPLIT);
 	crc = Crc16BBufDMA(crc, (const u8*)CrcPat3+CRC16B_SPLIT, CRCPAT3LEN-CRC16B_SPLIT);
 	if (crc != CRC16B_RES3) return False;
+#endif // USE_DMA
 
 	// CRC-16 byte version
 	crc = CRC16B_INIT;
@@ -952,10 +998,12 @@ Bool Crc16BCheck()
 	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc16BByteSlow(crc, *src++);
 	if (crc != CRC16B_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	crc = CRC16B_INIT;
 	src = (const u8*)CrcPat3;
 	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc16BByteDMA(crc, *src++);
 	if (crc != CRC16B_RES3) return False;
+#endif // USE_DMA
 
 	return True;
 }
@@ -985,6 +1033,7 @@ u16 Crc16CSlow(const void* buf, int len)
 	return Crc16CBufSlow(CRC16C_INIT, buf, len);
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate CRC-16 CCITT Normal Alternative (CRC16C) - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 //   Calculation speed: 2 us per 1 KB
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
@@ -992,6 +1041,7 @@ u16 Crc16CDMA(const void* buf, int len)
 {
 	return Crc16CBufDMA(CRC16C_INIT, buf, len);
 }
+#endif // USE_DMA
 
 // Check CRC-16 CCITT Normal Alternative (CRC16C) calculations (returns False on error)
 Bool Crc16CCheck()
@@ -1016,9 +1066,11 @@ Bool Crc16CCheck()
 	if (Crc16CSlow(CrcPat2, CRCPAT2LEN) != CRC16C_RES2) return False;
 	if (Crc16CSlow(CrcPat3, CRCPAT3LEN) != CRC16C_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	if (Crc16CDMA(CrcPat1, CRCPAT1LEN) != CRC16C_RES1) return False;
 	if (Crc16CDMA(CrcPat2, CRCPAT2LEN) != CRC16C_RES2) return False;
 	if (Crc16CDMA(CrcPat3, CRCPAT3LEN) != CRC16C_RES3) return False;
+#endif // USE_DMA
 
 	// CRC-16 buffer version
 #define CRC16C_SPLIT 503
@@ -1034,9 +1086,11 @@ Bool Crc16CCheck()
 	crc = Crc16CBufSlow(crc, (const u8*)CrcPat3+CRC16C_SPLIT, CRCPAT3LEN-CRC16C_SPLIT);
 	if (crc != CRC16C_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	crc = Crc16CBufDMA(CRC16C_INIT, CrcPat3, CRC16C_SPLIT);
 	crc = Crc16CBufDMA(crc, (const u8*)CrcPat3+CRC16C_SPLIT, CRCPAT3LEN-CRC16C_SPLIT);
 	if (crc != CRC16C_RES3) return False;
+#endif // USE_DMA
 
 	// CRC-16 byte version
 	crc = CRC16C_INIT;
@@ -1054,10 +1108,12 @@ Bool Crc16CCheck()
 	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc16CByteSlow(crc, *src++);
 	if (crc != CRC16C_RES3) return False;
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 	crc = CRC16C_INIT;
 	src = (const u8*)CrcPat3;
 	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc16CByteDMA(crc, *src++);
 	if (crc != CRC16C_RES3) return False;
+#endif // USE_DMA
 
 	return True;
 }
@@ -1250,12 +1306,14 @@ u8 ParityByteSoft(u8 par, u8 data)
 	return par;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate parity, 1 byte - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u8 ParityByteDMA(u8 par, u8 data)
 {
 	return (u8)DMA_CRC(DMA_CRC_XOR, par, DMA_TEMP_CHAN(), &data, 1);
 }
+#endif // USE_DMA
 
 // Calculate parity, buffer - software version
 u8 ParityBufSoft(u8 par, const void* buf, int len)
@@ -1272,12 +1330,14 @@ u8 ParityBufSoft(u8 par, const void* buf, int len)
 	return par;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate parity, buffer - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u8 ParityBufDMA(u8 par, const void* buf, int len)
 {
 	return (u8)DMA_CRC(DMA_CRC_XOR, par, DMA_TEMP_CHAN(), buf, len);
 }
+#endif // USE_DMA
 
 // Calculate parity - software version
 //   Calculation speed: 90 us per 1 KB
@@ -1286,6 +1346,7 @@ u8 ParitySoft(const void* buf, int len)
 	return ParityBufSoft(0, buf, len);
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate parity - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 //   Calculation speed: 2 us per 1 KB
@@ -1293,6 +1354,7 @@ u8 ParityDMA(const void* buf, int len)
 {
 	return ParityBufDMA(0, buf, len);
 }
+#endif // USE_DMA
 
 // ============================================================================
 //            Simple checksum on 8-bit data with 32-bit result
@@ -1304,12 +1366,14 @@ u32 Sum8ByteSoft(u32 sum, u8 data)
 	return sum + data;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate 8-bit checksum, 1 byte - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u32 Sum8ByteDMA(u32 sum, u8 data)
 {
 	return DMA_SUM(DMA_CRC_SUM, sum, DMA_TEMP_CHAN(), &data, 1, DMA_SIZE_8);
 }
+#endif // USE_DMA
 
 // Calculate 8-bit checksum, buffer - software version
 u32 Sum8BufSoft(u32 sum, const void* buf, int len)
@@ -1319,12 +1383,14 @@ u32 Sum8BufSoft(u32 sum, const void* buf, int len)
 	return sum;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate 8-bit checksum, buffer - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u32 Sum8BufDMA(u32 sum, const void* buf, int len)
 {
 	return DMA_SUM(DMA_CRC_SUM, sum, DMA_TEMP_CHAN(), buf, len, DMA_SIZE_8);
 }
+#endif // USE_DMA
 
 // Calculate 8-bit checksum - software version
 //   Calculation speed: 100 us per 1 KB
@@ -1336,6 +1402,7 @@ u32 Sum8Soft(const void* buf, int len)
 	return sum;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate 8-bit checksum - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 //   Calculation speed: 8 us per 1 KB
@@ -1343,6 +1410,7 @@ u32 Sum8DMA(const void* buf, int len)
 {
 	return Sum8BufDMA(SUM8_INIT, buf, len);
 }
+#endif // USE_DMA
 
 // ============================================================================
 //            Simple checksum on 16-bit data with 32-bit result
@@ -1354,12 +1422,14 @@ u32 Sum16WordSoft(u32 sum, u16 data)
 	return sum + data;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate 16-bit checksum, 1 word - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u32 Sum16WordDMA(u32 sum, u16 data)
 {
 	return DMA_SUM(DMA_CRC_SUM, sum, DMA_TEMP_CHAN(), &data, 1, DMA_SIZE_16);
 }
+#endif // USE_DMA
 
 // Calculate 16-bit checksum, buffer - software version
 //   data = pointer to data (must be aligned to u16 entry)
@@ -1370,6 +1440,7 @@ u32 Sum16BufSoft(u32 sum, const u16* buf, int num)
 	return sum;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate 16-bit checksum, buffer - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 //   data = pointer to data (must be aligned to u16 entry)
 //   num = number of u16 entries
@@ -1378,6 +1449,7 @@ u32 Sum16BufDMA(u32 sum, const u16* buf, int num)
 {
 	return DMA_SUM(DMA_CRC_SUM, sum, DMA_TEMP_CHAN(), buf, num, DMA_SIZE_16);
 }
+#endif // USE_DMA
 
 // Calculate 16-bit checksum - software version
 //   data = pointer to data (must be aligned to u16 entry)
@@ -1390,6 +1462,7 @@ u32 Sum16Soft(const u16* buf, int num)
 	return sum;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate 16-bit checksum - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 //   data = pointer to data (must be aligned to u16 entry)
@@ -1399,6 +1472,7 @@ u32 Sum16DMA(const u16* buf, int num)
 {
 	return Sum16BufDMA(SUM16_INIT, buf, num);
 }
+#endif // USE_DMA
 
 // ============================================================================
 //            Simple checksum on 32-bit data with 32-bit result
@@ -1410,12 +1484,14 @@ u32 Sum32DWordSoft(u32 sum, u32 data)
 	return sum + data;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate 32-bit checksum, 1 double word - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 u32 Sum32DWordDMA(u32 sum, u32 data)
 {
 	return DMA_SUM(DMA_CRC_SUM, sum, DMA_TEMP_CHAN(), &data, 1, DMA_SIZE_32);
 }
+#endif // USE_DMA
 
 // Calculate 32-bit checksum, buffer - software version
 //   data = pointer to data (must be aligned to u32 entry)
@@ -1426,6 +1502,7 @@ u32 Sum32BufSoft(u32 sum, const u32* buf, int num)
 	return sum;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate 32-bit checksum, buffer - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 //   data = pointer to data (must be aligned to u32 entry)
 //   num = number of u32 entries
@@ -1434,6 +1511,7 @@ u32 Sum32BufDMA(u32 sum, const u32* buf, int num)
 {
 	return DMA_SUM(DMA_CRC_SUM, sum, DMA_TEMP_CHAN(), buf, num, DMA_SIZE_32);
 }
+#endif // USE_DMA
 
 // Calculate 32-bit checksum - software version
 //   data = pointer to data (must be aligned to u32 entry)
@@ -1446,6 +1524,7 @@ u32 Sum32Soft(const u32* buf, int num)
 	return sum;
 }
 
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
 // Calculate 32-bit checksum - DMA version (uses DMA_TEMP_CHAN() temporary channel)
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 //   data = pointer to data (must be aligned to u32 entry)
@@ -1455,6 +1534,7 @@ u32 Sum32DMA(const u32* buf, int num)
 {
 	return Sum32BufDMA(SUM32_INIT, buf, num);
 }
+#endif // USE_DMA
 
 // ============================================================================
 //                                  CRC-XOR

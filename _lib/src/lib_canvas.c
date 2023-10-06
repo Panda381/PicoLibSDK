@@ -1896,6 +1896,8 @@ void CanvasBlit(sCanvas* canvas, sCanvas* src, int xd, int yd, int xs, int ys, i
 	}
 }
 
+#if USE_MAT2D			// use 2D transformation matrix (lib_mat2d.c, lib_mat2d.h)
+
 // draw 8-bit image with 2D transformation matrix
 //  canvas ... destination canvas
 //  src ... source canvas with image
@@ -2372,6 +2374,8 @@ void CanvasTileMap(sCanvas* canvas, const sCanvas* src, const u8* map, int mapwb
 
 	}
 }
+
+#endif // USE_MAT2D
 
 // draw image line interpolated
 //  canvas = destination canvas (8-bit pixel format)

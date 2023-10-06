@@ -3,6 +3,7 @@ rem Compilation...
 
 set TARGET=CHESS
 set GRPDIR=GAME
+set MEMMAP=
 
 if "%1"=="" goto default
 ..\..\..\_c1.bat %1

@@ -3,6 +3,7 @@ rem Compilation...
 
 set TARGET=MINIANAL
 set GRPDIR=MEASURE
+set MEMMAP=
 
 if exist minianal.pio.h del minianal.pio.h
 ..\..\..\_tools\pioasm.exe -o c-sdk src\minianal.pio minianal.pio.h

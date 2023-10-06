@@ -68,6 +68,7 @@ type %TARGET%.siz
 rem Calculate CRC to check by boot loader (skip if compiling boot loader)
 if "%TARGET%"=="LOADER" goto skipcrc
 if "%DEVCLASS%"=="pico" goto skipcrc
+if "%MEMMAP%"=="noflash" goto skipcrc
 ..\..\..\_tools\PicoPadLoaderCrc\LoaderCrc.exe %TARGET%.bin %TARGET%.uf2
 if errorlevel 1 goto err
 

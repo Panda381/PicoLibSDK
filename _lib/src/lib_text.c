@@ -472,6 +472,8 @@ Bool TextSetAddTime(pText* text, u32 ut, s16 ms, s8 hour, s8 sec, s8 sep, Bool a
 	return True;
 }
 
+#if USE_CALENDAR	// use 32-bit calendar (lib_calendar.c, lib_calendar.h)
+
 // set/add day of week 2-character text from Unix time
 Bool TextSetAddDow(pText* text, u32 ut, Bool add)
 {
@@ -512,6 +514,8 @@ Bool TextSetAddDow(pText* text, u32 ut, Bool add)
 
 	return True;
 }
+
+#endif // USE_CALENDAR
 
 // set/add date in custom format (returns False on memory error)
 //   form: formatting string
@@ -652,6 +656,8 @@ Bool TextAddDate(pText* text, s16 year, s8 mon, s8 day, u8 form)
 	return TextAddDateCustom(text, year, mon, day, DateForm[form]);
 }
 
+#if USE_CALENDAR	// use 32-bit calendar (lib_calendar.c, lib_calendar.h)
+
 // set date in Unix (returns False on memory error)
 Bool TextSetDateUnix(pText* text, u32 ut, u8 form)
 {
@@ -717,6 +723,8 @@ Bool TextSetAddDateTech(pText* text, u32 ut, u16 ms, Bool add)
 
 	return True;
 }
+
+#endif // USE_CALENDAR
 
 // ============================================================================
 //                          Find and replace
@@ -1716,6 +1724,8 @@ Bool TextReformat(pText* text, int width)
 //                              Formatted print
 // ============================================================================
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // formatted print string into text, with argument list
 //  text = NULL to get text length without printing
 //  - fmt and destination text cannot be the same
@@ -1782,6 +1792,8 @@ NOINLINE u32 TextAddPrint(pText* text, const char* fmt, ...)
 	va_end(args);
 	return n;
 }
+
+#endif // USE_STREAM
 
 #endif // USE_TEXT	// use Text strings, except StrLen and StrComp (lib_text.c, lib_text.h)
 

@@ -210,6 +210,8 @@ u32 UART_Recv(u8 uart, u8* dst, u32 len)
 	return num;
 }
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // callback - write data to UART
 static u32 StreamWriteUart(sStream* str, const void* buf, u32 num)
 {
@@ -256,6 +258,8 @@ NOINLINE u32 UART_Print(u8 uart, const char* fmt, ...)
 	va_end(args);
 	return n;
 }
+
+#endif // USE_STREAM
 
 // === UART stdio
 
@@ -308,6 +312,8 @@ u32 UartPrintText(const char* txt)
 	return n;
 }
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // callback - write data to UART
 u32 StreamWriteUartStdio(sStream* str, const void* buf, u32 num)
 {
@@ -342,6 +348,8 @@ NOINLINE u32 UartPrint(const char* fmt, ...)
 	va_end(args);
 	return n;
 }
+
+#endif // USE_STREAM
 
 // receive character (returns NOCHAR if no character)
 char UartGetChar()
@@ -435,6 +443,8 @@ void UartSample_SendChar(char ch) { UART_SendCharWait(UARTSAMPLE_UART, ch); }
 // send buffer (wait if not ready)
 void UartSample_SendBuf(const char* buf, int len) { UART_Send(UARTSAMPLE_UART, buf, len); }
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // print to UART
 NOINLINE u32 UartSample_Print(const char* fmt, ...)
 {
@@ -445,6 +455,8 @@ NOINLINE u32 UartSample_Print(const char* fmt, ...)
 	va_end(args);
 	return n;
 }
+
+#endif // USE_STREAM
 
 // --- transmitter, 2) interrupt mode
 
@@ -469,6 +481,8 @@ void UartSample_SendChar(char ch) { RingWrite8Wait(&UartSample_TxBuf, (u8)ch); }
 // send buffer (wait if not ready)
 void UartSample_SendBuf(const char* buf, int len) { RingWriteWait(&UartSample_TxBuf, buf, len); }
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // print to UART
 NOINLINE u32 UartSample_Print(const char* fmt, ...)
 {
@@ -479,6 +493,8 @@ NOINLINE u32 UartSample_Print(const char* fmt, ...)
 	va_end(args);
 	return n;
 }
+
+#endif // USE_STREAM
 
 // --- transmitter, 3) DMA mode
 
@@ -501,6 +517,8 @@ void UartSample_SendBuf(const char* buf, int len) { RingTxWriteSend(&UartSample_
 // get free space in send buffer
 int UartSample_SendFree() { return RingTxFree(&UartSample_TxBuf); }
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // print to UART
 NOINLINE u32 UartSample_Print(const char* fmt, ...)
 {
@@ -511,6 +529,8 @@ NOINLINE u32 UartSample_Print(const char* fmt, ...)
 	va_end(args);
 	return n;
 }
+
+#endif // USE_STREAM
 
 #endif // UARTSAMPLE_TXMODE
 

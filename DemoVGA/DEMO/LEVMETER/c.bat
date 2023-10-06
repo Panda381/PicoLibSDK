@@ -3,6 +3,7 @@ rem Compilation...
 
 set TARGET=LEVMETER
 set GRPDIR=DEMO
+set MEMMAP=
 
 if "%1"=="" goto default
 ..\..\..\_c1.bat %1

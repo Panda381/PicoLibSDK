@@ -3,6 +3,7 @@ rem Compilation...
 
 set TARGET=COLBOOK
 set GRPDIR=COLBOOK
+set MEMMAP=
 
 if "%1"=="" goto default
 ..\..\..\_c1.bat %1

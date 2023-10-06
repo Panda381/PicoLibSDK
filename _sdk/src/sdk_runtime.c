@@ -35,9 +35,11 @@
 #include "../inc/sdk_rosc.h"
 #include "../inc/sdk_uart.h"
 
+#if !NO_FLASH	// In the RAM version, the vector table is already in RAM
 #if USE_IRQ	// use IRQ interrupts (sdk_irq.c, sdk_irq.h)
-// copy of vector table in RAM
-u32 __attribute__((section(".ram_vector_table"))) RamVectorTable[48];
+// copy of vector table in RAM ... must be aligned to 256 bytes
+u32 __attribute__((section(".ram_vector_table"))) __attribute__((aligned(256))) RamVectorTable[48];
+#endif
 #endif
 
 // Device init
@@ -79,10 +81,12 @@ void RuntimeInit()
 	// start all remaining peripherals
 	ResetPeripheryOffWaitMask(RESET_ALLBITS);
 
+#if !NO_FLASH	// In the RAM version, the vector table is already in RAM
 #if USE_IRQ	// use IRQ interrupts (sdk_irq.c, sdk_irq.h)
 	// copy vector table to RAM (must use built-in memcpy)
 	memcpy(RamVectorTable, (u32*)GetVTOR(), sizeof(RamVectorTable));
 	SetVTOR((irq_handler_t*)RamVectorTable);
+#endif
 #endif
 
 #if USE_STACKCHECK	// use Stack check (sdk_cpu.c, sdk_cpu.h)

@@ -84,6 +84,13 @@ if [[ "${DEVCLASS}" == "pico" ]]; then
   exit 0
 fi
 
+if [[ "${MEMMAP}" == "noflash" ]]; then
+  # Copy UF2 file to destination folder with image of SD card
+  if [[ ! -e ../../../"${DEVDIR}"/"${GRPDIR}"/*.UF2 ]]; then mkdir ../../../"${DEVDIR}"/"${GRPDIR}"; fi
+  cp "${TARGET}".uf2 ../../../"${DEVDIR}"/"${GRPDIR}"/"${TARGET}".UF2 > null
+  exit 0
+fi
+
 ../../../_tools/PicoPadLoaderCrc/LoaderCrc "${TARGET}".bin "${TARGET}".uf2
 
 if [[ $? > 0 ]]; then echo "ERROR!"; exit 1; fi

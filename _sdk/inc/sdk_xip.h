@@ -14,8 +14,6 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-//XIP_CTRL_BASE
-
 #ifndef _SDK_XIP_H
 #define _SDK_XIP_H
 

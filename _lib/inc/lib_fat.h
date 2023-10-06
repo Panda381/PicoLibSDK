@@ -283,7 +283,7 @@ void DiskUnmount();
 // mount disk (returns False on error)
 Bool DiskMount();
 
-// check if disk is mounterd
+// check if disk is mounted
 INLINE Bool DiskMounted() { return DiskFS != FS_NONE; }
 
 // mount disk if not mounted
@@ -385,11 +385,13 @@ void FilePrintChar(sFile* file, char ch);
 // print unformatted text to file (returns number of characters)
 u32 FilePrintText(sFile* file, const char* txt);
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
 // formatted print string to file, with argument list (returns number of characters)
 u32 FilePrintArg(sFile* file, const char* fmt, va_list args);
 
 // formatted print string to file, with variadic arguments (returns number of characters)
 NOINLINE u32 FilePrint(sFile* file, const char* fmt, ...);
+#endif // USE_STREAM
 
 // flush file writes and flush disk buffers (returns False on error)
 Bool FileFlush(sFile* file);

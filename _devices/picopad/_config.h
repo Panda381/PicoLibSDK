@@ -8,6 +8,14 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#ifndef USE_FRAMEBUF
+#if USE_VIDEO
+#define USE_FRAMEBUF	0
+#else
+#define USE_FRAMEBUF	1		// use default display frame buffer
+#endif
+#endif
+
 // ============================================================================
 //                            PicoPadVGA
 // ============================================================================
@@ -133,7 +141,11 @@
 #endif
 
 #ifndef USE_MINIVGA
+#if USE_FRAMEBUF
 #define USE_MINIVGA		3		// use mini-VGA display with simple frame buffer:
+#else
+#define USE_MINIVGA		1
+#endif // USE_FRAMEBUF
 						//	1=use only frame buffer
 						//	2=add full back buffer
 						//	3=add 1/2 back buffer

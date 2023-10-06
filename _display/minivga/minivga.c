@@ -85,7 +85,7 @@ ALIGNED FRAMETYPE FrameBuf[FRAMESIZE];
 #endif
 
 // back buffer
-#if BACKBUFSIZE > 0	// size of back buffer strip
+#if USE_FRAMEBUF && (BACKBUFSIZE > 0)	// size of back buffer strip
 ALIGNED FRAMETYPE BackBuf[BACKBUFSIZE]; // back buffer strip
 #endif
 
@@ -127,7 +127,8 @@ volatile int VgaScanLine; // current processed scan line 0... (next displayed sc
 volatile u32 VgaFrame;	// frame counter
 
 #ifdef VGA_KEYSCAN_GPIO		// scan keyboard
-volatile u32 VgaKeyScan;	// key scan
+volatile u32 VgaKeyScan = 0;	// key scan
+int VgaKeyScanStart = 100;	// start delay to prevent false keystrokes
 #endif
 
 // VGA DMA handler - called on end of every scanline
@@ -176,6 +177,13 @@ void NOFLASH(VgaLine)()
 
 		// input
 		if (GPIO_In(VGA_KEYSCAN_GPIO)) key |= m;
+
+		// start delay to prevent false keystrokes
+		if (VgaKeyScanStart > 0)
+		{
+			VgaKeyScanStart--;
+			key = 0;
+		}
 		VgaKeyScan = key;
 
 		// set normal output from PIO

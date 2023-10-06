@@ -358,6 +358,8 @@ void UART_Send(u8 uart, const u8* src, u32 len);
 // receive buffer without blocking, returns number of successfully read characters
 u32 UART_Recv(u8 uart, u8* dst, u32 len);
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // initialize stream to write to UART with blocking
 void StreamWriteUartInit(sStream* str, u8 uart);
 
@@ -366,6 +368,8 @@ u32 UART_PrintArg(u8 uart, const char* fmt, va_list args);
 
 // formatted print with blocking, with variadic arguments (returns number of characters, without terminating 0)
 NOINLINE u32 UART_Print(u8 uart, const char* fmt, ...);
+
+#endif // USE_STREAM
 
 // === UART stdio
 
@@ -383,11 +387,15 @@ void UartPrintChar(char ch);
 // print unformatted text to UART (returns number of characters, wait if not ready)
 u32 UartPrintText(const char* txt);
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
 // formatted print string to UART, with argument list (returns number of characters)
 u32 UartPrintArg(const char* fmt, va_list args);
 
 // formatted print string to UART, with variadic arguments (returns number of characters)
 NOINLINE u32 UartPrint(const char* fmt, ...);
+
+#endif // USE_STREAM
 
 // receive character (returns NOCHAR if no character)
 char UartGetChar();
@@ -424,8 +432,10 @@ void UartSample_SendChar(char ch);
 // send buffer (wait if not ready)
 void UartSample_SendBuf(const char* buf, int len);
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
 // print to UART
 NOINLINE u32 UartSample_Print(const char* fmt, ...);
+#endif // USE_STREAM
 
 #if UARTSAMPLE_TXMODE >= 2	// 2 = DMA stream, 3 = DMA single
 

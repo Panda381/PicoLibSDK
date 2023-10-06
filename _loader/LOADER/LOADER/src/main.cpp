@@ -19,6 +19,9 @@
 // boot loader resident segment
 u8 __attribute__((section(".bootloaderdata"))) LoaderData[BOOTLOADER_DATA];
 
+// custom frame buffer - used as buffer to load UF2 program into RAM
+ALIGNED FRAMETYPE FrameBuf[CUSTOM_FRAMEBUF_SIZE];
+
 // display
 COLTYPE FgCol, BgCol; // foreground and background color
 int DispX, DispY; // X and Y text coordinate
@@ -941,12 +944,8 @@ void Preview()
 	case PREV_BMP_LOAD:
 
 		// prepare address in video memory
-#if USE_PICOINO || USE_PICOTRON
 #if COLBITS == 4
-		dst = &BackBuf[PrevLine*WIDTHLEN + WIDTH/4];
-#else // COLBITS == 4
-		dst = &BackBuf[PrevLine*WIDTH + WIDTH/2];
-#endif // COLBITS == 4
+		dst = &FrameBuf[PrevLine*WIDTHLEN + WIDTH/4];
 #else
 		dst = &FrameBuf[PrevLine*WIDTH + WIDTH/2];
 #endif
@@ -1097,12 +1096,11 @@ void ClearApp()
 }
 
 // display big error text
-void DispBigErr()
+void DispBigErr(const char* text)
 {
 	FileClose(&PrevFile);
 
 	DrawClear();
-	const char* text = "Loading Error";
 	int len = StrLen(text);
 	SelFont8x16();
 	DrawTextBg2(text, (WIDTH - len*16)/2, (HEIGHT-32)/2, COL_BIGERRFG, COL_BIGERRBG);
@@ -1230,6 +1228,24 @@ void Battery()
 }
 
 #endif // KEY_X
+
+// run application in RAM
+void RunRAM(int num)
+{
+	// wait for no key pressed
+	KeyWaitNoPressed();
+
+	// runtime terminate
+	RuntimeTerm();
+
+	// copy program to RAM
+	u8* s = (u8*)FrameBuf;
+	u8* d = (u8*)SRAM_BASE;
+	for (; num > 0; num--) *d++ = *s++;
+
+	// run application
+	((void(*)(void))(SRAM_BASE+1))();
+}
 
 int main()
 {
@@ -1513,9 +1529,6 @@ int main()
 					}
 					else
 					{
-						// erase memory
-						ClearApp();
-
 						// close old preview file
 						FileClose(&PrevFile);
 
@@ -1528,63 +1541,104 @@ int main()
 						SetDir(Path);
 						if (!FileOpen(&PrevFile, TempBuf))
 						{
-							DispBigErr();
+							DispBigErr("Cannot open file");
 						}
 						else
 						{
-							// read and check header
-							j = BOOTLOADER_SIZE*2+32;
-							FileSeek(&PrevFile, j);
-							TempBufNum = FileRead(&PrevFile, TempBuf, 256);
-							m = 256;
-							u32* h = (u32*)&TempBuf[48*4];
-							i = h[1]; 			// application length
-							if ((TempBufNum != 256) ||	// check segment length
-								(h[0] != 0x44415050) ||	// check magix
-								(i < 10) || (i > 2*1024*1024 - 4096 - BOOTLOADER_SIZE - 51*4)) // check program length
+							// read and check UF2 header
+							TempBufNum = FileRead(&PrevFile, TempBuf, 32);
+							sUf2* uf = (sUf2*)TempBuf;
+							Bool ram = (uf->target_addr == 0x20000000);
+							if (!ram && (uf->target_addr != 0x10000000))
 							{
-								// error - incompatible program
-								DispBigErr();
+								DispBigErr("Unsupported address");
+								FileClose(&PrevFile);
 							}
 							else
 							{
-								i += 51*4;
-								n = i;
-								k = BOOTLOADER_SIZE;
-
-								// loading program into memory
-								do {
-									// load next program block
-									while ((m <= TEMPBUF-256) && (i > 0))
-									{
-										j += 512;
-										FileSeek(&PrevFile, j);
-										TempBufNum = FileRead(&PrevFile, &TempBuf[m], 256);
-										m += 256;
-										i -= 256;
-									}
-
-									// progress bar
-									Progress(k - BOOTLOADER_SIZE, n, 122, COL_GREEN);
-
-									// program four 256-byte pages
-									FlashProgram(k, (const u8*)TempBuf, m);
-									k += m;
-									if (i <= 0) break;
-									m = 0;
-
-								} while (TempBufNum > 0);
-
-								FileClose(&PrevFile);
-
-								// try to run the application
-								if (CheckApp())
+								// loading into RAM
+								if (ram)
 								{
+									DispBigInfo("Loading into RAM...");
+									j = 32;
+									m = 0;
+									while (m <= CUSTOM_FRAMEBUF_SIZE - 256)
+									{
+										FileSeek(&PrevFile, j);
+										TempBufNum = FileRead(&PrevFile, ((u8*)FrameBuf) + m, 256);
+										if (TempBufNum <= 0) break;
+										m += TempBufNum;
+										j += 512;
+									}
+									FileClose(&PrevFile);
+
+									// run application in RAM
 									SaveBootData();
-									RunApp();
+									RunRAM(m);
 								}
 								else
-									DispBigErr();
+								{
+									// erase memory
+									ClearApp();
+
+									DispBigInfo("Loading...");
+
+									// read and check application header
+									j = BOOTLOADER_SIZE*2+32;
+									FileSeek(&PrevFile, j);
+									TempBufNum = FileRead(&PrevFile, TempBuf, 256);
+									m = 256;
+									u32* h = (u32*)&TempBuf[48*4];
+									i = h[1]; 			// application length
+									if ((TempBufNum != 256) ||	// check segment length
+										(h[0] != 0x44415050) ||	// check magix
+										(i < 10) || (i > 2*1024*1024 - 4096 - BOOTLOADER_SIZE - 51*4)) // check program length
+									{
+										// error - incompatible program
+										DispBigErr("Loading Error");
+										FileClose(&PrevFile);
+									}
+									else
+									{
+										i += 51*4;
+										n = i;
+										k = BOOTLOADER_SIZE;
+
+										// loading program into memory
+										do {
+											// load next program block
+											while ((m <= TEMPBUF-256) && (i > 0))
+											{
+												j += 512;
+												FileSeek(&PrevFile, j);
+												TempBufNum = FileRead(&PrevFile, &TempBuf[m], 256);
+												m += 256;
+												i -= 256;
+											}
+
+											// progress bar
+											Progress(k - BOOTLOADER_SIZE, n, 122, COL_GREEN);
+
+											// program four 256-byte pages
+											FlashProgram(k, (const u8*)TempBuf, m);
+											k += m;
+											if (i <= 0) break;
+											m = 0;
+
+										} while (TempBufNum > 0);
+
+										FileClose(&PrevFile);
+
+										// try to run the application
+										if (CheckApp())
+										{
+											SaveBootData();
+											RunApp();
+										}
+										else
+											DispBigErr("Loading Error");
+									}
+								}
 							}
 						}
 					}

@@ -18,6 +18,9 @@
 // - before use, initialize text object using TextInit() (constructor)
 // - after use, terminate text object using TextTerm() (destructor)
 
+#ifndef _LIB_TEXT_H
+#define _LIB_TEXT_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -28,20 +31,68 @@ int StrLen(const char* text);
 // compare ASCIIZ text strings (returns 0=equal or returns character difference)
 int StrComp(const char* text1, const char* text2);
 
+#if USE_FLOAT		// use float support
+// check special float numbers
+INLINE Bool CheckInfF(float num) { return ((u16*)&num)[1] == 0x7f80; } // 1#INF
+INLINE Bool CheckSInfF(float num) { return ((u16*)&num)[1] == 0xff80; } // -1#INF
+INLINE Bool CheckNanF(float num) { return ((u16*)&num)[1] == 0x7fc0; } // 1#NAN
+INLINE Bool CheckSNanF(float num) { return ((u16*)&num)[1] == 0xffc0; } // -1#NAN
+#endif // USE_FLOAT		// use float support
+
+#if USE_DOUBLE		// use double support
+// check special double numbers
+INLINE Bool CheckInfD(double num) { return ((u16*)&num)[3] == 0x7ff0; } // 1#INF
+INLINE Bool CheckSInfD(double num) { return ((u16*)&num)[3] == 0xfff0; } // -1#INF
+INLINE Bool CheckNanD(double num) { return ((u16*)&num)[3] == 0x7ff8; } // 1#NAN
+INLINE Bool CheckSNanD(double num) { return ((u16*)&num)[3] == 0xfff8; } // -1#NAN
+#endif // USE_DOUBLE		// use double support
+
+// check special numbers
+#if USE_FLOAT || USE_DOUBLE	// use float or double support
+#if USE_DOUBLE		// use double support
+INLINE Bool CheckInf(double num) { return CheckInfD(num); } // 1#INF
+INLINE Bool CheckSInf(double num) { return CheckSInfD(num); } // -1#INF
+INLINE Bool CheckNan(double num) { return CheckNanD(num); } // 1#NAN
+INLINE Bool CheckSNan(double num) { return CheckSNanD(num); } // -1#NAN
+#else			// use float support
+INLINE Bool CheckInf(float num) { return CheckInfF(num); } // 1#INF
+INLINE Bool CheckSInf(float num) { return CheckSInfF(num); } // -1#INF
+INLINE Bool CheckNan(float num) { return CheckNanF(num); } // 1#NAN
+INLINE Bool CheckSNan(float num) { return CheckSNanF(num); } // -1#NAN
+#endif
+#endif // USE_FLOAT || USE_DOUBLE	// use float or double support
+
+#if USE_FLOAT		// use float support
+// round coefficients, used in SetFloat function
+extern const float SetFloatCoeff[11];
+#endif // USE_FLOAT		// use float support
+
+#if USE_DOUBLE		// use double support
+// round coefficients, used in SetDouble function
+extern const double SetDoubleCoeff[19];
+#endif // USE_DOUBLE		// use double support
+
 #ifdef __cplusplus
 }
 #endif
 
 #if USE_TEXT	// use Text strings, except StrLen and StrComp (lib_text.c, lib_text.h)
 
-#ifndef _LIB_TEXT_H
-#define _LIB_TEXT_H
-
 #include "lib_malloc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#if USE_FLOAT		// use float support
+// convert ASCIIZ text to FLOAT number
+float StrToFloat(const char* text);
+#endif // USE_FLOAT		// use float support
+
+#if USE_DOUBLE		// use double support
+// convert ASCIIZ text to DOUBLE number
+double StrToDouble(const char* text);
+#endif // USE_DOUBLE		// use double support
 
 // Text string data
 typedef struct
@@ -78,16 +129,6 @@ extern const char* MonthText[12];
 // pre-set date formats
 extern const char* DateForm[11];
 
-#if USE_FLOAT		// use float support
-// round coefficients, used in SetFloat function
-extern const float SetFloatCoeff[11];
-#endif // USE_FLOAT		// use float support
-
-#if USE_DOUBLE		// use double support
-// round coefficients, used in SetDouble function
-extern const double SetDoubleCoeff[19];
-#endif // USE_DOUBLE		// use double support
-
 // ============================================================================
 //                           ASCIIZ string functions
 // ============================================================================
@@ -105,43 +146,6 @@ INLINE u32 StrToUInt(const char* text) { return (u32)StrToInt(text); }
 //  - big number can overflow to negative number (use retype to unsigned u64)
 s64 StrToInt64(const char* text);
 INLINE u64 StrToUInt64(const char* text) { return (u64)StrToInt64(text); }
-
-#if USE_FLOAT		// use float support
-// convert ASCIIZ text to FLOAT number
-float StrToFloat(const char* text);
-
-// check special float numbers
-INLINE Bool CheckInfF(float num) { return ((u16*)&num)[1] == 0x7f80; } // 1#INF
-INLINE Bool CheckSInfF(float num) { return ((u16*)&num)[1] == 0xff80; } // -1#INF
-INLINE Bool CheckNanF(float num) { return ((u16*)&num)[1] == 0x7fc0; } // 1#NAN
-INLINE Bool CheckSNanF(float num) { return ((u16*)&num)[1] == 0xffc0; } // -1#NAN
-#endif // USE_FLOAT		// use float support
-
-#if USE_DOUBLE		// use double support
-// convert ASCIIZ text to DOUBLE number
-double StrToDouble(const char* text);
-
-// check special double numbers
-INLINE Bool CheckInfD(double num) { return ((u16*)&num)[3] == 0x7ff0; } // 1#INF
-INLINE Bool CheckSInfD(double num) { return ((u16*)&num)[3] == 0xfff0; } // -1#INF
-INLINE Bool CheckNanD(double num) { return ((u16*)&num)[3] == 0x7ff8; } // 1#NAN
-INLINE Bool CheckSNanD(double num) { return ((u16*)&num)[3] == 0xfff8; } // -1#NAN
-#endif // USE_DOUBLE		// use double support
-
-// check special numbers
-#if USE_FLOAT || USE_DOUBLE	// use float or double support
-#if USE_DOUBLE		// use double support
-INLINE Bool CheckInf(double num) { return CheckInfD(num); } // 1#INF
-INLINE Bool CheckSInf(double num) { return CheckSInfD(num); } // -1#INF
-INLINE Bool CheckNan(double num) { return CheckNanD(num); } // 1#NAN
-INLINE Bool CheckSNan(double num) { return CheckSNanD(num); } // -1#NAN
-#else			// use float support
-INLINE Bool CheckInf(float num) { return CheckInfF(num); } // 1#INF
-INLINE Bool CheckSInf(float num) { return CheckSInfF(num); } // -1#INF
-INLINE Bool CheckNan(float num) { return CheckNanF(num); } // 1#NAN
-INLINE Bool CheckSNan(float num) { return CheckSNanF(num); } // -1#NAN
-#endif
-#endif // USE_FLOAT || USE_DOUBLE	// use float or double support
 
 // ============================================================================
 //                     Internal functions - do not use them
@@ -477,6 +481,7 @@ INLINE Bool TextSetTime(pText* text, u32 ut, s16 ms, s8 hour, s8 sec, s8 sep)
 INLINE Bool TextAddTime(pText* text, u32 ut, s16 ms, s8 hour, s8 sec, s8 sep)
 	{ return TextSetAddTime(text, ut, ms, hour, sec, sep, True); }
 
+#if USE_CALENDAR	// use 32-bit calendar (lib_calendar.c, lib_calendar.h)
 // set/add day of week 2-character text from Unix time
 Bool TextSetAddDow(pText* text, u32 ut, Bool add);
 
@@ -487,6 +492,7 @@ INLINE Bool TextSetDow(pText* text, u32 ut)
 // add day of week 2-character text from Unix time
 INLINE Bool TextAddDow(pText* text, u32 ut)
 	{ return TextSetAddDow(text, ut, True); }
+#endif // USE_CALENDAR
 
 // set/add date in custom format (returns False on memory error)
 //   form: formatting string
@@ -528,6 +534,7 @@ Bool TextSetDate(pText* text, s16 year, s8 mon, s8 day, u8 form);
 // add date in pre-select format (returns False on memory error)
 Bool TextAddDate(pText* text, s16 year, s8 mon, s8 day, u8 form);
 
+#if USE_CALENDAR	// use 32-bit calendar (lib_calendar.c, lib_calendar.h)
 // set date in Unix (returns False on memory error)
 Bool TextSetDateUnix(pText* text, u32 ut, u8 form);
 
@@ -544,6 +551,7 @@ INLINE Bool TextSetDateTech(pText* text, u32 ut, u16 ms)
 // add Unix date and time in technical format yyyymmddhhmmssmmm (17 digits, returns False on memory error)
 INLINE Bool TextAddDateTech(pText* text, u32 ut, u16 ms)
 	{ return TextSetAddDateTech(text, ut, ms, True); }
+#endif // USE_CALENDAR
 
 // ============================================================================
 //                          Find and replace
@@ -784,6 +792,7 @@ Bool TextReformat(pText* text, int width);
 //                              Formatted print
 // ============================================================================
 
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
 // formatted print string into text, with argument list
 //  text = NULL to get text length without printing
 //  - fmt and destination text cannot be the same
@@ -801,11 +810,12 @@ u32 TextAddPrintArg(pText* text, const char* fmt, va_list args);
 // add formatted print string into text, with variadic arguments
 //  - fmt and destination text cannot be the same
 NOINLINE u32 TextAddPrint(pText* text, const char* fmt, ...);
+#endif // USE_STREAM
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _LIB_TEXT_H
-
 #endif // USE_TEXT	// use Text strings (lib_text.c, lib_text.h)
+
+#endif // _LIB_TEXT_H
