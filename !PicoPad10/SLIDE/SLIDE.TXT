@@ -5,3 +5,7 @@ from /SLIDE folder
 with 320*240/16-bit
 
 ^WY^0 ....... quit
+
+Support USB keyboard:
+A->Ctrl, B->Alt, X->Shift,
+Y->Esc

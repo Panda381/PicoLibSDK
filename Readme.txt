@@ -763,7 +763,8 @@ History of versions
 10/03/2023 version 1.06: added PicoPadVGA device and some drawing functions.
 10/06/2023 version 1.07: support for RAM programs, support for saving and
 	loading Flash boot loader
-
+10/18/2023 version 1.08: simulate keypad using USB keyboard (USE_USBPAD,
+	A->Ctrl, B->Alt, X->Shift, Y->Esc).
 
 Missing and @TODO
 -----------------

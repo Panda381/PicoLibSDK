@@ -11,3 +11,7 @@ flash to UF2 file.
 ^WB^0 .. save flash to UF2
 ^WX^0 .. save all flash
 ^WY^0 ......... quit
+
+Support USB keyboard:
+A->Ctrl, B->Alt, X->Shift,
+Y->Esc

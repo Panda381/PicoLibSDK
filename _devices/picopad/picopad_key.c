@@ -18,6 +18,12 @@
 
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "../../_sdk/inc/sdk_timer.h"
+#if USE_USBPAD		// simulate keypad with USB keyboard
+#include "../../_sdk/usb_inc/sdk_usb_phy.h"
+#include "../../_sdk/usb_inc/sdk_usb_hid.h"
+#include "../../_sdk/usb_inc/sdk_usb_host.h"
+#include "../../_sdk/usb_inc/sdk_usb_host_hid.h"
+#endif // USE_USBPAD
 #include "../../_display/minivga/minivga.h"
 #include "picopad_key.h"
 
@@ -78,11 +84,21 @@ void KeyInit()
 	KeyRetBuf = NOKEY;
 	KeyWriteOff = 0;
 	KeyReadOff = 0;
+
+#if USE_USBPAD		// simulate keypad with USB keyboard
+	// initialize USB
+	UsbHostInit();
+#endif
 }
 
 // terminate keys
 void KeyTerm()
 {
+#if USE_USBPAD		// simulate keypad with USB keyboard
+	// terminate USB
+	UsbTerm();
+#endif
+
 #if !USE_PICOPADVGA
 	int i;
 	for (i = 0; i < KEY_NUM; i++)
@@ -161,6 +177,70 @@ Bool KeyPressed(char key)
 	KeyScan();
 #endif
 	if ((key < 1) || (key > KEY_NUM)) return False;
+
+#if USE_USBPAD		// simulate keypad with USB keyboard
+	if (UsbKeyIsMounted())
+	{
+		switch (key)
+		{
+		case KEY_UP:
+			if (	UsbKeyIsPressed(HID_KEY_ARROW_UP) ||
+				UsbKeyIsPressed(HID_KEY_KEYPAD_8)) return True;
+			break;
+
+		case KEY_LEFT:
+			if (	UsbKeyIsPressed(HID_KEY_ARROW_LEFT) ||
+				UsbKeyIsPressed(HID_KEY_KEYPAD_4)) return True;
+			break;
+
+		case KEY_RIGHT:
+			if (	UsbKeyIsPressed(HID_KEY_ARROW_RIGHT) ||
+				UsbKeyIsPressed(HID_KEY_KEYPAD_6)) return True;
+			break;
+
+		case KEY_DOWN:
+			if (	UsbKeyIsPressed(HID_KEY_ARROW_DOWN) ||
+				UsbKeyIsPressed(HID_KEY_KEYPAD_2) ||
+				UsbKeyIsPressed(HID_KEY_KEYPAD_5)) return True;
+			break;
+
+		case KEY_X:
+			if (	UsbKeyIsPressed(HID_KEY_TAB) ||
+				UsbKeyIsPressed(HID_KEY_KEYPAD_SUBTRACT) ||
+				UsbKeyIsPressed(HID_KEY_SHIFT_LEFT) ||
+				UsbKeyIsPressed(HID_KEY_SHIFT_RIGHT) ||
+				UsbKeyIsPressed(HID_KEY_X)) return True;
+			break;
+
+		case KEY_Y:
+			if (	UsbKeyIsPressed(HID_KEY_ESCAPE) ||
+				UsbKeyIsPressed(HID_KEY_BACKSPACE) ||
+				UsbKeyIsPressed(HID_KEY_KEYPAD_MULTIPLY) ||
+				UsbKeyIsPressed(HID_KEY_Y) ||
+				UsbKeyIsPressed(HID_KEY_Z)) return True;
+			break;
+
+		case KEY_A:
+			if (	UsbKeyIsPressed(HID_KEY_CONTROL_LEFT) ||
+				UsbKeyIsPressed(HID_KEY_CONTROL_RIGHT) ||
+				UsbKeyIsPressed(HID_KEY_ENTER) ||
+				UsbKeyIsPressed(HID_KEY_KEYPAD_ENTER) ||
+//				UsbKeyIsPressed(HID_KEY_SPACE) ||
+				UsbKeyIsPressed(HID_KEY_KEYPAD_0) ||
+				UsbKeyIsPressed(HID_KEY_A)) return True;
+			break;
+
+		case KEY_B:
+			if (	UsbKeyIsPressed(HID_KEY_ALT_LEFT) ||
+				UsbKeyIsPressed(HID_KEY_ALT_RIGHT) ||
+				UsbKeyIsPressed(HID_KEY_KEYPAD_ADD) ||
+				UsbKeyIsPressed(HID_KEY_KEYPAD_DECIMAL) ||
+				UsbKeyIsPressed(HID_KEY_B)) return True;
+			break;
+		}
+	}
+#endif // USE_USBPAD
+
 	return KeyPressMap[key-1];
 }
 
@@ -179,6 +259,68 @@ char KeyGet()
 		KeyRetBuf = NOKEY;
 		return ch;
 	}
+
+#if USE_USBPAD		// simulate keypad with USB keyboard
+	if (UsbKeyIsMounted())
+	{
+		for (;;)
+		{
+			u32 key = UsbGetKey();
+			if (key == 0) break;
+
+			ch = key & 0xff;
+			switch ((u8)ch)
+			{
+			case HID_KEY_ARROW_UP:
+			case HID_KEY_KEYPAD_8:
+				return KEY_UP;
+
+			case HID_KEY_ARROW_LEFT:
+			case HID_KEY_KEYPAD_4:
+				return KEY_LEFT;
+
+			case HID_KEY_ARROW_RIGHT:
+			case HID_KEY_KEYPAD_6:
+				return KEY_RIGHT;
+
+			case HID_KEY_ARROW_DOWN:
+			case HID_KEY_KEYPAD_2:
+			case HID_KEY_KEYPAD_5:
+				return KEY_DOWN;
+
+			case HID_KEY_TAB:
+			case HID_KEY_KEYPAD_SUBTRACT:
+			case HID_KEY_SHIFT_LEFT:
+			case HID_KEY_SHIFT_RIGHT:
+			case HID_KEY_X:
+				return KEY_X;
+
+			case HID_KEY_ESCAPE:
+			case HID_KEY_BACKSPACE:
+			case HID_KEY_KEYPAD_MULTIPLY:
+			case HID_KEY_Y:
+			case HID_KEY_Z:
+				return KEY_Y;
+
+			case HID_KEY_CONTROL_LEFT:
+			case HID_KEY_CONTROL_RIGHT:
+			case HID_KEY_ENTER:
+			case HID_KEY_KEYPAD_ENTER:
+//			case HID_KEY_SPACE:
+			case HID_KEY_KEYPAD_0:
+			case HID_KEY_A:
+				return KEY_A;
+
+			case HID_KEY_ALT_LEFT:
+			case HID_KEY_ALT_RIGHT:
+			case HID_KEY_KEYPAD_ADD:
+			case HID_KEY_KEYPAD_DECIMAL:
+			case HID_KEY_B:
+				return KEY_B;
+			}
+		}
+	}
+#endif // USE_USBPAD
 
 	// check if keyboard buffer is empty
 	u8 r = KeyReadOff;
@@ -199,6 +341,12 @@ char KeyGet()
 // get character from local keyboard
 char KeyChar()
 {
+#if USE_USBPAD		// simulate keypad with USB keyboard
+	// get USB character (returns NOCHAR if no character)
+	char ch = UsbGetChar();
+	if (ch != NOCHAR) return ch;
+#endif // USE_USBPAD
+
 	return KeyMapToChar[KeyGet()];
 }
 
@@ -207,6 +355,11 @@ void KeyFlush()
 {
 	KeyReadOff = KeyWriteOff;
 	KeyRetBuf = NOKEY;
+
+#if USE_USBPAD		// simulate keypad with USB keyboard
+	// flush USB keys
+	UsbFlushKey();
+#endif // USE_USBPAD
 }
 
 // return key to keyboard buffer (can hold only 1 key)

@@ -46,6 +46,12 @@ extern "C" {
 // set voltage VREG_VOLTAGE_*
 void VregSetVoltage(u8 vreg);
 
+// get voltage VREG_VOLTAGE_*
+INLINE u8 VregVoltage() { return (u8)((*VREG_CTRL >> 4) & 0x0f); }
+
+// get voltage in volts
+INLINE float VregVoltageFloat() { return (VregVoltage() + 11) * 0.05f; }
+
 // check if voltage is correctly regulated
 INLINE Bool VregIsOk() { return (*VREG_CTRL & B12) != 0; }
 

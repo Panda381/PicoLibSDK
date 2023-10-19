@@ -20,6 +20,8 @@
 #include "../../_sdk/inc/sdk_timer.h"
 #include "pico_bat.h"
 
+#if !USE_EXTDISP
+
 // init battery measurement
 void BatInit()
 {
@@ -75,3 +77,5 @@ void BatTerm()
 	// disable ADC
 	ADC_Disable();
 }
+
+#endif // !USE_EXTDISP

@@ -1,0 +1,20 @@
+
+; ============================================================================
+;                DVI (HDMI) PIO serializer (2 instructions)
+; ============================================================================
+; CLK_SYS = 252 MHz
+;   1 symbol has 10 bits: 40 ns (10 clock cycles)
+;   1 word with 2 symbols: 80 ns (20 clock cycles)
+;   full FIFO with 8 words: 640 ns (160 clock cycles)
+
+.program dvi
+.side_set	2	; 2-bit output
+.origin		0	; must be compiled from 0
+
+.wrap_target					; wrap jump target
+	out	pc,1	side 0b10
+	out	pc,1	side 0b01
+
+;	out	pc,1	side 0b01
+;	out	pc,1	side 0b10
+.wrap						; wrap jump to .wrap_target

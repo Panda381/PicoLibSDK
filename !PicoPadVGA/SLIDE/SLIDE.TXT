@@ -4,4 +4,8 @@ Displays BMP files
 from /SLIDE folder
 with 400*300/16-bit
 
-^WC^0 ....... quit
+^WY^0 ....... quit
+
+Support USB keyboard:
+A->Ctrl, B->Alt, X->Shift,
+Y->Esc

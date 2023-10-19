@@ -1,5 +1,7 @@
 This folder contains display drivers:
 
+dvi ... output to DVI (HDMI) with frame buffer
+
 minivga ... output to VGA monitor with frame buffer
 
 st7789 ... ST7789 controller with output to TFT display with resolution

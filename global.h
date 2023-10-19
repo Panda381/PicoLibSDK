@@ -17,7 +17,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-#define SDK_VER		107	// SDK library version in hundredths
+#define SDK_VER		108	// SDK library version in hundredths
 
 // ----------------------------------------------------------------------------
 //                               Attributes

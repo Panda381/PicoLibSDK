@@ -59,7 +59,7 @@
 #endif // VGA_USECSYNC
 
 #ifndef VGA_PIO_OFF
-#define VGA_PIO_OFF	0	// offset of VGA program in PIO memory
+#define VGA_PIO_OFF	2	// offset of VGA program in PIO memory
 #endif
 
 // swap bytes of command
@@ -316,7 +316,7 @@ void VgaPioInit()
 	PioSetClkdiv(VGA_PIO, VGA_SM, MINIVGA_CLKDIV*256);
 
 #if COLBITS == 4
-	// left right, autopull, pull threshold
+	// shift left, autopull, pull threshold
 	PioSetOutShift(VGA_PIO, VGA_SM, False, True, 32);
 #else
 	// shift right, autopull, pull threshold
@@ -427,7 +427,7 @@ void VgaInit()
 #endif
 
 	// clear back buffer
-#if BACKBUFSIZE > 0
+#if USE_FRAMEBUF && (BACKBUFSIZE > 0)
 	memset(BackBuf, 0, BACKBUFSIZE*sizeof(FRAMETYPE));
 #endif
 

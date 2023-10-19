@@ -154,6 +154,10 @@ by VGA driver rendering service.
 #define USE_UART	1		// use UART serial port (sdk_uart.c, sdk_uart.h)
 #endif
 
+#ifndef USE_USBPAD
+#define USE_USBPAD	0		// simulate keypad with USB keyboard
+#endif
+
 #ifndef USE_USBPORT
 #define USE_USBPORT	0		// use USB Mini-Port (sdk_usbport.c, sdk_usbport.h)
 #endif
@@ -923,6 +927,13 @@ by VGA driver rendering service.
 #endif
 */
 
+#if USE_USBPAD
+#if !USE_USB_HOST_HID
+#undef USE_USB_HOST_HID
+#define USE_USB_HOST_HID 4
+#endif
+#endif
+
 #if USE_USB_DEV_AUDIO || USE_USB_DEV_BTH || USE_USB_DEV_CDC || USE_USB_DEV_DFU || USE_USB_DEV_HID || \
      USE_USB_DEV_MIDI || USE_USB_DEV_MSC || USE_USB_DEV_NET || USE_USB_DEV_TMC || USE_USB_DEV_VENDOR
 #undef USE_USB_DEV
@@ -962,9 +973,9 @@ by VGA driver rendering service.
 #if USE_PICOPAD || USE_PICOINO || USE_PICOTRON || USE_DEMOVGA // if we have TFT or VGA display
 #undef USE_DRAW
 #define USE_DRAW 1
-#else
-#undef USE_DRAW_STDIO
-#define USE_DRAW_STDIO 0
+//#else
+//#undef USE_DRAW_STDIO
+//#define USE_DRAW_STDIO 0
 #endif
 #endif
 

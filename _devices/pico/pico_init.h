@@ -28,6 +28,7 @@ void DeviceInit();
 void DeviceTerm();
 
 #define LED1		0	// LED1 index
+#define LED_NUM		1	// number of LEDs
 
 // set LED ON (inx = LED index LED?)
 void LedOn(u8 inx);

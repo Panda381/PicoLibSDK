@@ -21,7 +21,7 @@
 #include "../inc/sdk_interp.h"
 
 // save interpolator state (for current CPU core)
-void InterpSave(u8 interp, sInterpSave* save)
+void NOFLASH(InterpSave)(u8 interp, sInterpSave* save)
 {
 	save->accum0 = *INTERP_ACCUM(interp, 0);
 	save->accum1 = *INTERP_ACCUM(interp, 1);
@@ -33,7 +33,7 @@ void InterpSave(u8 interp, sInterpSave* save)
 }
 
 // load interpolator state (for current CPU core)
-void InterpLoad(u8 interp, const sInterpSave* save)
+void NOFLASH(InterpLoad)(u8 interp, const sInterpSave* save)
 {
 	*INTERP_ACCUM(interp, 0) = save->accum0;
 	*INTERP_ACCUM(interp, 1) = save->accum1;
@@ -46,7 +46,7 @@ void InterpLoad(u8 interp, const sInterpSave* save)
 
 // reset interpolator to default state
 //  interp ... interpolator 0 or 1
-void InterpReset(u8 interp)
+void NOFLASH(InterpReset)(u8 interp)
 {
 	*INTERP_ACCUM(interp, 0) = 0;
 	*INTERP_ACCUM(interp, 1) = 0;

@@ -32,6 +32,7 @@
 
 //#define USE_SCREENSHOT	1		// use screen shots
 
+#define USE_USBPAD		1		// simulate keypad with USB keyboard
 //#define USE_USBPORT		1		// use USB Mini-Port (sdk_usbport.c, sdk_usbport.h)
 //#define USE_USB_DEV_CDC	4		// use USB CDC Communication Device Class, value = number of interfaces (device)
 //#define USE_USB_DEV_HID	1		// use USB HID Human Interface Device, value = number of interfaces (device)

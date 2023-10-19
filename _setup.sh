@@ -14,6 +14,7 @@
 #   picopad08 ..... PicoPad beta version 0.8
 #   picopad10 ..... PicoPad version 1.0 with TFT RGB565 output
 #   picopadvga .... PicoPad with VGA RGB565 output
+#   extdisp ....... extern VGA/DVI display module
 #   (empty) ....... default compilation
 
 case "$1" in
@@ -56,6 +57,11 @@ case "$1" in
 	export DEVICE="picopadvga"
 	export DEVCLASS="picopad"
 	export DEVDIR="!PicoPadVGA"
+	;;
+    "extdisp")
+	export DEVICE="extdisp"
+	export DEVCLASS="pico"
+	export DEVDIR="!Pico"
 	;;
      *) 
 	export DEVICE="picopad10"

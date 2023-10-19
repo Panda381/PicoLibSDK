@@ -24,6 +24,8 @@
 #include "../inc/sdk_systick.h"
 #include "../inc/sdk_rtc.h"
 #include "../inc/sdk_cpu.h"
+#include "../inc/sdk_vreg.h"
+#include "../inc/sdk_ssi.h"
 #include "../inc/sdk_float.h"
 #include "../../_lib/inc/lib_alarm.h"
 #include "../../_lib/inc/lib_config.h"
@@ -73,6 +75,14 @@ void RuntimeInit()
 #if USE_IRQ	// use IRQ interrupts (sdk_irq.c, sdk_irq.h)
 	// set all interrupt priorities of NVIC of this CPU core to default value
 	NVIC_IRQPrioDef();
+#endif
+
+#ifdef PRESET_VREG_VOLTAGE	// preset VREG voltage
+	VregSetVoltage(PRESET_VREG_VOLTAGE); // set VREG voltage
+#endif
+
+#ifdef PRESET_FLASH_CLKDIV	// preset flash CLK divider
+	SSI_SetFlashClkDiv(PRESET_FLASH_CLKDIV); // preset flash divider
 #endif
 
 	// initialize clocks

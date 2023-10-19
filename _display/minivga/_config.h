@@ -148,8 +148,13 @@
 //  htotal = hsync + hback + hfront + wfull*cpp = 2002	// total clock ticks
 //  ... check htotal = htotal * sys_freq / clkdiv = 2002 // correction hback 120->121, hfront 40->41
 
+#if defined(PLL_KHZ) && (PLL_KHZ == 252000)
+#define MINIVGA_CLKDIV	4		// SM divide clock ticks
+#else
 #define PLL_KHZ		126000		// PLL system frequency in kHz (default 125000 kHz)
 #define MINIVGA_CLKDIV	2		// SM divide clock ticks
+#endif
+
 #define MINIVGA_CPP	5		// SM clock ticks per pixel
 #define MINIVGA_HSYNC	240		// horizontal sync clock ticks
 #define MINIVGA_HBACK	121		// horizontal back porch clock ticks

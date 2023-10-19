@@ -12,3 +12,7 @@ folder /COLBOOK.
 ^WX+A^0 ....... previous
 ^WX+B^0 ....... next
 ^WY^0 ......... quit
+
+Support USB keyboard:
+A->Ctrl, B->Alt, X->Shift,
+Y->Esc

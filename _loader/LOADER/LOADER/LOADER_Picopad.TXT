@@ -28,3 +28,9 @@ loading text *.TXT
 		^] ... stop invert
 
 Image BMP: RGB565 16-bit
+
+Most programs and games on the PicoPad can also be
+controlled from the USB keyboard, which is connected
+to the Pico's USB connector via a power splitter that
+also provides an external +5V power supply. Key mapping:
+A->Ctrl, B->Alt, X->Shift, Y->Esc.

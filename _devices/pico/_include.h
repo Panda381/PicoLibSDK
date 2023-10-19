@@ -10,3 +10,6 @@
 
 #include "pico_init.h"	// initialize
 #include "pico_bat.h"	// battery
+#include "../../_display/minivga/minivga.h" // VGA display
+#include "../../_display/dvi/dvi.h" // DVI display
+#include "../../_lib/inc/lib_draw.h" // drawing to TFT and VGA display buffer

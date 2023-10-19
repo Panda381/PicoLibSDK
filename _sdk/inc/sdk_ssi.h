@@ -92,6 +92,12 @@ typedef struct {
 
 #define ssi_hw ((ssi_hw_t*)XIP_SSI_BASE)
 
+// get flash speed
+INLINE int SSI_FlashClkDiv() { return *SSI_BAUDR; }
+
+// set flash speed
+void NOFLASH(SSI_SetFlashClkDiv)(int clkdiv);
+
 // set flash to fast QSPI mode (clkdiv = clock divider, must be even number, FLASHQSPI_CLKDIV_DEF=4 is default)
 //   Supported devices: Winbond W25Q080, W25Q16JV, AT25SF081, S25FL132K0
 //   Raspberry Pico cointains W25Q16JVUXIQ

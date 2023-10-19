@@ -54,6 +54,27 @@ u32 NOFLASH(SSI_ReadSreg)(ssi_hw_t* ssi, u32 cmd)
 	return res;
 }
 
+// set flash speed
+void NOFLASH(SSI_SetFlashClkDiv)(int clkdiv)
+{
+	// disable interrupts
+	IRQ_LOCK;
+
+	// disable SSI to allow setup
+	ssi_hw_t* ssi = ssi_hw;
+	ssi->ssienr = 0;
+
+	// set baud rate divider (must be even numer)
+	// serial flash interface will run on CLK_SYS/BAUDR
+	ssi->baudr = clkdiv;
+
+	// enable SSI
+	ssi->ssienr = B0;
+
+	// enable interrupts
+	IRQ_UNLOCK;
+}
+
 // set flash to fast QSPI mode (clkdiv = clock divider, must be even number, FLASHQSPI_CLKDIV_DEF=4 is default)
 //   Supported devices: Winbond W25Q080, W25Q16JV, AT25SF081, S25FL132K0
 //   Raspberry Pico cointains W25Q16JVUXIQ

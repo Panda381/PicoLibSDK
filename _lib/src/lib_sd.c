@@ -394,7 +394,8 @@ void SDClose()
 	// unselect card
 	SDUnsel();
 
-	// free SPI bus
+	// free SPI bus (to make MMC/SDC release the MISO line, the master
+	// device needs to send a byte after the CS signal is deasserted)
 	SDByte(0xff);
 	SDByte(0xff);
 	SDByte(0xff);
@@ -538,11 +539,15 @@ void SDInit()
 
 	// initialize pins
 	GPIO_Fnc(SD_RX, GPIO_FNC_SPI);
+	GPIO_PullUp(SD_RX);
 	GPIO_Fnc(SD_SCK, GPIO_FNC_SPI);
+	GPIO_PullUp(SD_SCK);
 	GPIO_Fnc(SD_TX, GPIO_FNC_SPI);
+	GPIO_PullUp(SD_TX);
 
 	// initialize CS (active state is LOW)
 	GPIO_Init(SD_CS);
+	GPIO_PullUp(SD_CS);
 	GPIO_Out1(SD_CS);
 	GPIO_DirOut(SD_CS);
 }

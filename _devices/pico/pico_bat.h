@@ -21,6 +21,8 @@
 extern "C" {
 #endif
 
+#if !USE_EXTDISP
+
 // init battery measurement
 void BatInit();
 
@@ -32,6 +34,8 @@ int GetBatInt();
 
 // terminate battery measurement
 void BatTerm();
+
+#endif // !USE_EXTDISP
 
 #ifdef __cplusplus
 }
