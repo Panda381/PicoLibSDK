@@ -1253,6 +1253,9 @@ int main()
 	u32 t;
 	sFileDesc* fd;
 
+	// clear screen
+	memset(FrameBuf, 0, sizeof(FrameBuf));
+
 	// reset to root
 	LastNameLen = 0; // no last name
 	FileInit(&PrevFile); // initialize file structure of preview file
