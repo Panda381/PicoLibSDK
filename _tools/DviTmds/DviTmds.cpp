@@ -12,7 +12,8 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include <stdio.h>
-#include <windows.h>
+#include <malloc.h>
+#include <string.h>
 
 // base types
 typedef signed char s8;
@@ -47,7 +48,7 @@ int PopCountSlow(u32 x)
 	return n;
 }
 
-// count of "1" bits, faster version (Brian Kernighan’s Algorithm)
+// count of "1" bits, faster version (Brian Kernighanâ€™s Algorithm)
 int PopCountBrian(u32 x)
 {
 	int n = 0;
