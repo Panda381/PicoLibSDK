@@ -48,7 +48,7 @@ int PopCountSlow(u32 x)
 	return n;
 }
 
-// count of "1" bits, faster version (Brian Kernighan’s Algorithm)
+// count of "1" bits, faster version (Brian Kernighan Algorithm)
 int PopCountBrian(u32 x)
 {
 	int n = 0;
