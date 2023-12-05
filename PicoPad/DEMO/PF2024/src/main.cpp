@@ -95,7 +95,7 @@ void DrawPf(int pfshift)
 
 int main()
 {
-	int i;
+	int i, strip;
 	const sSprite* s;
 	int comx = -400;
 	int comy = -110;
@@ -119,22 +119,28 @@ int main()
 	// main loop
 	while (True)
 	{
-		// display background
-		DrawImgRle(BackImg, BackImg_Pal, 0, 0, BACKIMG_W, BACKIMG_H);
-
-		// draw sprites
-		s = Sprite;
-		for (i = 0; i < SPRITENUM; i++)
+		for (strip = DISP_STRIP_NUM; strip > 0; strip--) // VGA loop all strips; LCD has only 1 strip
 		{
-			DrawBlit4Pal(s->img, s->pal, AnimStep[i] * s->w, 0, s->x, s->y, s->w, s->h, s->tw, TRANS_COL);
-			s++;
+			// next strip
+			DispSetStripNext();
+
+			// display background
+			DrawImgRle(BackImg, BackImg_Pal, 0, 0, BACKIMG_W, BACKIMG_H);
+
+			// draw sprites
+			s = Sprite;
+			for (i = 0; i < SPRITENUM; i++)
+			{
+				DrawBlit4Pal(s->img, s->pal, AnimStep[i] * s->w, 0, s->x, s->y, s->w, s->h, s->tw, TRANS_COL);
+				s++;
+			}
+
+			// draw comet
+			DrawBlit4Pal(CometImg, CometImg_Pal, (comy & 1) * COMETIMG_W, 0, comx, comy, COMETIMG_W, COMETIMG_H, COMETIMG_TW, TRANS_COL);
+
+			// draw PF and update
+			DrawPf(pfshift);
 		}
-
-		// draw comet
-		DrawBlit4Pal(CometImg, CometImg_Pal, (comy & 1) * COMETIMG_W, 0, comx, comy, COMETIMG_W, COMETIMG_H, COMETIMG_TW, TRANS_COL);
-
-		// draw PF and update
-		DrawPf(pfshift);
 
 		// animation
 		s = Sprite;
@@ -175,6 +181,10 @@ int main()
 		// frame animation
 		pfshift -= 2;
 		if (pfshift < -PFALLIMG_TW) pfshift = FRAMEIMG_INW;
+
+#if USE_PICOPADVGA
+		WaitMs(30);
+#endif
 
 		// draw PF and update
 		DrawPf(pfshift);

@@ -22,6 +22,10 @@
 
 #include "../sdk_addressmap.h"		// Register address offsets
 
+#if USE_ORIGSDK		// include interface of original SDK
+#include "orig/orig_ssi.h"	// constants of original SDK
+#endif // USE_ORIGSDK
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -59,38 +63,40 @@ extern "C" {
 #define SSI_TX_DRV_EDGE	((volatile u32*)(XIP_SSI_BASE+0xF8))	// TX drive edge
 
 typedef struct {
-	io32	ctrlr0;		// control register 0
-	io32	ctrlr1;		// master control register 1
-	io32	ssienr;		// SSI enable
-	io32	mwcr;		// Microwire control
-	io32	ser;		// slave enable
-	io32	baudr;		// baud rate
-	io32	txftlr;		// TX FIFO threshold level
-	io32	rxftlr;		// RX FIFO threshold level
-	io32	txflr;		// TX FIFO level
-	io32	rxflr;		// RX FIFO level
-	io32	sr;		// status register
-	io32	imr;		// interrupt mask
-	io32	isr;		// interrupt status
-	io32	risr;		// raw interrupt status
-	io32	txoicr;		// TX FIFO overflow interrupt clear
-	io32	rxoicr;		// RX FIFO overflow interrupt clear
-	io32	rxuicr;		// RX FIFO underflow interrupt clear
-	io32	msticr;		// multi-master interrupt clear
-	io32	icr;		// interrupt clear
-	io32	dmacr;		// DMA control
-	io32	dmatdlr;	// DMA TX data level
-	io32	dmardlr;	// DMA RX data level
-	io32	idr;		// identification register
-	io32	version_id;	// version ID
-	io32	dr0;		// data register 0 (od 36)
-	io32	dr[35];		// ... other data registers are not used
-	io32	rx_sample_dly;	// RX sample delay
-	io32	spi_ctrlr0;	// SPI control
-	io32	txd_drive_edge;	// TX drive edge
+	io32	ctrlr0;		// 0x00: control register 0
+	io32	ctrlr1;		// 0x04: master control register 1
+	io32	ssienr;		// 0x08: SSI enable
+	io32	mwcr;		// 0x0C: Microwire control
+	io32	ser;		// 0x10: slave enable
+	io32	baudr;		// 0x14: baud rate
+	io32	txftlr;		// 0X18: TX FIFO threshold level
+	io32	rxftlr;		// 0X1C: RX FIFO threshold level
+	io32	txflr;		// 0x20: TX FIFO level
+	io32	rxflr;		// 0x24: RX FIFO level
+	io32	sr;		// 0x28: status register
+	io32	imr;		// 0x2C: interrupt mask
+	io32	isr;		// 0x30: interrupt status
+	io32	risr;		// 0x34: raw interrupt status
+	io32	txoicr;		// 0x38: TX FIFO overflow interrupt clear
+	io32	rxoicr;		// 0x3C: RX FIFO overflow interrupt clear
+	io32	rxuicr;		// 0x40: RX FIFO underflow interrupt clear
+	io32	msticr;		// 0x44: multi-master interrupt clear
+	io32	icr;		// 0x48: interrupt clear
+	io32	dmacr;		// 0x4C: DMA control
+	io32	dmatdlr;	// 0x50: DMA TX data level
+	io32	dmardlr;	// 0x54: DMA RX data level
+	io32	idr;		// 0x58: identification register
+	io32	version_id;	// 0x5C: version ID
+	io32	dr0;		// 0x60: data register 0 (od 36)
+	io32	dr[35];		// 0x64: ... other data registers are not used
+	io32	rx_sample_dly;	// 0xF0: RX sample delay
+	io32	spi_ctrlr0;	// 0xF4: SPI control
+	io32	txd_drive_edge;	// 0xF8: TX drive edge
 } ssi_hw_t;
 
 #define ssi_hw ((ssi_hw_t*)XIP_SSI_BASE)
+
+STATIC_ASSERT(sizeof(ssi_hw_t) == 0xFC, "Incorrect ssi_hw_t!");
 
 // get flash speed
 INLINE int SSI_FlashClkDiv() { return *SSI_BAUDR; }

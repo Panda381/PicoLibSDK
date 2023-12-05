@@ -21,6 +21,8 @@
 #define UART_STDIO_PORT	1		// UART stdio port 0 or 1
 #endif
 
+#define PICO_DEFAULT_UART UART_STDIO_PORT // original-SDK setup
+
 #ifndef UART_STDIO_TX
 #define UART_STDIO_TX	20		// UART stdio TX GPIO pin
 #endif

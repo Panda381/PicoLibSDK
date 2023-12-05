@@ -17,7 +17,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-#define SDK_VER		108	// SDK library version in hundredths
+#define SDK_VER		109	// SDK library version in hundredths
 
 // ----------------------------------------------------------------------------
 //                               Attributes
@@ -78,9 +78,6 @@
 #define STATIC_ASSERT(c, msg) _Static_assert((c), msg)
 #endif
 
-#define PICO_NO_HARDWARE 1	// this switch is not use in other places of the SDK,
-				//  it is used only in PIO program to cut-out some unwanted declarations
-
 // ----------------------------------------------------------------------------
 //                              Base data types
 // ----------------------------------------------------------------------------
@@ -97,7 +94,7 @@ long long	8	8	8	8
 
 // Note: 'char' can be signed or unsigned
 
-// base types - to check type size, use CheckTypeSize()
+// base types
 typedef signed char s8;
 typedef unsigned char u8;
 typedef signed short s16;		// on 8-bit system use "signed int"
@@ -109,16 +106,65 @@ typedef unsigned long long int u64;
 
 typedef unsigned int uint;
 
-typedef u16 uint16_t;		// used only by PIO program
+// original-SDK base types
+typedef s8 int8_t;
+typedef u8 uint8_t;
+typedef s16 int16_t;
+typedef u16 uint16_t;
+typedef s32 int32_t;
+typedef u32 uint32_t;
+typedef s64 int64_t;
+typedef u64 uint64_t;
 
+typedef unsigned long uintptr_t;
+typedef long intptr_t;
+//typedef __uintptr_t uintptr_t;
+//typedef __intptr_t intptr_t;
+
+// optimised Bool
 typedef unsigned char Bool;
 #define True 1
 #define False 0
+
+// original-SDK bool (C++ internal bool)
+#ifndef __cplusplus
+typedef unsigned char bool;
+#endif
+#define true 1
+#define false 0
+
+// original-SDK macro
+#define __aligned(x) __attribute__((aligned(x)))
+#define __noinline __attribute__((noinline))
+#define __not_in_flash(group) __attribute__((section(".time_critical." group)))
+#define __not_in_flash_func(func_name) __not_in_flash(__STRING(func_name)) func_name
+#define __no_inline_not_in_flash_func(func_name) __noinline __not_in_flash_func(func_name)
+#define __time_critical_func(func_name) __not_in_flash_func(func_name)
+#define __uninitialized_ram(group) __attribute__((section(".uninitialized_data." #group))) group
+#define __scratch_x(group) __attribute__((section(".time_critical." group)))
+#define __scratch_y(group) __attribute__((section(".time_critical." group)))
+
+#ifndef assert
+#define assert(x)
+#endif
 
 // hw registers
 typedef volatile u32 io32;
 typedef volatile u16 io16;
 typedef volatile u8 io8;
+
+// original-SDK types
+typedef volatile uint32_t io_rw_32;
+typedef const volatile uint32_t io_ro_32;
+typedef volatile uint32_t io_wo_32;
+typedef volatile uint16_t io_rw_16;
+typedef const volatile uint16_t io_ro_16;
+typedef volatile uint16_t io_wo_16;
+typedef volatile uint8_t io_rw_8;
+typedef const volatile uint8_t io_ro_8;
+typedef volatile uint8_t io_wo_8;
+typedef volatile uint8_t *const ioptr;
+typedef ioptr const const_ioptr;
 
 // NULL
 #ifndef NULL
@@ -128,6 +174,45 @@ typedef volatile u8 io8;
 #define NULL ((void*)0)
 #endif
 #endif
+
+// original-SDK define unsigned number
+#ifndef _u
+#ifdef __ASSEMBLER__
+#define _u(x) x
+#else
+#define _u(x) x ## u
+#endif
+#endif
+
+// original-SDK absolute time entry in [us]
+typedef u64 absolute_time_t;
+
+// original-SDK datetime; set field to -1 for RTC alarm to not match
+typedef struct {
+	s16	year;	// 0..4095
+	s8	month;	// 1..12, 1 is January
+	s8	day;	// 1..28,29,30,31 depending on month
+	s8	dotw;	// 0..6, 0 is Sunday
+	s8	hour;	// 0..23
+	s8	min;	// 0..59
+	s8	sec;	// 0..59
+} datetime_t;
+
+STATIC_ASSERT(sizeof(datetime_t) == 8, "Incorrect datetime_t!");
+
+// original-SDK error codes
+enum pico_error_codes {
+	PICO_OK = 0,
+	PICO_ERROR_NONE = 0,
+	PICO_ERROR_TIMEOUT = -1,
+	PICO_ERROR_GENERIC = -2,
+	PICO_ERROR_NO_DATA = -3,
+	PICO_ERROR_NOT_PERMITTED = -4,
+	PICO_ERROR_INVALID_ARG = -5,
+	PICO_ERROR_IO = -6,
+	PICO_ERROR_BADAUTH = -7,
+	PICO_ERROR_CONNECT_FAILED = -8,
+};
 
 // compile-time check 
 STATIC_ASSERT(sizeof(s8) == 1, "Incorrect typedef s8!");

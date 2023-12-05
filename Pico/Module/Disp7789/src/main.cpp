@@ -7,60 +7,13 @@
 
 #include "../include.h"
 
+//#define MINIVGA_IRQTIME		1	// debug flag - measure delta time of VGA service (use GRABBER_C flag)
+//#define DVI_IRQTIME		1	// debug flag - measure delta time of DVI service (use GRABBER_C flag)
+#define GRABBER_C	1	// use grabber in C code instead of assembler
+
 #define ST7789_CASET		0x2A	// set start and end column of draw window
 #define ST7789_RASET		0x2B	// set start and end row of draw window
 #define ST7789_RAMWR		0x2C	// start write data to draw window
-#define ST7789_RAMCTRL		0xB0	// RAM control, data 2 bytes
-#define ST7789_COLMOD		0x3A	// set color mode (data COLOR_MODE_*)
-#define ST7789_MADCTL		0x36	// set rotation mode (data RotationTab)
-
-/*
-// display select
-#define DISPSEL_NO	0
-#define DISPSEL_VGA	1
-#define DISPSEL_DVI	2
-u8 DispSelected = DISPSEL_NO;	// current selected display
-
-// select new display
-void DispSel(u8 sel)
-{
-	// no change
-	if (DispSelected == sel) return;
-
-	// deactivate current display
-	switch (DispSelected)
-	{
-	// VGA display
-	case DISPSEL_VGA:
-		VgaStop();
-		WaitMs(100);
-		break;
-
-	// DVI display
-	case DISPSEL_DVI:
-		DviStop();
-		WaitMs(100);
-		break;
-	}
-
-	// activate new display
-	DispSelected = sel;
-	switch (sel)
-	{
-	// VGA display
-	case DISPSEL_VGA:
-		VgaStart();
-		WaitMs(100);
-		break;
-
-	// DVI display
-	case DISPSEL_DVI:
-		DviStart();
-		WaitMs(100);
-		break;
-	}
-}
-*/
 
 // initialize SPI grabber PIO
 void SpiPioInit()
@@ -86,6 +39,13 @@ void SpiPioInit()
 	// switch OFF pin synchronization to get faster input
 	PioInBypassMask(SPI_PIO, RangeMask(SPI_GPIO_FIRST, SPI_GPIO_FIRST+SPI_GPIO_NUM-1));
 
+	// invert DC pin
+	GPIO_InOverInvert(SPI_GPIO_DC);
+
+	// pull-ups (to work without master)
+	int i;
+	for (i = SPI_GPIO_FIRST; i < SPI_GPIO_FIRST+SPI_GPIO_NUM; i++) GPIO_PullUp(i);
+
 	// map state machine's IN pins	
 	PioSetupIn(SPI_PIO, SPI_SM, SPI_GPIO_FIRST);
 
@@ -108,18 +68,150 @@ void SpiPioInit()
 	PioSMEnable(SPI_PIO, SPI_SM);
 }
 
-// process
-void NOFLASH(Proc)()
+#if GRABBER_C		// use grabber in C code (or use assembler otherwise)
+
+// read data from RX FIFO of PIO state machine, wait if RX FIFO is empty
+//  pio ... PIO number 0 or 1
+//  sm ... state machine 0 to 3
+INLINE u32 Proc_PioReadWait()
 {
-	u32 k, k2;
-	int y = 0;
+	while (PioRxIsEmpty(SPI_PIO, SPI_SM)) {}
+	return PioRead(SPI_PIO, SPI_SM);
+}
+
+// process
+void NOFLASH(GrabberC)()
+{
+	int h = HEIGHT;
+	int w = WIDTH;
 	int x = 0;
-	int x1 = 0;		// start X of window
-	int x2 = WIDTH;		// end X of window
-	int y1 = 0;		// start Y of window
-	int y2 = HEIGHT;	// end Y of window
-	u16* d = FrameBuf;	// destination pointer
-	Bool first = True;	// first data byte
+	int y = 0;
+	int dd = 0;
+
+	int i, j, k, k2;
+	u16* d;		// destination pointer
+
+#if MINIVGA_IRQTIME			// debug flag - measure delta time of VGA service
+	u32 tin = 0;
+	u32 tout = 0;
+	char buf[40];
+#endif // MINIVGA_IRQTIME
+
+#if DVI_IRQTIME			// debug flag - measure delta time of DVI service
+	u32 tin2 = 0;
+	u32 tout2 = 0;
+	char buf2[40];
+#endif // DVI_IRQTIME
+
+	// main loop
+	while (True)
+	{
+#if MINIVGA_IRQTIME			// debug flag - measure delta time of VGA service
+		MemPrint(buf, 40, "VGA IN=%dus OUT=%dus    ", VgaTimeIn, VgaTimeOut);
+		DrawTextBg(buf, 0, 0, COL_WHITE, COL_BLACK);
+#endif // MINIVGA_IRQTIME
+
+#if DVI_IRQTIME			// debug flag - measure delta time of DVI service
+		MemPrint(buf2, 40, "DVI IN=%dus OUT=%dus IN2=%dus OUT2=%dus   ",
+				DviTimeIn, DviTimeOut, DviTimeIn2, DviTimeOut2);
+		DrawTextBg(buf2, 0, 16, COL_WHITE, COL_BLACK);
+#endif // DVI_IRQTIME
+
+		// wait for command
+		do {
+			k = Proc_PioReadWait();
+		} while (k < 0x100);
+
+		// command
+COMMAND:
+		k = (u8)k;
+		switch (k)
+		{
+		// set start and end column of draw window
+		case ST7789_CASET:
+
+			// start X
+			k = Proc_PioReadWait();
+			if (k >= 0x100) goto COMMAND;
+			k2 = Proc_PioReadWait();
+			if (k2 >= 0x100) goto COMMAND;
+			x = (k << 8) | k2;
+			if (x >= WIDTH) x = WIDTH-1;
+
+			// stop X
+			k = Proc_PioReadWait();
+			if (k >= 0x100) goto COMMAND;
+			k2 = Proc_PioReadWait();
+			if (k2 >= 0x100) goto COMMAND;
+			w = (k << 8) | k2;
+			w++;
+			if (w > WIDTH) w = WIDTH;
+			w -= x;
+			if (w < 1) w = 1;
+
+			dd = WIDTH - w;
+			break;
+
+		// set start and end row of draw window
+		case ST7789_RASET:
+
+			// start Y
+			k = Proc_PioReadWait();
+			if (k >= 0x100) goto COMMAND;
+			k2 = Proc_PioReadWait();
+			if (k2 >= 0x100) goto COMMAND;
+			y = (k << 8) | k2;
+			if (y >= HEIGHT) y = HEIGHT-1;
+
+			// stop Y
+			k = Proc_PioReadWait();
+			if (k >= 0x100) goto COMMAND;
+			k2 = Proc_PioReadWait();
+			if (k2 >= 0x100) goto COMMAND;
+			h = (k << 8) | k2;
+			h++;
+			if (h > HEIGHT) h = HEIGHT;
+			h -= y;
+			if (h < 1) h = 1;
+
+			break;
+
+		// start write data to draw window
+		case ST7789_RAMWR:
+			d = &FrameBuf[x + y*WIDTH];
+
+			// load data
+			for (i = h; i > 0; i--)
+			{
+				for (j = w; j > 0; j--)
+				{
+					k = Proc_PioReadWait();
+					if (k >= 0x100) goto COMMAND;
+
+					k2 = Proc_PioReadWait();
+					if (k2 >= 0x100) goto COMMAND;
+
+#if MINIVGA_IRQTIME || DVI_IRQTIME		// debug flag - measure delta time of VGA/DVI service
+					d++;
+#else // MINIVGA_IRQTIME
+					*d++ = (u16)(k | (k2 << 8));
+#endif // MINIVGA_IRQTIME
+				}
+
+				d += dd;
+			}
+			break;
+		}
+	}
+}
+#endif // GRABBER_C
+
+int main()
+{
+	int y;
+
+	// initialize SPI grabber PIO
+	SpiPioInit();
 
 	// select mode
 	GPIO_Init(DISPSEL_GPIO);
@@ -127,170 +219,25 @@ void NOFLASH(Proc)()
 	GPIO_PullUp(DISPSEL_GPIO);
 	WaitUs(100);
 
-
 	if (GPIO_In(DISPSEL_GPIO))
 		DviStart();
 	else
 		VgaStart();
 
-
-
-//	VgaStart();
-//	DviStart();
-
-
-/*
-	int fps = DviFrame;
-	while(True)
-	{
-		WaitMs(1000);
-		int fps2 = DviFrame;
-		Print("FPS = %d\n", fps2 - fps);
-		fps = fps2;
-
-//		LedFlip(0);
-	}
-
-*/
-
-//	DispSel(GPIO_In(DISPSEL_GPIO) + 1);
-
-	// main loop
-	while (True)
-	{
-		// read byte
-		k = PioReadWait(SPI_PIO, SPI_SM);
-
-		// command
-		if (k < 0x100)
-		{
-
-//		printf("cmd=%08X   \r", k);
-
-
-			switch (k)
-			{
-			// set start and end column of draw window
-			case ST7789_CASET:
-				x1 = (PioReadWait(SPI_PIO, SPI_SM) & 0xff) << 8; // start X HIGH
-				x1 |= PioReadWait(SPI_PIO, SPI_SM) & 0xff; // start X LOW
-//				if (x1 >= WIDTH) x1 = WIDTH-1;
-				x2 = (PioReadWait(SPI_PIO, SPI_SM) & 0xff) << 8; // stop X HIGH
-				x2 |= PioReadWait(SPI_PIO, SPI_SM) & 0xff; // stop X LOW
-				x2++;
-//				if (x2 <= x1) x2 = x1 + 1;
-//				x = x1;
-//				y = y1;
-//				d = &FrameBuf[x + y*WIDTH];
-//				first = True;
-				break;
-
-			// set start and end row of draw window
-			case ST7789_RASET:
-				y1 = (PioReadWait(SPI_PIO, SPI_SM) & 0xff) << 8; // start Y HIGH
-				y1 |= PioReadWait(SPI_PIO, SPI_SM) & 0xff; // start Y LOW
-//				if (y1 >= HEIGHT) y1 = HEIGHT-1;
-				y2 = (PioReadWait(SPI_PIO, SPI_SM) & 0xff) << 8; // stop Y HIGH
-				y2 |= PioReadWait(SPI_PIO, SPI_SM) & 0xff; // stop Y LOW
-				y2++;
-//				if (y2 <= y1) y2 = y1 + 1;
-//				x = x1;
-//				y = y1;
-//				d = &FrameBuf[x + y*WIDTH];
-//				first = True;
-				break;
-
-			// start write data to draw window
-			case ST7789_RAMWR:
-				x = x1;
-				y = y1;
-				d = &FrameBuf[x + y*WIDTH];
-
-//				first = True;
-
-//				printf("x1=%d x2=%d y1=%d y2=%d   \r", x1, x2, y1, y2);
-
-				break;
-
-			// RAM control, data 2 bytes
-			case ST7789_RAMCTRL:
-				PioReadWait(SPI_PIO, SPI_SM);
-				PioReadWait(SPI_PIO, SPI_SM);
-				break;				
-
-			// set color mode (data COLOR_MODE_*)
-			case ST7789_COLMOD:
-			// set rotation mode (data RotationTab)
-			case ST7789_MADCTL:
-				PioReadWait(SPI_PIO, SPI_SM);
-				break;				
-			}
-		}
-
-		// image data
-		else
-		{
-
-			k &= 0xff;
-
-			k |= (PioReadWait(SPI_PIO, SPI_SM) & 0xff) << 8;
-			*d++ = k;
-
-
-/*
-			k &= 0xff;
-
-			// first byte
-			if (first)
-			{
-				k2 = k;
-				first = False;
-			}
-
-			// second byte
-			else
-			{
-				// write one pixel
-				k2 |= k << 8;
-				//*d++ = (u16)k2;
-*/
-				x++;
-//				first = True;
-
-				// end of row
-				if (x >= x2)
-				{
-					x = x1;
-					d += WIDTH - (x2 - x1);
-					y++;
-
-					// end of image
-					if (y >= y2)
-					{
-						y = y1;
-						d = &FrameBuf[x + y*WIDTH];
-					}
-				}
-//			}
-		}
-	}
-}
-
-int main()
-{
-//	int y = 0;
-
-	// initialize SPI grabber PIO
-	SpiPioInit();
-
 	// draw rainbow gradient
 //	for (y; y < HEIGHT; y++) GenGrad(&FrameBuf[y*WIDTH], WIDTH);
-//	DispUpdateAll();
+	DrawImgRle(MonoscopeImg, MonoscopeImg_Pal, 0, 0, WIDTH, HEIGHT);
+	DispUpdateAll();
 
 	// print setup
 //	printf("CLK_SYS=%dMHz\n", ClockGetHz(CLK_SYS)/1000000);
 //	printf("CLKDIV=%d\n", SSI_FlashClkDiv());
 //	printf("VREG=%.2fV\n", VregVoltageFloat());
 
-	Proc();
+	// input grabber
+#if GRABBER_C		// use grabber in C code (or use assembler otherwise)
+	GrabberC();
+#else
+	Grabber();
+#endif
 }

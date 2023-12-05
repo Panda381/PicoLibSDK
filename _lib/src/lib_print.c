@@ -24,9 +24,13 @@
 #include "../inc/lib_decnum.h"
 #include "../../_display/st7789/st7789.h"
 #include "../../_display/minivga/minivga.h"
+#include "../../_sdk/usb_inc/sdk_usb_phy.h" // physical layer
+#include "../../_sdk/usb_inc/sdk_usb_dev.h" // devices
 #include "../../_sdk/usb_inc/sdk_usb_dev_cdc.h"
 #include "../../_sdk/usb_inc/sdk_usb_host_hid.h"
 #include "../../_sdk/inc/sdk_uart.h"
+#include "../../_sdk/inc/sdk_spinlock.h"
+#include "../../_sdk/inc/sdk_timer.h"
 
 // bit mask of used stdio streams
 u32 StdioMask = 0
@@ -1329,6 +1333,12 @@ int PrintArg(const char* fmt, va_list args)
 {
 	int n = 0;
 
+	// lock print function (timeout 150ms on concurrent lock in interrupt handler)
+	// IRQ must not disabled to enable interrupt service on UART and USB
+#if USE_SPINLOCK
+	if (!SpinLockTimeout(PRINTF_SPIN, 150000)) return 0;
+#endif
+
 	// write and read stream
 	sStream wstr, rstr;
 
@@ -1392,6 +1402,13 @@ int PrintArg(const char* fmt, va_list args)
 		// print string
 		n = StreamPrintArg(&wstr, &rstr, args);
 	}
+
+
+	// unlock print function
+#if USE_SPINLOCK
+	SpinUnlock(PRINTF_SPIN);
+#endif
+
 	return n;
 }
 
@@ -1467,9 +1484,50 @@ char GetChar()
 #endif
 }
 
+// get character from stdio, with wait
+char GetCharWait()
+{
+	char ch;
+	do ch = GetChar(); while (ch == NOCHAR);
+	return ch;
+}
+
+// get character from stdio with time-out in [us] (returns NOCHAR=0 if no character)
+char GetCharUs(u32 us)
+{
+	char ch;
+	u32 start = Time();
+	do {
+		ch = GetChar();
+		if (ch != NOCHAR) return ch;
+	} while ((u32)(Time() - start) < us);
+	return NOCHAR;
+}
+
 char WRAPPER_FUNC(getchar)()
 {
-	return GetChar();
+	return GetCharWait();
+}
+
+// flush input characters
+void FlushChar()
+{
+	char ch;
+	do { ch = GetChar(); } while (ch != NOCHAR);
+}
+
+// initialize Stdio interface (should be called after changing UART clock)
+void StdioInit()
+{
+#if USE_USB_STDIO		// use USB stdio (UsbPrint function)
+	// initialize USB stdio
+	UsbDevInit(&UsbDevCdcSetupDesc);
+#endif
+
+#if USE_UART_STDIO
+	// initialize UART stdio
+	UartStdioInit();
+#endif
 }
 
 #endif // USE_PRINT		// use Formatted print (lib_print.c, lib_print.h)

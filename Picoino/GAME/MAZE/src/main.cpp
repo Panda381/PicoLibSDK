@@ -42,12 +42,6 @@ void DrawBoard()
 	DispUpdate();
 }
 
-// flush characters from keyboard
-void FlushChar()
-{
-	KeyFlush();
-}
-
 // maze generator
 void Gener()
 {
@@ -250,7 +244,7 @@ int main()
 				*BoardAddr(StopX, StopY) = t;
 				DrawBoard();
 			}
-			FlushChar();
+			KeyFlush();
 			break;
 
 		// left
@@ -271,7 +265,7 @@ int main()
 				Look();
 				DrawBoard();
 			}
-			FlushChar();
+			KeyFlush();
 			break;
 
 		// right
@@ -292,7 +286,7 @@ int main()
 				Look();
 				DrawBoard();
 			}
-			FlushChar();
+			KeyFlush();
 			break;
 
 		// up
@@ -313,7 +307,7 @@ int main()
 				Look();
 				DrawBoard();
 			}
-			FlushChar();
+			KeyFlush();
 			break;
 
 		// down
@@ -334,7 +328,7 @@ int main()
 				Look();
 				DrawBoard();
 			}
-			FlushChar();
+			KeyFlush();
 			break;
 
 		case KEY_Y: ResetToBootLoader();
@@ -351,7 +345,7 @@ int main()
 
 		// invalid key
 		default:
-			FlushChar();
+			KeyFlush();
 			break;
 		}
 
@@ -375,12 +369,12 @@ int main()
 			DrawBoard();
 
 			// wait for a key press
-			FlushChar();
+			KeyFlush();
 			while (KeyGet() == NOKEY) {}
 
 			// new scene
 			Clear();
-			FlushChar();
+			KeyFlush();
 		}
 
 		// animation delay

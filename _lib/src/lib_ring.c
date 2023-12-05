@@ -475,4 +475,167 @@ NOINLINE u32 RingPrint(sRing* ring, const char* fmt, ...)
 
 #endif // USE_STREAM
 
+// ----------------------------------------------------------------------------
+//                          Original-SDK interface
+// ----------------------------------------------------------------------------
+
+#if USE_ORIGSDK		// include interface of original SDK
+
+/*
+// queue structure
+typedef struct {
+	lock_core_t	core;		// core lock
+	u8*		data;		// pointer to data
+	u16		wptr;		// write offset
+	u16		rptr;		// read offset
+	u16		element_size;	// element size
+	u16		element_count;	// count of elements
+	u16		max_level;	// max. count of elements (0 = unlimited)
+} queue_t;
+*/
+
+// Initialise a queue with a specific spinlock for concurrency protection
+void queue_init_with_spinlock(queue_t *q, uint element_size, uint element_count, uint spinlock_num)
+{
+	lock_init(&q->core, spinlock_num);
+	q->data = (u8*)calloc(element_count + 1, element_size);
+	q->element_count = (u16)element_count;
+	q->element_size = (u16)element_size;
+	q->wptr = 0;
+	q->rptr = 0;
+}
+
+// get element pointer
+static INLINE void *element_ptr(queue_t *q, uint index)
+	{ return q->data + index * q->element_size; }
+
+// increment element index
+static INLINE u16 inc_index(queue_t *q, u16 index)
+{
+	index++;
+	if (index > q->element_count) index = 0;
+	u16 level = queue_get_level_unsafe(q);
+	if (level > q->max_level) q->max_level = level;
+	return index;
+}
+
+// add element
+static bool queue_add_internal(queue_t *q, const void *data, bool block)
+{
+	do {
+		// lock core spinlock
+		u32 save = spin_lock_blocking(q->core.spin_lock);
+
+		// if not full
+		if (queue_get_level_unsafe(q) != q->element_count)
+		{
+			// write element data into write pointer
+			memcpy(element_ptr(q, q->wptr), data, q->element_size);
+
+			// increment write index
+			q->wptr = inc_index(q, q->wptr);
+
+			// unlock and send notification
+			lock_internal_spin_unlock_with_notify(&q->core, save);
+			return true;
+		}
+
+		// queue is full, wait or end
+		if (block)
+			lock_internal_spin_unlock_with_wait(&q->core, save);
+		else
+		{
+			spin_unlock(q->core.spin_lock, save);
+			return false;
+		}
+	} while (true);
+}
+
+// remove element
+static bool queue_remove_internal(queue_t *q, void *data, bool block)
+{
+	do {
+		// lock core spinlock
+		u32 save = spin_lock_blocking(q->core.spin_lock);
+
+		// if not empty
+		if (queue_get_level_unsafe(q) != 0)
+		{
+			// copy element to destination buffer
+			memcpy(data, element_ptr(q, q->rptr), q->element_size);
+
+			// increment read index
+			q->rptr = inc_index(q, q->rptr);
+
+			// unlock and send notification
+			lock_internal_spin_unlock_with_notify(&q->core, save);
+			return true;
+		}
+
+		// queue is empty, wait or end
+		if (block)
+			lock_internal_spin_unlock_with_wait(&q->core, save);
+		else
+		{
+			spin_unlock(q->core.spin_lock, save);
+			return false;
+		}
+	} while (true);
+}
+
+// peek element
+static bool queue_peek_internal(queue_t *q, void *data, bool block)
+{
+	do {
+		// lock core spinlock
+		u32 save = spin_lock_blocking(q->core.spin_lock);
+
+		// if not empty
+		if (queue_get_level_unsafe(q) != 0)
+		{
+			// copy element to destination buffer
+			memcpy(data, element_ptr(q, q->rptr), q->element_size);
+
+			// unlock and send notification
+			lock_internal_spin_unlock_with_notify(&q->core, save);
+			return true;
+		}
+
+		// queue is empty, wait or end
+		if (block)
+			lock_internal_spin_unlock_with_wait(&q->core, save);
+		else
+		{
+			spin_unlock(q->core.spin_lock, save);
+			return false;
+		}
+	} while (true);
+}
+
+// Non-blocking add value queue if not full
+bool queue_try_add(queue_t *q, const void *data)
+	{ return queue_add_internal(q, data, false); }
+
+// Non-blocking removal of entry from the queue if non empty
+bool queue_try_remove(queue_t *q, void *data)
+	{ return queue_remove_internal(q, data, false); }
+
+// Non-blocking peek at the next item to be removed from the queue
+bool queue_try_peek(queue_t *q, void *data)
+	{ return queue_peek_internal(q, data, false); }
+
+// Blocking add of value to queue
+void queue_add_blocking(queue_t *q, const void *data)
+	{ queue_add_internal(q, data, true); }
+
+// Blocking remove entry from queue
+void queue_remove_blocking(queue_t *q, void *data)
+	{ queue_remove_internal(q, data, true); }
+
+// Blocking peek at next value to be removed from queue
+void queue_peek_blocking(queue_t *q, void *data)
+	{ queue_peek_internal(q, data, true); }
+
+#endif // USE_ORIGSDK
+
 #endif // USE_RING	// use Ring buffer (lib_ring.c, lib_ring.h)

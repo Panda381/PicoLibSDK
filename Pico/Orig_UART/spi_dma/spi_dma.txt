@@ -1,0 +1,1 @@
+Example of writing via DMA to the SPI interface and similarly reading it back via a loopback.

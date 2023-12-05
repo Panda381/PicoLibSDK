@@ -21,7 +21,7 @@
 #endif
 
 // ============================================================================
-//                         Extern VGA/DVI display
+//                       Extern VGA/DVI display module
 // ============================================================================
 
 #if USE_EXTDISP
@@ -133,6 +133,8 @@
 #ifndef UART_STDIO_PORT
 #define UART_STDIO_PORT	0		// UART stdio port 0 or 1
 #endif
+
+#define PICO_DEFAULT_UART UART_STDIO_PORT // original-SDK setup
 
 #ifndef UART_STDIO_TX
 #define UART_STDIO_TX	0		// UART stdio TX GPIO pin

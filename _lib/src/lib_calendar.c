@@ -105,6 +105,24 @@ s8 DateTimeComp(const sDateTime* dt1, const sDateTime* dt2)
 	return 0;
 }
 
+// check date and time (not day of week; returns True = ok)
+Bool DateTimeCheck(const sDateTime* dt)
+{
+	if (	((u32)dt->us > 999) ||
+		((u32)dt->ms > 999) ||
+		((u32)dt->sec > 59) ||
+		((u32)dt->min > 59) ||
+		((u32)dt->hour > 23) ||
+		(dt->mon < 1) ||
+		(dt->mon > 12) ||
+		(dt->year < MINYEAR) ||
+		(dt->year > MAXYEAR))
+		return False;
+
+	s8 d = YearIsLeap(dt->year) ? DaysInMonthLeap[dt->mon - 1] : DaysInMonth[dt->mon - 1];
+	return (dt->day >= 1) && (dt->day <= d);
+}
+
 // validate date and time (not day of week; returns True = no corrections, entries were in valid ranges)
 Bool DateTimeValid(sDateTime* dt)
 {
@@ -277,9 +295,9 @@ void DateTimeUnpack(sDateTime* dt, u32 ut, s16 ms, s16 us)
 	dt->day = (s8)(d - DaysInYear[m - 1] + 1);
 }
 
-// datetime check (returns year of error or 0 if OK)
+// datetime debug check (returns year of error or 0 if OK)
 //  Takes 0.5 second to check.
-s16 DateTimeCheck()
+s16 DateTimeDebugCheck()
 {
 	// prepare structures
 	u32 ut = 0; // Unix date 1/1/1970 0:0:0

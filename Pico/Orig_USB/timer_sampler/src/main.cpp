@@ -1,0 +1,140 @@
+
+// ****************************************************************************
+//
+//                                 Main code
+//
+// ****************************************************************************
+// Sample GPIOs in a timer callback, and push the samples into a concurrency-safe
+// queue. Pop data from the queue in code running in the foreground.
+
+/*
+Debug output
+------------
+Got 0: 100
+Got 1: 200
+Got 2: 300
+Got 3: 400
+Got 4: 500
+Got 5: 600
+Got 6: 700
+Got 7: 800
+Got 8: 900
+Got 9: 1000
+Getting 1, 5:
+  got 1100
+  got 1200
+  got 1300
+  got 1400
+  got 1500
+Getting 2, 5:
+  got 1600
+  got 1700
+...
+  got 4900
+  got 5000
+Getting 9, 5:
+  got 5100
+  got 5200
+  got 5300
+  got 5400
+  got 5500
+Got remaining 5600
+Got remaining 5700
+Got remaining 5800
+Got remaining 5900
+Got remaining 6000
+Done
+*/
+
+#include "../include.h"
+
+queue_t sample_fifo;
+
+// using struct as an example, but primitive types can be used too
+typedef struct element
+{
+	uint value;
+} element_t;
+
+const int FIFO_LENGTH = 32;
+
+bool timer_callback(repeating_timer_t *rt)
+{
+	static uint v = 100;
+	element_t element =
+	{
+		.value = v
+	};
+	v += 100;
+
+	if (!queue_try_add(&sample_fifo, &element))
+	{
+		printf("FIFO was full\n");
+	}
+	return true; // keep repeating
+}
+
+int main()
+{
+	stdio_init_all();
+
+	// wait to connect terminal
+	int ch;
+	do {
+		printf("Press spacebar to start...\n");
+		ch = getchar();
+	} while (ch != ' ');
+
+	int hz = 25;
+
+	queue_init(&sample_fifo, sizeof(element_t), FIFO_LENGTH);
+
+	repeating_timer_t timer;
+
+	// negative timeout means exact delay (rather than delay between callbacks)
+	if (!add_repeating_timer_us(-1000000 / hz, timer_callback, NULL, &timer))
+	{
+		printf("Failed to add timer\n");
+		return 1;
+	}
+
+	// read some blocking
+	for (int i = 0; i < 10; i++)
+	{
+		element_t element;
+		queue_remove_blocking(&sample_fifo, &element);
+		printf("Got %d: %u\n", i, element.value);
+	}
+
+	// now retrieve all that are available periodically (simulate polling)
+	for (int i = 0; i < 10; i++)
+	{
+		int count = queue_get_level(&sample_fifo);
+		if (count)
+		{
+			printf("Getting %d, %d:\n", i, count);
+			for (; count > 0; count--)
+			{
+				element_t element;
+				queue_remove_blocking(&sample_fifo, &element);
+				printf("  got %u\n", element.value);
+			}
+		}
+		sleep_us(5000000 / hz); // sleep for 5 times the sampling period
+	}
+
+	cancel_repeating_timer(&timer);
+
+	// drain any remaining
+	element_t element;
+	while (queue_try_remove(&sample_fifo, &element))
+	{
+		printf("Got remaining %u\n", element.value);
+	}
+
+	queue_free(&sample_fifo);
+	printf("Done\n");
+
+	// Wait for uart output to finish
+	sleep_ms(100);
+}

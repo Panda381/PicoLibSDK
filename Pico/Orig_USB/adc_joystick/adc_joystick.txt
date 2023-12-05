@@ -1,0 +1,1 @@
+Repeated measure joystick positin using ADC, X axis on GPIO26, Y axis on GPIO27.

@@ -17,6 +17,7 @@
 #include "../../global.h"	// globals
 #include "../inc/sdk_cpu.h"
 #include "../inc/sdk_bootrom.h"
+#include "../../_lib/inc/lib_print.h"
 
 // reverse bit table
 const u8 RevBitsTab[16] = {
@@ -175,3 +176,26 @@ u32 StackCheck()
 }
 
 #endif // USE_STACKCHECK	// use Stack check (sdk_cpu.c, sdk_cpu.h)
+
+// fatal error - display panic message and halt execution
+void __attribute__((noreturn)) panic(const char *fmt, ...)
+{
+	va_list args;
+
+	// print start of panic
+	PrintText("\n*** PANIC ***\n");
+
+	// print message
+	if (fmt)
+	{
+		va_start(args, fmt);
+		vprintf(fmt, args);
+		va_end(args);
+	}
+
+	// print end of panic
+	PrintText("\n*************\n");
+
+	// stop execution
+	isr_hardfault();
+}

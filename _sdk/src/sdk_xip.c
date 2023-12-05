@@ -21,12 +21,12 @@
 void FlashCacheFlushWait()
 {
 	// flush flash cache
-	*XIP_FLUSH = 1;
+	xip_ctrl_hw->flush = 1;
 
 	// Read blocks until flush completion
-	(void)*XIP_FLUSH;
+	(void)xip_ctrl_hw->flush;
 
 	// Enable the cache
-	RegSet(XIP_CTRL, B0);
+	RegSet(&xip_ctrl_hw->ctrl, B0);
 }
 

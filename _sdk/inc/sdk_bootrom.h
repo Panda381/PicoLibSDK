@@ -59,12 +59,12 @@ typedef u8* (*pMemCopy)(void*, const void*, u32);	// copy memory
 typedef u32* (*pMemCopy32)(u32*, const u32*, u32);	// copy memory aligned to u32
 typedef void __attribute__((noreturn)) (*pResetUsb)(u32, u32); // reset CPU to BOOTSEL mode
 typedef void __attribute__((noreturn)) (*pWaitForVector)(); // wait core 1 for launch
-typedef void (*pFlashInternal)();			// restore QSPI to default and connect SSI to QSPI pads
-typedef void (*pFlashExitXip)();			// exit XIP mode to SSI
+typedef void (*pFlashInternal)(void);			// restore QSPI to default and connect SSI to QSPI pads
+typedef void (*pFlashExitXip)(void);			// exit XIP mode to SSI
 typedef void (*pFlashErase)(u32, u32, u32, u8);		// erase flash
 typedef void (*pFlashProgram)(u32, const u8*, u32);
-typedef void (*pFlashFlush)();				// flush flash cache
-typedef void (*pFlashEnterXip)();			// enter XIP mode
+typedef void (*pFlashFlush)(void);			// flush flash cache
+typedef void (*pFlashEnterXip)(void);			// enter XIP mode
 
 // ROM function pointers (60 bytes)
 extern pPopCount popcount;
@@ -94,12 +94,12 @@ void* RomData(u16 code);
 
 // get boot rom version (1 for RP2040-B0, 2 for RP2040-B1, 3 for RP2040-B2)
 //    Boot rom version 1 does not contain double library and some float functions.
-INLINE u8 RomGetVersion() { return *(u8*)0x13; }
-
-// === ROM functions initialized by RomFncInit()
+INLINE u8 RomGetVersion(void) { return *(u8*)0x13; }
 
 // initialize ROM functions
-void RomFncInit();
+void RomFncInit(void);
+
+// === ROM functions initialized by RomFncInit()
 
 // counts '1' bits
 // u8 popcount(u32 val);
@@ -160,6 +160,50 @@ void RomFncInit();
 
 // enter XIP mode
 // void FlashEnterXip();
+
+// ----------------------------------------------------------------------------
+//                          Original-SDK interface
+// ----------------------------------------------------------------------------
+
+#if USE_ORIGSDK		// include interface of original SDK
+
+// prepare bootrom lookup code based on two ASCII characters (RP2040 datasheet page 156)
+INLINE u32 rom_table_code(u8 ch1, u8 ch2) { return ROM_TABLE_CODE((u32)ch1, (u32)ch2); }
+
+// find ROM function given by the code (returns NULL if not found)
+INLINE void* rom_func_lookup(u32 code) { return RomFunc((u16)code); }
+
+// find ROM data given by the code (returns NULL if not found)
+INLINE void* rom_data_lookup(u32 code) { return RomData((u16)code); }
+
+// Helper function to lookup the addresses of multiple bootrom functions
+// This method looks up the 'codes' in the table, and convert each table entry to the looked up
+// function pointer, if there is a function for that code in the bootrom.
+//   table ... an IN/OUT array, elements are codes on input, function pointers on success.
+//   count ... the number of elements in the table
+// return true if all the codes were found, and converted to function pointers, false otherwise
+bool rom_funcs_lookup(u32* table, uint count);
+
+// lookup function (returns 32-bit pointer into ROM or NULL if not found)
+typedef void* (*rom_table_lookup_fn)(u16* table, u32 code);
+
+// Convert a 16 bit pointer stored at the given rom address into a 32 bit pointer
+#define rom_hword_as_ptr(addr) ROM_HWORD_PTR(addr)
+
+// find ROM function given by the code INLINE (returns NULL if not found)
+INLINE void* rom_func_lookup_inline(u32 code)
+{
+	pTableLookup lookup = (pTableLookup)ROM_HWORD_PTR(0x18);
+	u16* tab = (u16*)ROM_HWORD_PTR(0x14);
+	return lookup(tab, code);
+}
+
+// reset CPU to BOOTSEL mode
+//  gpio = mask of pins used as indicating LED during mass storage activity
+//  interface = 0 both interfaces (as cold boot), 1 only USB PICOBOOT, 2 only USB Mass Storage
+INLINE void __attribute__((noreturn)) reset_usb_boot(u32 gpio, u32 interface) { ResetUsb(gpio, interface); }
+
+#endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 }

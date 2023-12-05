@@ -23,7 +23,7 @@
 #include "../inc/sdk_cpu.h"
 
 // set interrupt priority of NVIC of this CPU core (prio = priority IRQ_PRIO_*) (irq = 0..25)
-void NVIC_IRQPrio(u8 irq, u8 prio)
+void NVIC_IRQPrio(int irq, u8 prio)
 {
 	volatile u32* reg = &NVIC_IPR0[irq >> 2]; // register (every register contains 4 entries)
 	irq = 8 * (irq & 3); // bit in the register
@@ -33,7 +33,7 @@ void NVIC_IRQPrio(u8 irq, u8 prio)
 }
 
 // set all interrupt priorities of NVIC of this CPU core to default value
-void NVIC_IRQPrioDef()
+void NVIC_IRQPrioDef(void)
 {
 	// set RP2040 device interrupts
 	int i;

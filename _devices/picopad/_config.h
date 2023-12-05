@@ -27,6 +27,8 @@
 #define UART_STDIO_PORT	0		// UART stdio port 0 or 1
 #endif
 
+#define PICO_DEFAULT_UART UART_STDIO_PORT // original-SDK setup
+
 #ifndef UART_STDIO_TX
 #define UART_STDIO_TX	7		// UART stdio TX GPIO pin
 #endif
@@ -172,12 +174,24 @@
 
 // === Display
 
+#ifndef DISP_ROT
+#define DISP_ROT	1		// display rotation of LCD: 0 Portrait, 1 Landscape, 2 Inverted Portrait, 3 Inverted Landscape
+#endif
+
 #ifndef WIDTH
+#if (DISP_ROT == 0) || (DISP_ROT == 2)
+#define WIDTH		240		// display width
+#else
 #define WIDTH		320		// display width
+#endif
 #endif
 
 #ifndef HEIGHT
+#if (DISP_ROT == 0) || (DISP_ROT == 2)
+#define HEIGHT		320		// display height
+#else
 #define HEIGHT		240		// display height
+#endif
 #endif
 
 #ifndef COLBITS
@@ -218,8 +232,8 @@
 #define DISP_SCK_PIN	18		// serial clock pin
 #endif
 
-#ifndef DIDP_MOSI_PIN
-#define DIDP_MOSI_PIN	19		// master out TX MOSI pin
+#ifndef DISP_MOSI_PIN
+#define DISP_MOSI_PIN	19		// master out TX MOSI pin
 #endif
 
 #ifndef DISP_RES_PIN
@@ -238,6 +252,8 @@
 #ifndef UART_STDIO_PORT
 #define UART_STDIO_PORT	0		// UART stdio port 0 or 1
 #endif
+
+#define PICO_DEFAULT_UART UART_STDIO_PORT // original-SDK setup
 
 #ifndef UART_STDIO_TX
 #define UART_STDIO_TX	0		// UART stdio TX GPIO pin

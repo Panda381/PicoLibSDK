@@ -14,7 +14,4 @@
 .wrap_target					; wrap jump target
 	out	pc,1	side 0b10
 	out	pc,1	side 0b01
-
-;	out	pc,1	side 0b01
-;	out	pc,1	side 0b10
 .wrap						; wrap jump to .wrap_target

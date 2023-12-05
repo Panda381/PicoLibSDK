@@ -1,0 +1,2 @@
+Set up some PIO state machines to blink LEDs at different frequencies,
+according to delay counts pushed into their FIFOs.

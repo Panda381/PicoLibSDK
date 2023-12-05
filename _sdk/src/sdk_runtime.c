@@ -109,6 +109,11 @@ void RuntimeInit()
 	SpinResetAll();
 #endif
 
+#if LOAD_FLASH_INFO	// load flash info on startup
+	// load flash info
+	FlashLoadInfo();
+#endif
+
 #if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
 	// load config from flash
 	ConfigLoad();
@@ -205,4 +210,15 @@ void RuntimeTerm()
 	// terminate SysTick timer
 	SysTickTerm();
 #endif
+}
+
+void __attribute__((noreturn)) __attribute__((weak)) _exit(__unused int status)
+{
+	while (True) {}
+}
+
+// exit program
+void exit(int status)
+{
+	_exit(status);
 }

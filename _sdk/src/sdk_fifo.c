@@ -30,7 +30,7 @@ void FifoWrite(u32 data)
 	while (!FifoWriteReady()) {}
 
 	// send message
-	*FIFO_WRITE = data;
+	fifo_hw->write = data;
 
 	// send event to the other code
 	sev();
@@ -50,7 +50,7 @@ Bool FifoWriteTime(u32 data, u32 us)
 	}
 
 	// send message
-	*FIFO_WRITE = data;
+	fifo_hw->write = data;
 
 	// send event to the other code
 	sev();
@@ -68,7 +68,7 @@ u32 FifoRead()
 	}
 
 	// receive message
-	return *FIFO_READ;
+	return fifo_hw->read;
 }
 
 // read message from other core with time-out in [us] (wait if not ready, max. 71 minutes, returns False on time-out)
@@ -88,7 +88,7 @@ Bool FifoReadTime(u32* data, u32 us)
 	}
 
 	// receive message
-	*data = *FIFO_READ;
+	*data = fifo_hw->read;
 	return True;
 }
 

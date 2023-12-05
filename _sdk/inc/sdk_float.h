@@ -260,37 +260,67 @@ float ceilf(float num);
 // Takes 620 ns
 float sqrtf(float x);
 
-// sine (in radians)
+// convert degrees to radians
+INLINE float deg2radf(float x) { return x*(PI/180); }
+
+// convert radians to degrees
+INLINE float rad2degf(float x) { return x*(180/PI); }
+
+// sine in radians
 // Takes 7700 ns
 float sinf(float x);
 
-// cosine (in radians)
+// sine in degrees
+INLINE float sinf_deg(float x) { return sinf(deg2radf(x)); }
+
+// cosine in radians
 // Takes 7750 ns
 float cosf(float x);
 
-// sine-cosine (in radians)
+// cosine in degrees
+INLINE float cosf_deg(float x) { return cosf(deg2radf(x)); }
+
+// sine-cosine in radians
 // Takes 7780 ns
 void sincosf(float x, float* psin, float* pcos);
 
-// tangent
+// sine-cosine in degrees
+INLINE void sincosf_deg(float x, float* psin, float* pcos) { sincosf(deg2radf(x), psin, pcos); }
+
+// tangent in radians
 // Takes 8350 ns
 float tanf(float x);
 
-// arc sine
+// tangent in degrees
+INLINE float tanf_deg(float x) { return tanf(deg2radf(x)); }
+
+// arc sine in radians
 // Takes 9320 ns
 float asinf(float x);
 
-// arc cosine
+// arc sine in degrees
+INLINE float asinf_deg(float x) { return rad2degf(asinf(x)); }
+
+// arc cosine in radians
 // Takes 9190 ns
 float acosf(float x);
 
-// arc tangent
+// arc cosine in degrees
+INLINE float acosf_deg(float x) { return rad2degf(acosf(x)); }
+
+// arc tangent in radians
 // Takes 6700 ns
 float atanf(float x);
 
-// arc tangent of y/x
+// arc tangent in degrees
+INLINE float atanf_deg(float x) { return rad2degf(atanf(x)); }
+
+// arc tangent of y/x in radians
 // Takes 6350 ns
 float atan2f(float y, float x);
+
+// arc tangent of y/x in degrees
+INLINE float atan2f_deg(float y, float x) { return rad2degf(atan2f(y, x)); }
 
 // hyperbolic sine
 // Takes 9880 ns

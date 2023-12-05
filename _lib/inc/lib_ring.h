@@ -23,6 +23,7 @@
 
 #include "../../_sdk/inc/sdk_spinlock.h"	// spinlock
 #include "lib_stream.h"
+#include "lib_malloc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -163,6 +164,87 @@ u32 RingPrintArg(sRing* ring, const char* fmt, va_list args);
 NOINLINE u32 RingPrint(sRing* ring, const char* fmt, ...);
 
 #endif // USE_STREAM
+
+// ----------------------------------------------------------------------------
+//                          Original-SDK interface
+// ----------------------------------------------------------------------------
+
+#if USE_ORIGSDK		// include interface of original SDK
+
+// queue structure
+typedef struct {
+	lock_core_t	core;		// core lock
+	u8*		data;		// pointer to data
+	u16		wptr;		// write index
+	u16		rptr;		// read index
+	u16		element_size;	// element size
+	u16		element_count;	// count of elements
+	u16		max_level;	// max. count of elements (0 = unlimited)
+} queue_t;
+
+// Initialise a queue with a specific spinlock for concurrency protection
+void queue_init_with_spinlock(queue_t *q, uint element_size, uint element_count, uint spinlock_num);
+
+// Initialise a queue, allocating a (possibly shared) spinlock
+INLINE void queue_init(queue_t *q, uint element_size, uint element_count)
+	{ queue_init_with_spinlock(q, element_size, element_count, next_striped_spin_lock_num()); }
+
+// Destroy the specified queue.
+INLINE void queue_free(queue_t *q) { free(q->data); }
+
+// Unsafe check of level of the specified queue.
+INLINE uint queue_get_level_unsafe(queue_t *q)
+{
+	s32 rc = (s32)q->wptr - (s32)q->rptr;
+	if (rc < 0) rc += q->element_count + 1;
+	return (uint)rc;
+}
+
+// Check of level of the specified queue.
+INLINE uint queue_get_level(queue_t *q)
+{
+	u32 save = spin_lock_blocking(q->core.spin_lock);
+	uint level = queue_get_level_unsafe(q);
+	spin_unlock(q->core.spin_lock, save);
+	return level;
+}
+
+// Returns the highest level reached by the specified queue since it was created or since the max level was reset
+INLINE uint queue_get_max_level(queue_t *q) { return q->max_level; }
+
+// Reset the highest level reached of the specified queue.
+INLINE void queue_reset_max_level(queue_t *q)
+{
+	u32 save = spin_lock_blocking(q->core.spin_lock);
+	q->max_level = queue_get_level_unsafe(q);
+	spin_unlock(q->core.spin_lock, save);
+}
+
+// Check if queue is empty
+INLINE  bool queue_is_empty(queue_t *q) { return queue_get_level(q) == 0; }
+
+// Check if queue is full
+INLINE bool queue_is_full(queue_t *q) { return queue_get_level(q) == q->element_count; }
+
+// Non-blocking add value queue if not full
+bool queue_try_add(queue_t *q, const void *data);
+
+// Non-blocking removal of entry from the queue if non empty
+bool queue_try_remove(queue_t *q, void *data);
+
+// Non-blocking peek at the next item to be removed from the queue
+bool queue_try_peek(queue_t *q, void *data);
+
+// Blocking add of value to queue
+void queue_add_blocking(queue_t *q, const void *data);
+
+// Blocking remove entry from queue
+void queue_remove_blocking(queue_t *q, void *data);
+
+// Blocking peek at next value to be removed from queue
+void queue_peek_blocking(queue_t *q, void *data);
+
+#endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 }

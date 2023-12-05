@@ -21,6 +21,11 @@
 #include "sdk_addressmap.h"
 #include "sdk_sftable.h"
 
+// original-SDK define unsigned number
+#ifndef _u
+#define _u(x) x
+#endif
+
 #define WRAPPER_FUNC_NAME(x) __wrap_##x		// wrapper function (to replace standard library function)
 
 // macro - .text.* section

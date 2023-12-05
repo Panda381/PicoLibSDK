@@ -1,0 +1,1 @@
+Perform a hard reset on some peripherals, then bring them back up.

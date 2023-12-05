@@ -183,10 +183,10 @@ const u8 RoscFreqTab[ROSC_FREQ_NUM] = {
 //    level 44..56, high frequency range (4 stages), 136..232 MHz
 //    level 57..63, too high frequency range (2 stages), 217..321 MHz
 // Currently set frequency level can be read from the RoscLevel variable.
-void RoscSetLevel(u8 level)
+void RoscSetLevel(int level)
 {
 	// save current level
-	RoscLevel = level;
+	RoscLevel = (u8)level;
 
 	// get word from setup table
 	u32 k = RoscLevelTab[level];
@@ -204,7 +204,7 @@ void RoscSetLevel(u8 level)
 }
 
 // get ROSC divider 1..32
-u8 RoscGetDiv()
+u8 RoscGetDiv(void)
 {
 	u8 div = *ROSC_DIV & 0x1F;
 	if (div == 0) div = 32;
@@ -212,7 +212,7 @@ u8 RoscGetDiv()
 }
 
 // initialize ROSC ring oscillator to its default state (typical frequency 6 MHz)
-void RoscInit()
+void RoscInit(void)
 {
 	// set frequency range to LOW
 	RegMask(ROSC_CTRL, 0xFA4, 0xFFF);
@@ -287,7 +287,7 @@ void RoscSetFreq(int freq10)
 //  Random data from the ring generator cannot be used as a random generator because
 //  generated randomness is very uneven. However, it is an excellent source for the
 //  initial seed of another random generator because its state is unpredictable.
-u8 RoscRand8()
+u8 RoscRand8(void)
 {
 	int i;
 	u8 k;
@@ -295,7 +295,7 @@ u8 RoscRand8()
 	return k;
 }
 
-u16 RoscRand16()
+u16 RoscRand16(void)
 {
 	int i;
 	u16 k;
@@ -303,7 +303,7 @@ u16 RoscRand16()
 	return k;
 }
 
-u32 RoscRand32()
+u32 RoscRand32(void)
 {
 	int i;
 	u32 k;

@@ -24,12 +24,6 @@ u8 CurBlink;	// blinking cursor
 u8 Pos;		// number of possible positions
 u8 Free;	// number of free positions
 
-// flush characters from keyboard
-void FlushChar()
-{
-	KeyFlush();
-}
-
 // draw board
 void DrawBoard()
 {
@@ -523,7 +517,7 @@ void PlayGame(Bool comp1, Bool comp2)
 			DrawBoard();
 
 			// put stone
-			if (!demo) FlushChar();
+			if (!demo) KeyFlush();
 			ch = KEY_A;
 		}
 

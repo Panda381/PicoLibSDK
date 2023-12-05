@@ -34,7 +34,7 @@ volatile u32 SysTime;
 // current date and time (incremented every SYSTICK_MS ms from CPU core 0)
 volatile u32 UnixTime;		// current date and time in Unix format
 				// - number of seconds since 1/1/1970 (thursday) up to 12/31/2099
-volatile s16 TimeMs;		// current time in [ms] 0..999
+volatile s16 CurTimeMs;		// current time in [ms] 0..999
 volatile u16 LastTimeUs;	// last [us] time during timer interrupt
 
 #if SYSTICK_KEYSCAN	// call KeyScan() function from SysTick system timer
@@ -66,13 +66,13 @@ void SysTick_Handler()
 #endif
 
 		// update current date and time
-		u16 ms = TimeMs + SYSTICK_MS; // new [ms] time
+		u16 ms = CurTimeMs + SYSTICK_MS; // new [ms] time
 		if (ms >= 1000) // overflow to second?
 		{
 			ms -= 1000;
 			UnixTime++; // increase Unix time
 		}
-		TimeMs = ms;	// save new [ms] time
+		CurTimeMs = ms;	// save new [ms] time
 	}
 
 #if USE_ALARM			// use SysTick alarm (lib_alarm.c, lib_alarm.h)
@@ -111,7 +111,7 @@ void SysTickInit()
 	{
 		SysTime = 0;	// reset system time counter
 		UnixTime = 0;	// reset current date and time in Unix format
-		TimeMs = 0;	// reset current time in [ms]
+		CurTimeMs = 0;	// reset current time in [ms]
 #if USE_TIMER
 		LastTimeUs = Time(); // reset last [us] time during timer interrupt
 #else
@@ -120,23 +120,23 @@ void SysTickInit()
 	}
 
 	// temporary disable SysTick counter
-	*SYSTICK_CSR = B1;	// disable SysTick handler
+	systick_hw->csr = B1;	// disable SysTick handler
 
 	// register SysTick handler
 	SetHandler(IRQ_SYSTICK, SysTick_Handler);	
 
 	// initialize system tick timer to 1 ms
-	*SYSTICK_RVR = SYSTICK_TICKS - 1; // set reload register 
+	systick_hw->rvr = SYSTICK_TICKS - 1; // set reload register 
 	NVIC_SysTickPrio(IRQ_PRIO_SYSTICK); // set interrupt priority
-	*SYSTICK_CVR = 0;	// reset counter
-	*SYSTICK_CSR = B0 | B1;	// set control register - counter enabled,
+	systick_hw->cvr = 0;	// reset counter
+	systick_hw->csr = B0 | B1;	// set control register - counter enabled,
 				//   trigger SysTick exception, use external reference clock
 }
 
 // terminate SysTick timer
 void SysTickTerm()
 {
-	*SYSTICK_CSR = B1;	// disable SysTick handler
+	systick_hw->csr = B1;	// disable SysTick handler
 }
 
 // get current date and time in Unix format with [ms] and [us], synchronized (NULL = entries not required)
@@ -154,7 +154,7 @@ u32 GetUnixTime(s16* ms, s16* us)
 	if (core != 0)
 	{
 		// get current time in [ms]
-		m2 = TimeMs;
+		m2 = CurTimeMs;
 
 		// get current time in [us]
 #if USE_TIMER
@@ -174,7 +174,7 @@ u32 GetUnixTime(s16* ms, s16* us)
 		IRQ_LOCK;
 
 		// get current time in [ms]
-		m = TimeMs;
+		m = CurTimeMs;
 
 		// get current time in [us]
 #if USE_TIMER
@@ -264,7 +264,7 @@ void SetUnixTime(u32 time, s16 ms)
 
 	// store new values
 	UnixTime = time;
-	TimeMs = ms;
+	CurTimeMs = ms;
 
 	// enable interrupts
 	IRQ_UNLOCK;

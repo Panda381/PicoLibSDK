@@ -1,0 +1,7 @@
+This app shows the effect of byte and halfword writes on IO registers. All
+IO registers on RP2040 will sample the entire 32 bit write data bus on any
+write; the transfer size and the 2 LSBs of the address are *ignored*.
+
+This can have unintuitive results, especially given the way RP2040
+busmasters replicate narrow write data across the entire 32-bit write data
+bus. However, this behaviour can be quite useful if you are aware of it!

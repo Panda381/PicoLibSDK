@@ -1,0 +1,2 @@
+Sweep through all 7-bit I2C addresses, to see if any slaves are present on
+the I2C bus. Print out a table that looks like this:

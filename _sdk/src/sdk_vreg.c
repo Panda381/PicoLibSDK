@@ -18,7 +18,7 @@
 #include "../inc/sdk_vreg.h"
 
 // set voltage VREG_VOLTAGE_*
-void VregSetVoltage(u8 vreg)
+void VregSetVoltage(int vreg)
 {
 	RegMask(VREG_CTRL, (u32)vreg << 4, B4+B5+B6+B7);
 }

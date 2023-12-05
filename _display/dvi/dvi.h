@@ -28,22 +28,32 @@
 extern "C" {
 #endif
 
+#define DVI_IRQTIME		1	// debug flag - measure delta time of DVI service
+// Measured: IN=28 us, OUT=4 us, IN2=1 us, OUT2=31 us
+
 // data
 extern volatile int DviScanLine;	// current scan line 1...
 extern volatile u32 DviFrame;		// frame counter
-//extern volatile Bool DviVSync;		// current scan line is vsync or dark
 
-// decode scanline data - red and green channel
-//  inbuf ... input buffer (u16), must be u32 aligned
-//  outbuf ... output buffer (u32)
-//  count ... number of pixels (must be multiply of 8)
-u32* DviEnc(u16* inbuf, u32* outbuf, int count);
+#if DVI_IRQTIME				// debug flag - measure delta time of DVI service
+extern volatile u32 DviTimeIn;		// time in interrupt service, in [us]
+extern volatile u32 DviTimeOut;		// time out interrupt service, in [us]
+extern volatile u32 DviTimeIn2;		// time in interrupt service, in [us]
+extern volatile u32 DviTimeOut2;	// time out interrupt service, in [us]
+#endif // DVI_IRQTIME
 
-// decode scanline data - blue channel
+// decode scanline data - Red and Green components
 //  inbuf ... input buffer (u16), must be u32 aligned
-//  outbuf ... output buffer (u32)
-//  count ... number of pixels (must be multiply of 8)
-u32* DviEncShift(u16* inbuf, u32* outbuf, int count);
+//  outbufR ... output buffer, red component (u32), interpolator 0
+//  outbufG ... output buffer, green component (u32), interpolator 1
+//  count ... number of pixels (must be multiply of 16)
+void DviEncRG(u16* inbuf, u32* outbufR, u32* outbufG, int count);
+
+// decode scanline data - Red and Green components
+//  R0: inbuf ... input buffer (u16), must be u32 aligned
+//  R1: outbuf ... output buffer, blue component (u32)
+//  R2: count ... number of pixels (must be multiply of 16)
+void DviEncB(u16* inbuf, u32* outbuf, int count);
 
 // start DVI on core 1 from core 0 (must be paired with DviStop())
 // - system clock must be set to 252 MHz

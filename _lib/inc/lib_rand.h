@@ -52,6 +52,11 @@ u8 RandU8();
 // generate 16-bit unsigned integer random number
 //  Takes 1 us
 u16 RandU16();
+int rand();
+
+#ifndef RAND_MAX
+#define RAND_MAX 0x7fff
+#endif
 
 // generate 32-bit unsigned integer random number
 //  Takes 1 us

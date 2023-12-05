@@ -34,9 +34,9 @@ easier to use. What you can find in the PicoLibSDK library:
   canvas drawing, RGBA color vector, CRC check with DMA support, decode numbers,
   escape packet protocol, event ring buffer, FAT file system, doubly linked
   list, memory allocator, 2D transformation matrix, mini-ring buffer, formatted
-  print, PWM sound output, random generator, rectangle, ring buffer, DMA ring
-  buffer, SD card, streams, text strings, text list, text print, tree list,
-  VGA drawing, video player.
+  print, PWM sound output with ADPCM, random generator, rectangle, ring buffer,
+  DMA ring buffer, SD card, streams, text strings, text list, text print, tree
+  list, VGA drawing, video player.
 
 - USB library: multiplayer mini-port, CDC device and host - serial communication,
   HID device and host - including external keyboard and mouse.
@@ -741,6 +741,37 @@ Ctrl+V			paste from clipboard
 Delete			delete selection
 
 
+Original-SDK interface
+----------------------
+For backward compatibility, the PicoLibSDK library provides most of the
+functions of the original SDK library. The functions of the original SDK are
+mostly implemented by inline functions, redirecting the code to native
+PicoLibSDK library functions. Main differences:
+
+The PicoLibSDK library simplifies some features and extends others. One
+simplification is that PicoLibSDK adheres less strictly to locking down
+functions for multitasking environments. Due to limited processor memory,
+multitasking is not expected. Excessive locking can slow down program
+functionality, so locking is concentrated on only the most necessary operations.
+
+Functions from the original SDK for working with USB are not implemented. The
+USB interface is handled differently in the PicoLibSDK, in a simpler and faster
+way (instead of USB tasks, everything is handled more efficiently in
+interrupts). Interfaces are incompatible.
+
+The functions for WiFi and Bluetooth are not implemented - these modules are not
+yet implemented in PicoLibSDK either.
+
+SDK functions for accessing processor devices are preferentially addressed by
+device indexes in the PicoLibSDK library, while the original SDK library uses a
+pointer to device registers. Addressing via device indexes is more simple, but
+in some cases addressing via pointers may generate slightly more efficient code.
+For this reason the ability to address devices via pointers has been added to
+the PicoLibSDK library. Many functions are therefore available in 2 formats. If
+you do not require more code efficiency, we recommend using the simpler
+addressing via indexes.
+
+
 History of versions
 -------------------
 03/08/2023 PicoPad prototype with pre-alpha PicoLibSDK version 0.8.
@@ -765,17 +796,18 @@ History of versions
 	loading Flash boot loader
 10/18/2023 version 1.08: simulate keypad using USB keyboard (USE_USBPAD,
 	A->Ctrl, B->Alt, X->Shift, Y->Esc).
+12/05/2023 version 1.09: ADPCM sound compression, original-SDK interface.
+
 
 Missing and @TODO
 -----------------
 SDK supports that are missing in the library and are needed @TODO:
 
-- Get Flash unique ID
 - run double-floating-point from bootrom
 - bluetooth and wifi
 - more USB drivers (audio, bluetooth, dfu, midi, msc, net, tmc, video)
-- mutex
-- DDS compression image format
-- ADPCM sound compression
+- DDS compression image format, JPG compression
+- MP3 compression
+- 3D graphics support
 - add multiple cache sector buffers to FAT file system module
 - encapsulation of text strings into C++ objects

@@ -24,12 +24,38 @@
 #include "../inc/sdk_ssi.h"
 #include "../inc/sdk_bootrom.h"
 #include "../../_lib/inc/lib_crc.h"
+#include "../../_lib/inc/lib_decnum.h"
+
+#if USE_ORIGSDK		// include interface of original SDK
+pico_unique_board_id_t retrieved_id;
+#endif // USE_ORIGSDK
 
 #define FLASH_64KBLOCK_ERASE_CMD 0xd8	// flash erase command of 64KB block
 #define FLASH_32KBLOCK_ERASE_CMD 0x52	// flash erase command of 32KB block
 
+// RUID instruction from Winbond memory: 4Bh command prefix, 32 dummy bits, 64 data bits.
+#define FLASH_RUID_CMD 0x4b
+#define FLASH_RUID_DUMMY_BYTES 4
+#define FLASH_RUID_DATA_BYTES 8
+#define FLASH_RUID_TOTAL_BYTES (1 + FLASH_RUID_DUMMY_BYTES + FLASH_RUID_DATA_BYTES) // = 13, size of buffer
+
+// Standard get size instruction: 0x9F command prefix, 1 byte manufacturer ID (Winbond 0xef, Micron 0x20), 1 byte memory type, 1 byte capacity order (0x15 = 2 MB)
+#define FLASH_SIZE_CMD 0x9f
+#define FLASH_SIZE_TOTAL_BYTES 4
+#define FLASH_SIZE_SIZE_OFF 3
+
+#define FLASH_BUFF_SIZE		16	// flash cmd buffer size
+
+// flash info
+u8 FlashID[FLASH_ID_SIZE];	// unique flash ID (from highest bytes to lowest)
+u64 FlashID64 = 0;		// unique flash ID as 64-bit number (the lowest bits are the most variable if you need to use fewer bits)
+char FlashIDText[FLASH_ID_SIZE*2+1]; // unique flash ID as HEX text
+u8 FlashManufact = 0;		// flash manufacturer (0xef = Winbond)
+u8 FlashType = 0;		// flash type (0x40 = W25Q16JV-IQ/JQ, 0x70 = W25Q16JV-IM/JM)
+u32 FlashSize = 0;		// flash size in bytes
+
 #if !NO_FLASH
-// check boot 2 crc code, if it is valid
+// check boot2 crc code, if it is valid
 Bool NOINLINE Boot2Check()
 {
 	int i;
@@ -161,19 +187,23 @@ void NOFLASH(FlashProgram)(u32 addr, const u8* data, u32 count)
 	IRQ_UNLOCK;
 }
 
-/*
 // execute flash command
 //  txbuf = pointer to byte buffer which will be transmitted to the flash
 //  rxbuf = pointer to byte buffer where data receive from the flash
 //  count = length in bytes of txbuf and of rxbuf
+// If core 1 is running, lockout it or reset it!
 void NOFLASH(FlashCmd)(const u8* txbuf, u8* rxbuf, u32 count)
 {
+#if !NO_FLASH
+
 	// check boot 2 loader (this function can be run from Flash memory)
 	Bool ok = Boot2Check();
 
 	// copy boot 2 loader into temporary buffer - it is located in the stack, but it will fit OK
 	u32 boot2[BOOT2_SIZE_BYTES/4-1];
 	memcpy(boot2, Boot2, BOOT2_SIZE_BYTES-4);
+
+#endif // !NO_FLASH
 
 	// compiler barrier
 	cb();
@@ -187,41 +217,108 @@ void NOFLASH(FlashCmd)(const u8* txbuf, u8* rxbuf, u32 count)
 	// exit XIP mode to SSI
 	FlashExitXip();
 
-	// set CS to LOW (using IO overrides, like bootom does)
+	// set CS to LOW (using IO overrides, like bootrom does)
 	QSPI_OutOverLow(QSPI_PIN_SS);
 
-	// prepare counters
+	// prepare counters of remaining data
 	u32 tx_count = count;
 	u32 rx_count = count;
 
 	// process data
-	while ((tx_count > 0) || (rx_count > 0))
+	while ((tx_count > 0) || (rx_count > 0)) // while there are some data to send or receive
 	{
-		// get flags
-//		u32 flags = 
+		// get SSI status register
+		u32 flags = ssi_hw->sr;
+		Bool can_tx = ((flags & B1) != 0); // check if transmit FIFO is not full (can transmit)
+		Bool can_rx = ((flags & B3) != 0); // check if receive FIFO is not empty (can receive)
 
-	@TODO
+		// send data (leave a small reserve to avoid overflowing the FIFO)
+		if (can_tx && (tx_count > 0) && (rx_count - tx_count < 14))
+		{
+			ssi_hw->dr0 = *txbuf++;	// send byte
+			tx_count--;
+		}
 
-// !!!!!!!!!!!!!!!!!!!!!
+		// receive data
+		if (can_rx && (rx_count > 0))
+		{
+			*rxbuf++ = (u8)ssi_hw->dr0; // receive byte
+			rx_count--;
+		}
   	}
-
 
 	// set CS to HIGH (using IO overrides, like bootom does)
 	QSPI_OutOverHigh(QSPI_PIN_SS);
 
+	// flush flash cache (and remove CSn IO force)
+	FlashFlush();
 
+#if NO_FLASH
 
+	// set flash to fast QSPI mode
+	SSI_FlashQspi(FLASHQSPI_CLKDIV_DEF);
 
+#else // NO_FLASH
+
+	// check if boot 2 loader is valid
+	if (ok && (boot2[0] != 0) && (boot2[0] != (u32)-1))
+	{
+		// run boot 2 loader to restore XIP flash settings
+		((void(*)(void))boot2+1)();
+	}
+	else
+		// enter XIP mode
+		FlashEnterXip();
+
+#endif // NO_FLASH
+
+	// enable interrupts
+	IRQ_UNLOCK;
 }
 
-// get flash unique 64-bit identifier
-//   id = pointer to 64-bit array (8 bytes)
-void FlashGetID(u8* id)
+// load flash info (called during system startup)
+// If core 1 is running, lockout it or reset it!
+void FlashLoadInfo()
 {
+	int i;
+	u8 txbuf[FLASH_BUFF_SIZE];
+	u8 rxbuf[FLASH_BUFF_SIZE];
 
-	@TODO
+	// prepare buffers to load ID
+	memset(txbuf, 0, FLASH_RUID_TOTAL_BYTES);
+	memset(rxbuf, 0, FLASH_RUID_TOTAL_BYTES);
+	txbuf[0] = FLASH_RUID_CMD;
 
+	// send command and receive response
+	FlashCmd(txbuf, rxbuf, FLASH_RUID_TOTAL_BYTES);
+
+	// copy ID to the buffer
+	u8 b;
+	u64 id64 = 0;
+	for (i = 0; i < FLASH_ID_SIZE; i++)
+	{
+		b = rxbuf[i + 1 + FLASH_RUID_DUMMY_BYTES];
+		FlashID[i] = b;
+		FlashIDText[2*i] = DecHexDig(b>>4);
+		FlashIDText[2*i+1] = DecHexDig(b);
+		id64 <<= 8;
+		id64 |= b;
+	}
+	FlashID64 = id64;
+	FlashIDText[2*FLASH_ID_SIZE] = 0;
+
+	// prepare buffers to load info
+	memset(txbuf, 0, FLASH_SIZE_TOTAL_BYTES);
+	memset(rxbuf, 0, FLASH_SIZE_TOTAL_BYTES);
+	txbuf[0] = FLASH_SIZE_CMD;
+
+	// send command and receive response
+	FlashCmd(txbuf, rxbuf, FLASH_SIZE_TOTAL_BYTES);
+
+	// process info
+	FlashManufact = rxbuf[1];
+	FlashType = rxbuf[2];
+	FlashSize = BIT(rxbuf[3]);
 }
-*/
 
 #endif // USE_FLASH	// use Flash memory programming (sdk_flash.c, sdk_flash.h)

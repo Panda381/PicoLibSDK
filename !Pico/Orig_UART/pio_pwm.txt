@@ -1,0 +1,1 @@
+Pulse width modulation on PIO. Use it to gradually fade the brightness of an LED.

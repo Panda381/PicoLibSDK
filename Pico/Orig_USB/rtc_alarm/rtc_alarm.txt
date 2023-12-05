@@ -1,0 +1,1 @@
+Set an alarm on the RTC to trigger an interrupt at a date/time 5 seconds into the future.

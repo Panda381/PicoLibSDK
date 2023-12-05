@@ -33,7 +33,7 @@
 #include "../../_lib/inc/lib_print.h"
 
 // set baudrate (range 45..3'000'000 with default clk_peri = 48 MHz; hardware support up to 921'600 bps)
-void UART_Baud(u8 uart, u32 baudrate)
+void UART_Baud_hw(uart_hw_t* hw, u32 baudrate)
 {
 	// divisor = 2 * 64 * UARTCLK / (16 * baud_rate) = 2 * 4 * UARTCLK / baud_rate
 	u32 div = (8 * CurrentFreq[CLK_PERI] + baudrate/2 ) / baudrate;
@@ -57,23 +57,30 @@ void UART_Baud(u8 uart, u32 baudrate)
 	}
 
 	// set divisor
-	*UART_IBRD(uart) = idiv;
-	*UART_FBRD(uart) = fdiv;
+	hw->ibrd = idiv;
+	hw->fbrd = fdiv;
 
 	// dummy line control register write, to latch new divisor
-	RegSet(UART_LCR(uart), 0);		
+	RegSet(&hw->lcr_h, 0);		
 }
 
 // get baudrate
-u32 UART_GetBaud(u8 uart)
+u32 UART_GetBaud(int uart)
 {
 	// baud_rate_divisor = UARTCLK / (16 * baud_rate) ... fraction is in 1/64
 	u32 k = 64 * *UART_IBRD(uart) + *UART_FBRD(uart);
 	return (4 * CurrentFreq[CLK_PERI] + k/2) / k;
 }
 
+u32 UART_GetBaud_hw(const uart_hw_t* hw)
+{
+	// baud_rate_divisor = UARTCLK / (16 * baud_rate) ... fraction is in 1/64
+	u32 k = 64 * hw->ibrd + hw->fbrd;
+	return (4 * CurrentFreq[CLK_PERI] + k/2) / k;
+}
+
 // set parity UART_PARITY_* (default UART_PARITY_NONE)
-void UART_Parity(u8 uart, u8 parity)
+void UART_Parity_hw(uart_hw_t* hw, int parity)
 {
 	// bit 7: SPS stick parity enable
 	// bit 2: EPS even parity select
@@ -82,14 +89,14 @@ void UART_Parity(u8 uart, u8 parity)
 	if (parity > 0)
 	{
 		k = B1; // PEN parity enable
+		if ((parity & 1) != 0) k |= B2; // EPS even parity select
 		if (parity >= 3) k |= B7; // SPS stick parity enable
-		if ((parity & 1) == 0) k |= B2; // EPS even parity select
 	}
-	RegMask(UART_LCR(uart), k, B1|B2|B7);
+	RegMask(&hw->lcr_h, k, B1|B2|B7);
 }
 
 // enable loopback test
-void UART_LoopEnable(u8 uart)
+void UART_LoopEnable(int uart)
 {
 	RegSet(UART_CR(uart), B7); // reconnect to loopback
 #if USE_TIMER	// use Timer with alarm (sdk_timer.c, sdk_timer.h)
@@ -98,11 +105,23 @@ void UART_LoopEnable(u8 uart)
 	int i;
 	for (i = 1000; i > 0; i--) cb();
 #endif
-	UART_RecvFlush(0); // flush fake received characters
+	UART_RecvFlush(uart); // flush fake received characters
+}
+
+void UART_LoopEnable_hw(uart_hw_t* hw)
+{
+	RegSet(&hw->cr, B7); // reconnect to loopback
+#if USE_TIMER	// use Timer with alarm (sdk_timer.c, sdk_timer.h)
+	WaitUs(50);  // wait to stabilize connection
+#else
+	int i;
+	for (i = 1000; i > 0; i--) cb();
+#endif
+	UART_RecvFlush_hw(hw); // flush fake received characters
 }
 
 // disable loopback test (default state)
-void UART_LoopDisable(u8 uart)
+void UART_LoopDisable(int uart)
 {
 	RegClr(UART_CR(uart), B7); // reconnect to pins
 #if USE_TIMER	// use Timer with alarm (sdk_timer.c, sdk_timer.h)
@@ -111,23 +130,35 @@ void UART_LoopDisable(u8 uart)
 	int i;
 	for (i = 1000; i > 0; i--) cb();
 #endif
-	UART_RecvFlush(0); // flush fake received characters
+	UART_RecvFlush(uart); // flush fake received characters
+}
+
+void UART_LoopDisable_hw(uart_hw_t* hw)
+{
+	RegClr(&hw->cr, B7); // reconnect to pins
+#if USE_TIMER	// use Timer with alarm (sdk_timer.c, sdk_timer.h)
+	WaitUs(50);  // wait to stabilize connection
+#else
+	int i;
+	for (i = 1000; i > 0; i--) cb();
+#endif
+	UART_RecvFlush_hw(hw); // flush fake received characters
 }
 
 // === extended functions
 
 // soft reset UART (restore to its default state; takes 0.5 us)
-void UART_SoftReset(u8 uart)
+void UART_SoftReset_hw(uart_hw_t* hw)
 {
-	*UART_CR(uart) = B9|B8;		// disable UART
-	*UART_IMCS(uart) = 0;		// disable interrupts
-	*UART_DMACR(uart) = 0;		// disable DMAs
-	*UART_ICR(uart) = 0x7ff;	// clear interrupts
-	*UART_IFLS(uart) = 2 | (2 << 3); // FIFO levels
-	*UART_LCR(uart) = 0;		// reset line control register
-	*UART_IBRD(uart) = 0;		// integer baud rate
-	*UART_FBRD(uart) = 0;		// fractional baud rate
-	*UART_RSR(uart) = 0x0f;		// clear receive errors
+	hw->cr = B9|B8;		// disable UART
+	hw->imsc = 0;		// disable interrupts
+	hw->dmacr = 0;		// disable DMAs
+	hw->icr = 0x7ff;	// clear interrupts
+	hw->ifls = 2 | (2 << 3); // FIFO levels
+	hw->lcr_h = 0;		// reset line control register
+	hw->ibrd = 0;		// integer baud rate
+	hw->fbrd = 0;		// fractional baud rate
+	hw->rsr = 0x0f;		// clear receive errors
 }
 
 // initialize UART (and reset to default state) ... GPIO pins are not initialized
@@ -136,69 +167,95 @@ void UART_SoftReset(u8 uart)
 //   word ... word length 5 to 8 bits
 //   parity ... parity UART_PARITY_*
 //   stop ... number of stop bits 1 or 2
-//   hw ... use hardware flow control CTS/RTS
+//   flow ... use hardware flow control CTS/RTS
 // After init, connect UART to GPIO pins using GPIO_Fnc(pin, GPIO_FNC_UART).
 // After connecting the GPIO, wait a moment with WaitUs(50) and
 // then flush any fake received characters with UART_RecvFlush.
-void UART_Init(u8 uart, u32 baudrate, u8 word, u8 parity, u8 stop, Bool hw)
+void UART_Init_hw(uart_hw_t* hw, u32 baudrate, u8 word, u8 parity, u8 stop, Bool flow)
 {
 	// reset UART to its default state
-	UART_Reset(uart);
+	UART_Reset_hw(hw);
 
 	// set baudrate
-	UART_Baud(uart, baudrate);
+	UART_Baud_hw(hw, baudrate);
 
 	// set word length
-	UART_Word(uart, word);
+	UART_Word_hw(hw, word);
 
 	// set parity
-	UART_Parity(uart, parity);
+	UART_Parity_hw(hw, parity);
 
 	// set 2 stop bits (or 1 stop bit otherwise)
-	if (stop > 1) UART_Stop2(uart);
+	if (stop > 1) UART_Stop2_hw(hw);
 
 	// set hardware control
-	if (hw)
+	if (flow)
 	{
-		UART_CTSEnable(uart);
-		UART_RTSEnable(uart);
+		UART_CTSEnable_hw(hw);
+		UART_RTSEnable_hw(hw);
 	}
 
 	// enable FIFO
-	UART_FifoEnable(uart);
+	UART_FifoEnable_hw(hw);
+
+	// enable DREQ
+	UART_EnableRxDMA_hw(hw);
+	UART_EnableTxDMA_hw(hw);
 
 	// enable UART
-	UART_Enable(uart);
+	UART_Enable_hw(hw);
 }
 
 // send one character with waiting
-void UART_SendCharWait(u8 uart, char data)
+void UART_SendCharWait(int uart, char data)
 {
 	while (!UART_SendReady(uart)) {}
 	UART_SendChar(uart, data);
 }
 
+void UART_SendCharWait_hw(uart_hw_t* hw, char data)
+{
+	while (!UART_SendReady_hw(hw)) {}
+	UART_SendChar_hw(hw, data);
+}
+
 // receive one character with waiting
-char UART_RecvCharWait(u8 uart)
+char UART_RecvCharWait(int uart)
 {
 	while (!UART_RecvReady(uart)) {}
 	return UART_RecvChar(uart);
 }
 
+char UART_RecvCharWait_hw(uart_hw_t* hw)
+{
+	while (!UART_RecvReady_hw(hw)) {}
+	return UART_RecvChar_hw(hw);
+}
+
 // flush received character
-void UART_RecvFlush(u8 uart)
+void UART_RecvFlush(int uart)
 {
 	while (UART_RecvReady(uart)) UART_RecvChar(uart);
 }
 
+void UART_RecvFlush_hw(uart_hw_t* hw)
+{
+	while (UART_RecvReady_hw(hw)) UART_RecvChar_hw(hw);
+}
+
 // send buffer with blocking
-void UART_Send(u8 uart, const u8* src, u32 len)
+void UART_Send(int uart, const u8* src, int len)
 {
 	for (; len > 0; len--) UART_SendCharWait(uart, *src++);
 }
 
+void UART_Send_hw(uart_hw_t* hw, const u8* src, int len)
+{
+	for (; len > 0; len--) UART_SendCharWait_hw(hw, *src++);
+}
+
 // receive buffer without blocking, returns number of successfully read characters
-u32 UART_Recv(u8 uart, u8* dst, u32 len)
+u32 UART_Recv(int uart, u8* dst, int len)
 {
 	u32 num = 0;
 	for (; len > 0; len--)
@@ -210,22 +267,29 @@ u32 UART_Recv(u8 uart, u8* dst, u32 len)
 	return num;
 }
 
+u32 UART_Recv_hw(uart_hw_t* hw, u8* dst, int len)
+{
+	u32 num = 0;
+	for (; len > 0; len--)
+	{
+		if (!UART_RecvReady_hw(hw)) break;
+		*dst++ = UART_RecvChar_hw(hw);
+		num++;
+	}
+	return num;
+}
+
 #if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
 
 // callback - write data to UART
 static u32 StreamWriteUart(sStream* str, const void* buf, u32 num)
 {
-	// destination uart
-	u8 uart = (u8)str->cookie;
-
-	// send data to uart with blocking
-	UART_Send(uart, (const u8*)buf, num);
-
+	UART_Send((int)str->cookie, (const u8*)buf, num);
 	return num;
 }
 
 // initialize stream to write to UART with blocking
-void StreamWriteUartInit(sStream* str, u8 uart)
+void StreamWriteUartInit(sStream* str, int uart)
 {
 	Stream0Init(str); // clear stream descriptor
 	str->cookie = uart; // cookie = uart number
@@ -233,7 +297,7 @@ void StreamWriteUartInit(sStream* str, u8 uart)
 }
 
 // formatted print with blocking, with argument list (returns number of characters, without terminating 0)
-u32 UART_PrintArg(u8 uart, const char* fmt, va_list args)
+u32 UART_PrintArg(int uart, const char* fmt, va_list args)
 {
 	// write and read stream
 	sStream wstr, rstr;
@@ -249,7 +313,7 @@ u32 UART_PrintArg(u8 uart, const char* fmt, va_list args)
 }
 
 // formatted print with blocking, with variadic arguments (returns number of characters, without terminating 0)
-NOINLINE u32 UART_Print(u8 uart, const char* fmt, ...)
+NOINLINE u32 UART_Print(int uart, const char* fmt, ...)
 {
 	u32 n;
 	va_list args;
@@ -287,13 +351,13 @@ RING(UartStdioTxBuf, UART_STDIO_TXBUF, UART_STDIO_TXSPIN, UartStdioSendForce, NU
 RING(UartStdioRxBuf, UART_STDIO_RXBUF, UART_STDIO_RXSPIN, NULL, NULL, 0);
 
 // check if next character can be sent
-Bool UartSendReady()
+Bool UartSendReady(void)
 {
 	return RingWriteReady(&UartStdioTxBuf, 1);
 }
 
 // check if next character can be received
-Bool UartRecvReady()
+Bool UartRecvReady(void)
 {
 	return RingReadReady(&UartStdioRxBuf, 1);
 }
@@ -352,13 +416,13 @@ NOINLINE u32 UartPrint(const char* fmt, ...)
 #endif // USE_STREAM
 
 // receive character (returns NOCHAR if no character)
-char UartGetChar()
+char UartGetChar(void)
 {
 	return RingReadChar(&UartStdioRxBuf);
 }
 
 // UART handler
-void UartStdioHandler()
+void UartStdioHandler(void)
 {
 	char ch;
 
@@ -381,7 +445,7 @@ void UartStdioHandler()
 }
 
 // initialize UART stdio
-void UartStdioInit()
+void UartStdioInit(void)
 {
 	// default initialize UART: 115200 Baud, 8 bits, no parity, 1 stop, no hw control
 	UART_InitDef(UART_STDIO_PORT);
@@ -406,7 +470,7 @@ void UartStdioInit()
 }
 
 // terminate UART stdio
-void UartStdioTerm()
+void UartStdioTerm(void)
 {
 	// disable interrupts from FIFO
 	UART_DisableIRQ(UART_STDIO_PORT, UART_IRQ_TX); // disable transmit interrupt
@@ -435,7 +499,7 @@ void UartStdioTerm()
 #if UARTSAMPLE_TXMODE == 0	// 0 = polling mode
 
 // check if next character can be sent
-Bool UartSample_SendReady() { return UART_SendReady(UARTSAMPLE_UART); }
+Bool UartSample_SendReady(void) { return UART_SendReady(UARTSAMPLE_UART); }
 
 // send character (wait if not ready)
 void UartSample_SendChar(char ch) { UART_SendCharWait(UARTSAMPLE_UART, ch); }
@@ -473,7 +537,7 @@ void UartSample_SendForce(sRing* ring)
 RING(UartSample_TxBuf, 1<<UARTSAMPLE_TXORDER, UARTSAMPLE_TXSPIN, UartSample_SendForce, NULL, 0);
 
 // check if next character can be sent
-Bool UartSample_SendReady() { return RingWriteReady(&UartSample_TxBuf, 1); }
+Bool UartSample_SendReady(void) { return RingWriteReady(&UartSample_TxBuf, 1); }
 
 // send character (wait if not ready)
 void UartSample_SendChar(char ch) { RingWrite8Wait(&UartSample_TxBuf, (u8)ch); }
@@ -506,7 +570,7 @@ RINGTX(UartSample_TxBuf, UART_DR(UARTSAMPLE_UART), UARTSAMPLE_TXSPIN, UARTSAMPLE
 	UARTSAMPLE_TXDMA, UART_DREQ(UARTSAMPLE_UART,0), DMA_SIZE_8);
 
 // check if next character can be sent
-Bool UartSample_SendReady() { return RingTxReady(&UartSample_TxBuf, 1); }
+Bool UartSample_SendReady(void) { return RingTxReady(&UartSample_TxBuf, 1); }
 
 // send character (wait if not ready)
 void UartSample_SendChar(char ch) { RingTxWrite8Wait(&UartSample_TxBuf, (u8)ch); }
@@ -515,7 +579,7 @@ void UartSample_SendChar(char ch) { RingTxWrite8Wait(&UartSample_TxBuf, (u8)ch);
 void UartSample_SendBuf(const char* buf, int len) { RingTxWriteSend(&UartSample_TxBuf, buf, len); }
 
 // get free space in send buffer
-int UartSample_SendFree() { return RingTxFree(&UartSample_TxBuf); }
+int UartSample_SendFree(void) { return RingTxFree(&UartSample_TxBuf); }
 
 #if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
 
@@ -539,10 +603,10 @@ NOINLINE u32 UartSample_Print(const char* fmt, ...)
 #if UARTSAMPLE_RXMODE == 0	// 0 = polling mode
 
 // check if next character can be received
-Bool UartSample_RecvReady() { return UART_RecvReady(UARTSAMPLE_UART); }
+Bool UartSample_RecvReady(void) { return UART_RecvReady(UARTSAMPLE_UART); }
 
 // receive character (wait if not ready)
-char UartSample_RecvChar() { return UART_RecvCharWait(UARTSAMPLE_UART); }
+char UartSample_RecvChar(void) { return UART_RecvCharWait(UARTSAMPLE_UART); }
 
 // receive buffer (without waiting), returns number of received characters
 u32 UartSample_RecvBuf(char* buf, int len) { return UART_Recv(UARTSAMPLE_UART, buf, len); }
@@ -556,10 +620,10 @@ u32 UartSample_RecvBuf(char* buf, int len) { return UART_Recv(UARTSAMPLE_UART, b
 RING(UartSample_RxBuf, 1<<UARTSAMPLE_RXORDER, UARTSAMPLE_RXSPIN, NULL, NULL, 0);
 
 // check if next character can be received
-Bool UartSample_RecvReady() { return RingReadReady(&UartSample_RxBuf, 1); }
+Bool UartSample_RecvReady(void) { return RingReadReady(&UartSample_RxBuf, 1); }
 
 // receive character (wait if not ready)
-char UartSample_RecvChar() { return (char)RingRead8Wait(&UartSample_RxBuf); }
+char UartSample_RecvChar(void) { return (char)RingRead8Wait(&UartSample_RxBuf); }
 
 // receive buffer, returns number of received characters
 u32 UartSample_RecvBuf(char* buf, int len) { return RingReadData(&UartSample_RxBuf, buf, len); }
@@ -574,10 +638,10 @@ RINGRX(UartSample_RxBuf, UART_DR(UARTSAMPLE_UART), UARTSAMPLE_RXSPIN, UARTSAMPLE
 	UARTSAMPLE_RXDMA, UART_DREQ(UARTSAMPLE_UART,1), DMA_SIZE_8);
 
 // check if next character can be received
-Bool UartSample_RecvReady() { return RingRxReady(&UartSample_RxBuf, 1); }
+Bool UartSample_RecvReady(void) { return RingRxReady(&UartSample_RxBuf, 1); }
 
 // receive character (wait if not ready)
-char UartSample_RecvChar() { return (char)RingRxRead8Wait(&UartSample_RxBuf); }
+char UartSample_RecvChar(void) { return (char)RingRxRead8Wait(&UartSample_RxBuf); }
 
 // receive buffer, returns number of received characters
 u32 UartSample_RecvBuf(char* buf, int len) { return RingRxReadData(&UartSample_RxBuf, buf, len); }
@@ -587,7 +651,7 @@ u32 UartSample_RecvBuf(char* buf, int len) { return RingRxReadData(&UartSample_R
 // --- initialize
 
 // UART handler
-void UartSample_Handler()
+void UartSample_Handler(void)
 {
 	char ch;
 
@@ -619,7 +683,7 @@ void UartSample_Handler()
 }
 
 // initialize sample UART (uses UART0, 512 bytes of RAM and 2 spinlocks)
-void UartSample_Init()
+void UartSample_Init(void)
 {
 	// default initialize UART: 115200 Baud, 8 bits, no parity, 1 stop, no hw control
 	UART_InitDef(UARTSAMPLE_UART);
@@ -684,7 +748,7 @@ void UartSample_Init()
 }
 
 // terminate sample UART
-void UartSample_Term()
+void UartSample_Term(void)
 {
 #if UARTSAMPLE_TXMODE == 2	// 2 = DMA with ring buffer
 
@@ -721,5 +785,23 @@ void UartSample_Term()
 }
 
 #endif // UARTSAMPLE
+
+#if USE_ORIGSDK		// include interface of original SDK
+
+// Write string to UART for transmission, doing any CR/LF conversions
+void uart_puts(uart_inst_t *uart, const char *s)
+{
+	Bool last_cr = False;
+	while (*s != 0)
+	{
+		if (last_cr)
+			uart_putc_raw(uart, *s);
+		else
+			uart_putc(uart, *s);
+		last_cr = *s++ == '\r';
+	}
+}
+
+#endif // USE_ORIGSDK
 
 #endif // USE_UART	// use UART serial port (sdk_uart.c, sdk_uart.h)

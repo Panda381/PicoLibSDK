@@ -1,0 +1,2 @@
+We're going to use PIO to print "Hello, world!" on the same GPIO which we
+normally attach UART0 to.

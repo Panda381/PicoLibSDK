@@ -56,7 +56,7 @@ int main()
 	while (True)
 	{
 		// membranes update (by sound offset)
-		int off = (SNDLEN - SoundCnt[0]) % BEATINT;
+		int off = (SNDLEN - PwmSound[0].cnt) % BEATINT;
 		off = (off < BEATON) ? MEMBOFF : 0;
 		DrawBlit4Pal(Repro3Img, Repro3Img_Pal, 0, 0, REPRO1X+MEMB1X+off, REPROY+MEMBY+off, MEMBW, MEMBH, MEMBW, COL_WHITE);
 		DrawBlit4Pal(Repro3Img, Repro3Img_Pal, 0, 0, REPRO2X+MEMB1X+off, REPROY+MEMBY+off, MEMBW, MEMBH, MEMBW, COL_WHITE);

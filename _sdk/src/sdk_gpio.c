@@ -18,8 +18,11 @@
 #include "../inc/sdk_gpio.h"
 #include "../inc/sdk_cpu.h"
 
+// generic callback for GPIO types (NULL = not used)
+gpio_irq_callback_t GPIO_Callbacks[CORE_NUM] = { NULL, NULL };
+
 // set GPIO function GPIO_FNC_*, reset overrides to normal mode, reset pad setup (pin = 0..29)
-void GPIO_Fnc(u8 pin, u8 fnc)
+void GPIO_Fnc(int pin, int fnc)
 {
 	*GPIO_PAD(pin) = B1|B2|B4|B6; // reset pad setup
 	*GPIO_CTRL(pin) = fnc; // set function, reset all overrides
@@ -27,20 +30,21 @@ void GPIO_Fnc(u8 pin, u8 fnc)
 
 // set GPIO function GPIO_FNC_* with mask (bit '1' to set function of this pin)
 // To use pin mask in range (first..last), use function RangeMask.
-void GPIO_FncMask(u32 mask, u8 fnc)
+void GPIO_FncMask(u32 mask, int fnc)
 {
 	int i;
 	for (i = 0; i < GPIO_PIN_NUM; i++)
 	{
-		if ((mask & 1) != 0) GPIO_Fnc((u8)i, fnc);
+		if ((mask & 1) != 0) GPIO_Fnc(i, fnc);
 		mask >>= 1;
 	}
 }
 
 // acknowledge IRQ interrupt for both CPU
 //   pin = 0..29
-//   events = bit mask with IRQ_EVENT_* of events to acknowledge
-void GPIO_IRQAck(u8 pin, u8 events)
+//   events = bit mask with IRQ_EVENT_EDGE* of events to acknowledge
+//  Interrupts LEVEL are not latched, they become inactive on end condition.
+void GPIO_IRQAck(int pin, int events)
 {
 	volatile u32* reg = &GPIO_IRQ_INTR[pin >> 3];
 	u32 mask = (u32)events << (4*(pin & 7));
@@ -58,9 +62,19 @@ void GPIO_IRQAck(u8 pin, u8 events)
 //   - enable NVIC interrupt of IRQ_IO_BANK0 (use function NVIC_IRQEnable)
 //   - enable global interrupt ei()
 
-void GPIO_IRQEnableCpu(u8 cpu, u8 pin, u8 events)
+void GPIO_IRQEnableCpu(int cpu, int pin, int events)
 {
 	volatile u32* reg = &GPIO_IRQ_INTE(cpu)[pin >> 3];
+	u32 mask = (u32)events << (4*(pin & 7));
+	RegSet(reg, mask);
+}
+
+// enable IRQ interrupt for dormant wake
+//   pin = 0..29
+//   events = bit mask with IRQ_EVENT_* of events to enable
+void GPIO_IRQEnableDorm(int pin, int events)
+{
+	volatile u32* reg = &GPIO_IRQ_INTE(2)[pin >> 3];
 	u32 mask = (u32)events << (4*(pin & 7));
 	RegSet(reg, mask);
 }
@@ -69,9 +83,19 @@ void GPIO_IRQEnableCpu(u8 cpu, u8 pin, u8 events)
 //   cpu = CPU core 0 or 1, use CpuID() to get current core
 //   pin = 0..29
 //   events = bit mask with IRQ_EVENT_* of events to disable
-void GPIO_IRQDisableCpu(u8 cpu, u8 pin, u8 events)
+void GPIO_IRQDisableCpu(int cpu, int pin, int events)
 {
 	volatile u32* reg = &GPIO_IRQ_INTE(cpu)[pin >> 3];
+	u32 mask = (u32)events << (4*(pin & 7));
+	RegClr(reg, mask);
+}
+
+// disable IRQ interrupt for dormant wake
+//   pin = 0..29
+//   events = bit mask with IRQ_EVENT_* of events to disable
+void GPIO_IRQDisableDorm(int pin, int events)
+{
+	volatile u32* reg = &GPIO_IRQ_INTE(2)[pin >> 3];
 	u32 mask = (u32)events << (4*(pin & 7));
 	RegClr(reg, mask);
 }
@@ -80,9 +104,19 @@ void GPIO_IRQDisableCpu(u8 cpu, u8 pin, u8 events)
 //   cpu = CPU core 0 or 1, use CpuID() to get current core
 //   pin = 0..29
 //   events = bit mask with IRQ_EVENT_* of events to force
-void GPIO_IRQForceCpu(u8 cpu, u8 pin, u8 events)
+void GPIO_IRQForceCpu(int cpu, int pin, int events)
 {
 	volatile u32* reg = &GPIO_IRQ_INTF(cpu)[pin >> 3];
+	u32 mask = (u32)events << (4*(pin & 7));
+	RegSet(reg, mask);
+}
+
+// force IRQ interrupt for dormant wake
+//   pin = 0..29
+//   events = bit mask with IRQ_EVENT_* of events to force
+void GPIO_IRQForceDorm(int pin, int events)
+{
+	volatile u32* reg = &GPIO_IRQ_INTF(2)[pin >> 3];
 	u32 mask = (u32)events << (4*(pin & 7));
 	RegSet(reg, mask);
 }
@@ -91,9 +125,19 @@ void GPIO_IRQForceCpu(u8 cpu, u8 pin, u8 events)
 //   cpu = CPU core 0 or 1, use CpuID() to get current core
 //   pin = 0..29
 //   events = bit mask with IRQ_EVENT_* of events to unforce
-void GPIO_IRQUnforceCpu(u8 cpu, u8 pin, u8 events)
+void GPIO_IRQUnforceCpu(int cpu, int pin, int events)
 {
 	volatile u32* reg = &GPIO_IRQ_INTF(cpu)[pin >> 3];
+	u32 mask = (u32)events << (4*(pin & 7));
+	RegClr(reg, mask);
+}
+
+// clear force IRQ interrupt for dormant wake
+//   pin = 0..29
+//   events = bit mask with IRQ_EVENT_* of events to unforce
+void GPIO_IRQUnforceDorm(int pin, int events)
+{
+	volatile u32* reg = &GPIO_IRQ_INTF(2)[pin >> 3];
 	u32 mask = (u32)events << (4*(pin & 7));
 	RegClr(reg, mask);
 }
@@ -102,14 +146,89 @@ void GPIO_IRQUnforceCpu(u8 cpu, u8 pin, u8 events)
 //   core = CPU core 0 or 1, use CpuID() to get current core
 //   pin = 0..29
 //   returns events = bit mask with IRQ_EVENT_* of incoming events
-u8 GPIO_IRQIsPendingCpu(u8 cpu, u8 pin)
+u8 GPIO_IRQIsPendingCpu(int cpu, int pin)
 {
 	volatile u32* reg = &GPIO_IRQ_INTS(cpu)[pin >> 3];
 	return (u8)((*reg >> (4*(pin & 7))) & IRQ_EVENT_ALL);
 }
 
+// check IRQ interrupt status for dormant wake (returns 1 if IRQ is pending)
+//   pin = 0..29
+//   returns events = bit mask with IRQ_EVENT_* of incoming events
+u8 GPIO_IRQIsPendingDorm(int pin)
+{
+	volatile u32* reg = &GPIO_IRQ_INTS(2)[pin >> 3];
+	return (u8)((*reg >> (4*(pin & 7))) & IRQ_EVENT_ALL);
+}
+
+// check if IRQ is forced for selected/current CPU (returns 1 if IRQ is pending)
+//   cpu = CPU core 0 or 1, use CpuID() to get current core, or 2 = dormant wake
+//   pin = 0..29
+//   returns events = bit mask with IRQ_EVENT_* of forced events
+u8 GPIO_IRQIsForcedCpu(int cpu, int pin)
+{
+	volatile u32* reg = &GPIO_IRQ_INTF(cpu)[pin >> 3];
+	return (u8)((*reg >> (4*(pin & 7))) & IRQ_EVENT_ALL);
+}
+
+// check if IRQ is forced for dormant wake (returns 1 if IRQ is pending)
+//   pin = 0..29
+//   returns events = bit mask with IRQ_EVENT_* of forced events
+u8 GPIO_IRQIsForcedDorm(int pin)
+{
+	volatile u32* reg = &GPIO_IRQ_INTF(2)[pin >> 3];
+	return (u8)((*reg >> (4*(pin & 7))) & IRQ_EVENT_ALL);
+}
+
+// GPIO default IRQ handler
+void GPIO_DefIRQHandler(void)
+{
+	// get current core
+	int core = CpuID();
+
+	// get callback handler
+	gpio_irq_callback_t cb = GPIO_Callbacks[core];
+
+	// get control register
+	io_irq_ctrl_hw_t* base = core ? &iobank0_hw->proc1_irq_ctrl : &iobank0_hw->proc0_irq_ctrl;
+
+	// check pins
+	int pin, events;
+	for (pin = 0; pin < GPIO_PIN_NUM; pin++)
+	{
+		// check IRQ events
+		events = GPIO_IRQIsPendingCpu(core, pin);
+		if (events != 0)
+		{
+			// acknowledge events
+			GPIO_IRQAck(pin, events);
+
+			// callback
+			if (cb != NULL) cb(pin, events);
+		}
+	}
+}
+
+// set generic callback for current core (NULL=disable callback)
+// - it will install default IRQ handler (as used with GPIO_SetHandler)
+// To use:
+// - set callback using the GPIO_IRQSetCallback() function
+// - enable interrupts on GPIO pins using the GPIO_IRQEnable() function
+// - enable NVIC interrupt using the NVIC_IRQEnable(IRQ_IO_BANK0) command
+void GPIO_IRQSetCallback(gpio_irq_callback_t cb)
+{
+	// get current core
+	int core = CpuID();
+
+	// set new callback
+	GPIO_Callbacks[core] = cb;
+
+	// install default handler
+	if (cb != NULL) GPIO_SetHandler(GPIO_DefIRQHandler);
+}
+
 // initialize GPIO pin base function, reset pad setup, set input mode, LOW output value (pin = 0..29)
-void GPIO_Init(u8 pin)
+void GPIO_Init(int pin)
 {
 	GPIO_DirIn(pin);	// disable output
 	GPIO_Out0(pin);		// set output to LOW
@@ -126,7 +245,7 @@ void GPIO_InitMask(u32 mask)
 }
 
 // reset GPIO pin (return to reset state)
-void GPIO_Reset(u8 pin)
+void GPIO_Reset(int pin)
 {
 	GPIO_IRQDisableCpu(0, pin, IRQ_EVENT_ALL); // disable IRQ
 	GPIO_IRQDisableCpu(1, pin, IRQ_EVENT_ALL);
@@ -143,5 +262,5 @@ void GPIO_Reset(u8 pin)
 void GPIO_ResetMask(u32 mask)
 {
 	int i;
-	for (i = 0; i < GPIO_PIN_NUM; i++) GPIO_Reset((u8)i);
+	for (i = 0; i < GPIO_PIN_NUM; i++) GPIO_Reset(i);
 }

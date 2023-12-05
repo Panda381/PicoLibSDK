@@ -1,0 +1,1 @@
+Output clock signal to GPIO21, check input on GPIO20 (connect GPIO21 and GPIO20)

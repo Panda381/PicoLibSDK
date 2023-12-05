@@ -23,9 +23,14 @@
 #include "../inc/sdk_reset.h"
 
 // get PLL VCO frequency in Hz
-u32 PllGetVco(u8 pll)
+u32 PllGetVco(int pll)
 {
 	return CurrentFreq[CLK_XOSC] / PllGetRefDiv(pll) * PllGetFBDiv(pll);
+}
+
+u32 PllGetVco_hw(const pll_hw_t* hw)
+{
+	return CurrentFreq[CLK_XOSC] / PllGetRefDiv_hw(hw) * PllGetFBDiv_hw(hw);
 }
 
 // PLL setup (returns result frequency in Hz)
@@ -38,7 +43,7 @@ u32 PllGetVco(u8 pll)
 // All clocks should be disconnected from the PLL.
 // Result frequency = (XOSC / refdiv) * fbdiv / (div1 * div2).
 // Do not call this function directly, if SYS clock is connected, call the ClockPllSysSetup function.
-u32 PllSetup(u8 pll, u8 refdiv, int fbdiv, u8 div1, u8 div2)
+u32 PllSetup(int pll, int refdiv, int fbdiv, int div1, int div2)
 {
 	// correct order of post dividers, should be div1 >= div2
 	if (div1 < div2)
@@ -47,6 +52,7 @@ u32 PllSetup(u8 pll, u8 refdiv, int fbdiv, u8 div1, u8 div2)
 		div2 ^= div1;
 		div1 ^= div2;
 	}
+
 	// reference frequency
 	u32 ref = CurrentFreq[CLK_XOSC] / refdiv;
 
@@ -60,21 +66,24 @@ u32 PllSetup(u8 pll, u8 refdiv, int fbdiv, u8 div1, u8 div2)
 	// reset PLL
 	ResetPeriphery(RESET_PLL_SYS+pll);
 
+	// get harwdare interface
+	pll_hw_t* hw = PllGetHw(pll);
+
 	// load dividers
-	*PLL_CS(pll) = refdiv; // set reference divider
-	*PLL_DIV(pll) = fbdiv; // set feedback divisor
+	hw->cs = refdiv; // set reference divider
+	hw->fbdiv_int = fbdiv; // set feedback divisor
 
 	// turn on PLL power of VCO oscillator
-	RegClr(PLL_PWR(pll), B0|B5); // power up PLL and VCO
+	RegClr(&hw->pwr, B0|B5); // power up PLL and VCO
 
 	// wait for PLL to lock
-	while ((*PLL_CS(pll) & B31) == 0) {}
+	while ((hw->cs & B31) == 0) {}
 
 	// set up post dividers
-	*PLL_PRIM(pll) = ((u32)div1 << 16) | ((u32)div2 << 12);
+	hw->prim = ((u32)div1 << 16) | ((u32)div2 << 12);
 
 	// turn on PLL power of post dividers
-	RegClr(PLL_PWR(pll), B3);
+	RegClr(&hw->pwr, B3);
 
 	return freq;
 }
@@ -175,7 +184,7 @@ Bool PllCalcDef(u32 reqkhz, u32* outkhz, u32* outvco, u16* outfbdiv, u8* outpd1,
 
 // setup PLL frequency in kHz (returns result frequency in kHz, or 0 if cannot setup)
 // Do not call this function directly, if SYS clock is connected, call the ClockPllSysFreq function.
-u32 PllSetFreq(u8 pll, u32 freq)
+u32 PllSetFreq(int pll, u32 freq)
 {
 	u32 khz, vco;
 	u16 fbdiv;

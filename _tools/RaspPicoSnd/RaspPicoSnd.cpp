@@ -41,18 +41,28 @@ typedef struct WAVDATA_ {
 	DWORD			nDataSize;			// (4) size of following sound data
 } WAVDATA;
 
-// WAV format descriptor (28 Bytes)
+// WAV format descriptor (28 Bytes, or 30 bytes for ADPCM)
 typedef struct WAVFORMAT_ {
 	char			tFormatIdent[8];	// (8) format identifier (= "WAVEfmt ")
 	DWORD			nFormatSize;		// (4) size of following format data
 
-	WORD			wFormatTag;			// (2) data format (1 = PCM)
+	WORD			wFormatTag;			// (2) data format (1 = PCM, 17 = Intel DVI ADPCM)
 	WORD			nChannels;			// (2) number of channels (1 = mono, 2 = stereo)
 	DWORD			nSamplesPerSec;		// (4) sample frequency (number of samples per second)
 	DWORD			nAvgBytesPerSec;	// (4) transfer rate (number of bytes per second)
 	WORD			nBlockAlign;		// (2) data align (bits*channels/8)
 
 	WORD			wBitsPerSample;		// (2) number of bits per one sample
+
+//	WORD			wExtraByte;			// (2) ADPCM: number of following extra bytes (= 2)
+//	WORD			wSampBlock;			// (2) ADPCM: number of samples per block including 1st sample in header
+
+// ADPCM: Each block starts with 4 bytes of preamble (stereo starts with 2 preambles):
+//  s16	... audio sample (= 1st sample, initial predictor)
+//  u8 ... table index
+//  u8 ... dummy byte (= 0)
+// 1st data sample is in LOW 4 bits, nest sample is in HIGH 4 bits
+
 } WAVFORMAT;
 
 // WAV file header (44 B)
@@ -122,17 +132,24 @@ int main(int argc, char* argv[])
 	// check WAV header
 	WAVHEAD* wav = (WAVHEAD*)Snd;
 	WAVFORMAT* fmt = &wav->WavFormat;
-	WAVDATA* data = &wav->WavData;
+	WAVDATA* data = (WAVDATA*)((u8*)fmt + 12 + fmt->nFormatSize);
+	int i;
+	for (i = 10; i > 0; i--) // skip "JUNK"
+	{
+		if (memcmp(data->tDataIdent, "data", 4) == 0) break;
+		data = (WAVDATA*)((u8*)data + 8 + data->nDataSize);
+	}
 	if ((memcmp(wav->tWavIdent, "RIFF", 4) != 0) || // check "RIFF" header
 		(memcmp(fmt->tFormatIdent, "WAVEfmt ", 8) != 0) || // check "WAVEfmt " header
 		(memcmp(data->tDataIdent, "data", 4) != 0) || // check "data" header
-		(fmt->wFormatTag != 1) || // check PCM format
+		((fmt->wFormatTag != 1) && (fmt->wFormatTag != 17)) || // check PCM of ADPCM format
 		(fmt->nChannels != 1) || // check mono
 		(fmt->nSamplesPerSec != 22050) || // check rate
-		(fmt->wBitsPerSample != 8)) // check bits per sample
+		((fmt->wBitsPerSample != 8) && (fmt->wBitsPerSample != 4))) // check bits per sample
 	{
 		printf("Incorrect format of input file %s,\n", argv[1]);
-		printf("  must be PCM mono 8-bit 22050Hz.\n");
+		printf("  must be PCM mono 8-bit 22050Hz\n");
+		printf("  or IMA ADPCM mono 4-bit 22050Hz.\n");
 		return 1;
 	}
 	u8* s = (u8*)&data[1]; // start of sound data
@@ -150,11 +167,18 @@ int main(int argc, char* argv[])
 
 	// save header
 	fprintf(f, "#include \"include.h\"\n\n");
-	fprintf(f, "// sound format: PCM mono 8-bit 22050Hz\n");
+	if (fmt->wFormatTag == 17)
+	{
+		fprintf(f, "// sound format: Intel IMA ADPCM mono 4-bit 22050Hz\n");
+		if (fmt->nFormatSize >= 20)
+			fprintf(f, "const u16 %s_SampBlock = %d; // number of samples per block\n\n",
+				argv[3], (&fmt->wBitsPerSample)[2]);
+	}
+	else
+		fprintf(f, "// sound format: PCM mono 8-bit 22050Hz\n");
 	fprintf(f, "const u8 %s[%d] = {", argv[3], n);
 
 	// load sound
-	int i;
 	for (i = 0; i < n; i++)
 	{
 		if ((i & 0x0f) == 0) fprintf(f, "\n\t");

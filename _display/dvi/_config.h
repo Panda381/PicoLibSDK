@@ -19,7 +19,7 @@
 
 
 // --- 320*240 (*2, real 640*480)
-//  VGA 4:3 640x480, vert. 60 Hz, hor. 31.4685 kHz, pixel clock 12.5874 MHz, sys_clk 126 MHz
+//  VGA 4:3 640x480, vert. 60 Hz, hor. 31.4685 kHz, pixel clock 12.5874 MHz (real l , sys_clk 252 MHz
 #if WIDTH == 320
 
 #ifndef HEIGHT
@@ -34,6 +34,7 @@
 #endif
 
 // horizontal ticks must be even number
+//  HSYNC=negative, VSYNC=negative
 #define DVI_HACT	640		// horizontal active pixels (visible area)
 #define DVI_HFRONT	16		// horizontal front porch in pixels
 #define DVI_HSYNC	96		// horizontal sync clock in pixels

@@ -100,3 +100,28 @@ void RomFncInit()
 	FlashEnterXip = (pFlashEnterXip)RomFunc(ROM_FUNC_FLASH_ENTER_CMD_XIP);
 }
 
+// ----------------------------------------------------------------------------
+//                          Original-SDK interface
+// ----------------------------------------------------------------------------
+
+#if USE_ORIGSDK		// include interface of original SDK
+
+// Helper function to lookup the addresses of multiple bootrom functions
+// This method looks up the 'codes' in the table, and convert each table entry to the looked up
+// function pointer, if there is a function for that code in the bootrom.
+//   table ... an IN/OUT array, elements are codes on input, function pointers on success.
+//   count ... the number of elements in the table
+// return true if all the codes were found, and converted to function pointers, false otherwise
+bool rom_funcs_lookup(u32* table, uint count)
+{
+	uint i;
+	bool ok = true;
+	for (i = 0; i < count; i++)
+	{
+		table[i] = (u32)rom_func_lookup(table[i]);
+		if (table[i] == 0) ok = false;
+	}
+	return ok;
+}
+
+#endif // USE_ORIGSDK

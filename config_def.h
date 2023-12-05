@@ -25,11 +25,6 @@ DMA channels 8 and 9 are used by miniVGA library.
 
 PIO1 is used by miniVGA library.
 
-Spinlock 31 is used by system memory allocator, safe integer etc. Search SYS_SPIN.
-Spinlock 30 is used by USB driver. Search USB_SPIN.
-Spinlocks 28 and 29 are used by UART test sample and by USART stdio. Search:
-UARTSAMPLE_TXSPIN, UARTSAMPLE_RXSPIN, UART_STDIO_TXSPIN, UART_STDIO_RXSPIN.
-
 Hardware interpolators are used when drawing to canvas (DRAW_HWINTER_INX) and
 by VGA driver rendering service.
 
@@ -71,8 +66,73 @@ by VGA driver rendering service.
 #endif
 
 // ----------------------------------------------------------------------------
+//                        Spinlock resources
+// ----------------------------------------------------------------------------
+
+// Timer spinlock
+#ifndef PICO_SPINLOCK_ID_TIMER
+#define PICO_SPINLOCK_ID_TIMER 14	// timer spinlock
+#endif
+
+// SpinLock for printf function
+#ifndef PRINTF_SPIN
+#define PRINTF_SPIN	15		// printf spinlock
+#endif
+
+// Spinlocks 16 to 21 can be allocated by the SpinNextStriped() function
+// - striped spinlocks (indexed with round robin)
+#ifndef PICO_SPINLOCK_ID_STRIPED_FIRST
+#define PICO_SPINLOCK_ID_STRIPED_FIRST 16	// first striped spinlock
+#endif
+
+#ifndef PICO_SPINLOCK_ID_STRIPED_LAST
+#define PICO_SPINLOCK_ID_STRIPED_LAST 21	// last striped spinlock
+#endif
+
+// Spinlocks 22 to 27 can be allocated by the SpinClaimFree() function (auto-claimed spinlocks)
+#ifndef PICO_SPINLOCK_ID_CLAIM_FREE_FIRST
+#define PICO_SPINLOCK_ID_CLAIM_FREE_FIRST 22	// first free spinlock
+#endif
+
+#ifndef PICO_SPINLOCK_ID_CLAIM_FREE_LAST
+#define PICO_SPINLOCK_ID_CLAIM_FREE_LAST 27	// last free spinlock
+#endif
+
+// Spinlocks 28 and 29 are used by UART test sample and by USART stdio. Search:
+// UARTSAMPLE_TXSPIN, UARTSAMPLE_RXSPIN, UART_STDIO_TXSPIN, UART_STDIO_RXSPIN.
+#ifndef UART_STDIO_TXSPIN
+#define UART_STDIO_TXSPIN	28	// transmitter spinlock 0..31 (-1 = not used)
+#endif
+
+#ifndef UARTSAMPLE_TXSPIN
+#define UARTSAMPLE_TXSPIN	28	// transmitter spinlock 0..31 (-1 = not used)
+#endif
+
+#ifndef UART_STDIO_RXSPIN
+#define UART_STDIO_RXSPIN	29	// receiver spinlock 0..31 (-1 = not used)
+#endif
+
+#ifndef UARTSAMPLE_RXSPIN
+#define UARTSAMPLE_RXSPIN	29	// receiver spinlock 0..31 (-1 = not used)
+#endif
+
+// Spinlock 30 is used by USB driver. Search USB_SPIN.
+#ifndef USB_SPIN
+#define USB_SPIN	30		// USB spinlock, -1=do not use (ring buffer, event buffer, claim endpoints)
+#endif
+
+// Spinlock 31 is used by system memory allocator, safe integer etc. Search SYS_SPIN.
+#ifndef SYS_SPIN
+#define SYS_SPIN	31		// system spinlock (memory allocator, safe integer etc.; -1 = not used)
+#endif
+
+// ----------------------------------------------------------------------------
 //              SDK modules, folder _sdk (1=use, 0=do not use)
 // ----------------------------------------------------------------------------
+
+#ifndef USE_ORIGSDK
+#define USE_ORIGSDK	1		// include interface of original-SDK
+#endif
 
 #ifndef USE_ADC
 #define USE_ADC		1		// use ADC controller (sdk_adc.c, sdk_adc.h)
@@ -659,12 +719,43 @@ by VGA driver rendering service.
 #define UART_STDIO_RXBUF	128	// size of receive ring buffer of UART stdio
 #endif
 
-#ifndef UART_STDIO_TXSPIN
-#define UART_STDIO_TXSPIN	28	// transmitter spinlock 0..31 (-1 = not used)
+#ifndef USE_FAST_PERI
+#define USE_FAST_PERI		0	// use fast perifery - use system clock instead of USB clock
+					// Warning: If you change system clock, you must also repair
+					//          peripheral clock and re-initialize peripherals.
 #endif
 
-#ifndef UART_STDIO_RXSPIN
-#define UART_STDIO_RXSPIN	29	// receiver spinlock 0..31 (-1 = not used)
+#ifndef USE_DISP_DMA
+#define USE_DISP_DMA		1	// use DMA output do LCD display
+#endif
+
+#ifndef DISP_ROT
+#define DISP_ROT	1		// display rotation of LCD: 0 Portrait, 1 Landscape, 2 Inverted Portrait, 3 Inverted Landscape
+#endif
+
+#ifndef FLASH_CLKDIV			// current divider of flash SPI
+#ifdef PRESET_FLASH_CLKDIV
+#define FLASH_CLKDIV PRESET_FLASH_CLKDIV // preset other divider
+#else
+#define FLASH_CLKDIV 4
+#endif
+#endif
+
+#ifndef FLASH_SIZE
+#define FLASH_SIZE (2*1024*1024)	// compiled flash size
+#endif
+
+#define RAM_SIZE (264*1024)		// RAM size
+
+#define PICO_FLASH_SPI_CLKDIV FLASH_CLKDIV	// original-SDK flag
+#define PICO_FLASH_SIZE_BYTES FLASH_SIZE	// original-SDK flag
+
+#ifndef LOAD_FLASH_INFO
+#define LOAD_FLASH_INFO		1	// load flash info on startup
+#endif
+
+#ifndef PICO_DEFAULT_LED_PIN
+#define PICO_DEFAULT_LED_PIN 25
 #endif
 
 // ----------------------------------------------------------------------------
@@ -703,14 +794,6 @@ by VGA driver rendering service.
 #define UARTSAMPLE_RXDMA	11	// receiver DMA channel 0..11 (used in DMA mode)
 #endif
 
-#ifndef UARTSAMPLE_TXSPIN
-#define UARTSAMPLE_TXSPIN	28	// transmitter spinlock 0..31 (-1 = not used)
-#endif
-
-#ifndef UARTSAMPLE_RXSPIN
-#define UARTSAMPLE_RXSPIN	29	// receiver spinlock 0..31 (-1 = not used)
-#endif
-
 // ----------------------------------------------------------------------------
 //                            System resources
 // ----------------------------------------------------------------------------
@@ -720,14 +803,6 @@ by VGA driver rendering service.
 //  simultaneously, without collision. However, they cannot be used simultaneously in an interrupt.
 #ifndef DMA_TEMP_CHAN
 #define DMA_TEMP_CHAN()	(DMA_CHANNELS - 1 - CpuID())
-#endif
-
-#ifndef USB_SPIN
-#define USB_SPIN	30		// USB spinlock, -1=do not use (ring buffer, event buffer, claim endpoints)
-#endif
-
-#ifndef SYS_SPIN
-#define SYS_SPIN	31		// system spinlock (memory allocator, safe integer etc.; -1 = not used)
 #endif
 
 #ifndef ROSC_MHZ
@@ -785,6 +860,11 @@ by VGA driver rendering service.
 // ----------------------------------------------------------------------------
 //                             Auto-dependencies
 // ----------------------------------------------------------------------------
+
+#if !USE_ORIGSDK		// include interface of original SDK
+#define PICO_NO_HARDWARE 1	// this switch is not use in other places of the SDK,
+				//  it is used only in PIO program to cut-out some unwanted declarations
+#endif
 
 #if USE_VIDEO
 #undef USE_FRAMEBUF

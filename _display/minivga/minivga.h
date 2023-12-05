@@ -61,13 +61,15 @@ Auto generated configuration:
   DISP_STRIP_HEIGHT ... height of back buffer strip in number of lines
 */
 
-
 #ifndef _MINIVGA_H
 #define _MINIVGA_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define MINIVGA_IRQTIME		0	// debug flag - measure delta time of VGA service
+// Measured: IN=1 us, OUT=31 us
 
 // frame buffer
 //  Planar mode: Lines are interlaced in order blue, green and red.
@@ -91,6 +93,11 @@ extern int DispDirtyX1, DispDirtyX2, DispDirtyY1, DispDirtyY2;
 // handler variables
 extern volatile int VgaScanLine; // current processed scan line 0... (next displayed scan line)
 extern volatile u32 VgaFrame;	// frame counter
+
+#if MINIVGA_IRQTIME			// debug flag - measure delta time of VGA service
+extern volatile u32 VgaTimeIn;		// time in interrupt service, in [us]
+extern volatile u32 VgaTimeOut;		// time out interrupt service, in [us]
+#endif // MINIVGA_IRQTIME
 
 #ifdef VGA_KEYSCAN_GPIO		// scan keyboard
 extern volatile u32 VgaKeyScan;	// key scan

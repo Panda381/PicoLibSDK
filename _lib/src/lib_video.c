@@ -261,7 +261,7 @@ Bool VideoPlayFrame(sVideo* video)
 	{
 		if ((video->frame == 0) || !PlayingSound())
 			PlaySoundChan(0, &frm[2*256 + WIDTH/2*HEIGHT], VIDEO_SAMPLES, True, 1.0f,
-					(float)video->volume/VIDEO_VOLUMEDEF);
+					(float)video->volume/VIDEO_VOLUMEDEF, SNDFORM_PCM, 0);
 		else
 			SetNextSound(&frm[2*256 + WIDTH/2*HEIGHT], VIDEO_SAMPLES);
 	}

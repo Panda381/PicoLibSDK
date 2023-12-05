@@ -24,6 +24,9 @@
 #include "picopad_key.h"
 #include "picopad_led.h"
 
+// DEBUG indicator - copy it into program checkpoint
+// { GPIO_Init(LED1_PIN); GPIO_DirOut(LED1_PIN); while (1) { GPIO_Flip(LED1_PIN); io32 i; for (i = 1000000; i > 0; i--); } }
+
 // Device init
 void DeviceInit()
 {
@@ -35,8 +38,9 @@ void DeviceInit()
 	LedInit();
 
 	// initialize display
-	DispInit(1);
+	DispInit(DISP_ROT);
 #endif
+
 	// initilize keys
 	KeyInit();
 

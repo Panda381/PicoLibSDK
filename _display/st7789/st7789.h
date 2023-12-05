@@ -14,6 +14,13 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+// Example how to configure fast output to LCD display and extern VGA-DVI display:
+//#define DISP_SPI_BAUD		50000000	// SPI baudrate (max. CLK_PERI/2 = 24 MHz, absolute max. 62.5 MHz)
+//#define PLL_KHZ		200000		// PLL system frequency in kHz (default 125000 kHz)
+//#define USE_FAST_PERI		1		// use fast perifery - use system clock instead of USB clock
+//#define USE_DISP_DMA		1		// use DMA output do LCD display
+//#define DISP_ROT		1		// display rotation of LCD: 0 Portrait, 1 Landscape, 2 Inverted Portrait, 3 Inverted Landscape
+
 #if USE_ST7789		// use ST7789 TFT display (st7789.c, st7789.h)
 
 #ifndef _ST7789_H
@@ -64,7 +71,6 @@ extern "C" {
 // frame buffer in RGB 5-6-5 pixel format
 extern ALIGNED FRAMETYPE FrameBuf[];
 
-//extern u8 DispRot;	// current display rotation
 //extern u16 /*DispWidth,*/ DispHeight; // current display size
 
 // dirty window to update
@@ -81,6 +87,22 @@ extern int DispMaxY;		// maximal Y + 1; end of back buffer strip
 #define DispStripInx  0		// current index of back buffer strip
 #define DispMinY  0		// minimal Y; base of back buffer strip
 #define DispMaxY HEIGHT		// maximal Y + 1; end of back buffer strip
+
+// set display rotation
+//  0 Portrait
+//  1 Landscape
+//  2 Inverted Portrait
+//  3 Inverted Landscape
+void DispRotation(u8 rot);
+
+// set BGR color order instead of RGB
+void DispSetModeBGR(Bool bgr);
+
+// flip image horizontal
+void DispSetModeFlipX(Bool flipx);
+
+// flip image vertical
+void DispSetModeFlipY(Bool flipy);
 
 // LOW level control: start sending image data to display window (DispSendImg() must follow)
 void DispStartImg(u16 x1, u16 x2, u16 y1, u16 y2);

@@ -235,7 +235,7 @@ void TurnReel(Bool fast)
 	// sound
 	if (fast)
 	{
-		PlaySoundChan(1, ReelSnd, count_of(ReelSnd), True, 1, 0.3f);
+		PlaySoundChan(1, ReelSnd, count_of(ReelSnd), True, 1, 0.3f, SNDFORM_PCM, 0);
 		PLAYSOUND(StartSnd);
 	}
 	
@@ -892,7 +892,7 @@ void DoToss()
 	u32 t;
 	u8 ch;
 
-	PlaySoundChan(1, TossSnd, sizeof(TossSnd), True, 1, 0.5f);
+	PlaySoundChan(1, TossSnd, sizeof(TossSnd), True, 1, 0.5f, SNDFORM_PCM, 0);
 
 	// while there is enough credits
 	while ((BetCredit > 0) && (BetCredit <= CreditVal))
@@ -943,13 +943,13 @@ void DoToss()
 					if ((k & 1) == 1)
 					{
 						// odd: lost
-						PlaySoundChan(0, RiskLostSnd, sizeof(RiskLostSnd), False, 1, 0.3f);
+						PlaySoundChan(0, RiskLostSnd, sizeof(RiskLostSnd), False, 1, 0.3f, SNDFORM_PCM, 0);
 						n = 0;
 					}
 					else
 					{
 						// even: win
-						PlaySoundChan(0, RiskWinSnd, sizeof(RiskWinSnd), False, 1, 1);
+						PlaySoundChan(0, RiskWinSnd, sizeof(RiskWinSnd), False, 1, 1, SNDFORM_PCM, 0);
 						n *= 2;
 						AddBank(n);
 					}

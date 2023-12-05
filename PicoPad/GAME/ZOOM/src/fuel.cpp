@@ -46,7 +46,7 @@ void SubFuel(int sub)
 	if (Fuel < (12<<FRAC))
 	{
 		if (f >= (12<<FRAC))
-			PlaySoundChan(SNDCHAN_FUEL, FuelSnd, count_of(FuelSnd), True, 1, 1);
+			PlaySoundChan(SNDCHAN_FUEL, FuelSnd, count_of(FuelSnd), True, 1, 1, SNDFORM_PCM, 0);
 	}
 	else
 		StopSoundChan(SNDCHAN_FUEL);

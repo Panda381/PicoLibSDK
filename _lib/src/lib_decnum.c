@@ -71,6 +71,14 @@ int DecNum(char* buf, s32 num, char sep)
 	return DecUNum(buf, num, sep) + 1;
 }
 
+// decode hex digit in least significant 4bits
+char DecHexDig(int num)
+{
+	u8 ch = (num & 0x0f) + '0';
+	if (ch > '9') ch += 'A' - ('9'+1);
+	return ch;
+}
+
 // decode hex number (dig = number of digits)
 void DecHexNum(char* buf, u32 num, u8 dig)
 {

@@ -45,7 +45,6 @@
 
 #define DBUF_SIZE	(DVI_HACT/2*4)	// size of one line buffer in bytes (640/2=320 pixels, 1 pixels sent as 2 pixels in one u32 word)
 
-//#define DVI_SM0		(DVI_SM+0) 	// DVI state machine for lane 0
 #define DVI_SM1		(DVI_SM0+1) 	// DVI state machine for lane 1
 #define DVI_SM2		(DVI_SM0+2) 	// DVI state machine for lane 2
 
@@ -65,17 +64,19 @@
 //   bit 0: HSYNC, bit 1: VSYNC ... sent to sync lane 0 (= blue)
 u32 DviCtrlSyms[5] = // don't use "const" to keep the table in faster RAM
 {
-/*
-	0xaaeab,	// 3: (0x2AB << 10) | 0x2AB, !no sync
-	0x55154,	// 2: (0x154 << 10) | 0x154, !HSYNC
-	0x2acab,	// 1: (0x0AB << 10) | 0x0AB, !VSYNC
-	0xd5354,	// 0: (0x354 << 10) | 0x354, !(HSYNC + VSYNC)
-*/
+	// negative polarity
+	0xaaeab,	// 0: (0x2AB << 10) | 0x2AB, no sync
+	0x55154,	// 1: (0x154 << 10) | 0x154, HSYNC
+	0x2acab,	// 2: (0x0AB << 10) | 0x0AB, VSYNC
+	0xd5354,	// 3: (0x354 << 10) | 0x354, HSYNC + VSYNC
 
+/*
+	// positive polarity
 	0xd5354,	// 0: (0x354 << 10) | 0x354, no sync
 	0x2acab,	// 1: (0x0AB << 10) | 0x0AB, HSYNC
 	0x55154,	// 2: (0x154 << 10) | 0x154, VSYNC
 	0xaaeab,	// 3: (0x2AB << 10) | 0x2AB, HSYNC + VSYNC
+*/
 
 	0x7fd00,	// 4: (0x1ff << 10) | 0x100, dark line
 };
@@ -90,7 +91,15 @@ u32 TmdsTable[64] = // don't use "const" to keep the table in faster RAM
 volatile int DviScanLine;	// current scan line 1...
 volatile u32 DviFrame;		// frame counter
 volatile int DviBufInx;		// current data buffer index (0 or 1)
-volatile Bool DviVSync;		// current scan line is vsync or dark
+//volatile Bool DviVSync;		// current scan line is vsync or dark
+
+#if DVI_IRQTIME				// debug flag - measure delta time of DVI service
+volatile u32 DviTimeIn;			// time in interrupt service, in [us]
+volatile u32 DviTimeOut;		// time out interrupt service, in [us]
+volatile u32 DviTimeIn2;		// time in interrupt service, in [us]
+volatile u32 DviTimeOut2;		// time out interrupt service, in [us]
+u32 DviTimeTmp;
+#endif // DVI_IRQTIME
 
 // data buffers to decode graphics lines (= 640/2*4*3*2 = 7680 bytes)
 u32 DviLineBuf[DBUF_SIZE/4*DVI_LANES*2]; // even and odd line buffer for 3 lanes
@@ -104,7 +113,7 @@ u32 DviLineBuf[DBUF_SIZE/4*DVI_LANES*2]; // even and odd line buffer for 3 lanes
 u32 DviLineBufSync[4*4];	// lane 0 vertical sync (front+VSYNC, HSYNC+VSYNC, back+VSYNC+IRQ, dark+VSYNC)
 u32 DviLineBufDark0[4*4];	// lane 0 dark line (front, HSYNC, back+IRQ, dark)
 u32 DviLineBufDark12[2*4 * 2];	// lane 1+2 dark line (front+hsync+back, dark)
-u32 DviLineBufImg0[4*4 * 2];	// lane 0 image line, 2 buffers (even and odd line; front, HSYNC, back+IRQ, dark)
+u32 DviLineBufImg0[4*4 * 2];	// lane 0 image line, 2 buffers (even and odd line; front, HSYNC, back+IRQ, image)
 u32 DviLineBufImg12[2*4 * 4];	// lane 1+2 image lines, 2 buffers (even and odd line; front+hsync+back, image)
 
 // next control buffer
@@ -117,88 +126,114 @@ const u8 DviPins[3] = {
 	DVI_GPIO_D2,
 };
 
-// prepare encoder (using interpolator 0)
-void NOFLASH(DviEncPrep)(u8 lane)
+// encode data
+void NOFLASH(DviEncode)(int line, int bufinx)
 {
-	// reset interpolator
-	InterpReset(DVI_INTERP);
+	// save interpolators
+	sInterpSave save0, save1;
+	InterpSave(0, &save0);
+	InterpSave(1, &save1);
 
-	// prepare channel position
-	int channel_lsb = 0;
-	int channel_msb = 4; // blue: 5 bits (0..4)
-	int channel_preshift = 3; // pre-shift blue channel 3 bits left
-	if (lane == 1)
-	{
-		channel_lsb = 5;
-		channel_msb = 10; // green: 6 bits (5..10)
-		channel_preshift = 0; // no pre-shift
-	}
-	if (lane == 2)
-	{
-		channel_lsb = 11;
-		channel_msb = 15; // red: 5 bits (11..15)
-		channel_preshift = 0; // no pre-shift
-	}
+	// reset interpolators
+	InterpReset(0);
+	InterpReset(1);
+
+// ==== prepare RED channel (interpolator 0)
+
+	// prepare channel position - red
+#define CHANNEL_LSB	11	// red channel least significant bit
+#define CHANNEL_MSB	15	// red channel most significant bit
 #define PIXEL_WIDTH	16	// pixel width in bits
 #define INDEX_SHIFT	2	// convert index to offset in LUT table
 #define PIXEL_LSB	0	// least significant bit of the pixel
 #define LUT_INDEX_WIDTH	6	// number of bits per index in LUT table (= 64 entries)
 #define INDEX_MSB	(INDEX_SHIFT + LUT_INDEX_WIDTH - 1) // most significant bit of the index
 
-	// shift channel to offset in the LUT table
+	// shift channel to offset in the LUT table, red
 	//  PIXEL_LSB ... >> bit offset of the pixel in input u32, this will normalize pixel to base bit position
 	//  channel_msb ... >> this will shift last bit of the channel to bit position 0
 	//  +1 ... >> this will shift whole channel under bit position 0
 	//  -LUT_INDEX_WIDTH ... << this will shift channel that only usable bits will be visible = index in LUT table
 	//  -INDEX_SHIFT ... << this will convert pixel index to the offset in the LUT table
 	//  +channel_preshift ... << this will pre-shift blue channel 3 bits left to correct negatibe position
-	int shift_channel_to_index = PIXEL_LSB + channel_msb + 1 - LUT_INDEX_WIDTH - INDEX_SHIFT + channel_preshift;
+#define SHIFT_CHANNEL_TO_INDEX (PIXEL_LSB + CHANNEL_MSB + 1 - LUT_INDEX_WIDTH - INDEX_SHIFT)
 
-	// blue: 0 + 4 + 1 - 6 - 2 + 3 = 0
-	// green: 0 + 10 + 1 - 6 - 2 + 0 = 3 (delete 5 bits without 2 bits)
-	// red: 0 + 15 + 1 - 6 - 2 + 0 = 8 (delete 5+6 bits without 2 bits)
+	// red: 0 + 15 + 1 - 6 - 2 = 8 (delete 5+6 bits without 2 bits)
 
-	// setup lane 0 for 1st pixel
-	InterpShift(DVI_INTERP, 0, shift_channel_to_index); // set shift for 1st pixel
-	InterpMask(DVI_INTERP, 0, INDEX_MSB - (channel_msb - channel_lsb), INDEX_MSB); // mask least and most significant bit
+	// setup lane 0 for 1st pixel, red
+	InterpShift(0, 0, SHIFT_CHANNEL_TO_INDEX); // set shift for 1st pixel
+	InterpMask(0, 0, INDEX_MSB - (CHANNEL_MSB - CHANNEL_LSB), INDEX_MSB); // mask least and most significant bit
 
-	// setup lane 1 for 2nd pixel
-	InterpShift(DVI_INTERP, 1, PIXEL_WIDTH + shift_channel_to_index); // set shift for 2nd pixel
-	InterpMask(DVI_INTERP, 1, INDEX_MSB - (channel_msb - channel_lsb), INDEX_MSB); // mask least and most significant bit
-	InterpCrossInput(DVI_INTERP, 1, True); // feed lane's 0 accumulator into this lane's shift+mask input
+	// setup lane 1 for 2nd pixel, red
+	InterpShift(0, 1, PIXEL_WIDTH + SHIFT_CHANNEL_TO_INDEX); // set shift for 2nd pixel
+	InterpMask(0, 1, INDEX_MSB - (CHANNEL_MSB - CHANNEL_LSB), INDEX_MSB); // mask least and most significant bit
+	InterpCrossInput(0, 1, True); // feed lane's 0 accumulator into this lane's shift+mask input
 
 	// setup base
-	InterpBase(DVI_INTERP, 0, (u32)TmdsTable); // set LUT table as base of lane 0
-	InterpBase(DVI_INTERP, 1, (u32)TmdsTable); // set LUT table as base of lane 1
-}
+	InterpBase(0, 0, (u32)TmdsTable); // set LUT table as base of lane 0
+	InterpBase(0, 1, (u32)TmdsTable); // set LUT table as base of lane 1
 
-// encode data
-void NOFLASH(DviEncode)(int line, int bufinx)
-{
-	// save interpolator
-	sInterpSave save;
-	InterpSave(DVI_INTERP, &save);
+#undef CHANNEL_LSB
+#undef CHANNEL_MSB
+#undef SHIFT_CHANNEL_TO_INDEX
+
+// ==== prepare GREEN channel (interpolator 1)
+
+	// prepare channel position - green
+#define CHANNEL_LSB	5	// green channel least significant bit
+#define CHANNEL_MSB	10	// green channel most significant bit
+
+	// shift channel to offset in the LUT table, green
+	//  PIXEL_LSB ... >> bit offset of the pixel in input u32, this will normalize pixel to base bit position
+	//  channel_msb ... >> this will shift last bit of the channel to bit position 0
+	//  +1 ... >> this will shift whole channel under bit position 0
+	//  -LUT_INDEX_WIDTH ... << this will shift channel that only usable bits will be visible = index in LUT table
+	//  -INDEX_SHIFT ... << this will convert pixel index to the offset in the LUT table
+	//  +channel_preshift ... << this will pre-shift blue channel 3 bits left to correct negatibe position
+#define SHIFT_CHANNEL_TO_INDEX (PIXEL_LSB + CHANNEL_MSB + 1 - LUT_INDEX_WIDTH - INDEX_SHIFT)
+
+	// green: 0 + 10 + 1 - 6 - 2 = 3 (delete 5 bits without 2 bits)
+
+	// setup lane 0 for 1st pixel, green
+	InterpShift(1, 0, SHIFT_CHANNEL_TO_INDEX); // set shift for 1st pixel
+	InterpMask(1, 0, INDEX_MSB - (CHANNEL_MSB - CHANNEL_LSB), INDEX_MSB); // mask least and most significant bit
+
+	// setup lane 1 for 2nd pixel, green
+	InterpShift(1, 1, PIXEL_WIDTH + SHIFT_CHANNEL_TO_INDEX); // set shift for 2nd pixel
+	InterpMask(1, 1, INDEX_MSB - (CHANNEL_MSB - CHANNEL_LSB), INDEX_MSB); // mask least and most significant bit
+	InterpCrossInput(1, 1, True); // feed lane's 0 accumulator into this lane's shift+mask input
+
+	// setup base
+	InterpBase(1, 0, (u32)TmdsTable); // set LUT table as base of lane 0
+	InterpBase(1, 1, (u32)TmdsTable); // set LUT table as base of lane 1
+
+// ==== convert RED and GREEN channels
 
 	// pointer to source data line
 	u16* data = &FrameBuf[line*WIDTHLEN];
 
-	// encode data of lane 0
-	u32* dst = &DviLineBuf[(0*2+bufinx)*DBUF_SIZE/4]; // pointer to destination buffer
-	DviEncPrep(0); // prepare encoder
-	DviEncShift(data, dst, WIDTH); // encode blue channel
+	// destination buffers
+	u32* dstR = &DviLineBuf[(2*2+bufinx)*DBUF_SIZE/4]; // pointer to destination buffer - red component
+	u32* dstG = &DviLineBuf[(1*2+bufinx)*DBUF_SIZE/4]; // pointer to destination buffer - green component
 
-	// encode data of lane 1
-	dst = &DviLineBuf[(1*2+bufinx)*DBUF_SIZE/4]; // pointer to destination buffer
-	DviEncPrep(1); // prepare encoder
-	DviEnc(data, dst, WIDTH); // encode green channel
+	// decode scanline data - Red and Green components
+	//  inbuf ... input buffer (u16), must be u32 aligned
+	//  outbufR ... output buffer, red component (u32)
+	//  outbufG ... output buffer, green component (u32)
+	//  count ... number of pixels (must be multiply of 8)
+	DviEncRG(data, dstR, dstG, WIDTH);
 
-	// encode data of lane 2
-	dst = &DviLineBuf[(2*2+bufinx)*DBUF_SIZE/4]; // pointer to destination buffer
-	DviEncPrep(2); // prepare encoder
-	DviEnc(data, dst, WIDTH); // encode red channel
+// ==== convert BLUE channel
 
-	// restore interpolator
-	InterpLoad(DVI_INTERP, &save);
+	// destination buffer
+	u32* dst = &DviLineBuf[(0*2+bufinx)*DBUF_SIZE/4]; // pointer to destination buffer - blue component
+
+	// encode data of lane 0 (blue channel)
+	DviEncB(data, dst, WIDTH);
+
+	// restore interpolators
+	InterpLoad(1, &save1);
+	InterpLoad(0, &save0);
 }
 
 // DVI DMA handler - called on end of every scanline
@@ -206,6 +241,10 @@ void NOFLASH(DviEncode)(int line, int bufinx)
 //   segment activation. This provides a sufficient time reserve for possible IRQ service delays.
 void NOFLASH(DviLine)()
 {
+#if DVI_IRQTIME				// debug flag - measure delta time of DVI service
+	u32 t1 = Time();		// start time
+#endif // DVI_IRQTIME
+
 	// Clear the interrupt request for DMA control channel
 	DMA_IRQ1Clear(DVI_DMA_DB0);
 
@@ -282,6 +321,29 @@ void NOFLASH(DviLine)()
 
 		}
 	}
+
+#if DVI_IRQTIME					// debug flag - measure delta time of DVI service
+	if (line == 100)
+	{
+		u32 t2 = Time();		// stop time
+		DviTimeIn = t2 - t1;		// time in interrupt service
+		DviTimeTmp = t2;
+	}
+
+	if (line == 101)
+	{
+		DviTimeOut = t1 - DviTimeTmp;	// time out interrupt service
+
+		u32 t2 = Time();		// stop time
+		DviTimeIn2 = t2 - t1;		// time in interrupt service
+		DviTimeTmp = t2;
+	}
+
+	if (line == 102)
+	{
+		DviTimeOut2 = t1 - DviTimeTmp;	// time out interrupt service
+	}
+#endif // DVI_IRQTIME
 }
 
 // configure one output pin
@@ -294,7 +356,8 @@ void DviPinInit(u8 pin)
 //	GPIO_Fast(pin);		// use slow slew rate control (options: Slow/Fast)
 
 	GPIO_InDisable(pin);	// input disable
-//	GPIO_NoPull(pin);	// no pulls
+	GPIO_NoPull(pin);	// no pulls
+//	GPIO_PullUp(pin);	// no pulls
 }
 
 // initialize PIO of serializer
@@ -355,6 +418,7 @@ STATIC_ASSERT((DVI_GPIO_CLK & 1) == 0, "DVI_GPIO_CLK must be even!");
 	PWM_GpioInit(DVI_GPIO_CLK+1);	// set PWM function of second pin
 	DviPinInit(DVI_GPIO_CLK);	// setup first pin
 	DviPinInit(DVI_GPIO_CLK+1);	// setup second pin
+
 	PWM_Top(DVICLK_SLICE, 9);	// set wrap value to 9 (period = 10)
 	PWM_ClkDiv(DVICLK_SLICE, 1*16);	// set clock divider to 1.00
 	PWM_Comp(DVICLK_SLICE, 0, 5);	// set compare value of channel A to 5
@@ -389,7 +453,7 @@ u32* DviSetCb(u32* cb, int lane, const void* read, int count, int ring, Bool irq
 		// DMA_CTRL_INC_WRITE |	// not increment write
 		DMA_CTRL_INC_READ |	// increment read
 		DMA_CTRL_SIZE(DMA_SIZE_32) | // data size 32 bits
-		DMA_CTRL_HIGH_PRIORITY | // high priority
+		//DMA_CTRL_HIGH_PRIORITY | // high priority
 		DMA_CTRL_EN;		// enable DMA
 
 	return cb;
@@ -417,11 +481,11 @@ void DviBufInit()
 
 	// lane 1 dark line
 	cb = DviSetCb(DviLineBufDark12, 1, &DviCtrlSyms[0], (DVI_HFRONT+DVI_HSYNC+DVI_HBACK)/2, 2, False); // front+hsync+back porch
-	cb = DviSetCb(cb, 1, &DviCtrlSyms[4], DVI_HACT/2, 2, False); // dark
+	cb = DviSetCb(cb, 1, &DviCtrlSyms[0], DVI_HACT/2, 2, False); // dark
 
 	// lane 2 dark line
 	cb = DviSetCb(cb, 2, &DviCtrlSyms[0], (DVI_HFRONT+DVI_HSYNC+DVI_HBACK)/2, 2, False); // front+hsync+back porch
-	DviSetCb(cb, 2, &DviCtrlSyms[4], DVI_HACT/2, 2, False); // dark
+	DviSetCb(cb, 2, &DviCtrlSyms[0], DVI_HACT/2, 2, False); // dark
 
 	// lane 0 image lines
 	cb = DviLineBufImg0;
@@ -496,11 +560,11 @@ void DviEnable()
 // clock and data do not have to be exactly
 // synchronized, DVI allows some phase offset
 
-	// enable state machines
-	PioSMEnableMaskSync(DVI_PIO, RangeMask(DVI_SM0, DVI_SM0+DVI_LANES-1));
-
 	// enable clock PWM
 	PWM_Enable(DVICLK_SLICE);
+
+	// enable state machines
+	PioSMEnableMaskSync(DVI_PIO, RangeMask(DVI_SM0, DVI_SM0+DVI_LANES-1));
 
 	// interrupt enable
 	IRQ_UNLOCK;
@@ -564,6 +628,10 @@ void DviInit()
 	DMA_Start(DVI_DMA_CB(0));
 	DMA_Start(DVI_DMA_CB(1));
 	DMA_Start(DVI_DMA_CB(2));
+
+#if DVI_IRQTIME				// debug flag - measure delta time of DVI service
+	DviTimeTmp = Time();
+#endif // DVI_IRQTIME
 
 	// DVI output enable
 	DviEnable();

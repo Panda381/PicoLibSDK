@@ -17,6 +17,8 @@
 #define FONTW		8		// width of system font
 #define FONTH		8		// height of system font
 
+//#define USE_ORIGSDK		1		// include interface of original-SDK
+
 //#define USE_DRAW_STDIO	1		// use DRAW stdio (DrawPrint function)
 //#define USE_USB_STDIO		1		// use USB stdio (UsbPrint function)
 //#define USE_UART_STDIO	1		// use UART stdio (UartPrint function)

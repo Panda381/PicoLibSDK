@@ -19,12 +19,26 @@
 
 #include "../sdk_addressmap.h"		// Register address offsets
 
+#if USE_ORIGSDK		// include interface of original SDK
+#include "orig/orig_vreg.h"	// constants of original SDK
+#endif // USE_ORIGSDK
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 //#define VREG_AND_CHIP_RESET_BASE 0x40064000
 #define VREG_CTRL	((volatile u32*)VREG_AND_CHIP_RESET_BASE)
+
+typedef struct {
+	io32	vreg;		// 0x00: Voltage regulator control and status
+	io32	bod;		// 0x04: brown-out detection control
+	io32	chip_reset;	// 0x08: Chip reset control and status
+} vreg_and_chip_reset_hw_t;
+
+#define vreg_and_chip_reset_hw ((vreg_and_chip_reset_hw_t*)VREG_AND_CHIP_RESET_BASE)
+
+STATIC_ASSERT(sizeof(vreg_and_chip_reset_hw_t) == 0x0C, "Incorrect vreg_and_chip_reset_hw_t!");
 
 // Possible voltage values
 #define VREG_VOLTAGE_0_80	5	// 0.80V
@@ -44,7 +58,7 @@ extern "C" {
 #define VREG_VOLTAGE_MAX	VREG_VOLTAGE_1_30	// maximum voltage
 
 // set voltage VREG_VOLTAGE_*
-void VregSetVoltage(u8 vreg);
+void VregSetVoltage(int vreg);
 
 // get voltage VREG_VOLTAGE_*
 INLINE u8 VregVoltage() { return (u8)((*VREG_CTRL >> 4) & 0x0f); }
@@ -57,6 +71,19 @@ INLINE Bool VregIsOk() { return (*VREG_CTRL & B12) != 0; }
 
 // wait for regulated state
 void VregWait();
+
+// ----------------------------------------------------------------------------
+//                          Original-SDK interface
+// ----------------------------------------------------------------------------
+
+#if USE_ORIGSDK		// include interface of original SDK
+
+#define VREG_VOLTAGE_DEFAULT VREG_VOLTAGE_DEF
+
+// Set voltage
+INLINE void vreg_set_voltage(int voltage) { VregSetVoltage(voltage); }
+
+#endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 }

@@ -1,0 +1,1 @@
+Output PWM signals on pins 0 and 1

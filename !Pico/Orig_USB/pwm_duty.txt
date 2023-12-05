@@ -1,0 +1,3 @@
+This example drives a PWM output at a range of duty cycles, and uses
+another PWM slice in input mode to measure the duty cycle. You'll need to
+connect these two pins with a jumper wire:

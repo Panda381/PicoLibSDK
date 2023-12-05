@@ -116,12 +116,6 @@ void DrawBoard()
 	DispUpdate();
 }
 
-// flush characters from keyboard
-void FlushChar()
-{
-	KeyFlush();
-}
-
 // set cursor on
 void CurOn()
 {
@@ -190,7 +184,7 @@ void Run()
 	u8* d;
 	u8* s;
 
-	FlushChar();
+	KeyFlush();
 
 	// break with a key
 	while (KeyGet() == NOKEY)

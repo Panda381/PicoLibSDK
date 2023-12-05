@@ -22,6 +22,8 @@
 //#define FONTW			8		// width of system font
 //#define FONTH			8		// height of system font
 
+//#define USE_ORIGSDK		1		// include interface of original-SDK
+
 // SDK modules
 #define USE_ADC		0		// use ADC controller (sdk_adc.c, sdk_adc.h)
 #define USE_DMA		1		// use DMA controller (sdk_dma.c, sdk_dma.h)
@@ -46,7 +48,7 @@
 #define USE_USBPORT	0		// use USB Mini-Port (sdk_usbport.c, sdk_usbport.h)
 //#define USE_USB_STDIO	0		// use USB stdio (UsbPrint function)
 #define USE_UART_STDIO	0		// use UART stdio (UartPrint function)
-#define USE_DRAW_STDIO	0		// use DRAW stdio (DrawPrint function)
+#define USE_DRAW_STDIO	1		// use DRAW stdio (DrawPrint function)
 //#define USE_USB		0		// use USB (sdk_usb_*.c, sdk_usb_*.h)
 #define USE_WATCHDOG	0		// use Watchdog timer (sdk_watchdog.c, sdk_watchdog.h)
 #define USE_XOSC	1		// use XOSC crystal oscillator (sdk_xosc.c, sdk_xosc.h)
@@ -60,7 +62,7 @@
 #define USE_CONFIG	0		// use device configuration (lib_config.c, lib_config.h)
 #define USE_CRC		0		// use CRC Check Sum (lib_crc.c, lib_crc.h)
 //#define USE_DECNUM	0		// use DecNum (decnum.c, decnum.h)
-#define USE_DRAW	0		// use drawing to frame buffer (lib_draw.c, lib_draw.h)
+#define USE_DRAW	1		// use drawing to frame buffer (lib_draw.c, lib_draw.h)
 #define USE_ESCPKT	0		// use escape packet protocol (lib_escpkt.c, lib_escpkt.h)
 #define USE_EVENT	0		// use Event Ring buffer (lib_event.c, lib_event.h)
 #define USE_FAT		0		// use FAT file system (lib_fat.c, lib_fat.h)
@@ -69,7 +71,7 @@
 #define USE_MAT2D	0		// use 2D transformation matrix (lib_mat2d.c, lib_mat2d.h)
 //#define USE_MALLOC	0		// use Memory Allocator (lib_malloc.c, lib_malloc.h)
 #define USE_MINIRING	0		// use Mini-Ring buffer (lib_miniring.c, lib_miniring.h)
-//#define USE_PRINT	0		// use Formatted print (lib_print.c, lib_print.h)
+#define USE_PRINT	1		// use Formatted print (lib_print.c, lib_print.h)
 #define USE_PWMSND	0		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
 #define USE_RAND	0		// use Random number generator (lib_rand.c, lib_rand.h)
 #define USE_RECT	0		// use Rectangle (lib_rect.c, lib_rect.h)
@@ -77,7 +79,7 @@
 #define USE_RINGRX	0		// use Ring buffer with DMA receiver (lib_ringrx.c, lib_ringrx.h)
 #define USE_RINGTX	0		// use Ring buffer with DMA transmitter (lib_ringtx.c, lib_ringtx.h)
 #define USE_SD		0		// use SD card (lib_sd.c, lib_sd.h)
-//#define USE_STREAM	0		// use Data stream (lib_stream.c, lib_stream.h)
+#define USE_STREAM	1		// use Data stream (lib_stream.c, lib_stream.h)
 #define USE_TEXT	0		// use Text strings, except StrLen and StrComp (lib_text.c, lib_textnum.c, lib_text.h)
 #define USE_TEXTLIST	0		// use List of text strings (lib_textlist.c, lib_textlist.h)
 #define USE_TPRINT	0		// use Text Print (lib_tprint.c, lib_tprint.h)
@@ -89,12 +91,7 @@
 #define USE_REAL	0		// use real numbers
 #define USE_STACKCHECK	0		// use Stack check (sdk_cpu.c, sdk_cpu.h)
 
-
-
-
 //#define USE_USB_STDIO		1		// use USB stdio (UsbPrint function)
-
-
 
 #include "../../../config_def.h"	// default configuration
 

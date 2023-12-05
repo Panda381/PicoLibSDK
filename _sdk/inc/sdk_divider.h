@@ -29,11 +29,17 @@
 #define _SDK_DIVIDER_H
 
 #include "../sdk_addressmap.h"		// Register address offsets
+#include "sdk_sio.h"			// SIO registers
+
+#if USE_ORIGSDK		// include interface of original SDK
+#include "orig/orig_sio.h"		// constants of original SDK
+#endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+// Divider hardware registers
 //#define SIO_BASE		0xd0000000	// SIO registers
 //  (SIO does not support aliases for atomic access!)
 #define DIV_UDIVIDEND	((volatile u32*)(SIO_BASE+0x60)) // unsigned dividend 'p'
@@ -44,23 +50,55 @@ extern "C" {
 #define DIV_REMAINDER	((volatile u32*)(SIO_BASE+0x74)) // result remainder = p % q (quotient must be read too)
 #define DIV_CSR		((volatile u32*)(SIO_BASE+0x78)) // control and status register
 
+// Divider hardware interface
+typedef struct {
+	io32	udividend;	// 0x00: unsigned dividend 'p'
+	io32	udivisor;	// 0x04: unsigned divisor 'q'
+	io32	sdividend;	// 0x08: signed dividend 'p'
+	io32	sdivisor;	// 0x0C: signed divisor 'q'
+	io32	quotient;	// 0x10: result quotient = p / q (must be read last, after remainder)
+	io32	remainder;	// 0x14: result remainder = p % q (quotient must be read too)
+	io32	csr;		// 0x18: control and status register
+} divider_hw_t;
+
+#define	divider_hw	((divider_hw_t*)(SIO_BASE+0x60))
+
+STATIC_ASSERT(sizeof(divider_hw_t) == 0x1C, "Incorrect divider_hw_t!");
+
+// structure to save divider state
+typedef struct { u32 values[4]; } hw_divider_state_t;
+
 // start signed division p/q
-INLINE void DivStartS32(s32 p, s32 q) { *DIV_SDIVIDEND=(u32)p; *DIV_SDIVISOR=(u32)q; }
+// Interrupt should be disabled.
+INLINE void DivStartS32(s32 p, s32 q) { divider_hw->sdividend=(u32)p; divider_hw->sdivisor=(u32)q; }
 
 // start unsigned division p/q
-INLINE void DivStartU32(u32 p, u32 q) { *DIV_UDIVIDEND=p; *DIV_UDIVISOR=q; }
+// Interrupt should be disabled.
+INLINE void DivStartU32(u32 p, u32 q) { divider_hw->udividend=p; divider_hw->udivisor=q; }
 
 // wait for divide to complete calculation (takes 8 clock cycles)
-INLINE void DivWait() { while((*DIV_CSR & B0) == 0) {} }
+// Interrupt should be disabled.
+INLINE void DivWait(void) { while((divider_hw->csr & B0) == 0) {} }
 
-// get result remainder after complete calculation (must read quotient after remainder)
-INLINE u32 DivRemainder() { return *DIV_REMAINDER; } // retype to (s32) after signed division
+// get result remainder after complete calculation
+// Interrupt should be disabled.
+INLINE u32 DivRemainder(void) { return divider_hw->remainder; } // retype to (s32) after signed division
 
 // get result quotient after complete calculation
-INLINE u32 DivQuotient() { return *DIV_QUOTIENT; } // retype to (s32) after signed division
+// Interrupt should be disabled.
+INLINE u32 DivQuotient(void) { return divider_hw->quotient; } // retype to (s32) after signed division
 
 // get result after complete calculation: quotient p/q in low 32 bits, remainder p%q in high 32 bits
-INLINE u64 DivResult() { return ((u64)*DIV_REMAINDER << 32) | *DIV_QUOTIENT; }
+// Interrupt should be disabled.
+INLINE u64 DivResult(void) { return ((u64)divider_hw->remainder << 32) | divider_hw->quotient; }
+
+// save divider state (for calling core)
+// Interrupt should be disabled.
+void DivSaveState(hw_divider_state_t* dst);
+
+// load divider state (for calling core)
+// Interrupt should be disabled.
+void DivLoadState(const hw_divider_state_t* src);
 
 // Divide signed S32
 //   a ... signed dividend s32
@@ -178,6 +216,123 @@ s64 SMul64(s64 a, s64 b);
 
 // check if integer number is power of 2
 INLINE Bool IsPow2(u32 a) { return ((a & (a-1)) == 0); }
+
+// ----------------------------------------------------------------------------
+//                          Original-SDK interface
+// ----------------------------------------------------------------------------
+
+#if USE_ORIGSDK		// include interface of original SDK
+
+// start signed division p/q (interrupt should be disabled)
+INLINE void hw_divider_divmod_s32_start(s32 p, s32 q) { DivStartS32(p, q); }
+
+// start unsigned division p/q (interrupt should be disabled)
+INLINE void hw_divider_divmod_u32_start(u32 p, u32 q) { DivStartU32(p, q); }
+
+// wait for divide to complete calculation (takes 8 clock cycles)
+INLINE void hw_divider_wait_ready(void) { DivWait(); }
+
+typedef u64 divmod_result_t;
+
+// get result after complete calculation: quotient p/q in low 32 bits, remainder p%q in high 32 bits
+INLINE divmod_result_t hw_divider_result_nowait(void) { return (divmod_result_t)DivResult(); }
+
+// Return result of last asynchronous HW divide
+//   result: Most significant 32 bits are the remainder, lower 32 bits are the quotient.
+INLINE divmod_result_t hw_divider_result_wait(void)
+{
+	hw_divider_wait_ready();
+	return hw_divider_result_nowait();
+}
+
+// Return result of last asynchronous HW divide, unsigned quotient only
+INLINE u32 hw_divider_u32_quotient_wait(void)
+{
+	hw_divider_wait_ready();
+	return divider_hw->quotient;
+}
+
+// Return result of last asynchronous HW divide, signed quotient only
+INLINE s32 hw_divider_s32_quotient_wait(void) { return (s32)hw_divider_u32_quotient_wait(); }
+
+// Return result of last asynchronous HW divide, unsigned remainder only
+INLINE u32 hw_divider_u32_remainder_wait(void)
+{
+	hw_divider_wait_ready();
+	return divider_hw->remainder;
+}
+
+// Return result of last asynchronous HW divide, signed remainder only
+INLINE s32 hw_divider_s32_remainder_wait(void) { return (s32)hw_divider_u32_remainder_wait(); }
+
+// Do a signed HW divide and wait for result
+// Divide a by b, wait for calculation to complete, return result as a fixed point 32p32 value.
+INLINE divmod_result_t hw_divider_divmod_s32(s32 a, s32 b) { return (((u64)(a%b))<<32u) | (u32)(a/b); }
+
+// Do an unsigned HW divide and wait for result
+// Divide \p a by \p b, wait for calculation to complete, return result as a fixed point 32p32 value.
+INLINE divmod_result_t hw_divider_divmod_u32(u32 a, u32 b) { return (((u64)(a%b))<<32u) | (a/b); }
+
+// Efficient extraction of unsigned quotient from 32p32 fixed point
+INLINE u32 to_quotient_u32(divmod_result_t r) { return (u32)r; }
+
+// Efficient extraction of signed quotient from 32p32 fixed point
+INLINE s32 to_quotient_s32(divmod_result_t r) { return (s32)(u32)r; }
+
+// Efficient extraction of unsigned remainder from 32p32 fixed point
+INLINE u32 to_remainder_u32(divmod_result_t r) { return (u32)(r >> 32u); }
+
+// Efficient extraction of signed remainder from 32p32 fixed point
+INLINE s32 to_remainder_s32(divmod_result_t r) { return (s32)(r >> 32u); }
+
+// Do an unsigned HW divide, wait for result, return quotient
+INLINE u32 hw_divider_u32_quotient(u32 a, u32 b)
+	{  return to_quotient_u32(hw_divider_divmod_u32(a, b)); }
+
+// Do an unsigned HW divide, wait for result, return remainder
+INLINE u32 hw_divider_u32_remainder(u32 a, u32 b)
+	{ return to_remainder_u32(hw_divider_divmod_u32(a, b)); }
+
+// Do a signed HW divide, wait for result, return quotient
+INLINE s32 hw_divider_quotient_s32(s32 a, s32 b)
+	{ return to_quotient_s32(hw_divider_divmod_s32(a, b)); }
+
+// Do a signed HW divide, wait for result, return remainder
+INLINE s32 hw_divider_remainder_s32(s32 a, s32 b)
+	{ return to_remainder_s32(hw_divider_divmod_s32(a, b)); }
+
+// Pause for exact amount of time needed for a asynchronous divide to complete
+INLINE void hw_divider_pause(void) { DivWait(); }
+
+// Do a hardware unsigned HW divide, wait for result, return quotient
+//INLINE u32 hw_divider_u32_quotient(u32 a, u32 b) { return a / b; }
+INLINE u32 hw_divider_u32_quotient_inlined(u32 a, u32 b)
+	{ return hw_divider_u32_quotient(a,b); }
+
+// Do a hardware unsigned HW divide, wait for result, return remainder
+//INLINE u32 hw_divider_u32_remainder(u32 a, u32 b) { return a % b; }
+INLINE u32 hw_divider_u32_remainder_inlined(u32 a, u32 b)
+	{ return hw_divider_u32_remainder(a,b); }
+
+// Do a hardware signed HW divide, wait for result, return quotient
+INLINE s32 hw_divider_s32_quotient(s32 a, s32 b) { return a / b; }
+INLINE s32 hw_divider_s32_quotient_inlined(s32 a, s32 b)
+	{ return hw_divider_s32_quotient(a,b); }
+
+// Do a hardware signed HW divide, wait for result, return remainder
+INLINE s32 hw_divider_s32_remainder(s32 a, s32 b) { return a % b; }
+INLINE s32 hw_divider_s32_remainder_inlined(s32 a, s32 b)
+	{ return hw_divider_s32_remainder(a,b); }
+
+// Save the calling cores hardware divider state
+// Interrupt should be disabled.
+INLINE void hw_divider_save_state(hw_divider_state_t* dst) { DivSaveState(dst); }
+
+// Load a saved hardware divider state into the current core's hardware divider
+// Interrupt should be disabled.
+INLINE void hw_divider_restore_state(const hw_divider_state_t* src) { DivLoadState(src); }
+
+#endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 }

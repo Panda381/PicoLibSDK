@@ -17,6 +17,7 @@
 //#define FONTW			8		// width of system font
 //#define FONTH			8		// height of system font
 
+//#define USE_ORIGSDK		1		// include interface of original-SDK
 //#define USE_SCREENSHOT	1		// use screen shots
 
 //#define USE_DRAW_STDIO	1		// use DRAW stdio (DrawPrint function)

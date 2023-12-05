@@ -35,7 +35,7 @@ int ADCTempHistInx = 0;			// index in temperature history
 #endif // TEMP_NOISE
 
 // ADC init
-void ADC_Init()
+void ADC_Init(void)
 {
 	// reset ADC
 	ADC_Term();
@@ -47,15 +47,15 @@ void ADC_Init()
 	ADCTempHistInx = 0;
 #endif
 
-	// enable ADC
-	*ADC_CS = B0;
+	// enable ADC, reset setup
+	adc_hw->cs = B0;
 
 	// wait for power-up sequence
 	ADC_Wait();
 }
 
 // ADC terminate
-void ADC_Term()
+void ADC_Term(void)
 {
 	// reset ADC
 	ResetPeriphery(RESET_ADC);
@@ -63,7 +63,7 @@ void ADC_Term()
 
 // initialize GPIO to use as an ADC pin
 //  pin ... pin 26 to 29
-void ADC_PinInit(u8 pin)
+void ADC_PinInit(int pin)
 {
 	// disable all functions to make output driver high impedance
 	GPIO_Fnc(pin, GPIO_FNC_NULL);
@@ -77,24 +77,24 @@ void ADC_PinInit(u8 pin)
 
 // terminate pin as ADC input
 //  pin ... pin 26 to 29
-void ADC_PinTerm(u8 pin)
+void ADC_PinTerm(int pin)
 {
 	GPIO_Reset(pin);
 }
 
 // enable temperature sensor
-void ADC_TempEnable()
+void ADC_TempEnable(void)
 {
 	// if not enabled, wait some time to stabilize (requires min. 500 us)
-	if ((*ADC_CS & B1) == 0)
+	if ((adc_hw->cs & B1) == 0)
 	{
-		RegSet(ADC_CS, B1);
+		RegSet(&adc_hw->cs, B1);
 		WaitMs(1);
 	}
 }
 
 // do single conversion (takes 96 clock cycles = min. 2 us on 48 MHz clock, real 2.6 us)
-u16 ADC_Single()
+u16 ADC_Single(void)
 {
 	ADC_StartOnce(); // start single conversion
 	ADC_Wait(); // wait for end of conversion
@@ -102,7 +102,7 @@ u16 ADC_Single()
 }
 
 // do single conversion with denoise (returns value 0..0xffff; takes min. 32 us on 48 MHz clock, real 43 us)
-u16 ADC_SingleDenoise()
+u16 ADC_SingleDenoise(void)
 {
 	int i;
 	u16 t = 0;
@@ -111,7 +111,7 @@ u16 ADC_SingleDenoise()
 }
 
 // do single conversion and recalculate to voltage on 3.3V
-float ADC_SingleU()
+float ADC_SingleU(void)
 {
 #if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
 	return ADC_SingleDenoise() * ConfigGetAdcRef() / (4096*16);
@@ -121,13 +121,22 @@ float ADC_SingleU()
 }
 
 // do single conversion and recalculate to voltage on 3.3V, integer in mV (range 0..3300)
-int ADC_SingleUint()
+int ADC_SingleUint(void)
 {
 #if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
 	return ADC_SingleDenoise() * ConfigGetAdcRefInt() / (4096*16);
 #else
 	return ADC_SingleDenoise() * 3300 / (4096*16);
 #endif
+}
+
+// set ADC clock divisor as float (with resolution 1/256)
+//  clkdiv ... clock divisor (if non-zero, ADC_MultiEnable() will start conversions with that interval)
+// Interval of samples will be (1 + clkdiv) cycles. One conversion takes 96 cycles, so minimal value
+// of clkdiv is 96 (period 2 us, 500 kHz). Maximal value is 65535 (period 1365 us, 732 Hz).
+void ADC_ClkDivFloat(float clkdiv)
+{
+	adc_hw->div = (u32)(clkdiv*256 + 0.5f);
 }
 
 // set ADC sampling frequency of repeated conversions
@@ -156,10 +165,10 @@ void ADC_Freq(u32 freq)
 }
 
 // get current sampling frequency in Hz (732 to 500000 Hz, 0 = off)
-u32 ADC_GetFreq()
+u32 ADC_GetFreq(void)
 {
 	// switch off
-	u32 clkdiv = *ADC_DIV & 0xffffff;
+	u32 clkdiv = adc_hw->div & 0xffffff;
 	if (clkdiv == 0) return 0;
 	clkdiv += 256;
 
@@ -176,21 +185,21 @@ u32 ADC_GetFreq()
 //  err ... True means bit 15 of FIFO contains error flag for each sample
 //  dreq_en ... enable DMA requests when FIFO contains data
 //  dreq_thresh ... threshold for DMA requests/FIFO IRQ if enabled (DREQ/IRQ asserted then level >= threshold)
-void ADC_FifoSetup(Bool en, Bool shift, Bool err, Bool dreq_en, u8 dreq_thresh)
+void ADC_FifoSetup(Bool en, Bool shift, Bool err, Bool dreq_en, int dreq_thresh)
 {
 	RegMask(ADC_FCS, (en ? B0:0) | (shift ? B1:0) | (err ? B2:0) | (dreq_en ? B3:0)
 		| ((u32)dreq_thresh << 24), B0+B1+B2+B3 + B24+B25+B26+B27);
 }
 
 // get value from ADC FIFO and wait to have data (bit 15 can contain error flag)
-u16 ADC_FifoWait()
+u16 ADC_FifoWait(void)
 {
 	while (ADC_IsEmpty()) {}
 	return ADC_Fifo();
 }
 
 // discard FIFO results
-void ADC_FifoFlush()
+void ADC_FifoFlush(void)
 {
 	// wait for end of conversion
 	ADC_Wait();
@@ -200,7 +209,7 @@ void ADC_FifoFlush()
 }
 
 // get current temperature in °C
-float ADC_Temp()
+float ADC_Temp(void)
 {
 	int i;
 

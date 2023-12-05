@@ -59,7 +59,7 @@
 #endif // VGA_USECSYNC
 
 #ifndef VGA_PIO_OFF
-#define VGA_PIO_OFF	2	// offset of VGA program in PIO memory
+#define VGA_PIO_OFF	2	// offset of VGA program in PIO memory (2 instructions are reserve for HDMI program)
 #endif
 
 // swap bytes of command
@@ -126,6 +126,12 @@ u32* ScanLineCBNext;	// next control buffer
 volatile int VgaScanLine; // current processed scan line 0... (next displayed scan line)
 volatile u32 VgaFrame;	// frame counter
 
+#if MINIVGA_IRQTIME			// debug flag - measure delta time of VGA service
+volatile u32 VgaTimeIn;			// time in interrupt service, in [us]
+volatile u32 VgaTimeOut;		// time out interrupt service, in [us]
+u32 VgaTimeTmp;
+#endif // MINIVGA_IRQTIME
+
 #ifdef VGA_KEYSCAN_GPIO		// scan keyboard
 volatile u32 VgaKeyScan = 0;	// key scan
 int VgaKeyScanStart = 100;	// start delay to prevent false keystrokes
@@ -134,6 +140,10 @@ int VgaKeyScanStart = 100;	// start delay to prevent false keystrokes
 // VGA DMA handler - called on end of every scanline
 void NOFLASH(VgaLine)()
 {
+#if MINIVGA_IRQTIME			// debug flag - measure delta time of VGA service
+	u32 t1 = Time();		// start time
+#endif // MINIVGA_IRQTIME
+
 	// Clear the interrupt request for DMA control channel
 	DMA_IRQ0Clear(VGA_DMA_PIO);
 
@@ -233,6 +243,16 @@ void NOFLASH(VgaLine)()
 	// end mark
 	*cb++ = 0;
 	*cb = 0;
+
+#if MINIVGA_IRQTIME			// debug flag - measure delta time of VGA service
+	if (line == 99) VgaTimeTmp = Time();
+	if (line == 100)
+	{
+		u32 t2 = Time();		// stop time
+		VgaTimeIn = t2 - t1;		// time in interrupt service
+		VgaTimeOut = t1 - VgaTimeTmp;	// time out interrupt service
+	}
+#endif // MINIVGA_IRQTIME
 }
 
 // initialize VGA PIO
@@ -453,6 +473,10 @@ void VgaInit()
 
 	// start DMA
 	DMA_Start(VGA_DMA_CB);
+
+#if MINIVGA_IRQTIME			// debug flag - measure delta time of VGA service
+	VgaTimeTmp = Time();
+#endif // MINIVGA_IRQTIME
 
 	// run state machine
 	PioSMEnable(VGA_PIO, VGA_SM);

@@ -20,41 +20,47 @@
 
 #include "../inc/sdk_interp.h"
 
+// claimed interpolator lanes
+u8 InterpClaimed = 0;
+
 // save interpolator state (for current CPU core)
-void NOFLASH(InterpSave)(u8 interp, sInterpSave* save)
+void NOFLASH(InterpSave)(int interp, interp_hw_save_t* save)
 {
-	save->accum0 = *INTERP_ACCUM(interp, 0);
-	save->accum1 = *INTERP_ACCUM(interp, 1);
-	save->base0 = *INTERP_BASE(interp, 0);
-	save->base1 = *INTERP_BASE(interp, 1);
-	save->base2 = *INTERP_BASE(interp, 2);
-	save->ctrl0 = *INTERP_CTRL(interp, 0);
-	save->ctrl1 = *INTERP_CTRL(interp, 1);
+	interp_hw_t* hw = InterpGetHw(interp);
+	save->accum[0] = hw->accum[0];
+	save->accum[1] = hw->accum[1];
+	save->base[0] = hw->base[0];
+	save->base[1] = hw->base[1];
+	save->base[2] = hw->base[2];
+	save->ctrl[0] = hw->ctrl[0];
+	save->ctrl[1] = hw->ctrl[1];
 }
 
 // load interpolator state (for current CPU core)
-void NOFLASH(InterpLoad)(u8 interp, const sInterpSave* save)
+void NOFLASH(InterpLoad)(int interp, const interp_hw_save_t* save)
 {
-	*INTERP_ACCUM(interp, 0) = save->accum0;
-	*INTERP_ACCUM(interp, 1) = save->accum1;
-	*INTERP_BASE(interp, 0) = save->base0;
-	*INTERP_BASE(interp, 1) = save->base1;
-	*INTERP_BASE(interp, 2) = save->base2;
-	*INTERP_CTRL(interp, 0) = save->ctrl0;
-	*INTERP_CTRL(interp, 1) = save->ctrl1;
+	interp_hw_t* hw = InterpGetHw(interp);
+	hw->accum[0] = save->accum[0];
+	hw->accum[1] = save->accum[1];
+	hw->base[0] = save->base[0];
+	hw->base[1] = save->base[1];
+	hw->base[2] = save->base[2];
+	hw->ctrl[0] = save->ctrl[0];
+	hw->ctrl[1] = save->ctrl[1];
 }
 
 // reset interpolator to default state
 //  interp ... interpolator 0 or 1
-void NOFLASH(InterpReset)(u8 interp)
+void NOFLASH(InterpReset)(int interp)
 {
-	*INTERP_ACCUM(interp, 0) = 0;
-	*INTERP_ACCUM(interp, 1) = 0;
-	*INTERP_BASE(interp, 0) = 0;
-	*INTERP_BASE(interp, 1) = 0;
-	*INTERP_BASE(interp, 2) = 0;
-	*INTERP_CTRL(interp, 0) = 31<<10;
-	*INTERP_CTRL(interp, 1) = 31<<10;
+	interp_hw_t* hw = InterpGetHw(interp);
+	hw->accum[0] = 0;
+	hw->accum[1] = 0;
+	hw->base[0] = 0;
+	hw->base[1] = 0;
+	hw->base[2] = 0;
+	hw->ctrl[0] = 31<<10;
+	hw->ctrl[1] = 31<<10;
 }
 
 #endif // USE_INTERP	// use interpolator (sdk_interp.c, sdk_interp.h)

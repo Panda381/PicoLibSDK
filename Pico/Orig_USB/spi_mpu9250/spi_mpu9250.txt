@@ -1,0 +1,22 @@
+Example code to talk to a MPU9250 MEMS accelerometer and gyroscope.
+Ignores the magnetometer, that is left as a exercise for the reader.
+
+This is taking to simple approach of simply reading registers. It's perfectly
+possible to link up an interrupt line and set things up to read from the
+inbuilt FIFO to make it more useful.
+
+NOTE: Ensure the device is capable of being driven at 3.3v NOT 5v. The Pico
+GPIO (and therefor SPI) cannot be used at 5v.
+
+You will need to use a level shifter on the I2C lines if you want to run the
+board at 5v.
+
+Connections on Raspberry Pi Pico board and a generic MPU9250 board, other
+boards may vary.
+
+GPIO 4 (pin 6) MISO/spi0_rx-> ADO on MPU9250 board
+GPIO 5 (pin 7) Chip select -> NCS on MPU9250 board
+GPIO 6 (pin 9) SCK/spi0_sclk -> SCL on MPU9250 board
+GPIO 7 (pin 10) MOSI/spi0_tx -> SDA on MPU9250 board
+3.3v (pin 36) -> VCC on MPU9250 board
+GND (pin 38)  -> GND on MPU9250 board

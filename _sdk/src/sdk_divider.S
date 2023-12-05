@@ -21,6 +21,56 @@
 	.thumb
 
 // ----------------------------------------------------------------------------
+//                         Save divider state
+// ----------------------------------------------------------------------------
+//   dst ... destination array of 4x u32
+// Interrupt should be disabled.
+// void DivSaveState(hw_divider_state_t* dst);
+
+// input:
+//  R0 ... destination array of 4x u32
+
+regular_func_text DivSaveState
+
+	// [7] save dividend and divisor
+	ldr	r1,=SIO_BASE		// [2] get address of SIO base
+	ldr	r2,[r1,#0x60]		// [1] get unsigned dividend
+	ldr	r3,[r1,#0x64]		// [1] get unsigned divisor
+	stmia	r0!,{r2, r3}		// [3] save dividend and divisor
+
+// 8 cycles are needed - satisfied, the calling function consumed several clock cycles too
+
+	// save remainder and quotient
+	ldr	r2,[r1,#0x74]		// get remainder
+	ldr	r3,[r1,#0x70]		// get quotient
+	stmia	r0!,{r2, r3}		// save remainder and quotient
+	bx	lr			// return from the function
+
+// ----------------------------------------------------------------------------
+//                         Load divider state
+// ----------------------------------------------------------------------------
+//   src ... source array of 4x u32
+// Interrupt should be disabled.
+// void DivLoadState(const hw_divider_state_t* src);
+
+// input:
+//  R0 ... source array of 4x u32
+
+regular_func_text DivLoadState
+
+	// load dividend and divisor
+	ldr	r1,=SIO_BASE		// get address of SIO base
+	ldmia	r0!,{r2, r3}		// load dividend and divisor
+	str	r2,[r1,#0x60]		// set unsigned dividend
+	str	r3,[r1,#0x64]		// set unsigned divisor
+
+	// load remainder and quotient
+	ldmia	r0!,{r2, r3}		// load remainder and quotient
+	str	r2,[r1,#0x74]		// set remainder
+	str	r3,[r1,#0x70]		// set quotient
+	bx	lr			// return from the function
+
+// ----------------------------------------------------------------------------
 //                         Divide signed S32 DivS32
 // ----------------------------------------------------------------------------
 //   a ... signed dividend s32

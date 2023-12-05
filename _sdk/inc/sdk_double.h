@@ -245,45 +245,75 @@ INLINE double ceild(double num) { return ceil(num); }
 double sqrtd(double x);
 double sqrt(double x);
 
-// sine (in radians)
+// convert degrees to radians
+INLINE double deg2rad(double x) { return x*(PI/180); }
+
+// convert radians to degrees
+INLINE double rad2deg(double x) { return x*(180/PI); }
+
+// sine in radians
 // Takes 19100 ns
 double sin(double x);
 INLINE double sind(double x) { return sin(x); }
 
-// cosine (in radians)
+// sine in degrees
+INLINE double sin_deg(double x) { return sin(deg2rad(x)); }
+
+// cosine in radians
 // Takes 19100 ns
 double cos(double x);
 INLINE double cosd(double x) { return cos(x); }
 
-// sine-cosine (in radians)
+// cosine in degrees
+INLINE double cos_deg(double x) { return cos(deg2rad(x)); }
+
+// sine-cosine in radians
 // Takes 20100 ns
 void sincos(double x, double* psin, double* pcos);
 INLINE void sincosd(double x, double* psin, double* pcos) { sincos(x, psin, pcos); }
 
-// tangent
+// sine-cosine in degrees
+INLINE void sincos_deg(double x, double* psin, double* pcos) { sincos(deg2rad(x), psin, pcos); }
+
+// tangent in radians
 // Takes 21800 ns
 double tan(double x);
 INLINE double tand(double x) { return tan(x); }
 
-// arc sine
+// tangent in degrees
+INLINE double tan_deg(double x) { return tan(deg2rad(x)); }
+
+// arc sine in radians
 // Takes 25500 ns
 double asin(double x);
 INLINE double asind(double x) { return asin(x); }
 
-// arc cosine
+// arc sine in degrees
+INLINE double asin_deg(double x) { return rad2deg(asin(x)); }
+
+// arc cosine in radians
 // Takes 25500 ns
 double acos(double x);
 INLINE double acosd(double x) { return acos(x); }
 
-// arc tangent
+// arc cosine in degrees
+INLINE double acos_deg(double x) { return rad2deg(acos(x)); }
+
+// arc tangent in radians
 // Takes 21500 ns
 double atan(double x);
 INLINE double atand(double x) { return atan(x); }
 
-// arc tangent of y/x
+// arc tangent in degrees
+INLINE double atan_deg(double x) { return rad2deg(atan(x)); }
+
+// arc tangent of y/x in radians
 // Takes 20300 ns
 double atan2(double y, double x);
 INLINE double atan2d(double y, double x) { return atan2(y, x); }
+
+// arc tangent of y/x in degrees
+INLINE double atan2_deg(double y, double x) { return rad2deg(atan2(y, x)); }
 
 // hyperbolic sine
 // Takes 17300 ns

@@ -1,0 +1,2 @@
+Set a date/time on the RTC, then repeatedly print the current time,
+10 times per second, to show it updating.

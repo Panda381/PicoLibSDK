@@ -33,6 +33,9 @@ int DecUNum(char* buf, u32 num, char sep);
 //  sep = thousand separator, 0=none
 int DecNum(char* buf, s32 num, char sep);
 
+// decode hex digit in least significant 4bits
+char DecHexDig(int num);
+
 // decode hex number (dig = number of digits)
 void DecHexNum(char* buf, u32 num, u8 dig);
 

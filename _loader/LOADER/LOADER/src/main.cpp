@@ -1255,6 +1255,7 @@ int main()
 
 	// clear screen
 	memset(FrameBuf, 0, sizeof(FrameBuf));
+	DispDirtyAll();
 
 	// reset to root
 	LastNameLen = 0; // no last name

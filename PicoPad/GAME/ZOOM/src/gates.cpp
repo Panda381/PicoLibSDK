@@ -111,7 +111,7 @@ void Gating(int dz)
 						AddScore(500<<FRAC);
 
 						// play sound
-						PlaySoundChan(0, GateSnd, count_of(GateSnd), False, 1, 0.4f);
+						PlaySoundChan(0, GateSnd, count_of(GateSnd), False, 1, 0.4f, SNDFORM_PCM, 0);
 					}
 				}
 

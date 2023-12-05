@@ -1,0 +1,1 @@
+Resurection interrupt on system clock fail.

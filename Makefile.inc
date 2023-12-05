@@ -22,7 +22,7 @@
 # ASM source files
 ifeq (${MEMMAP},noflash)
 # NOFLASH - no loader if located in RAM
-DEFINE += -D NO_FLASH=1
+DEFINE += -D NO_FLASH=1 -D PICO_NO_FLASH=1
 else
 ifeq (${TARGET},LOADER)
 ASRC += ../../../_boot2/boot2_w25q080_bin.S
@@ -48,7 +48,7 @@ include ../../../_font/_makefile.inc
 include ../../../_devices/${DEVCLASS}/_makefile.inc
 
 # Includes
-IPATH += -I.
+IPATH += -I. -I../../../_sdk/
 
 ##############################################################################
 # Configuration

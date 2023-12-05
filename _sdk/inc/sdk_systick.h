@@ -25,6 +25,10 @@
 
 #include "../sdk_addressmap.h"		// Register address offsets
 
+#if USE_ORIGSDK		// include interface of original SDK
+#include "orig/orig_m0plus.h"		// constants of original SDK
+#endif // USE_ORIGSDK
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -42,7 +46,7 @@ extern volatile u32 SysTime;
 // current date and time (incremented every SYSTICK_MS ms from CPU core 0)
 extern volatile u32 UnixTime;		// current date and time in Unix format
 					// - number of seconds since 1/1/1970 (thursday) up to 12/31/2099
-extern volatile s16 TimeMs;		// current time in [ms] 0..999
+extern volatile s16 CurTimeMs;		// current time in [ms] 0..999
 
 // === System control block (RP2040 datasheet page 74)
 //#define PPB_BASE		0xe0000000	// Cortex-M0+ internal registers (system control block)
@@ -51,6 +55,17 @@ extern volatile s16 TimeMs;		// current time in [ms] 0..999
 #define SYSTICK_RVR ((volatile u32*)(PPB_BASE + 0xE014))	// SysTick reload value register
 #define SYSTICK_CVR ((volatile u32*)(PPB_BASE + 0xE018))	// SysTick current value register
 #define SYSTICK_CALIB ((volatile u32*)(PPB_BASE + 0xE01C))	// SysTick calibration value register
+
+typedef struct {
+	io32	csr;	// 0x00: Use the SysTick Control and Status Register to enable the SysTick features
+	io32	rvr;	// 0x04: Use the SysTick Reload Value Register to specify the start value to load into the current value register when the...
+	io32	cvr;	// 0x08: Use the SysTick Current Value Register to find the current value in the register
+	io32	calib;	// 0x0C: Use the SysTick Calibration Value Register to enable software to scale to any required speed using divide and multiply
+} systick_hw_t;
+
+#define systick_hw ((systick_hw_t*)(PPB_BASE + 0xE010))
+
+STATIC_ASSERT(sizeof(systick_hw_t) == 0x10, "Incorrect systick_hw_t!");
 
 // initialize SysTick timer for this CPU core to interrupt every SYSTICK_MS ms
 // - AlarmInit() function must be called before initializing SysTick timers.

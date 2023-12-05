@@ -109,7 +109,7 @@ void MoveMother()
 		MotherOn = True;
 		MotherLeft = !MotherLeft;
 		MotherX = MotherLeft ? WIDTH : -MOTHERW;
-		PlaySoundChan(MOTHERCHAN, MotherSnd, sizeof(MotherSnd), True, 1, 1);
+		PlaySoundChan(MOTHERCHAN, MotherSnd, sizeof(MotherSnd), True, 1, 1, SNDFORM_PCM, 0);
 	}
 
 	// move mothership
@@ -681,7 +681,7 @@ void AlienMove()
 		AlienPhase = (AlienPhase+1) & 1;
 
 		AlienTone = (AlienTone+1) & 3;
-		PlaySoundChan(1, Tones[AlienTone], TonesLen[AlienTone], False, 1, 1);
+		PlaySoundChan(1, Tones[AlienTone], TonesLen[AlienTone], False, 1, 1, SNDFORM_PCM, 0);
 	}
 }
 

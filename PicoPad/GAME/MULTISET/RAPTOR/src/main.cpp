@@ -238,7 +238,7 @@ void DoShooting()
 	{
 		// playing sound of machine gun
 		if (!PlayingSoundChan(SNDCHAN_GUN))
-			PlaySoundChan(SNDCHAN_GUN, MachinegunSnd, count_of(MachinegunSnd), True, 1, SoundVolList[0]);
+			PlaySoundChan(SNDCHAN_GUN, MachinegunSnd, count_of(MachinegunSnd), True, 1, SoundVolList[0], SNDFORM_PCM, 0);
 
 		// new missile of machine gun
 		if (ReloadNext0 <= 0)
@@ -296,7 +296,7 @@ void DoShooting()
 			ReloadNext = ReloadList[Weapon];
 
 			// playing sound of the missile
-			PlaySoundChan(SNDCHAN_WEAPON, SoundList[Weapon], SoundLenList[Weapon], False, 1, SoundVolList[Weapon]);
+			PlaySoundChan(SNDCHAN_WEAPON, SoundList[Weapon], SoundLenList[Weapon], False, 1, SoundVolList[Weapon], SNDFORM_PCM, 0);
 		}
 	}
 	else
@@ -382,13 +382,13 @@ void MoveMissile()
 								if (j == WEAPON_BLACKHOLE) // black hole
 								{
 									// sucked through a black hole
-									PlaySoundChan(SNDCHAN_MISC, Blackhole2Snd, sizeof(Blackhole2Snd), False, 1, 1.0f);
+									PlaySoundChan(SNDCHAN_MISC, Blackhole2Snd, sizeof(Blackhole2Snd), False, 1, 1.0f, SNDFORM_PCM, 0);
 									e->type = -1;
 								}
 								else
 								{
 									// change enemy to explosion
-									PlaySoundChan(SNDCHAN_MISC, ExplosionSnd, sizeof(ExplosionSnd), False, 1, 1);
+									PlaySoundChan(SNDCHAN_MISC, ExplosionSnd, sizeof(ExplosionSnd), False, 1, 1, SNDFORM_PCM, 0);
 									e->type = ENEMY_NUM;
 									e->anim = 0;
 								}
@@ -398,14 +398,14 @@ void MoveMissile()
 								{
 									NextShield += 10000;
 									Shields++;
-									PlaySoundChan(SNDCHAN_MISC, LevelupSnd, sizeof(LevelupSnd), False, 1, 1);
+									PlaySoundChan(SNDCHAN_MISC, LevelupSnd, sizeof(LevelupSnd), False, 1, 1, SNDFORM_PCM, 0);
 								}
 
 								// increase level (at score: 1000, 2000, 5000, 10000, 17000,...)
 								if (Score >= 1000*(1+(Level-1)*(Level-1)))
 								{
 									Level++;
-									PlaySoundChan(SNDCHAN_MISC, LevelupSnd, sizeof(LevelupSnd), False, 1, 1);
+									PlaySoundChan(SNDCHAN_MISC, LevelupSnd, sizeof(LevelupSnd), False, 1, 1, SNDFORM_PCM, 0);
 
 									// add weapon
 									if (Level <= WEAPON_NUM)
@@ -443,7 +443,7 @@ void MoveMissile()
 							if (dx*dx + dy*dy < SPRITEW*SPRITEH)
 							{
 								// sucked through a black hole
-								PlaySoundChan(SNDCHAN_MISC, Blackhole2Snd, sizeof(Blackhole2Snd), False, 1, 1.0f);
+								PlaySoundChan(SNDCHAN_MISC, Blackhole2Snd, sizeof(Blackhole2Snd), False, 1, 1.0f, SNDFORM_PCM, 0);
 								m2->type = -1;
 							}
 						}
@@ -569,13 +569,13 @@ void MoveEnemyMissile()
 					// lost energy
 					Energy -= EnemyMissileEnergy[j];
 					m->type = -1;
-					PlaySoundChan(SNDCHAN_MISC, FailSnd, sizeof(FailSnd), False, 1, 1.0f);
+					PlaySoundChan(SNDCHAN_MISC, FailSnd, sizeof(FailSnd), False, 1, 1.0f, SNDFORM_PCM, 0);
 
 					// next shield
 					if (Energy < 0)
 					{
 						Shields--;
-						PlaySoundChan(SNDCHAN_MISC, LostSnd, sizeof(LostSnd), False, 1, 1.0f);
+						PlaySoundChan(SNDCHAN_MISC, LostSnd, sizeof(LostSnd), False, 1, 1.0f, SNDFORM_PCM, 0);
 						if (Shields >= 0) Energy = ENERGY_MAX; else Energy = 0;
 					}
 				}

@@ -70,7 +70,7 @@ void Shooting(int dt)
 				s->x = ShipX; // X coordinate
 				s->z = (12<<FRAC); // start Z coordinate
 				LastShotTime = Time(); // last shot time
-				PlaySoundChan(SNDCHAN_SHOT, LaserSnd, sizeof(LaserSnd), False, 1, 1);
+				PlaySoundChan(SNDCHAN_SHOT, LaserSnd, sizeof(LaserSnd), False, 1, 1, SNDFORM_PCM, 0);
 				return;
 			}
 		}

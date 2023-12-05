@@ -23,6 +23,7 @@
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "../../_sdk/inc/sdk_timer.h"
 #include "../../_sdk/inc/sdk_pwm.h"
+#include "../../_sdk/inc/sdk_dma.h"
 #include "../../_lib/inc/lib_config.h"
 
 // ST7789 commands
@@ -51,13 +52,12 @@
 #define ST7789_MADCTL		0x36	// set rotation mode (data RotationTab)
 #define ST7789_VSCSAD		0x37
 
-#define ST7789_MADCTL_MY	0x80
-#define ST7789_MADCTL_MX	0x40
-#define ST7789_MADCTL_MV	0x20
-#define ST7789_MADCTL_ML	0x10
-#define ST7789_MADCTL_BGR	0x08
-#define ST7789_MADCTL_MH	0x04
-#define ST7789_MADCTL_RGB	0x00
+#define ST7789_MADCTL_MY	0x80	// B7: page address order (0=top to bottom, 1=bottom to top)
+#define ST7789_MADCTL_MX	0x40	// B6: column address order (0=left to right, 1=right to left)
+#define ST7789_MADCTL_MV	0x20	// B5: page/column order (0=normal mode, 1=reverse mode)
+#define ST7789_MADCTL_ML	0x10	// B4: line address order (LCD refresh 0=top to bottom, 1=bottom to top)
+#define ST7789_MADCTL_RGB	0x08	// B3: RGB/BGR order (0=RGB, 1=BGR)
+#define ST7789_MADCTL_MH	0x04	// B2: display latch order (LD refresh 0=left to right, 1=right to left)
 
 #define ST7789_RDID1		0xDA
 #define ST7789_RDID2		0xDB
@@ -75,7 +75,7 @@
 //   B5,B4: align 65K data with bit 0: 0=equ 0, 1=equ 1, 2=equ high bit, 3=equ green bit 0
 //   B7,B6: 1
 
-// color mode ST7789_COLMOD
+// color mode ST7789_COLMOD (select both color space and data format)
 #define COLOR_MODE_65K		0x50	// 65K-color space (RGB 5-6-5)
 #define COLOR_MODE_262K		0x60	// 262K-color space (RGB 6-6-6)
 #define COLOR_MODE_12BIT	0x03	// 12-bit data, 4K-color space (RGB 4-4-4)
@@ -95,8 +95,15 @@
 ALIGNED u16 FrameBuf[FRAMESIZE];
 #endif // USE_FRAMEBUF
 
-const u8 RotationTab[4] = { 0x00, 0x60, 0xc0, 0xa0 }; // rotation mode for ST7789_MADCTL
-//u8 DispRot;	// current display rotation
+// rotation mode for ST7789_MADCTL
+const u8 RotationTab[4] = {
+	0x00,		// 0: Portrait
+	0x60,		// 1: Landscape (ST7789_MADCTL_MX + ST7789_MADCTL_MV)
+	0xc0,		// 2: Inverted Portrait (ST7789_MADCTL_MY + ST7789_MADCTL_MX)
+	0xa0,		// 3: Inverted Landscape (ST7789_MADCTL_MY + ST7789_MADCTL_MV)
+};
+
+//u8 DispRot;			// current display rotation 0..3
 
 // dirty window to update
 int DispDirtyX1, DispDirtyX2, DispDirtyY1, DispDirtyY2;
@@ -129,6 +136,17 @@ void DispWriteData(const void* data, int len)
 	SPI_Send8(DISP_SPI, data, len); // send data to SPI
 	CS_OFF; 	// deactivate chip selection
 }
+
+#if USE_DISP_DMA		// use DMA output do LCD display
+// write data to display using DMA
+void DispWriteDataDMA(const void* data, int len)
+{
+	CS_ON;		// activate chip selection
+	DC_DATA;	// set data mode
+	SPI_Send8DMA(DISP_SPI, DMA_TEMP_CHAN(), (const u8*)data, len); // send data to SPI, using DMA
+	CS_OFF; 	// deactivate chip selection
+}
+#endif // USE_DISP_DMA
 
 // write command and data to display
 void DispWriteCmdData(u8 cmd, const void* data, int len)
@@ -198,21 +216,6 @@ void DispColorMode(u8 mode)
 //  3 Inverted Landscape
 void DispRotation(u8 rot)
 {
-/*
-	DispRot = rot;	// save current display rotation
-	if ((rot & 1) == 0)
-	{
-		// portrait
-//		DispWidth = 240;
-		HEIGHT = 320;
-	}
-	else
-	{
-		// landscape
-//		DispWidth = 320;
-		HEIGHT = 240;
-	}
-*/
 	DispWriteCmdData(ST7789_MADCTL, &RotationTab[rot], 1);
 }	
 
@@ -277,7 +280,7 @@ void DispStopImg()
 void DispDirtyAll()
 {
 	DispDirtyX1 = 0;
-	DispDirtyX2 = WIDTH; //DispWidth;
+	DispDirtyX2 = WIDTH;
 	DispDirtyY1 = 0;
 	DispDirtyY2 = HEIGHT;
 }
@@ -285,7 +288,7 @@ void DispDirtyAll()
 // set dirty none (clear after update)
 void DispDirtyNone()
 {
-	DispDirtyX1 = WIDTH; //DispWidth;
+	DispDirtyX1 = WIDTH;
 	DispDirtyX2 = 0;
 	DispDirtyY1 = HEIGHT;
 	DispDirtyY2 = 0;
@@ -333,16 +336,35 @@ void DispUpdate()
 {
 	if ((DispDirtyX1 < DispDirtyX2) && (DispDirtyY1 < DispDirtyY2))
 	{
+		// synchronize external display (to start waiting for active CS)
+		u8 d = 0xff;
+		CS_OFF; 	// deactivate chip selection
+		DC_CMD;		// set command mode
+		SPI_Send8(DISP_SPI, &d, 1); // send data to SPI
+
 		// set draw window
 		DispWindow((u16)DispDirtyX1, (u16)DispDirtyX2, (u16)DispDirtyY1, (u16)DispDirtyY2);
 
 		// send data from frame buffer
 		u16* s0 = &FrameBuf[DispDirtyX1 + DispDirtyY1*WIDTH];
 		int i;
-		for (i = DispDirtyY2 - DispDirtyY1; i > 0; i--)
+#if USE_DISP_DMA		// use DMA output do LCD display
+		if (DispDirtyX2 - DispDirtyX1 > 20)
 		{
-			DispWriteData(s0, (DispDirtyX2 - DispDirtyX1)*2);
-			s0 += WIDTH;
+			for (i = DispDirtyY2 - DispDirtyY1; i > 0; i--)
+			{
+				DispWriteDataDMA(s0, (DispDirtyX2 - DispDirtyX1)*2);
+				s0 += WIDTH;
+			}
+		}
+		else
+#endif // USE_DISP_DMA
+		{
+			for (i = DispDirtyY2 - DispDirtyY1; i > 0; i--)
+			{
+				DispWriteData(s0, (DispDirtyX2 - DispDirtyX1)*2);
+				s0 += WIDTH;
+			}
 		}
 
 		// set dirty none
@@ -418,22 +440,27 @@ void DispInit(u8 rot)
 	GPIO_Out1(DISP_DC_PIN);
 	GPIO_DirOut(DISP_DC_PIN);
 	GPIO_Fnc(DISP_DC_PIN, GPIO_FNC_SIO);
+//	GPIO_Drive4mA(DISP_DC_PIN);
 
 	GPIO_Out1(DISP_SCK_PIN);
 	GPIO_DirOut(DISP_SCK_PIN);
 	GPIO_Fnc(DISP_SCK_PIN, GPIO_FNC_SPI);
+	GPIO_Drive8mA(DISP_SCK_PIN); // required by extern display
 
-	GPIO_Out1(DIDP_MOSI_PIN);
-	GPIO_DirOut(DIDP_MOSI_PIN);
-	GPIO_Fnc(DIDP_MOSI_PIN, GPIO_FNC_SPI);
+	GPIO_Out1(DISP_MOSI_PIN);
+	GPIO_DirOut(DISP_MOSI_PIN);
+	GPIO_Fnc(DISP_MOSI_PIN, GPIO_FNC_SPI);
+//	GPIO_Drive4mA(DISP_MOSI_PIN);
 
 	GPIO_Out1(DISP_RES_PIN);
 	GPIO_DirOut(DISP_RES_PIN);
 	GPIO_Fnc(DISP_RES_PIN, GPIO_FNC_SIO);
+//	GPIO_Drive4mA(DISP_RES_PIN);
 
 	GPIO_Out1(DISP_CS_PIN);
 	GPIO_DirOut(DISP_CS_PIN);
 	GPIO_Fnc(DISP_CS_PIN, GPIO_FNC_SIO);
+//	GPIO_Drive4mA(DISP_CS_PIN);
 
 	// display initialize
 	DispHardReset();	// hard reset
@@ -467,6 +494,7 @@ void DispInit(u8 rot)
 	DispMinY = 0;		// minimal Y; base of back buffer strip
 	DispMaxY = HEIGHT;	// maximal Y + 1; end of back buffer strip
 */
+
 	// clear display
 #if USE_FRAMEBUF	// use default display frame buffer
 	int i;
@@ -501,7 +529,7 @@ void DispTerm()
 	// terminate pins
 	GPIO_Reset(DISP_DC_PIN);
 	GPIO_Reset(DISP_SCK_PIN);
-	GPIO_Reset(DIDP_MOSI_PIN);
+	GPIO_Reset(DISP_MOSI_PIN);
 	GPIO_Reset(DISP_RES_PIN);
 	GPIO_Reset(DISP_CS_PIN);
 }

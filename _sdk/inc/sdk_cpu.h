@@ -19,6 +19,7 @@
 
 //#include "resource.h"	// resources
 #include "../sdk_addressmap.h"		// Register address offsets
+#include "sdk_sio.h"			// SIO registers
 #include "sdk_bootrom.h"
 
 #ifdef __cplusplus
@@ -29,44 +30,44 @@ extern "C" {
 #define CORE_NUM	2
 
 // get index of current processor core (0 or 1)
-INLINE int CpuID() { return *((volatile u32*)(SIO_BASE+0)); }
+INLINE int CpuID(void) { return *((volatile u32*)(SIO_BASE+0)); }
 
 // bit tables
 extern const u8 RevBitsTab[16]; // reverse bit table
 extern const u8 OrdBitsTab[16]; // order bit table
 
 // compiler barrier
-INLINE void cb()
+INLINE void cb(void)
 {
 	__asm volatile ("" ::: "memory");
 }
 
 // no operation (nop instruction)
-INLINE void nop()
+INLINE void nop(void)
 {
 	__asm volatile (" nop\n" ::: "memory");
 }
 
 // no operation, 2 clock cycles
-INLINE void nop2()
+INLINE void nop2(void)
 {
 	__asm volatile (" b 1f\n1:\n" ::: "memory");
 }
 
 // disable global interrupts
-INLINE void di()
+INLINE void di(void)
 {
 	__asm volatile (" cpsid i\n" : : : "memory");
 }
 
 // enable global interrupts
-INLINE void ei()
+INLINE void ei(void)
 {
 	__asm volatile (" cpsie i\n" : : : "memory");
 }
 
 // get global interrupts (returns True if interrupts are enabled)
-INLINE Bool geti()
+INLINE Bool geti(void)
 {
 	u32 val;
 	__asm volatile (" mrs %0,PRIMASK\n" : "=r" (val) :: "memory");
@@ -80,7 +81,7 @@ INLINE void seti(Bool enable)
 }
 
 // save and disable interrupts
-INLINE u32 LockIRQ()
+INLINE u32 LockIRQ(void)
 {
 	u32 state;
 	__asm volatile (" mrs %0,PRIMASK\n" : "=r" (state) :: "memory");
@@ -100,8 +101,16 @@ INLINE void UnlockIRQ(u32 state)
 #define IRQ_LOCK u32 irq_state = LockIRQ()	// lock on begin of critical section
 #define IRQ_UNLOCK UnlockIRQ(irq_state)		// unlock on end of critical section
 
+// get current IRQ_* if the CPU is handling an exception (IRQ_INVALID = no exception, thread mode)
+INLINE int GetCurrentIRQ(void)
+{
+	u32 exception;
+	__asm volatile (" mrs %0,ipsr\n" : "=l" (exception));
+	return (exception & 0x3f) - 16;
+}
+
 // get control register
-INLINE u32 GetControl()
+INLINE u32 GetControl(void)
 {
 	u32 res;
 	__asm volatile (" mrs %0,CONTROL\n" : "=r" (res));
@@ -115,7 +124,7 @@ INLINE void SetControl(u32 val)
 }
 
 // get process stack pointer
-INLINE void* GetPsp()
+INLINE void* GetPsp(void)
 {
 	void* psp;
 	__asm volatile (" mrs %0,psp\n" : "=r" (psp));
@@ -129,7 +138,7 @@ INLINE void SetPsp(void* psp)
 }
 
 // get main stack pointer
-INLINE void* GetMsp()
+INLINE void* GetMsp(void)
 {
 	void* msp;
 	__asm volatile (" mrs %0,msp\n" : "=r" (msp));
@@ -143,7 +152,7 @@ INLINE void SetMsp(void* msp)
 }
 
 // get current stack pointer
-INLINE void* GetSp()
+INLINE void* GetSp(void)
 {
 	void* res;
 	__asm volatile (" mov %0,r13\n" : "=r" (res));
@@ -151,37 +160,37 @@ INLINE void* GetSp()
 }
 
 // send event (to both cores)
-INLINE void sev()
+INLINE void sev(void)
 {
 	__asm volatile (" sev\n");
 }
 
 // wait for event
-INLINE void wfe()
+INLINE void wfe(void)
 {
 	__asm volatile (" wfe\n");
 }
 
 // wait for interrupt (to wake up the core)
-INLINE void wfi()
+INLINE void wfi(void)
 {
 	__asm volatile (" wfi\n");
 }
 
 // instruction synchronization barrier
-INLINE void isb()
+INLINE void isb(void)
 {
 	__asm volatile (" isb\n");
 }
 
 // data memory barrier
-INLINE void dmb()
+INLINE void dmb(void)
 {
 	__asm volatile (" dmb\n" ::: "memory");
 }
 
 // data synchronization barrier
-INLINE void dsb()
+INLINE void dsb(void)
 {
 	__asm volatile (" dsb\n" ::: "memory");
 }
@@ -264,7 +273,7 @@ u8 Order64(u64 val);
 INLINE u32 Mask(u32 val) { return (u32)-1 >> clz(val); }
 
 // range mask - returns bits set to '1' on range 'first' to 'last' (RangeMask(7,14) returns 0x7F80)
-INLINE u32 RangeMask(u8 first, u8 last) { return (~((u32)-1 << (last+1))) & ((u32)-1 << first); }
+INLINE u32 RangeMask(int first, int last) { return (~((u32)-1 << (last+1))) & ((u32)-1 << first); }
 
 #if USE_STACKCHECK	// use Stack check (sdk_cpu.c, sdk_cpu.h)
 
@@ -275,21 +284,71 @@ extern u8 __Stack0Bottom;
 extern u8 __Stack1Bottom;
 
 // get stack top of current CPU core
-INLINE void* StackTop() { if (CpuID() == 0) return (void*)&__Stack0Top; return (void*)&__Stack1Top; }
+INLINE void* StackTop(void) { if (CpuID() == 0) return (void*)&__Stack0Top; return (void*)&__Stack1Top; }
 
 // get stack bottom of current CPU core
-INLINE void* StackBottom() { if (CpuID() == 0) return (void*)&__Stack0Bottom; return (void*)&__Stack1Bottom; }
+INLINE void* StackBottom(void) { if (CpuID() == 0) return (void*)&__Stack0Bottom; return (void*)&__Stack1Bottom; }
 
 // get current free space in the stack of current CPU core (distance from stack pointer to stack bottom)
-INLINE int StackFree() { return (u32)GetSp() - (u32)StackBottom(); }
+INLINE int StackFree(void) { return (u32)GetSp() - (u32)StackBottom(); }
 
 // feed stack of current CPU core with the food (returns free space, or 0 on stack error)
-u32 StackFeed();
+u32 StackFeed(void);
 
 // check stack limit of current CPU core (check used stack space)
-u32 StackCheck();
+u32 StackCheck(void);
 
 #endif // USE_STACKCHECK	// use Stack check (sdk_cpu.c, sdk_cpu.h)
+
+// fatal error - display panic message and halt execution
+void __attribute__((noreturn)) panic(const char *fmt, ...);
+
+// stop execution
+void __attribute__((noreturn)) isr_hardfault();
+INLINE void __attribute__((noreturn)) __breakpoint() { isr_hardfault(); }
+
+// ----------------------------------------------------------------------------
+//                          Original-SDK interface
+// ----------------------------------------------------------------------------
+
+#if USE_ORIGSDK		// include interface of original SDK
+
+// Insert a SEV instruction in to the code path.
+INLINE void __sev(void) { sev(); }
+
+// Insert a WFE instruction in to the code path.
+INLINE void __wfe(void) { wfe(); }
+
+// Insert a WFI instruction in to the code path.
+INLINE void __wfi(void) { wfi(); }
+
+// Insert a DMB instruction in to the code path.
+INLINE void __dmb(void) { dmb(); }
+
+// Insert a DSB instruction in to the code path.
+INLINE void __dsb(void) { dsb(); }
+
+// Insert a ISB instruction in to the code path.
+INLINE void __isb(void) { isb(); }
+
+// Acquire a memory fence
+INLINE void __mem_fence_acquire(void) { dmb(); }
+
+// Release a memory fence
+INLINE void __mem_fence_release(void) { dmb(); }
+
+// Save and disable interrupts
+INLINE u32 save_and_disable_interrupts(void) { return LockIRQ(); }
+
+// Restore interrupts to a specified state
+INLINE void restore_interrupts(u32 status) { UnlockIRQ(status); }
+
+INLINE void tight_loop_contents(void) {}
+
+// get index of current processor core (0 or 1)
+INLINE uint get_core_num(void) { return CpuID(); }
+
+#endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 }

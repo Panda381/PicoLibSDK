@@ -1,0 +1,1 @@
+Trigger an RTC interrupt once per minute.

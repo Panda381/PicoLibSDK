@@ -1,0 +1,4 @@
+This program instantiates a PIO SPI with each of the four possible
+CPOL/CPHA combinations, with the serial input and output pin mapped to the
+same GPIO. Any data written into the state machine's TX FIFO should then be
+serialised, deserialised, and reappear in the state machine's RX FIFO.

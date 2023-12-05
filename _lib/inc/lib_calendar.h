@@ -104,6 +104,9 @@ void DateTimeCopy(sDateTime* dst, const sDateTime* src);
 // compare date and time (day of week is ignored), returns -1 if dt1 < dt2, 0 if dt1 == dt2, 1 if dt1 > dt2
 s8 DateTimeComp(const sDateTime* dt1, const sDateTime* dt2);
 
+// check date and time (not day of week; returns True = ok)
+Bool DateTimeCheck(const sDateTime* dt);
+
 // validate date and time (not day of week; returns True = no corrections, entries were in valid ranges)
 Bool DateTimeValid(sDateTime* dt);
 
@@ -121,8 +124,8 @@ u32 DateTimePack(const sDateTime* dt, s16* ms, s16* us);
 //  Takes 2.3 us
 void DateTimeUnpack(sDateTime* dt, u32 ut, s16 ms, s16 us);
 
-// datetime check (returns year of error or 0 if OK)
-s16 DateTimeCheck();
+// datetime debug check (returns year of error or 0 if OK)
+s16 DateTimeDebugCheck();
 
 #ifdef __cplusplus
 }

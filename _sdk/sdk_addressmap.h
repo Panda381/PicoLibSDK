@@ -33,6 +33,13 @@
 // write value masked to u32 register, atomic for different bits, non-atomic for the same bits
 #define RegMask(addr, value, mask) RegXor((addr), (*(addr) ^ (value)) & (mask))
 
+#if USE_ORIGSDK		// include interface of original SDK
+#define hw_xor_bits(addr, mask) *(volatile u32*)((u32)(addr) | REG_ALIAS_XOR) = (mask)
+#define hw_set_bits(addr, mask) *(volatile u32*)((u32)(addr) | REG_ALIAS_SET) = (mask)
+#define hw_clear_bits(addr, mask) *(volatile u32*)((u32)(addr) | REG_ALIAS_CLR) = (mask)
+#define hw_write_masked(addr, value, mask) RegXor((addr), (*(addr) ^ (value)) & (mask))
+#endif // USE_ORIGSDK
+
 // register memory map - base address
 #define ROM_BASE		0x00000000
 #define XIP_BASE		0x10000000

@@ -24,6 +24,10 @@
 
 #define WIDTH		320		// screen width
 
+#define USE_ORIGSDK	0		// include interface of original-SDK
+
+#define USE_DISP_DMA	0		// use DMA output do LCD display
+
 #define USE_FRAMEBUF	0		// use default frame buffer
 
 #define USE_SCREENSHOT	0		// use screen shots

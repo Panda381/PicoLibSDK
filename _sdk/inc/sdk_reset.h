@@ -19,11 +19,18 @@
 
 #include "../sdk_addressmap.h"		// Register address offsets
 
+#if USE_ORIGSDK		// include interface of original SDK
+#include "orig/orig_psm.h"	// constants of original SDK
+#include "orig/orig_resets.h"	// constants of original SDK
+#endif // USE_ORIGSDK
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // === Power-on state machine (RP2040 datasheet page 191) - use mask of bits BIT(POWER_*)
+
+// power-on hardware registers
 //#define PSM_BASE		0x40010000	// power-on state machine
 #define PSM_ON		((volatile u32*)(PSM_BASE+0)) // force block out of reset (power it on)
 #define PSM_OFF		((volatile u32*)(PSM_BASE+4)) // force into reset (power it off)
@@ -52,7 +59,21 @@ extern "C" {
 // select which peripherals to reset by watchdog (reset everything apart from ROSC and XOSC)
 #define PSM_WDSEL_RESETBITS	0x1fffc
 
+// power-on hardware interface
+typedef struct {
+	io32	frce_on;	// 0x00: Force block out of reset
+	io32	frce_off;	// 0x04: Force into reset
+	io32	wdsel;		// 0x08: Set to 1 if this peripheral should be reset when the watchdog fires
+	io32	done;		// 0x0C: Indicates the peripheral's registers are ready to access
+} psm_hw_t;
+
+#define psm_hw ((psm_hw_t*)PSM_BASE)
+
+STATIC_ASSERT(sizeof(psm_hw_t) == 0x10, "Incorrect psm_hw_t!");
+
 // === Reset (RP2040 datasheet page 195) - use mask of bits BIT(RESET_*)
+
+// reset hardware registers
 //#define RESETS_BASE		0x4000c000	// subsystem resets
 #define RESETS_RESET	((volatile u32*)(RESETS_BASE+0)) // 1=peripheral is in reset
 #define RESETS_WDSEL	((volatile u32*)(RESETS_BASE+4)) // 1=watchdog will reset this peripheral
@@ -87,34 +108,66 @@ extern "C" {
 
 #define RESET_ALLBITS	0x01ffffff
 
+// reset hardware interface
+typedef struct {
+	io32	reset;		// 0x00: Reset control
+	io32	wdsel;		// 0x04: Watchdog select
+	io32	reset_done;	// 0x08: Reset done
+} resets_hw_t;
+
+#define resets_hw ((resets_hw_t*)RESETS_BASE)
+
+STATIC_ASSERT(sizeof(resets_hw_t) == 0x0C, "Incorrect resets_hw_t!");
+
 // start resetting periphery specified by the mask RESET_*
 INLINE void ResetPeripheryOnMask(u32 mask) { RegSet(RESETS_RESET, mask); }
-INLINE void ResetPeripheryOn(u8 peri) { ResetPeripheryOnMask(BIT(peri)); }
+INLINE void ResetPeripheryOn(int peri) { ResetPeripheryOnMask(BIT(peri)); }
 
 // stop resetting periphery specified by the mask RESET_*
 INLINE void ResetPeripheryOffMask(u32 mask) { RegClr(RESETS_RESET, mask); }
-INLINE void ResetPeripheryOff(u8 peri) { ResetPeripheryOffMask(BIT(peri)); }
+INLINE void ResetPeripheryOff(int peri) { ResetPeripheryOffMask(BIT(peri)); }
 
 // check if periphery is ready to be accessed after reset
 INLINE Bool ResetPeripheryDoneMask(u32 mask) { return (~*RESETS_DONE & mask) == 0; }
-INLINE Bool ResetPeripheryDone(u8 peri) { return ResetPeripheryDoneMask(BIT(peri)); }
+INLINE Bool ResetPeripheryDone(int peri) { return ResetPeripheryDoneMask(BIT(peri)); }
 
 // stop resetting periphery specified by the mask RESET_* and wait
 void ResetPeripheryOffWaitMask(u32 mask);
-INLINE void ResetPeripheryOffWait(u8 peri) { ResetPeripheryOffWaitMask(BIT(peri)); }
+INLINE void ResetPeripheryOffWait(int peri) { ResetPeripheryOffWaitMask(BIT(peri)); }
 
 // enable reset periphery by watchdog of mask RESET_*
 INLINE void WDPeripheryEnableMask(u32 mask) { RegSet(RESETS_WDSEL, mask); }
-INLINE void WDPeripheryEnable(u8 peri) { WDPeripheryEnableMask(BIT(peri)); }
+INLINE void WDPeripheryEnable(int peri) { WDPeripheryEnableMask(BIT(peri)); }
 
 // disable reset periphery by watchdog of mask RESET_*
 INLINE void WDPeripheryDisableMask(u32 mask) { RegClr(RESETS_WDSEL, mask); }
-INLINE void WDPeripheryDisable(u8 peri) { WDPeripheryDisableMask(BIT(peri)); }
+INLINE void WDPeripheryDisable(int peri) { WDPeripheryDisableMask(BIT(peri)); }
 
 // hard reset periphery (and wait to be accessed again)
 //  Takes 0.5 us.
 void ResetPeripheryMask(u32 mask);
-INLINE void ResetPeriphery(u8 peri) { ResetPeripheryMask(BIT(peri)); }
+INLINE void ResetPeriphery(int peri) { ResetPeripheryMask(BIT(peri)); }
+
+// ----------------------------------------------------------------------------
+//                          Original-SDK interface
+// ----------------------------------------------------------------------------
+
+#if USE_ORIGSDK		// include interface of original SDK
+
+// Reset the specified HW blocks
+INLINE void reset_block(u32 bits) { hw_set_bits(&resets_hw->reset, bits); }
+
+// bring specified HW blocks out of reset
+INLINE void unreset_block(u32 bits) { hw_clear_bits(&resets_hw->reset, bits); }
+
+// Bring specified HW blocks out of reset and wait for completion
+INLINE void unreset_block_wait(u32 bits)
+{
+	hw_clear_bits(&resets_hw->reset, bits);
+	while (~resets_hw->reset_done & bits) {}
+}
+
+#endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 }

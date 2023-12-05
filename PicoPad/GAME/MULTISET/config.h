@@ -14,7 +14,7 @@
 // *********
 
 #if USE_PICOPADVGA
-#define USE_MINIVGA	4			// use mini-VGA display with simple frame buffer:
+#define USE_MINIVGA	5			// use mini-VGA display with simple frame buffer:
 						//	1=use only frame buffer
 						//	2=add full back buffer
 						//	3=add 1/2 back buffer
@@ -30,6 +30,7 @@
 //#define USE_USB_STDIO		1		// use USB stdio (UsbPrint function)
 //#define USE_UART_STDIO	1		// use UART stdio (UartPrint function)
 
+//#define USE_ORIGSDK		1		// include interface of original-SDK
 //#define USE_SCREENSHOT	1		// use screen shots
 
 //#define USE_USBPAD		1		// simulate keypad with USB keyboard

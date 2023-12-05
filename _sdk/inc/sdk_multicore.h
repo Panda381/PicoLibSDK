@@ -37,7 +37,7 @@ extern volatile Bool Core1IsRunning;	// flag that core 1 is running
 extern u32 __attribute__((section(".stack1"))) Core1Stack[CORE1_STACK_SIZE/4];
 
 // reset CPU core 1 (core 1 will send '0' to the FIFO when done)
-void Core1Reset();
+void Core1Reset(void);
 
 // start core 1 function (must be called from core 0)
 //  entry ... entry into Core1 function (function can exit to stop core 1)
@@ -60,19 +60,33 @@ void Core1Exec(pCore1Fnc entry);
 
 // Lockout handler (must be in RAM and must not use flash functions - to enable flash writting from other core)
 //  Name of alternative handler in Flash: isr_sio_proc0 and isr_sio_proc1
-void NOFLASH(LockoutHandler)();
+void NOFLASH(LockoutHandler)(void);
 
 // initialize lockout handler for core 0 or 1
-void LockoutInit(u8 core);
+void LockoutInit(int core);
 
 // deinitialize lockout handler for core 0 or 1 (disables IRQ handler)
-void LockoutTerm(u8 core);
+void LockoutTerm(int core);
 
 // start lockout other core
-void LockoutStart();
+void LockoutStart(void);
 
 // stop lockout other core
-void LockoutStop();
+void LockoutStop(void);
+
+// ----------------------------------------------------------------------------
+//                          Original-SDK interface
+// ----------------------------------------------------------------------------
+
+#if USE_ORIGSDK		// include interface of original-SDK
+
+// Reset core 1
+INLINE void multicore_reset_core1(void) { Core1Reset(); }
+
+// Run code on core 1
+INLINE void multicore_launch_core1(void (*entry)(void)) { Core1Exec(entry); }
+
+#endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 }

@@ -219,6 +219,7 @@ INLINE void FilePrintStop() { StdioMask &= ~STDIO_MASK_FILE; }
 void PrintChar(char ch);
 INLINE void printchar(char ch) { PrintChar(ch); }
 int putchar(int ch);
+INLINE int putchar_raw(char ch) { return putchar(ch); }
 
 // print unformatted text to print channels
 int PrintText(const char* txt);
@@ -226,6 +227,7 @@ INLINE int printtext(const char* txt) { return PrintText(txt); }
 
 // print unformatted text with added new-line
 int puts(const char* txt);
+INLINE int puts_raw(const char* txt) { return puts(txt); }
 
 // formatted print to print channels
 // - Do not print simultaneously from the program and from the interrupt handler!
@@ -238,7 +240,32 @@ int print(const char* fmt, ...);
 
 // get character from stdio (returns NOCHAR=0 if no character)
 char GetChar();
+
+// get character from stdio, with wait
+char GetCharWait();
 char getchar();
+
+// get character from stdio with time-out in [us] (returns NOCHAR=0 if no character)
+char GetCharUs(u32 us);
+INLINE char GetCharMs(u32 ms) { return GetCharUs(ms*1000); }
+
+// get character from stdio with time-out in [us] (returns PICO_ERROR_TIMEOUT=-1 if no character)
+INLINE int getchar_timeout_us(u32 us)
+{
+	char ch = GetCharUs(us);
+	if (ch == NOCHAR) return PICO_ERROR_TIMEOUT;
+	return ch;
+}
+
+INLINE int getchar_timeout_ms(u32 ms) { return getchar_timeout_us(ms*1000); }
+
+// flush input characters
+void FlushChar(void);
+INLINE void stdio_flush(void) { FlushChar(); }
+
+// initialize Stdio interface (should be called after changing UART clock)
+void StdioInit(void);
+INLINE bool stdio_init_all(void) { StdioInit(); return True; }
 
 #ifdef __cplusplus
 }

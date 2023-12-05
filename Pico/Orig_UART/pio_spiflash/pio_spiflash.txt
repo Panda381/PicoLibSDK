@@ -1,0 +1,1 @@
+This example uses PIO to erase, program and read back a SPI serial flash memory.

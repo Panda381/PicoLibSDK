@@ -1,0 +1,3 @@
+Simplest form of getting 64 bit time from the timer.
+It isn't safe when called from 2 cores because of the latching
+so isn't implemented this way in the sdk

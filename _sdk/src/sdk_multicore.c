@@ -183,10 +183,10 @@ void NOFLASH(LockoutHandler)()
 
 
 // initialize lockout handler for core 0 or 1
-void LockoutInit(u8 core)
+void LockoutInit(int core)
 {
 	// prepare IRQ number
-	u8 irq = IRQ_SIO_PROC0 + core;
+	int irq = IRQ_SIO_PROC0 + core;
 
 	// set handler
 	SetHandler(irq, LockoutHandler);
@@ -196,7 +196,7 @@ void LockoutInit(u8 core)
 }
 
 // deinitialize lockout handler for core 0 or 1 (disables IRQ handler)
-void LockoutTerm(u8 core)
+void LockoutTerm(int core)
 {
 	// disable IRQ
 	NVIC_IRQDisable(IRQ_SIO_PROC0 + core);
