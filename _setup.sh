@@ -63,10 +63,10 @@ case "$1" in
 	export DEVCLASS="pico"
 	export DEVDIR="!Pico"
 	;;
-     *) 
-	export DEVICE="picopad10"
-	export DEVCLASS="picopad"
-	export DEVDIR="!PicoPad10"
+     *)
+	export DEVICE="pico"
+	export DEVCLASS="pico"
+	export DEVDIR="!Pico"
 	;;
 esac
 

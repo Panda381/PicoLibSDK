@@ -24,6 +24,7 @@
 
 #include "../inc/sdk_irq.h"
 #include "../inc/sdk_timer.h"
+#include "../inc/sdk_uart.h"
 #include "../usb_inc/sdk_usb_host.h"
 #include "../usb_inc/sdk_usb_host_cdc.h"	// USB Communication Device Class (host)
 #include "../usb_inc/sdk_usb_host_hid.h"	// USB Human Interface Device Class (host)
@@ -59,8 +60,8 @@ const sUsbHostDrv UsbHostDrv[] = {
 	{
 		UsbHostCdcInit,		// initialize class driver
 		UsbHostCdcTerm,		// terminate class driver
-		UsbHostCdcOpen,		// open device class interface
-		UsbHostCdcCfg,		// configure interface
+		UsbHostCdcOpenFTDI, 	// open device class interface
+		UsbHostCdcCfgFTDI,	// configure interface
 		UsbHostCdcComp,		// transfer complete callback
 		UsbHostCdcClose,	// close device
 		UsbHostCdcSof,		// sending SOF (start of frame; NULL=not used)
@@ -401,6 +402,8 @@ Bool UsbHostParseCfg(u8 dev_addr, const u8* p_desc)
 		// some CDC devices does not use interface association, need to set 2 interfaces manually
 		if ((assoc == 1) && (desc_itf->itf_class == USB_CLASS_CDC) && (desc_itf->itf_subclass == 2)) assoc = 2;
 
+		assoc = 2; // FIXME: force this for now for CDC/FTDI
+
 		// search support of this interface in class device drivers
 		u16 rem_len = desc_end - p_desc; // remaining length
 		u8 drv_id;
@@ -506,6 +509,8 @@ Bool UsbHostGetDesc(u8 dev_addr, u8 desc_type, u8 inx, u16 lang, void* buf, u16 
 // is marked as mounted.
 void UsbHostCfgComp(u8 dev_addr, u8 itf_num)
 {
+	UartPrint("UsbHostCfgComp(%u,%u)\n", dev_addr, itf_num);
+
 	// continue to next interface
 	itf_num++;
 
@@ -556,6 +561,8 @@ void UsbHostCfgComp(u8 dev_addr, u8 itf_num)
 //  xres ... transfer result USB_XRES_*
 void UsbHostEnum(u8 dev_addr, u8 xres)
 {
+	UartPrint("UsbHostEnum(%u)\n", UsbHostEnumState);
+
 	// idle
 	if (UsbHostEnumState == USB_HOST_ENUM_IDLE) return;
 
