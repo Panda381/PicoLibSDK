@@ -438,6 +438,7 @@ void UartStdioHandler(void)
 	while (UART_RecvReady(UART_STDIO_PORT)) // received data ready
 	{
 		ch = UART_RecvChar(UART_STDIO_PORT); // receive character from UART
+		UartPrint("%c", ch); // echo character
 		if (RingWriteReady(&UartStdioRxBuf, 1)) // if space in receive buffer
 			RingWrite8(&UartStdioRxBuf, ch); // write character
 		// otherwise lost received data if receive buffer is full

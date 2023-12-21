@@ -112,9 +112,11 @@ void UsbHostCdcTerm();
 // open class interface (returns size of used interface, 0=not supported)
 // - At this point, no communications are allowed yet.
 u16 UsbHostCdcOpen(u8 dev_addr, const sUsbDescItf* itf, u16 max_len);
+u16 UsbHostCdcOpenFTDI(u8 dev_addr, const sUsbDescItf* itf, u16 max_len);
 
 // set config interface
 Bool UsbHostCdcCfg(u8 dev_addr, u8 itf_num);
+Bool UsbHostCdcCfgFTDI(u8 dev_addr, u8 itf_num);
 
 // transfer complete callback
 Bool UsbHostCdcComp(u8 dev_addr, u8 dev_epinx, u8 xres, u16 len);

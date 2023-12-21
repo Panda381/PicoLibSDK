@@ -23,6 +23,7 @@
 #if USE_USB_HOST_CDC	// use USB CDC Communication Device Class, value = number of interfaces (host)
 
 #include "../inc/sdk_timer.h"
+#include "../inc/sdk_uart.h"
 #include "../usb_inc/sdk_usb_host.h"
 #include "../usb_inc/sdk_usb_host_cdc.h"
 
@@ -211,6 +212,8 @@ void UsbHostCdcAllRecv()
 // initialize class driver
 void UsbHostCdcInit()
 {
+	UartPrint("UsbHostCdcInit\n");
+
 	memset(UsbHostCdcInter, 0, sizeof(UsbHostCdcInter));
 
 	u8 cdc_inx;
@@ -229,6 +232,34 @@ void UsbHostCdcInit()
 void UsbHostCdcTerm()
 {
 
+}
+
+// FTDI device open
+u16 UsbHostCdcOpenFTDI(u8 dev_addr, const sUsbDescItf* itf, u16 max_len)
+{
+	UartPrint("UsbHostCdcOpenFTDI\n"); // FTDI includes 1 vendor interface and 2 bulk endpoints
+
+	// check descriptor size
+	if (USB_DESC_LEN(itf) > max_len) return 0;
+
+	// allocate new interface
+	u8 cdc_inx = UsbHostCdcNewItf(dev_addr, itf);
+	if (cdc_inx == USB_DRVID_INVALID) return 0;
+
+	// pointer to CDC interface
+	sUsbHostCdcInter* cdc = &UsbHostCdcInter[cdc_inx];
+
+	// skip interface descriptor
+	u16 drv_len = USB_DESC_LEN(itf);
+	const u8* p_desc = USB_DESC_NEXT(itf);
+
+	// open endpoint pair
+	if (!UsbHostOpenEpPair(dev_addr, p_desc, 2, &cdc->ep_out, &cdc->ep_in, NULL, NULL)) return 0;
+
+	// skip endpoint descriptors
+	drv_len += 2*sizeof(sUsbDescEp);
+
+	return drv_len;
 }
 
 // open class interface (returns size of used interface, 0=not supported)
@@ -319,6 +350,69 @@ void UsbHostCdcCfgComp(u8 dev_addr, u8 xres)
 
 	// continue set config interface, use 1 more interface for data interface
 	UsbHostCfgComp(dev_addr, itf_num+1);
+}
+
+void UsbHostCdcCfgFTDILine(u8 dev_addr, u8 xres)
+{
+	UartPrint("UsbHostCdcCfgFTDILine\n");
+
+	// pointer to setup packet
+	sUsbSetupPkt* setup = &UsbSetupRequest;
+
+	// FTDI line setting
+	setup->type    = 0x40  ; // out | vendor | device
+	setup->request = 0x01  ; // line state
+	setup->value   = 0x0303; // enable DTR/RTS
+	setup->index   = 0x0000; // no index
+	setup->length  = 0x0000; // no data
+
+	// send data
+	UsbHostCtrlXfer(dev_addr, NULL, UsbHostCdcCfgComp);
+}
+
+void UsbHostCdcCfgFTDIBaud(u8 dev_addr, u8 xres)
+{
+	UartPrint("UsbHostCdcCfgFTDIBaud\n");
+
+	// pointer to setup packet
+	sUsbSetupPkt* setup = &UsbSetupRequest;
+
+	// FTDI baud rate
+	setup->type    = 0x40  ; // out | vendor | device
+	setup->request = 0x03  ; // set baud rate
+	setup->value   = 0x4138; // 9600 baud (3MHz/312.5)
+	setup->index   = 0x0000; // no index
+	setup->length  = 0x0000; // no data
+
+	// send data
+	UsbHostCtrlXfer(dev_addr, NULL, UsbHostCdcCfgFTDILine);
+}
+
+Bool UsbHostCdcCfgFTDI (u8 dev_addr, u8 itf_num)
+{
+	UartPrint("UsbHostCdcCfgFTDI\n");
+
+	// find interface by interface number (returns interface index, or USB_DRVID_INVALID if not found)
+	u8 cdc_inx = UsbHostCdcFindItf(dev_addr, itf_num);
+	if (cdc_inx == USB_DRVID_INVALID) return False;
+
+	// pointer to CDC interface
+	sUsbHostCdcInter* cdc = &UsbHostCdcInter[cdc_inx];
+
+	// pointer to setup packet
+	sUsbSetupPkt* setup = &UsbSetupRequest;
+
+	// FTDI controller reset
+	setup->type    = 0x40  ; // out | vendor | device
+	setup->request = 0x00  ; // reset
+	setup->value   = 0x0000; // purges RX/TX, clears DTR/RTS, data as 8N1, leave baud
+	setup->index   = 0x0000; // no index
+	setup->length  = 0x0000; // no data
+
+	// send data
+	UsbHostCdcCfg_Itf = itf_num; // temporary save interface
+	UsbHostCtrlXfer(dev_addr, NULL, UsbHostCdcCfgFTDIBaud);
+	return True;
 }
 
 // set config interface
