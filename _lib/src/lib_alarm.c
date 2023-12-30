@@ -71,7 +71,6 @@ void AlarmUpdate()
 	sListEntry* entry; // pointer to current entry
 	sListEntry* next; // temporary pointer to next entry
 	sAlarm* a; // alarm entry from the list entry
-	sList* head2; // 
 
 	// safe walking through alarms, entry can be deleted from the callback
 	u32 systime = SysTime; // get current system time

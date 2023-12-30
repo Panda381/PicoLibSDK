@@ -181,7 +181,7 @@ void UsbHostEnumStop();
 //  buf ... data buffer to receive descriptor
 //  len ... length of data
 //  cb ... callback
-Bool UsbHostGetDesc(u8 dev_addr, u8 desc_type, u8 inx, u16 lang, void* buf, u16 len, pUsbHostSetupCompCB cb);
+void UsbHostGetDesc(u8 dev_addr, u8 desc_type, u8 inx, u16 lang, void* buf, u16 len, pUsbHostSetupCompCB cb);
 
 // set config complete
 //  dev_addr ... device address

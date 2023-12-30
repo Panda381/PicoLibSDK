@@ -36,7 +36,7 @@
 #include "dvi.pio.h"
 #include "../minivga/minivga.h" // VGA display
 
-#define DVI_PIO_OFF	0	// offset of VGA program in PIO memory (must be 0!)
+#define DVI_PIO_OFF	0	// offset of DVI program in PIO memory (must be 0!)
 #define DVI_LANES	3	// number of TMDS lanes (0: blue, 1: green, 2: red, 3: clock)
 #define DVI_SYNC_LANE	0	// synchronization lane (= blue)
 #define DVI_INTERP	0	// interpolator used to encode pixels
@@ -59,6 +59,38 @@
 
 #define DVI_DMA_CB(lane) (DVI_DMA+(lane)*2)	// DVI control DMA channel for specified lane
 #define DVI_DMA_DB(lane) (DVI_DMA+(lane)*2+1)	// DVI data DMA channel for specified lane
+
+#if !USE_MINIVGA			// use mini-VGA display with simple frame buffer:
+
+// frame buffer
+#if USE_FRAMEBUF	// use default display frame buffer
+ALIGNED FRAMETYPE FrameBuf[FRAMESIZE];
+#endif
+
+// back buffer
+#if USE_FRAMEBUF && (BACKBUFSIZE > 0)	// size of back buffer strip
+ALIGNED FRAMETYPE BackBuf[BACKBUFSIZE]; // back buffer strip
+#endif
+
+// display setup
+#if USE_MINIVGA == 2 // use full back buffer
+FRAMETYPE* pDrawBuf = BackBuf;	// current draw buffer
+int DispStripInx = 0;		// current index of back buffer strip (-1 = use full FrameBuf)
+#else
+FRAMETYPE* pDrawBuf = FrameBuf;	// current draw buffer
+int DispStripInx = -1;		// current index of back buffer strip (-1 = use full FrameBuf)
+#endif
+
+int DispMinY = 0;		// minimal Y; base of back buffer strip
+int DispMaxY = HEIGHT;		// maximal Y + 1; end of back buffer strip
+
+// dirty window to update (used only with full back buffer, USE_MINIVGA = 2)
+int DispDirtyX1 = 0;
+int DispDirtyX2 = WIDTH;
+int DispDirtyY1 = 0;
+int DispDirtyY2 = HEIGHT;
+
+#endif // !USE_MINIVGA
 
 // TMDS control symbols (every symbol if twice, 2 x 10 bits in one 32-bit word)
 //   bit 0: HSYNC, bit 1: VSYNC ... sent to sync lane 0 (= blue)
@@ -130,7 +162,7 @@ const u8 DviPins[3] = {
 void NOFLASH(DviEncode)(int line, int bufinx)
 {
 	// save interpolators
-	sInterpSave save0, save1;
+	interp_hw_save_t save0, save1;
 	InterpSave(0, &save0);
 	InterpSave(1, &save1);
 
@@ -349,15 +381,10 @@ void NOFLASH(DviLine)()
 // configure one output pin
 void DviPinInit(u8 pin)
 {
-	GPIO_Drive2mA(pin);	// 8mA drive (options: 2/4/8/12 mA)
+	GPIO_Drive2mA(pin);	// 2mA drive (options: 2/4/8/12 mA)
 	GPIO_Slow(pin);		// use slow slew rate control (options: Slow/Fast)
-
-//	GPIO_Drive12mA(pin);	// 8mA drive (options: 2/4/8/12 mA)
-//	GPIO_Fast(pin);		// use slow slew rate control (options: Slow/Fast)
-
 	GPIO_InDisable(pin);	// input disable
 	GPIO_NoPull(pin);	// no pulls
-//	GPIO_PullUp(pin);	// no pulls
 }
 
 // initialize PIO of serializer
@@ -370,7 +397,11 @@ void DviPioInit()
 	PioInit(DVI_PIO);
 
 	// load PIO program
+#if DVI_GPIO_INV
+	PioLoadProg(DVI_PIO, dvi_inv_program_instructions, count_of(dvi_inv_program_instructions), DVI_PIO_OFF);
+#else
 	PioLoadProg(DVI_PIO, dvi_program_instructions, count_of(dvi_program_instructions), DVI_PIO_OFF);
+#endif
 
 	// initialize all lanes
 	for (i = 0; i < DVI_LANES; i++)
@@ -477,15 +508,15 @@ void DviBufInit()
 	cb = DviSetCb(DviLineBufDark0, 0, &DviCtrlSyms[0], DVI_HFRONT/2, 2, False); // front porch
 	cb = DviSetCb(cb, 0, &DviCtrlSyms[1], DVI_HSYNC/2, 2, False); // HSYNC
 	cb = DviSetCb(cb, 0, &DviCtrlSyms[0], DVI_HBACK/2, 2, True); // back porch + IRQ
-	DviSetCb(cb, 0, &DviCtrlSyms[4], DVI_HACT/2, 2, False); // dark
+	DviSetCb(cb, 0, &DviCtrlSyms[0], DVI_HACT/2, 2, False); // dark
 
 	// lane 1 dark line
-	cb = DviSetCb(DviLineBufDark12, 1, &DviCtrlSyms[0], (DVI_HFRONT+DVI_HSYNC+DVI_HBACK)/2, 2, False); // front+hsync+back porch
-	cb = DviSetCb(cb, 1, &DviCtrlSyms[0], DVI_HACT/2, 2, False); // dark
+	cb = DviSetCb(DviLineBufDark12, 1, &DviCtrlSyms[3], (DVI_HFRONT+DVI_HSYNC+DVI_HBACK)/2, 2, False); // front+hsync+back porch
+	cb = DviSetCb(cb, 1, &DviCtrlSyms[3], DVI_HACT/2, 2, False); // dark
 
 	// lane 2 dark line
-	cb = DviSetCb(cb, 2, &DviCtrlSyms[0], (DVI_HFRONT+DVI_HSYNC+DVI_HBACK)/2, 2, False); // front+hsync+back porch
-	DviSetCb(cb, 2, &DviCtrlSyms[0], DVI_HACT/2, 2, False); // dark
+	cb = DviSetCb(cb, 2, &DviCtrlSyms[3], (DVI_HFRONT+DVI_HSYNC+DVI_HBACK)/2, 2, False); // front+hsync+back porch
+	DviSetCb(cb, 2, &DviCtrlSyms[3], DVI_HACT/2, 2, False); // dark
 
 	// lane 0 image lines
 	cb = DviLineBufImg0;
@@ -503,7 +534,7 @@ void DviBufInit()
 	cb = DviLineBufImg12;
 	for (i = 0; i < 4; i++)
 	{
-		cb = DviSetCb(cb, i/2+1, &DviCtrlSyms[0], (DVI_HFRONT+DVI_HSYNC+DVI_HBACK)/2, 2, False); // front+hsync+back porch
+		cb = DviSetCb(cb, i/2+1, &DviCtrlSyms[3], (DVI_HFRONT+DVI_HSYNC+DVI_HBACK)/2, 2, False); // front+hsync+back porch
 		cb = DviSetCb(cb, i/2+1, db, DVI_HACT/2, 0, False); // image
 		db += DBUF_SIZE/4;
 	}
@@ -541,7 +572,7 @@ void DviDmaInit()
 				DMA_CTRL_EN);		// enable DMA
 	}
 
-	// enable DMA channel IRQ0
+	// enable DMA channel IRQ1
 	DMA_IRQ1Enable(DVI_DMA_DB0);
 
 	// set DMA IRQ handler
@@ -686,13 +717,11 @@ void NOFLASH(DviCore)()
 		{
 			if (req == DVI_REQINIT)
 			{
-//				VgaInit(); // initialize
 				DviInit(); // initialize
 			}
 			else
 			{
 				DviTerm(); // terminate
-//				VgaTerm();
 			}
 
 			DviReq = DVI_REQNO;
@@ -724,5 +753,183 @@ void DviStop()
 	// core 1 reset
 	Core1Reset();
 }
+
+#if !USE_MINIVGA
+
+// use back buffer
+#if BACKBUFSIZE > 0
+
+// set strip of back buffer (-1 = use full FrameBuffer)
+void DispSetStrip(int inx)
+{
+	if (inx < 0)
+	{
+		// no back buffer
+		pDrawBuf = FrameBuf;	// current draw buffer
+		DispStripInx = -1;	// current index of back buffer strip
+		DispMinY = 0;		// minimal Y; base of back buffer strip
+		DispMaxY = HEIGHT;	// maximal Y + 1; end of back buffer strip
+	}
+	else
+	{
+		// use back buffer
+		pDrawBuf = BackBuf;	// current draw buffer
+		if (inx >= DISP_STRIP_NUM) inx = 0;
+		DispStripInx = inx;	// current index of back buffer strip
+		DispMinY = inx * DISP_STRIP_HEIGHT;	// minimal Y; base of back buffer strip
+		DispMaxY = DispMinY + DISP_STRIP_HEIGHT; // maximal Y + 1; end of back buffer strip
+	}
+}
+
+// load back buffer from frame buffer
+void DispLoad()
+{
+	if (DispStripInx >= 0) memcpy(BackBuf, &FrameBuf[DispMinY*WIDTHLEN], BACKBUFSIZE*sizeof(FRAMETYPE));
+}
+
+// use full back buffer
+#if USE_DVI == 2
+
+// set dirty all frame buffer
+void DispDirtyAll()
+{
+	DispDirtyX1 = 0;
+	DispDirtyX2 = WIDTH;
+	DispDirtyY1 = 0;
+	DispDirtyY2 = HEIGHT;
+}
+
+// set dirty none (clear after update)
+void DispDirtyNone()
+{
+	DispDirtyX1 = WIDTH;
+	DispDirtyX2 = 0;
+	DispDirtyY1 = HEIGHT;
+	DispDirtyY2 = 0;
+}
+
+// update dirty area by rectangle (check valid range)
+void DispDirtyRect(int x, int y, int w, int h)
+{
+	// use back buffer
+	if (DispStripInx >= 0)
+	{
+		if (x < 0)
+		{
+			w += x;
+			x = 0;
+		}
+		if (x + w > WIDTH) w = WIDTH - x;
+		if (w <= 0) return;
+
+		if (y < 0)
+		{
+			h += y;
+			y = 0;
+		}
+		if (y + h > HEIGHT) h = HEIGHT - y;
+		if (h <= 0) return;
+
+		if (x < DispDirtyX1) DispDirtyX1 = x;
+		if (x + w > DispDirtyX2) DispDirtyX2 = x + w;
+		if (y < DispDirtyY1) DispDirtyY1 = y;
+		if (y + h > DispDirtyY2) DispDirtyY2 = y + h;
+	}
+}
+
+// update dirty area by pixel (check valid range)
+void DispDirtyPoint(int x, int y)
+{
+	// use back buffer
+	if (DispStripInx >= 0)
+	{
+		if (((u32)x < (u32)WIDTH) && ((u32)y < (u32)HEIGHT))
+		{
+			if (x < DispDirtyX1) DispDirtyX1 = x;
+			if (x + 1 > DispDirtyX2) DispDirtyX2 = x + 1;
+			if (y < DispDirtyY1) DispDirtyY1 = y;
+			if (y + 1 > DispDirtyY2) DispDirtyY2 = y + 1;
+		}
+	}
+}
+
+// use full back buffer
+#endif // USE_DVI == 2
+
+// update - send dirty window to display (or write back buffer to frame buffer)
+void DispUpdate()
+{
+	// use back buffer
+	if (DispStripInx >= 0)
+	{
+
+// use full back buffer
+#if USE_DVI == 2
+
+		if ((DispDirtyX1 < DispDirtyX2) && (DispDirtyY1 < DispDirtyY2))
+		{
+			// height of segment
+			int i = DispDirtyY2 - DispDirtyY1;
+
+			// align
+			int x1 = FRAME_ALIGN_DN(DispDirtyX1) >> FRAME_SHIFTX;
+			int x2 = FRAME_ALIGN_UP(DispDirtyX2) >> FRAME_SHIFTX;
+			int w = (x2 - x1)*sizeof(FRAMETYPE);
+
+			// copy data
+			int off = x1 + DispDirtyY1*WIDTHLEN;
+			FRAMETYPE* d = &FrameBuf[off];
+			FRAMETYPE* s = &BackBuf[off];
+			for (; i > 0; i--)
+			{
+				memcpy(d, s, w);
+				s += WIDTHLEN;
+				d += WIDTHLEN;
+			}
+
+			// set dirty none
+			DispDirtyNone();
+		}
+
+// use strip back buffer
+#else // USE_DVI == 2
+
+		memcpy(&FrameBuf[DispMinY*WIDTHLEN], BackBuf, BACKBUFSIZE*sizeof(FRAMETYPE));
+
+#endif // USE_DVI == 2
+
+	}
+}
+
+// auto update after delta time in [ms] of running program
+void DispAutoUpdate(u32 ms)
+{
+	// interval in [us]
+	u32 us = ms*1000;
+
+	// check interval from last update
+	if ((u32)(Time() - DispAutoUpdateLast) >= us)
+	{
+		// update display
+		DispUpdate();
+
+		// start measure new time interval of running program
+		DispAutoUpdateLast = Time();
+	}
+}
+
+// refresh update all display
+void DispUpdateAll()
+{
+	// set dirty all frame buffer
+	DispDirtyAll();
+
+	// update - send dirty window to display
+	DispUpdate();
+}
+
+#endif // BACKBUFSIZE > 0
+
+#endif // !USE_MINIVGA
 
 #endif // USE_DVI

@@ -275,7 +275,7 @@ bool hardware_alarm_set_target(uint alarm_num, absolute_time_t target)
 	u64 now = Time64();
 
 	// target time
-	u64 t = to_us_since_boot(t);
+	u64 t = to_us_since_boot(target);
 
 	// is target time missed?
 	Bool missed = now >= t;

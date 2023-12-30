@@ -32,7 +32,7 @@ Results can be written back to the accumulators.
 
 #if USE_ORIGSDK		// include interface of original SDK
 #include "orig/orig_sio.h"		// constants of original SDK
-#endif // USE_ORIGSDK
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -148,7 +148,7 @@ INLINE void InterpCfgUnsigned(u32* cfg) { *cfg &= ~B15; }
 
 // config set raw add option (mask+shift is bypassed for this result, add raw input value (does not affect FULL result)) (to setup, write configuration word to control register)
 //  en ... True = shift+mask is bypassed, False = shif+mask is applied
-INLINE void InterpCfgAddRaw(u32* cfg, Bool en) { if (en) *cfg |= B18; else *cfg & ~B18; }
+INLINE void InterpCfgAddRaw(u32* cfg, Bool en) { if (en) *cfg |= B18; else *cfg &= ~B18; }
 
 // config set blending mode (only on interpolator 0 of each CPU core) (to setup, write configuration word to control register)
 //  en ... True = LANE1 result is linear interpolation between BASE0 and BASE1,

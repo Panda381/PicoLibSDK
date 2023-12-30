@@ -14,6 +14,8 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#if USE_PICOPAD
+
 #ifndef _PICOPAD_INIT_H
 #define _PICOPAD_INIT_H
 
@@ -32,3 +34,5 @@ void DeviceTerm();
 #endif
 
 #endif // _PICOPAD_INIT_H
+
+#endif // USE_PICOPAD

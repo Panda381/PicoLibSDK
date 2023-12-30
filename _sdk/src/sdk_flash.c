@@ -54,11 +54,12 @@ u8 FlashManufact = 0;		// flash manufacturer (0xef = Winbond)
 u8 FlashType = 0;		// flash type (0x40 = W25Q16JV-IQ/JQ, 0x70 = W25Q16JV-IM/JM)
 u32 FlashSize = 0;		// flash size in bytes
 
+typedef void (*pBoot2)(void); // Boot2 function
+
 #if !NO_FLASH
 // check boot2 crc code, if it is valid
 Bool NOINLINE Boot2Check()
 {
-	int i;
 	u32 crc = Crc32ASlow(Boot2, BOOT2_SIZE_BYTES-4);
 	return crc == Boot2[BOOT2_SIZE_BYTES/4-1];
 }
@@ -78,6 +79,7 @@ void NOFLASH(FlashErase)(u32 addr, u32 count)
 	// copy boot 2 loader into temporary buffer - it is located in the stack, but it will fit OK
 	u32 boot2[BOOT2_SIZE_BYTES/4-1];
 	memcpy(boot2, Boot2, BOOT2_SIZE_BYTES-4);
+
 
 #endif // !NO_FLASH
 
@@ -116,7 +118,8 @@ void NOFLASH(FlashErase)(u32 addr, u32 count)
 	if (ok && (boot2[0] != 0) && (boot2[0] != (u32)-1))
 	{
 		// run boot 2 loader to restore XIP flash settings
-		((void(*)(void))boot2+1)();
+		pBoot2 p = (pBoot2)((u32)boot2 + 1);
+		p();
 	}
 	else
 		// enter XIP mode
@@ -175,7 +178,8 @@ void NOFLASH(FlashProgram)(u32 addr, const u8* data, u32 count)
 	if (ok && (boot2[0] != 0) && (boot2[0] != (u32)-1))
 	{
 		// run boot 2 loader to restore XIP flash settings
-		((void(*)(void))boot2+1)();
+		pBoot2 p = (pBoot2)((u32)boot2 + 1);
+		p();
 	}
 	else
 		// enter XIP mode
@@ -264,7 +268,8 @@ void NOFLASH(FlashCmd)(const u8* txbuf, u8* rxbuf, u32 count)
 	if (ok && (boot2[0] != 0) && (boot2[0] != (u32)-1))
 	{
 		// run boot 2 loader to restore XIP flash settings
-		((void(*)(void))boot2+1)();
+		pBoot2 p = (pBoot2)((u32)boot2 + 1);
+		p();
 	}
 	else
 		// enter XIP mode

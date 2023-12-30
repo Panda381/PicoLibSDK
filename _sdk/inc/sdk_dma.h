@@ -707,7 +707,7 @@ INLINE void channel_config_set_sniff_enable(dma_channel_config *c, bool sniff) {
  * Sniff Enable		false
 */
 INLINE dma_channel_config dma_channel_get_default_config(uint chan)
-	{ dma_channel_config c = { DMA_CfgDef(chan) }; return c; }; 
+	{ dma_channel_config c = { DMA_CfgDef(chan) }; return c; }
 
 // Get the current configuration for the specified channel.
 INLINE dma_channel_config dma_get_channel_config(uint chan)

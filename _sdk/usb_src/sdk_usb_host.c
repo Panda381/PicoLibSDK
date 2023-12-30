@@ -476,7 +476,7 @@ void UsbHostEnumStop()
 //  buf ... data buffer to receive descriptor
 //  len ... length of data
 //  cb ... callback
-Bool UsbHostGetDesc(u8 dev_addr, u8 desc_type, u8 inx, u16 lang, void* buf, u16 len, pUsbHostSetupCompCB cb)
+void UsbHostGetDesc(u8 dev_addr, u8 desc_type, u8 inx, u16 lang, void* buf, u16 len, pUsbHostSetupCompCB cb)
 {
 	// pointer to setup packet
 	sUsbSetupPkt* setup = &UsbSetupRequest;
@@ -711,7 +711,7 @@ void UsbHostEnum(u8 dev_addr, u8 xres)
 	case USB_HOST_ENUM_DEV_DESC:
 		{
 			// pointer to setup packet
-			sUsbSetupPkt* setup = &UsbSetupRequest;
+			//sUsbSetupPkt* setup = &UsbSetupRequest;
 
 			// address of the device
 			u8 dev_addr = UsbHostEnumAddr;

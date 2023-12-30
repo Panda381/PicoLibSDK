@@ -35,3 +35,32 @@ static inline pio_sm_config dvi_program_get_default_config(uint offset) {
 }
 #endif
 
+// ------- //
+// dvi_inv //
+// ------- //
+
+#define dvi_inv_wrap_target 0
+#define dvi_inv_wrap 1
+
+static const uint16_t dvi_inv_program_instructions[] = {
+            //     .wrap_target
+    0x68a1, //  0: out    pc, 1           side 1     
+    0x70a1, //  1: out    pc, 1           side 2     
+            //     .wrap
+};
+
+#if !PICO_NO_HARDWARE
+static const struct pio_program dvi_inv_program = {
+    .instructions = dvi_inv_program_instructions,
+    .length = 2,
+    .origin = 0,
+};
+
+static inline pio_sm_config dvi_inv_program_get_default_config(uint offset) {
+    pio_sm_config c = pio_get_default_sm_config();
+    sm_config_set_wrap(&c, offset + dvi_inv_wrap_target, offset + dvi_inv_wrap);
+    sm_config_set_sideset(&c, 2, false, false);
+    return c;
+}
+#endif
+

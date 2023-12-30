@@ -134,12 +134,10 @@ const char UnitPrefix[UNITPREFIX_NUM] = {
 //  args ... arguments
 u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 {
-	int n;			// temporary number, loading numeric argument
+	int n = 0;		// temporary number, loading numeric argument
 	Bool stop;		// stop parsing
 	u32 len = 0;		// length of output stream
-	char* d;		// destinations
 	Bool zero;		// flag - number is zero
-	char b;			// decoded character
 
 	// characters
 	char ch;		// input character
@@ -150,7 +148,7 @@ u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 	int size;		// size of number in temporary buffer
 	char buf[PR_BUFSIZE];	// temporary print buffer with converted field
 	int realsize;		// real size of printed field (including sign)
-	char* chp;		// character pointer to converted field
+	char* chp = buf;	// character pointer to converted field
 	u8* sb;			// pointer to source data as bytes
 	u16* sw;		// pointer to source data as words
 
@@ -168,19 +166,22 @@ u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 	int ndig;		// number of digits in one group
 
 	// decode floating point number
+#if USE_DOUBLE	// use double support
+	char* d;		// destinations
+	char b = 0;		// decoded character
 	double dbl;		// loaded floating argument
 	int expI;		// exponent
 	double mantD;		// mantissa
 	double dbl2;		// argument loaded as double
-
 	Bool noround;		// flag - do not round floating point
 	Bool useexp;		// flag - use exponent mode
 	int digits;		// total number of digits, without starting zeroes
 	int intdig;		// number of integer digits, including first starting zero
 	int zeros;		// number of starting zeroes (including integer part)
 	int zeros2;		// number of trailing zeroes
-	int alldig;		// number of all digits
 	Bool b1kb;		// byte capacity is in range 1000..1023 (need to display 4 digits)
+#endif
+	int alldig;		// number of all digits
 
 	// open streams
 	if (rstr->open != NULL) rstr->open(rstr);
@@ -213,6 +214,7 @@ u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 		dprec = 0;		// decimal precision (required precision .prec from format string and decimal number, 0 default)
 		retch = 0;		// returned input character (0=none)
 		stop = False;		// stop parsing one parameter
+		size = 0;		// size of number in temporary buffer
 
 		// parse one parameter
 		while (!stop)
@@ -1482,6 +1484,8 @@ char GetChar()
 	ch = KeyChar();
 	if (ch != NOCHAR) return ch;
 #endif
+
+	return NOCHAR;
 }
 
 // get character from stdio, with wait

@@ -21,6 +21,8 @@
 #include "../../_font/_include.h"
 #include "../../_display/st7789/st7789.h"
 #include "../../_display/minivga/minivga.h"
+#include "../../_display/dvi/dvi.h"
+#include "../../_display/dvivga/dvivga.h"
 #include "../inc/lib_stream.h"
 #include "../inc/lib_text.h"
 #include "../inc/lib_print.h"
@@ -1270,7 +1272,7 @@ void DrawChar(char ch, int x, int y, COLTYPE col)
 	int i, j;
 
 	// prepare pointer to font sample
-	const u8* s = &pDrawFont[ch];
+	const u8* s = &pDrawFont[(u8)ch];
 
 // fast mode not with 4-bits per pixel
 #if COLBITS != 4
@@ -1340,7 +1342,7 @@ void DrawCharH(char ch, int x, int y, COLTYPE col)
 	int w = WIDTH;
 
 	// prepare pointer to font sample
-	const u8* s = &pDrawFont[ch];
+	const u8* s = &pDrawFont[(u8)ch];
 
 // fast mode not with 4-bits per pixel
 #if COLBITS != 4
@@ -1417,7 +1419,7 @@ void DrawCharW(char ch, int x, int y, COLTYPE col)
 	int i, j;
 
 	// prepare pointer to font sample
-	const u8* s = &pDrawFont[ch];
+	const u8* s = &pDrawFont[(u8)ch];
 
 // fast mode not with 4-bits per pixel
 #if COLBITS != 4
@@ -1495,7 +1497,7 @@ void DrawChar2(char ch, int x, int y, COLTYPE col)
 	int w = WIDTH;
 
 	// prepare pointer to font sample
-	const u8* s = &pDrawFont[ch];
+	const u8* s = &pDrawFont[(u8)ch];
 
 // fast mode not with 4-bits per pixel
 #if COLBITS != 4
@@ -1577,7 +1579,7 @@ void DrawCharBg(char ch, int x, int y, COLTYPE col, COLTYPE bgcol)
 	u16 c;
 
 	// prepare pointer to font sample
-	const u8* s = &pDrawFont[ch];
+	const u8* s = &pDrawFont[(u8)ch];
 
 // fast mode not with 4-bits per pixel
 #if COLBITS != 4
@@ -1650,7 +1652,7 @@ void DrawCharBgH(char ch, int x, int y, COLTYPE col, COLTYPE bgcol)
 	int w = WIDTH;
 
 	// prepare pointer to font sample
-	const u8* s = &pDrawFont[ch];
+	const u8* s = &pDrawFont[(u8)ch];
 
 // fast mode not with 4-bits per pixel
 #if COLBITS != 4
@@ -1730,7 +1732,7 @@ void DrawCharBgW(char ch, int x, int y, COLTYPE col, COLTYPE bgcol)
 	u16 c;
 
 	// prepare pointer to font sample
-	const u8* s = &pDrawFont[ch];
+	const u8* s = &pDrawFont[(u8)ch];
 
 // fast mode not with 4-bits per pixel
 #if COLBITS != 4
@@ -1809,7 +1811,7 @@ void DrawCharBg2(char ch, int x, int y, COLTYPE col, COLTYPE bgcol)
 	int w = WIDTH;
 
 	// prepare pointer to font sample
-	const u8* s = &pDrawFont[ch];
+	const u8* s = &pDrawFont[(u8)ch];
 
 // fast mode not with 4-bits per pixel
 #if COLBITS != 4
@@ -1894,7 +1896,7 @@ void DrawCharBg4(char ch, int x, int y, COLTYPE col, COLTYPE bgcol)
 	int w = WIDTH;
 
 	// prepare pointer to font sample
-	const u8* s = &pDrawFont[ch];
+	const u8* s = &pDrawFont[(u8)ch];
 
 // fast mode not with 4-bits per pixel
 #if COLBITS != 4
@@ -2594,7 +2596,7 @@ void DrawImgRle(const u8* src, const u16* pal, int xd, int yd, int w, int h)
 	int rlenum = 0;
 	int rawnum = 0;
 	u8 b;
-	u16 rlepix;
+	u16 rlepix = 0; // initializing variable to satisfy the compiler
 	if (yd + h > DispMaxY) h = DispMaxY - yd;
 
 	for (; h > 0; h--)
@@ -2695,7 +2697,7 @@ void DrawImg4Rle(const u8* src, const u16* pal, int xd, int yd, int w, int h)
 	int rawnum = 0;
 	int x = 0;
 	u8 b;
-	u16 rlepix;
+	u16 rlepix = 0; // initializing variable to satisfy the compiler
 	if (yd + h > DispMaxY) h = DispMaxY - yd;
 
 	for (; h > 0; h--)
@@ -4988,7 +4990,7 @@ void DrawImgLine(const COLTYPE* src, int xd, int yd, int wd, int ws, int wbs)
 
 	// prepare buffers
 	COLTYPE* d = &pDrawBuf[xd + (yd-DispMinY)*WIDTH]; // destination address
-	int i, j;
+	int i;
 
 	int dadd = 0;
 	for (i = 0; i < wd; i++)
@@ -5019,7 +5021,7 @@ void DrawImgPalLine(const u8* src, const u16* pal, int xd, int yd, int wd, int w
 
 	// prepare buffers
 	u16* d = &pDrawBuf[xd + (yd-DispMinY)*WIDTH]; // destination address
-	int i, j;
+	int i;
 
 	int dadd = 0;
 	for (i = 0; i < wd; i++)
@@ -5045,7 +5047,7 @@ void DrawImg4PalLine(const u8* src, const u16* pal, int xd, int yd, int wd, int 
 
 	// prepare buffers
 	u16* d = &pDrawBuf[xd + (yd-DispMinY)*WIDTH]; // destination address
-	int i, j, x;
+	int i, x;
 
 	int dadd = 0;
 	x = 0;
@@ -5254,6 +5256,77 @@ void DrawScroll()
 	// load screen to back buffer
 	DispLoad();
 }
+
+#if COLBITS != 4
+
+// scroll rectangle up (in frame buffer, updates screen) ... not in 4-bit mode
+//   x ... X coordinate of rectangle
+//   y ... Y coordinate of rectangle
+//   w ... width of rectangle
+//   h ... height of rectangle
+//   dy ... number of lines to scroll up
+//   col ... color to clear new space
+void DrawScrollRect(int x, int y, int w, int h, int dy, COLTYPE col)
+{
+	// update screen
+	DispUpdate();
+
+	// limit x
+	if (x < 0)
+	{
+		w += x;
+		x = 0;
+	}
+
+	// limit w
+	if (x + w > WIDTH) w = WIDTH - x;
+	if (w <= 0) return;
+
+	// limit y
+	if (y < 0)
+	{
+		h += y;
+		y = 0;
+	}
+
+	// limit h
+	if (y + h > HEIGHT) h = HEIGHT - y;
+	if (h <= 0) return;
+
+	// update dirty rectangle
+	DispDirtyRect(x, y, w, h);
+
+	// prepare shift
+	if (dy > h) dy = h;
+	if (dy <= 0) return;
+	h -= dy; // scrolled lines
+
+	// scroll
+	FRAMETYPE* d = &FrameBuf[x + y*WIDTH];
+	FRAMETYPE* s = &FrameBuf[x + (y+dy)*WIDTH];
+	int w2 = w * sizeof(FRAMETYPE);
+	for (; h > 0; h--)
+	{
+		// copy 1 line
+		memcpy(d, s, w2);
+		s += WIDTH;
+		d += WIDTH;
+	}
+
+	// clear remaining lines
+	int wb = WIDTH - w;
+	int i;
+	for (; dy > 0; dy--)
+	{
+		for (i = w; i > 0; i--) *d++ = col;
+		d += wb;
+	}
+
+	// load screen to back buffer
+	DispLoad();
+}
+
+#endif // COLBITS != 4
 
 // console print character (without display update)
 //   Control characters:

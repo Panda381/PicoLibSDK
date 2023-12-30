@@ -16,6 +16,8 @@
 
 #include "../../global.h"	// globals
 
+#if USE_DEMOVGA
+
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "../../_sdk/inc/sdk_timer.h"
 #include "../../_sdk/inc/sdk_cpu.h"
@@ -195,3 +197,5 @@ void KeyWaitNoPressed()
 {
 	while (!KeyNoPressed()) {}
 }
+
+#endif // USE_DEMOVGA

@@ -499,6 +499,7 @@ void queue_init_with_spinlock(queue_t *q, uint element_size, uint element_count,
 {
 	lock_init(&q->core, spinlock_num);
 	q->data = (u8*)calloc(element_count + 1, element_size);
+	if (q->data == NULL) panic("queue_init_with_spinlock calloc!");
 	q->element_count = (u16)element_count;
 	q->element_size = (u16)element_size;
 	q->wptr = 0;

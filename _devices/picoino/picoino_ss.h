@@ -14,6 +14,8 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#if USE_PICOINO
+
 #ifndef _PICOINO_SS_H
 #define _PICOINO_SS_H
 
@@ -33,3 +35,5 @@ void ScreenShot();
 #endif
 
 #endif // _PICOINO_SS_H
+
+#endif // USE_PICOINO

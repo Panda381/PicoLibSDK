@@ -166,6 +166,13 @@ u32 GetUnixTime(s16* ms, s16* us)
 		// get Unix time
 		t2 = UnixTime;
 	}
+	else
+	{
+		// initialization of variables to satisfy the compiler
+		m2 = 0;
+		u2 = 0;
+		t2 = 0;
+	}
 
 	// on core 1 use multiply passes (result may be unstable)
 	while (True)

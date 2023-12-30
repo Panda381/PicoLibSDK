@@ -507,6 +507,19 @@ COLTYPE BlendCol16(COLTYPE col1, COLTYPE col2, u8 level);
 // scroll screen one row up
 void DrawScroll();
 
+#if COLBITS != 4
+
+// scroll rectangle up (in frame buffer, updates screen) ... not in 4-bit mode
+//   x ... X coordinate of rectangle
+//   y ... Y coordinate of rectangle
+//   w ... width of rectangle
+//   h ... height of rectangle
+//   dy ... number of lines to scroll up
+//   col ... color to clear new space
+void DrawScrollRect(int x, int y, int w, int h, int dy, COLTYPE col);
+
+#endif // COLBITS != 4
+
 // console print character (without display update)
 //   Control characters:
 //     0x01 '\1' ^A ... set not-inverted text

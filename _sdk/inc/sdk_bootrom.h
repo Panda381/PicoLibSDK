@@ -193,7 +193,7 @@ typedef void* (*rom_table_lookup_fn)(u16* table, u32 code);
 // find ROM function given by the code INLINE (returns NULL if not found)
 INLINE void* rom_func_lookup_inline(u32 code)
 {
-	pTableLookup lookup = (pTableLookup)ROM_HWORD_PTR(0x18);
+	pTableLookup lookup = (pTableLookup)(u32)ROM_HWORD_PTR(0x18);
 	u16* tab = (u16*)ROM_HWORD_PTR(0x14);
 	return lookup(tab, code);
 }

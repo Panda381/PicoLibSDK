@@ -1,0 +1,2972 @@
+		; ==== Firmware of Busicom 141-PF (Unicom 141P) calculator, based on Intel 4004 processor ====
+		; binaries: Tim McNerney and Fred Huettig
+		; disassembly and analysis: Barry Silverman, Brian Silverman, Tim McNerney, Lajos Kintli
+		; more comments and re-edited for AS4 assembly: Miroslav Nemecek
+		
+			.strict			; strict mode (requires register names, not register numbers)
+		
+		; ----- start main loop, clear accumulator and carry
+		; All registers and memory are cleared on start of processor
+		
+000 F0		Reset:	clb			; clear A and C
+		
+		; ----- wait for end of drum sector signal
+		
+001 11 01	Reset2:	jt	Reset2		; wait while drum sector signal is active (wait if TEST = 0)
+		
+		; ----- call keyboard service
+		; INPUT/OUTPUT: R12 drum sector counter (incremented by 1, or cleared to 0)
+		; OUTPUT: R89 = $00 (select KR)
+		;	  R67 = $10 (select WR)
+		;	  A = 0
+		; DESTROYS: R2, R3
+		; ----------------------------------------------------------------------------
+		; Should be called strictly after sector signal becomes inactive (TEST goes -> 1).
+		; On finish waits for sector signal becomes active (TEST goes -> 0).
+		
+003 50 B0		call	Keyboard	; keyboard service (returns R8R9 = $00 to select KR)
+		
+		; At this point, sector signal is active.
+		
+		; ----- load 2 digits from keyboard buffer (2x right shift through R13)
+		; INPUT: A or R13 = new digit to write to M15 (highest digit)
+		;	 R8 = address of number register
+		;	 R9 = index of last digit + 1 (usually 0 = shift whole number)
+		; OUTPUT: R13 = digit from M0
+		
+		; here is A = 0 = new digit 0 inserted to KR from left; R8R9 = 0 to select KR
+		
+005 51 5F		call	ShiftR		; right shift KR (addressed R8R9 = $00) -> R13 digit from KR.M0
+007 AD			ld	R13		; A <- R13, lower half of scan code from keyboard buffer
+008 B1			xch	R1		; A -> R1, save lower half of scan code
+009 F0			clb			; clear A = 0, Carry = 0
+00A 51 5F		call	ShiftR		; right shift KR -> R13 digit from KR.M0
+00C AD			ld	R13		; A <- R13, upper half of scan code from keyboard buffer
+00D 1C 29		jnz	KeyService	; process if key if valid
+		
+		; ===== no key, status light handling
+		
+		; ----- get overflow status from SR.S2 -> C
+		; INPUT: R8 = 1, index of register WR
+		; OUTPUT: A = 1, C = bit 0 of S2
+		;	 R8 = 5
+		
+00F 68			inc	R8		; shift R8R9 to point to default WR (R8 = 1)
+010 51 73		call	ReadSRS2	; read overflow bit, CY <- SR.S2.bit0
+		
+		; ----- get negative sign
+		; here is R6R7 = $10, R8 = 5, C = overflow
+		
+012 27			src	R67		; selects WR from R6R7
+013 EC			rd0			; A <- read WR.S0, negative sign
+014 F5			ral			; rotate A left with C, A.bit1 = minus sign, A.bit0 = overflow
+015 B3			xch	R3		; R3 <- A, minus and overflow
+		
+		; ----- get memory flag (check if MR is not 0)
+		; INPUT: R8R9 = start address of memory register
+		;	 R5 = function code
+		;	 C = 0
+		; OUTPUT: A = 1, C = 1 if number is 0 (or if number is small <= 14 digits)
+		;	 R8 = 7
+		
+016 68			inc	R8		; increment address R8R9, R8 = 6, R9 = 0
+017 F0			clb			; clear A=0, CY=0
+018 51 A0		call	Check0DR	; check if MR is zero
+01A F3			cmc			; complement Carry, CY=1 if MR is not zero
+01B B3			xch	R3		; A <- R3, minus and overflow flags
+01C F5			ral			; rotate A left into bit 0; A.bit2 = minus sign, A.bit1 = overflow, A.bit0 = memory
+		
+		; ----- output lamp flags to RAM1 port
+		; here is SRC selected to 7; RAM1 is already selected
+		
+01D E1			wmp			; output to RAM1 port lamps (bit 0 = memory, bit 1 = overflow, bit 2 = minut)
+		
+		; ----- advance paper by 1 row, if button "paper advancing" is pressed
+		
+01E 66			inc	R6		; increment R6 to 2 to select ROM2
+01F 27			src	R67		; selects ROM2 from R6R7
+020 EA			rdr			; read ROM2 port (read paper advancing button)
+021 F5			ral			; rotate A left, get printer paper advancing button from bit 3 -> C
+022 F7			tcc			; A <- C, 1=button is pressed
+023 14 00		jz	Reset		; jump to main loop if button is not pressed
+025 52 46		call	PaperAdv_2	; advance paper by 1 row (= 4 drum sector signals)
+027 40 00		jmp	Reset		; jump back to main loop
+		
+		; ===== found key pressed, decrement keyboard buffer pointer by 2
+		; here is KR selected, R8R9 = 0
+		; $029
+		
+		KeyService:
+029 B0			xch	R0		; R0 <- A, keyboard scan code High
+		
+		; ----- decrement keyboard buffer pointer KR.S0
+		
+02A EC			rd0			; load keyboard buffer pointer KR.S0
+02B F8			dec	A		; decrement A
+02C F8			dec	A		; decrement A
+02D E4			wr0			; save new keyboard buffer pointer to KR.S0
+		
+		; ----- read decimal point switch into WR.S3
+		; here is selected row8 of keyboard matrix
+		
+02E 27			src	R67		; select ROM1 and WR from R6R7 (here is R6R7 = $10)
+02F EA			rdr			; read ROM1 port - decimal point switch
+030 E7			wr3			; write it to WR.S3 - number of decimal places
+		
+		; ----- read rounding switch into WS.S2
+		; INPUT: R8R9 = ROM port address, R8 must be 0 ($0x=ROM0)
+		; OUTPUT: A = 0
+		
+031 50 64		call	Key1Shift	; send bit '1' to keyboard shifter, shift to select rounding switch
+033 27			src	R67		; select ROM1 and WR from R6R7
+034 EA			rdr			; read ROM1 port - runding switch
+035 E6			wr2			; write it to WR.S2 - rounding switch
+		
+		; ----- translate key code ($81..$A0) to function code and parameter, from table KeyTab
+		
+036 34			fin	R45		; fetch table PC:R1R0 to R4R5, translate scan code into function code and parameter
+		
+		; ----- translate function code to macro address -> R0R1 (table MacroTab)
+		
+037 20 A0		fim	R01,@MacroTab0	; $A0; R0R1 <- $A0, translation table
+039 A5			ld	R5		; A <- R5, function code
+03A B1			xch	R1		; A <-> R1
+03B 30			fin	R01		; fetch table PC:R0R1 to R0R1, translate function code to macro address
+		
+		; ----- read overflow bit from SR.S2.bit0 -> C
+		; here is R8R9 = 0
+		
+03C 68			inc	R8		; increment R8R9 address to point default WR
+03D 51 73		call	ReadSRS2	; read overflow bit, C <- SR.S2.bit0
+		
+		; ----- clear status lamps
+		; here is selected RAM1 from R8R9 = $50
+		
+03F D0			ldi	0		; A <- 0
+040 E1			wmp			; output RAM1, clear status lamps
+		
+		; ----- overflow blocks functions, only C and CE are allowed
+		
+041 D1			ldi	1		; A <- 1
+042 F3			cmc			; complement C, 0 if overflow
+043 F5			ral			; A.bit0 <- !overflow flag (0 if overflow), bit1 = 1
+						; here is A = 2 if overflow, or 3 if not oferflow
+044 FC			kbp			; convert, A <- 15 if not overflow, 2 if overflow
+		; function code: 1=div/mul, 2=+/-, 3=M+/M-, 4=Ex, 5=diamonds, 6=00, 7=RM,
+		;	8= =,M=+/M=-, 9=Sqrt, 10=%, 11=CM, 12=000, 13=digit, sign, DP, 14=CE, 15=C
+045 85			add	R5		; A <- A + R5 (here is C=0), add function code
+						; - if there is no overflow, all functions set CY flag
+						; - if there is overflow, only 'C' and 'CE' functions set CY flag
+046 1A 00		jnc	Reset		; go to main loop if function is blocked
+048 F0			clb			; clear A and C
+049 00			nop
+04A 00			nop
+		
+		; Here is: R0R1 macro address at page $300, R12=drum sector counter
+		
+		; ----------------------------------------------------------------------------
+		;                        Macro code interpreter
+		; ----------------------------------------------------------------------------
+		; 	R0R1 = macro code pointer (index in page $300)
+		;	R2R3 = command code
+		;	R4 = parameter (defined by last pressed button)
+		;	R5 = function code (defined by last pressed button)
+		;	R6R7 = $20 pointer to DR number register
+		;	R8R9 = $10 pointer to WR number register
+		;	R10R11 = decimal point counter
+		;	R12 = printer drum sector counter
+		;	R13 = digit, loop counting
+		;	R14 = rounding indicator
+		;	R15 = print position
+		;	A = 0
+		;	CY = 0
+		; On return: A = 0 no jump, A = 1 address follow: CY = 1 jump or CY = 0 skip address
+		; ----------------------------------------------------------------------------
+		; $04B
+		
+		; ----- call keyboard service - only if sector signal is not active (= end of sector drum signal)
+		; INPUT/OUTPUT: R12 drum sector counter (incremented by 1, or cleared to 0)
+		; OUTPUT: R89 = $00 (select KR)
+		;	  R67 = $10 (select WR)
+		;	  A = 0
+		; DESTROYS: R2, R3
+		; ----------------------------------------------------------------------------
+		; Should be called strictly after sector signal becomes inactive (TEST goes -> 1).
+		; On finish waits for sector signal becomes active (TEST goes -> 0).
+		
+04B 11 4F	Exec:	jt	Exec2		; skip keyboard service if sector signal is active
+04D 50 B0		call	Keyboard	; call keyboard service
+		
+		; ----- prepare source and destination number address
+		
+04F 26 20	Exec2:	fim	R67,$20		; R6R7 <- source number address (=DR)
+						;          bit 0..3: select nibble 0
+						;          bit 4..5: select register 2 = DR
+						;          bit 6..7: select RAM chip 0
+051 28 10		fim	R89,$10		; R8R9 <- destination number address (=WR)
+						;          bit 0..3: select nibble 0
+						;          bit 4..5: select register 1 = WR
+						;          bit 6..7: select RAM chip 0
+		
+		; ----- execute one command code
+		; - load command address from page $300, pointer $R0R1, into R2R3
+		; - execute command at addres R2R3 on page $100
+		
+053 53 00		call	CmdFetch	; fetch command code into R2R3 from page $300 = function address LOW
+055 51 00		call	ExecCode	; execute code (command in R2R3 is LOW part of function address at page $100)
+		
+		; ----- increment macro code pointer R0R1
+		
+057 71 5A	Exec3:	ijnz	R1,Exec4	; increment register R1, skip if not zero (low part of code pointer)
+059 60			inc	R0		; increment register R0 (high part of code pointer)
+		
+		; ----- continue next command if returned A was 0, or process jump command if returned A was 1
+		
+05A 14 4B	Exec4:	jz	Exec		; A = 0, no jump, continue with next command
+		
+		; ----- A = 1, process jump command: skip next byte (jump address) if C = 0, do jump if C = 1
+		
+05C F7			tcc			; A <- C, A = 0 to skip next byte, A = 1 to jump
+05D 14 57		jz	Exec3		; C = 0: skip next byte (skip jump address)
+		
+		; ----- if A = 1 and C = 1 go to Jump macro (fetch jump address byte)
+		
+05F 43 02		jmp	JmpFetch	; jump to address from next byte into R0R1 (=new macro pointer)
+		
+		
+		; ----- Keyboard service - no column is active, only increase button scan code by 4
+		; $061
+		
+061 D4		KeyNone:ldi	4		; A <- 4, number of buttons at one row (to increase button scan code by 4)
+062 40 D4		jmp	Keyboard5	; go back
+		
+		; ----------------------------------------------------------------------------
+		;                   Send bit to keyboard/printer shifter
+		; ----------------------------------------------------------------------------
+		; INPUT: A = output to ROM0 port
+		;		bit 0 = keyboard shifter clock (1 active)
+		;		bit 1 = shifter data
+		;		bit 2 = printer hammer shifter clock (1 active)
+		;	 R8R9 = ROM port address, R8 must be 0 ($0x=ROM0)
+		; OUTPUT: A = 0
+		; ----------------------------------------------------------------------------
+		; $064
+		
+		; ----- send '1' to keyboard shifter (1 = row not selected)
+		
+		Key1Shift:
+064 D3			ldi	3		; A <- 3, keyboard shifter clock = 1, shifter data = 1
+		
+		; ----- send A to keyboard/printer shifter
+		
+		SendShift:
+065 29			src	R89		; select ROM0 from R8R9 = $0x
+066 E2			wrr			; write shifter data from A - start write pulse
+067 D0			ldi	0		; A <- 0 (clock and data = 0)
+068 E2			wrr			; write shifter data from A - stop write pulse
+069 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;                          Synchronize printer drum
+		; ----------------------------------------------------------------------------
+		; INPUT/OUTPUT: R12 drum sector counter (incremented by 1, or cleared to 0)
+		; OUTPUT: A = 0, C = 0
+		; DESTROYS: R2, R3
+		; ----------------------------------------------------------------------------
+		; Called strictly after sector signal becomes inactive (TEST goes -> 1).
+		; Increments R12 (sector counter), or clears R12 if index signal is active.
+		; $06A
+		
+		; ----- increment drum sector counter
+		
+		DrumSync:
+06A 6C			inc	R12		; increment drum sector counter
+06B 22 20		fim	R23,$20		; R2R3 <- $20 to select ROM2 port
+		
+		; ----- check drum index signal (bit0 of ROM2 port), wait 15 loops
+		
+		DrumSync2:
+06D 23			src	R23		; select ROM2 from R2R3=$2x (only bits 4..7 are important)
+06E EA			rdr			; A <- read ROM2 port
+06F F6			rar			; A.bit0 -> C (= printer drum index signal)
+070 73 6D		ijnz	R3,DrumSync2	; increment R3 and loop back (short wait, loop 15-times)
+		
+		; ----- reset sector counter if index signal is active (index signal is active if C = 1)
+		
+072 1A 76		jnc	DrumSync4	; jump if C = 0, printer drum index is inactive
+074 F0			clb			; index is active -> clear A and C
+075 BC			xch	R12		; clear R12 (printer drum sector counter)
+		DrumSync4:
+076 C0			ret	0		; return with A = 0, C = 0
+		
+		
+		; ----- Keyboard service - multiply keys pressed, clear keyboard buffer
+		; $077
+		
+077 A9		KeyErr:	ld	R9		; A <- R9, scan code (0 = no key, 15 = multiply keys)
+078 14 D9		jz	Keyboard6	; jump back to next row if no button is pressed in this column
+		
+07A 28 00	KeyErr2:fim	R89,$00		; R8 <- 0 to select KR (keyboard register), R9 <- 0 digit index
+07C F0			clb			; A <- 0 (to write to digits), C <- 0
+07D 51 4A		call	ClearWR	; clear keyboard buffer
+07F 40 F7		jmp	Keyboard7	; exit from keyboard handling
+		
+		; ----------------------------------------------------------------------------
+		;            Keyboard decode table to translate keyboard scan code into
+		;         function code (low digit = R5) and parameter (high digit = R4)
+		; ----------------------------------------------------------------------------
+		; keyboard scan code: bit 7: 1=button pressed flag, bit 0..6=key index 1..32
+		; function code: 1=div/mul, 2=+/-, 3=M+/M-, 4=Ex, 5=diamonds, 6=00, 7=RM,
+		;	8= =,M=+/M=-, 9=Sqrt, 10=%, 11=CM, 12=000, 13=digit, sign, DP, 14=CE, 15=C
+		; parameter to print: 0..9=0..9, 11=.
+		;	or 0=diamond, 1=+, 2=-, 3=X, 4=/, 5=M+, 6=M-, 10=Ex, 11=C, 12=R
+		
+		; $081
+		
+		*= $81	; scan code of first button
+		
+		KeyTab:	
+		
+		; row0
+081 BB		= $bb	; $81 CM (function 11 = CM fn_clrmem, parameter 11 = print C at column 17)
+082 C7		= $c7	; $82 RM (function 7 = RM fn_rm, parameter 12 = print R at column 17)
+083 63		= $63	; $83 M- (function 3 = M+/M- fn_memadd, parameter 6 = print M- at column 18)
+084 53		= $53	; $84 M+ (function 3 = M+/M- fn_memadd, parameter 5 = print M+ at column 18)
+		; row1
+085 19		= $19	; $85 SQRT (function 9 = Sqrt fn_sqrt, parameter 1)
+086 1A		= $1a	; $86 % (function 10 = % fn_percnt, parameter 1)
+087 68		= $68	; $87 M=- (function 8 = =/M=+/M=- fn_memeq, parameter 6 = print M-)
+088 58		= $58	; $88 M=+ (function 8 = =/M=+/M=- fn_memeq, parameter 5 = print M+)
+		; row2
+089 05		= $05	; $89 diamond (function 5 = diamond fn_diamnd, parameter 0)
+08A 41		= $41	; $8A / (function 1 = mul/div fn_muldiv, parameter 4 = last operation /)
+08B 31		= $31	; $8B * (function 1 = mul/div fn_muldiv, parameter 3 = last operation *)
+08C 18		= $18	; $8C = (function 8 = =/M=+/M=- fn_memeq, parameter 1)
+		; row3
+08D 22		= $22	; $8D - (function 2 = +/- fn_addsub, parameter 2 = last operation -)
+08E 12		= $12	; $8E + (function 2 = +/- fn_addsub, parameter 1 = last operation +)
+08F 05		= $05	; $8F diamond2 (function 5 = diamond fn_diamnd, parameter 0)
+090 0C		= $0c	; $90 000 (function 12 = 1100 = enter 2 more digits 0 fn_digit, parameter 0 = enter digit 0)
+		; row4
+091 9D		= $9d	; $91 9 (function 13 = digit fn_digit, parameter 9 = enter digit 9)
+092 6D		= $6d	; $92 6 (function 13 = digit fn_digit, parameter 6 = enter digit 6)
+093 3D		= $3d	; $93 3 (function 13 = digit fn_digit, parameter 3 = enter digit 3)
+094 BD		= $bd	; $94 . (function 13 = digit fn_digit, parameter 11 = enter decimal point)
+		; row5
+095 8D		= $8d	; $95 8 (function 13 = digit fn_digit, parameter 8 = enter digit 8)
+096 5D		= $5d	; $96 5 (function 13 = digit fn_digit, parameter 5 = enter digit 5)
+097 2D		= $2d	; $97 2 (function 13 = digit fn_digit, parameter 2 = enter digit 2)
+098 06		= $06	; $98 00 (function 6 = 01100 = enter 1 more digit 0 fn_digit, parameter 0 = enter digit 0)
+		; row6
+099 7D		= $7d	; $99 7 (function 13 = digit fn_digit, parameter 7 = enter digit 7)
+09A 4D		= $4d	; $9A 4 (function 13 = digit fn_digit, parameter 4 = enter digit 4)
+09B 1D		= $1d	; $9B 1 (function 13 = digit fn_digit, parameter 1 = enter digit 1)
+09C 0D		= $0d	; $9C 0 (function 13 = digit fn_digit, parameter 0 = enter digit 0)
+		; row7
+09D AD		= $ad	; $9D S (sign +/-) (function 13 = digit fn_digit, parameter 10 = sign)
+09E A4		= $a4	; $9E EX (function 4 = Ex fn_ex, parameter 10 = print Ex at column 18)
+09F 0E		= $0e	; $9F CE (function 14 = CE fn_cleare, parameter 0)
+		MacroTab0:	; start of MacroTab with low nibble = 0
+0A0 BF		= $bf	; $A0 C (function 15 = C fn_clear, parameter 11 = print C)
+		
+		; ----------------------------------------------------------------------------
+		;      Table for translating function code to macro address (on page $300)
+		; ----------------------------------------------------------------------------
+		; $0A1
+		
+		;*= $A1	; first entry
+		
+		MacroTab:
+0A1 06		= @fn_muldiv	; $06	; 1: div/mul
+0A2 91		= @fn_addsub	; $91	; 2: +/-
+0A3 98		= @fn_memadd	; $98	; 3: M+/M-
+0A4 F1		= @fn_ex	; $f1	; 4: Ex
+0A5 CD		= @fn_diamnd	; $cd	; 5: diamonds
+0A6 D7		= @fn_digit	; $d7	; 6: 00
+0A7 FD		= @fn_rm	; $fd	; 7: RM
+0A8 8A		= @fn_memeq	; $8a	; 8: =/M=+/M=-
+0A9 05		= @fn_sqrt	; $05	; 9: Sqrt
+0AA 61		= @fn_percnt	; $61	; 10: %
+0AB F9		= @fn_clrmem	; $f9	; 11: CM
+0AC D7		= @fn_digit	; $d7	; 12: 000
+0AD D7		= @fn_digit	; $d7	; 13: digit/sign/DP
+0AE CA		= @fn_cleare	; $ca	; 14: CE
+0AF C5		= @fn_clear	; $c5	; 15: C
+		
+		; ----------------------------------------------------------------------------
+		;                               Keyboard service
+		; ----------------------------------------------------------------------------
+		; INPUT/OUTPUT: R12 drum sector counter (incremented by 1, or cleared to 0)
+		; OUTPUT: R89 = $00 (select KR)
+		;	  R67 = $10 (select WR)
+		;	  A = 0
+		; DESTROYS: R2, R3
+		; ----------------------------------------------------------------------------
+		; Should be called strictly after sector signal becomes inactive (TEST goes -> 1).
+		; On finish waits for sector signal becomes active (TEST goes -> 0).
+		; $0B0
+		
+		; ----- synchronize printer drum (count sector conter R12)
+		; INPUT/OUTPUT: R12 drum sector counter (incremented by 1, or cleared to 0)
+		; OUTPUT: A = 0, C = 0
+		; DESTROYS: R2, R3
+		
+		Keyboard:
+0B0 50 6A		call	DrumSync	; synchronize printer drum (increment sector counter by 1, or clear to 0)
+		
+		; ----- prepare loop counter and ROM0 address
+		
+		Keyboard1:
+0B2 28 07		fim	R89,$07		; R8 <- 0 to select ROM0 chip, R9 <- 7 loop counter (16 - 7 = 9)
+		
+		; ----- clear keyboard shifter - send 9 bits '1' (= unselect all keyboard rows)
+		; INPUT: R8R9 = ROM port address, R8 must be 0 ($0x=ROM0)
+		; OUTPUT: A = 0
+		
+		Keyboard2:
+0B4 50 64		call	Key1Shift	; send bit '1' to keyboard shifter = rows not selected
+0B6 79 B4		ijnz	R9,Keyboard2	; loop with incrementing R9, send 9 bits '1' to unselect all rows
+		
+		; ----- prepare to scan keyboard
+		
+0B8 26 18		fim	R67,$18		; R6 <- $18 to select ROM1, R7 <- 8 loop counter (16 - 8 = 8 rows)
+0BA 22 00		fim	R23,$00		; R2R3 <- 0, scan code counter
+		
+		; ----- select keyboard row 0 (here is R8 = 0, to select ROM0)
+		; INPUT: A = output to ROM0 port
+		;		bit 0 = keyboard shifter clock (1 active)
+		;		bit 1 = shifter data
+		;		bit 2 = printer hammer shifter clock (1 active)
+		;	 R8R9 = ROM port address, R8 must be 0 ($0x=ROM0)
+		; OUTPUT: A = 0
+		
+0BC D1			ldi	1		; A <- 1, keyboard shifter clock = 1, shifter data = 0
+0BD 50 65		call	SendShift	; send '0' to keyboard shifter = select row 0
+		
+		; ----- read columns of current selected row
+		
+		Keyboard3:
+0BF 27			src	R67		; select ROM1 from R6R7=$1x
+0C0 EA			rdr			; A <- read ROM1 port, read state of columns col0..col3
+		
+		; ----- decode keyboard into column number (1=key is pressed)
+		
+0C1 FC			kbp			; decode columns (0->0, 1->1, 2->2, 4->3, 8->4, other->15)
+		
+		; ----- check is some button has been pressed in another row
+		; - skips counting of scan code after founding pressed button
+		
+0C2 B9			xch	R9		; R9 <- A, save scan code
+0C3 A2			ld	R2		; A <- R2, pressed flag
+0C4 F5			ral			; C <- R2.bit3 (flag of pressed key in another row)
+0C5 F7			tcc			; A <- C (flag of pressed key), C <- 0
+0C6 1C 77		jnz	KeyErr		; another button has been already pressed (continue to Keyboard6 if ok)
+		
+		; ----- check if max. 1 key is pressed (scan code is 15 if multiply keys pressed)
+		
+0C8 A9			ld	R9		; A <- key code from R9 (15 = multiply keys)
+0C9 79 CD		ijnz	R9,Keyboard4	; increment and jump if max. 1 column is active
+0CB 40 7A		jmp	KeyErr2		; multiply keys pressed (code = 15), clear buffer and exit
+		
+		; ----- no key is pressed (here is A = key code)
+		
+		Keyboard4:
+0CD 14 61		jz	KeyNone		; A = 0, no key pressed (set A=4, continue at Keyboard5)
+		
+		; ----- set flag of pressed key into R2 bit 3 (R2 = scan code counter HIGH)
+		
+0CF B2			xch	R2		; A <- R2 (scan code counter)
+0D0 F5			ral			; shift left
+0D1 FA			stc			; set C (= key was pressed flag)
+0D2 F6			rar			; shift right, 1 -> A.bit3
+0D3 B2			xch	R2		; R2 <- A (with set bit 3)
+		
+		; ----- add scan code 1..4 to scan code counter (here is A = key code 1..4, or 4 if no key, C = 0)
+		; - no key adds 4 to scan code counter
+		; - valid key adds 1..4 to scan code counter
+		; - after that, other keys are not counted
+		; - bit 3 of R3 is set, to indicate pressed button
+		; This gives scan codes $81, $82,...$A0
+		
+		Keyboard5:
+0D4 83			add	R3		; A <- R3 + A, add key column
+0D5 B3			xch	R3		; R3 <- A (sum of columns)
+0D6 D0			ldi	0		; A <- 0
+0D7 82			add	R2		; A <- R2 + C, add carry from R3
+0D8 B2			xch	R2		; R2 <- A (scan code counter HIGH)
+		
+		; ----- select next row of matrix (here is R8 = 0 to select ROM0), loop 8 rows
+		; INPUT: R8R9 = ROM port address, R8 must be 0 ($0x=ROM0)
+		; OUTPUT: A = 0
+		
+		Keyboard6:
+0D9 50 64		call	Key1Shift	; shift next bit '1' into keyboard shifter
+0DB 77 BF		ijnz	R7,Keyboard3	; increment R7 loop counter, go to next row
+		
+		; ----- check if any button pressed
+		
+0DD 29			src	R89		; select KR (keyboard register) from R8R9 (R8 = 0)
+0DE A2			ld	R2		; A <- R2, R2.bit3 = button pressed flag
+0DF F5			ral			; C <- A.bit3, button pressed flag
+0E0 F7			tcc			; A <- C, button pressed flag
+0E1 14 F8		jz	Keyboard8	; no buttton pressed, write A = 0 into KR.S3
+		
+		; ----- check if button is already held down (KR.S3 = 15 if held down)
+		
+0E3 EF			rd3			; A <- load keyboard pressing status KR.S3 (15 pressed, 0 no)
+0E4 F2			inc	A		; increment A, set CY if key held down (status = 15)
+0E5 F7			tcc			; A <- C 1=press, 0=no press, C <- 0
+0E6 1C F7		jnz	Keyboard7	; jump if button is already held down
+		
+		; ----- write scan code LOW into keyboard buffer (scan code = $81..$A0)
+		
+0E8 EC			rd0			; read A <- KR.S0, keyboard buffer pointer
+0E9 B9			xch	R9		; R9 <- KR.S0, keyboard buffer pointer
+0EA 29			src	R89		; select digit in KR, from R8R9 (here is R8 = 0)
+0EB A3			ld	R3		; A <- R3, scan code LOW
+0EC E0			wrm			; write scan code LOW from A into keyboard buffer
+		
+		; ----- check overflow keyboard buffer - next digit must be 0
+		
+0ED 69			inc	R9		; increment address R9 to point to next digit
+0EE 29			src	R89		; select next digit in KR, from R8R9
+0EF E9			rdm			; A <- read next digit from KR
+0F0 1C 7A		jnz	KeyErr2		; if next digit is not 0, overflow KR, jump to clear
+		
+		; ----- write scan code HIGH into keyboard buffer (scan code = $81..$A0)
+		
+0F2 A2			ld	R2		; A <- R2, scan code HIGH
+0F3 E0			wrm			; write scan code HIGH
+		
+		; ----- write new keyboard buffer pointer
+		
+0F4 69			inc	R9		; increment address to point to next digit
+0F5 A9			ld	R9		; A <- R9, keyboard buffer pointer
+0F6 E4			wr0			; write A -> KR.S0, keyboard buffer pointer
+		
+		; ----- write new state of button: 15=button is held down, 0=button is not held down
+		
+		Keyboard7:
+0F7 DF			ldi	15		; A <- 15, flag of button is held down
+		Keyboard8:
+0F8 E7			wr3			; write new KR.S3 state of button is held down (15=held, 0=no)
+		
+		; ----- reset pointers to KR and WR
+		
+0F9 28 00		fim	R89,$00		; R8R9 <- $00 to select KR
+0FB 26 10		fim	R67,$10		; R6R7 <- $10 to select WR
+		
+		; ----- wait for active printer drum sector signal
+		
+		Keyboard9:
+0FD 19 FD		jnt	Keyboard9	; wait if TEST signal is not active (wait if TEST = 1)
+0FF C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;                 Execute macro command - jump to address PC:R2R3
+		; ----------------------------------------------------------------------------
+		; INPUT: R2R3 = command code = LOW address at page $100
+		; ----------------------------------------------------------------------------
+		; $100
+		
+		; must be ROM-page aligned
+		.page	; address $100
+		
+		ExecCode:
+100 33			jin	R23		; run to address PC:R2R3 (R2R3 = command code = LOW address)
+		
+		; ----------------------------------------------------------------------------
+		;                     Macro command - move number register
+		; ----------------------------------------------------------------------------
+		; INPUT: R6R7 = source number register (R7=0), default $20 = select DR
+		;	 R8R9 = destination register (R9=0), default $10 = select WR
+		; ----------------------------------------------------------------------------
+		
+		; ----- copy number from R8R9 (=WR) to indirect register R5+4 (=IR), with S0 and S1
+		; IR = indirect register = function code R5 + 4
+		; $101 MOV IR,WR		move IR <- WR
+101 A5		MovIRWR:ld	R5		; A <- R5, function code
+		
+		; ----- copy number from R8R9 (=WR) to R6R7+2 (=CR), with S0 and S1
+		; $102 MOV CR,WR		move CR <- WR
+102 F2		MovCRWR:inc	A			; A + 1
+		
+		; ----- copy number from R8R9 (=WR) to R6R7+1 (=RR), with S0 and S1
+		; $103 MOV RR,WR		move RR <- WR
+103 F2		MovRRWR:inc	A			; A + 1
+		
+		; ----- copy number from R8R9 (=WR) to R6R7 (=DR), with S0 and S1
+		; $104 MOV DR,WR		move DR <- WR
+104 86		MovDRWR:add	R6		; A <- A + R6 (C = 0)
+105 B8			xch	R8		; R8 <- A destination index, A <- R8 old source index
+106 B6			xch	R6		; R6 <- A source index
+107 41 0E		jmp	MovWRDR	; move number
+		
+		; ----- copy number from R6R7+5 (=MR) to R8R9 (=WR), with S0 and S1
+		; $109 MOV WR,MR		move WR <- MR
+109 66		MovWRMR:inc	R6		; source = MR (R6 <- 7)
+		
+		; ----- copy number from R6R7+4 (=TR) to R8R9 (=WR), with S0 and S1
+		; $10A MOV WR,TR		move WR <- TR
+10A 66		MovWRTR:inc	R6		; source = TR (R6 <- 6)
+		
+		; ----- copy number from R6R7+3 (=SR) to R8R9 (=WR), with S0 and S1
+		; $10B MOV WR,SR		move WR <- SR
+10B 66		MovWRSR:inc	R6		; source = SR (R6 <- 5)
+		
+		; ----- copy number from R6R7+2 (=CR) to R8R9 (=WR), with S0 and S1
+		; $10C MOV WR,CR		move WR <- CR
+10C 66		MovWRCR:inc	R6		; source = CR (R6 <- 4)
+		
+		; ----- copy number from R6R7+1 (=RR) to R8R9 (=WR), with S0 and S1
+		; $10D MOV WR,RR		move WR <- RR
+10D 66		MovWRRR:inc	R6		; source = RR (R6 <- 3)
+		
+		; ----- copy number from R6R7 (=DR) to R8R9 (=WR), with S0 and S1
+		; $10E MOV WR,DR		move WR <- DR
+10E 27		MovWRDR:src	R67		; select source number register from R6R7
+10F E9			rdm			; A <- read one digit from source register
+110 29			src	R89		; select destination register from R8R9
+111 E0			wrm			; write one digit from A
+112 69			inc	R9		; increment destination character R9
+113 77 0E		ijnz	R7,MovWRDR	; increment destination digit index R7 (0..15), go next digit
+		
+		; ----- copy status digits
+		
+115 27			src	R67		; select source number register R6R7
+116 EC			rd0			; A <- read status digit S0
+117 B3			xch	R3		; A -> R3
+118 ED			rd1			; A <- read status digit S1
+119 29			src	R89		; select destination register R8R9
+11A E5			wr1			; write status digit S1 from A
+11B B3			xch	R3		; A <- R3
+11C E4			wr0			; write status digit S0 from A
+11D C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;                       Macro command - add two numbers
+		; ----------------------------------------------------------------------------
+		; INPUT: R6R7 = destination number register (R7=0), default $20 = select DR
+		;	 R8R9 = source register (R9=0), default $10 = select WR
+		; ----------------------------------------------------------------------------
+		
+		; ----- add numbers R5+4 (IR) <- R5+4 (IR) + R8R9 (WR)
+		; IR = indirect register = function code R5 + 4
+		; $11E ADD IR,WR		add IR <- IR + WR
+11E D4		AddIRWR:ldi	4		; A <- 4, target will be IR
+11F 85			add	R5		; A <- 4 + R5, add function code
+120 B6			xch	R6		; R6 <- A, destination to IR = R5 + 4
+		
+		; ----- add numbers R6R7 (DR) <- R6R7 (DR) + R8R9 (WR)
+		; $121 ADD DR,WR		add DR <- DR + WR
+121 29		AddDRWR:src	R89		; select source number address (WR) from R8R9
+122 E9			rdm			; A <- read one digit
+123 27			src	R67		; select destination number address (DR) from R6R7
+124 EB			adm			; A <- A + mem (C = 0)
+125 FB			daa			; decimal correction
+126 E0			wrm			; write result into destination number address R6R7
+127 69			inc	R9		; increase source index R9
+128 77 21		ijnz	R7,AddDRWR	; increase destination index R7 and loop next digit
+12A F1			clc			; clear Carry
+12B C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;                       Macro command - subtract two numbers
+		; ----------------------------------------------------------------------------
+		; INPUT: R6R7 = destination number register (R7=0), default $20 = select DR
+		;	 R8R9 = source register (R9=0), default $10 = select WR
+		;	 R13 = digit counter
+		; OUTPUT: R13 = incremented if positive (count digit of division)
+		;	  A = 1
+		;	  C = 1 jump if positive, 0 skip if negative
+		; ----------------------------------------------------------------------------
+		
+		; ----- subtract two numbers R8R9 (WR) <- R8R9 (WR) - R5+4 (IR), jump if non-negative with increment digit R13
+		; IR = indirect register = function code R5 + 4
+		; $12C SUB WR,IR + JPC NNEG + INC DIGIT		subtract WR <- WR - IR, jump at non-negative with increment the digit
+12C D4		SubWRIR:ldi	4		; A <- 4
+12D 85			add	R5		; A <- 4 + R5, function code + 4
+12E B8			xch	R8		; R8 <- A, set source to IR
+12F 41 33		jmp	SubIRWR_2	; set destination address to old R8 = 1 (WR)
+		
+		; ----- subtract two numbers R5+4 (IR) <- R5+4 (IR) - R8R9 (WR), jump if non-negative with increment digit R13
+		; IR = indirect register = function code R5 + 4
+		; $131 SUB IR,WR + JPC NNEG + INC DIGIT		subtract IR <- IR - WR, jump at non-negative with increment the digit
+131 D4		SubIRWR:ldi	4		; A <- 4
+132 85			add	R5		; A <- 4 + R5, function code + 4
+		SubIRWR_2:
+133 B6			xch	R6		; R6 <- A, set destination to IR
+		
+		; ----- subtract two numbers R6R7 (DR) <- R6R7 (DR) - R8R9 (WR), jump if non-negative with increment digit R13
+		; $134 SUB DR,WR + JPC NNEG + INC DIGIT		subtract DR <- DR - WR, jump at non-negative with increment the digit
+134 FA		SubDRWR:stc			; C <- 1 (= no borrow)
+		SubDRWR_2:
+135 F9			tcs			; transfer carry A <- 9 + C (A <- 9 or 10), CY = 0
+		SubDRWR_3:
+136 29			src	R89		; select source number address (WR) from R8R9
+137 E8			sbm			; A <- 10(9) + ~digit + ~C
+138 F1			clc			; clear carry C <- 0
+139 27			src	R67		; select destination number address (DR) from R6R7
+13A EB			adm			; A <- A + digit (C = 0)
+13B FB			daa			; decimal adjust
+		SubDRWR_4:
+13C E0			wrm			; write digit to destination memory
+13D 69			inc	R9		; increase source index R9
+13E 77 35		ijnz	R7,SubDRWR_2	; increase destination index R7 and loop next digit
+		SubDRWR_6:
+140 1A 43		jnc	SubDRWR_7	; skip if not carry (= negative)
+142 6D			inc	R13		; increment R13 if positive, digit counter of div result
+		SubDRWR_7:
+143 C1			ret	1		; return with A = 1, C = 0 skip if negative, C = 1 jump if positive (repeat div loop)
+		
+		; ----------------------------------------------------------------------------
+		;             Macro - clear numeric register (including S0 and S1)
+		; ----------------------------------------------------------------------------
+		; INPUT: R8R9 = destination register (R9=0), default $10 = select WR
+		;	 A = value to write to digits (default 0)
+		; OUTPUT: A = 0
+		;	  R8 = new index
+		; ----------------------------------------------------------------------------
+		
+		; ----- clear register R8R9+6 (MR)
+		; $144 CLR MR		clear MR
+144 68		ClearMR:inc	R8		; destination = MR
+		
+		; ----- clear register R8R9+5 (TR)
+		; $145 CLR TR		clear TR
+145 68		ClearTR:inc	R8		; destination = TR
+		
+		; ----- clear register R8R9+4 (SR)
+		; $146 CLR SR		clear SR
+146 68		ClearSR:inc	R8		; destination = SR
+		
+		; ----- clear register R8R9+3 (CR)
+		; $147 CLR CR		clear CR
+147 68		ClearCR:inc	R8		; destination = CR
+		
+		; ----- clear register R8R9+2 (RR)
+		; $148 CLR RR		clear RR
+148 68		ClearRR:inc	R8		; destination = RR
+		
+		; ----- clear register R8R9+1 (DR)
+		; $149 CLR DR		clear DR
+149 68		ClearDR:inc	R8		; destination = DR
+		
+		; ----- clear register R8R9 (WR)
+		; $14A CLR WR		clear WR
+14A 29		ClearWR:src	R89		; select memory register WR from R8R9
+14B E0			wrm			; write digit from A
+14C 79 4A		ijnz	R9,ClearWR	; increment digit index R9 and loop
+		
+		; ----- clear status registers
+		
+14E E4			wr0			; write S0 = sign
+14F E5			wr1			; write S1 = place of decimal point
+150 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		; Macro command - left shift number register (R13 <- M15 <- M14..M1 <- M0 <- R13)
+		; ----------------------------------------------------------------------------
+		; INPUT: R13 = new digit to write to M0 (lowest digit)
+		;	 R8 = address of number register
+		;	 R9 = index of first digit (usually 0 = shift whole number)
+		; OUTPUT: R13 = digit from M15
+		;	  R8 = new index
+		; ----------------------------------------------------------------------------
+		
+		; ----- left shift register R8R9+2 (RR)
+		; $151 SHL RR		left shift RR with R13
+		ShiftL_RR:
+151 68			inc	R8		; shift target address = RR
+		
+		; ----- left shift register R8R9+1 (DR)
+		; $152 SHL DR		left shift DR with R13
+		ShiftL_DR:
+152 68			inc	R8		; shift target address = DR
+		
+		; ----- left shift register R8R9 (WR)
+		; $153 SHL WR		left shift WR with R13
+153 29		ShiftL:	src	R89		; select number register WR from R8R9
+154 E9			rdm			; A <- read one digit
+155 BD			xch	R13		; A <-> R13, exchange digits
+156 E0			wrm			; write previous digit
+157 79 53		ijnz	R9,ShiftL	; increment digit index, loop next digit
+159 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		; Macro command - right shift number register (A or R13 -> M15 -> M14..M1 -> M0 -> R13)
+		; ----------------------------------------------------------------------------
+		; INPUT: A or R13 = new digit to write to M15 (highest digit)
+		;	 R8 = address of number register
+		;	 R9 = index of last digit + 1 (usually 0 = shift whole number)
+		; OUTPUT: R13 = digit from M0
+		;	  R8 = new index
+		; ----------------------------------------------------------------------------
+		
+		; ----- right shift register R8R9+2 (RR), only 14 lower digits
+		; $15A SSR RR		right shorted shift RR, only 14 digits (R13 = new digit)
+		ShiftRShort_RR:
+15A DE			ldi	14		; A <- 14, shift 14 digits
+15B B9			xch	R9		; R9 <- 14, index of last digit
+15C AD			ld	R13		; A <- R13, inserted digit
+		
+		; ----- right shift register R8R9+2 (RR)
+		; $15D SHR RR		right shift RR (A = new digit)
+		ShiftR_RR:
+15D 68			inc	R8		; shift target address = RR
+		
+		; ----- right shift register R8R9+1 (DR)
+		; $15E SHR DR		right shift DR (A = new digit)
+		ShiftR_DR:
+15E 68			inc	R8		; shift target address = DR
+		
+		; ----- right shift register R8R9 (WR)
+		; $15F SHR WR		right shift WR (A = new digit)
+15F BD		ShiftR:	xch	R13		; R13 <- A, will write 0 to highest digit
+160 A9			ld	R9		; A <- R9, index of 1st digit, should be 0
+		ShiftR_2:
+161 F8			dec	A		; A = A - 1, decrement index of digit
+162 F1			clc			; clear carry C <- 0
+163 B9			xch	R9		; R9 <- A, new digit index
+164 29			src	R89		; select number register WR from R8R9
+165 E9			rdm			; A <- read one digit
+166 BD			xch	R13		; A <- previous digit, R13 <- this digit
+167 E0			wrm			; write previous digit A
+168 A9			ld	R9		; A <- R9, index of the digit
+169 1C 61		jnz	ShiftR_2	; loop if A != 0 (we will end at M0)
+16B C0			ret	0		; return wit A = 0
+		
+		; ----------------------------------------------------------------------------
+		;                      Macro command - check if status S2 is 0
+		; ----------------------------------------------------------------------------
+		; INPUT: R8 = destination register, default $10 = select WR
+		; OUTPUT: A = 1, C = 1 if S0 = 0
+		;	  R8 = new index
+		; ----------------------------------------------------------------------------
+		
+		; ----- check RR.S2 and jump if new number
+		; $16C JPC MODENN		jump if new number is entered and not processed (jump if RR.S2 = 0)
+		JmpNewNum:
+16C 68			inc	R8		; address = RR
+		
+		; ----- check DR.S2 and jump if not div/mul specified
+		; $16D JPC MOPN		jump if div/mul not specified (jump if DR.S2 = 0)
+16D 68		JmpNMul:inc	R8		; address = DR
+		
+		; ----- check WR.S2 and jump if not truncated/rounded
+		; $16E JPC NTRUNC		jump if number if not truncated/rounded (jump if WR.S2 = 0)
+		JmpNTrunc:
+16E 29			src	R89		; select register WR from R8R9
+16F EE			rd2			; A <- read status S2
+170 F8			dec	A		; decrement, C <- 0 if 0, or 1 if >0
+171 F3			cmc			; complement C (C is 1 if S0 was 0)
+172 C1			ret	1		; return with A = 1, C = 1 jump if S0 = 0
+		
+		; ----------------------------------------------------------------------------
+		;               Macro command - check if bit 0 of status S2 is 1
+		; ----------------------------------------------------------------------------
+		; INPUT: R8 = destination register, default $10 = select WR
+		; OUTPUT: A = 1, C = bit0 of S2
+		;	  R8 = new index
+		; ----------------------------------------------------------------------------
+		
+		; ----- Read status SR.S2.bit0 - 'overflow' flag -> C
+		; $173 JPC OVFL		jump at overflow (jump if SR.S2.bit0!=0)
+		ReadSRS2:
+173 68			inc	R8		; address = SR
+		
+		; ----- Read status CR.S2.bit0 - 'digit with DP' flag -> C
+		; $174 JPC MENTDP		jump if number entered with DP (jump if CR.S2.bit0!=0)
+		ReadCRS2:
+174 68			inc	R8		; address = CR
+		
+		; ----- Read status RR.S2.bit0 - 'mul/div' last operation flag -> C
+		; $175 JPC MODEMD		jump if mul/div (jump if RR.S2.bit0!=0)
+		ReadRRS2:
+175 68			inc	R8		; address = RR
+		
+		; ----- Read status DR.S2.bit0 - 'mul started' flag -> C
+		; $176 JPC MOPMUL		jump if mul started (jump if DR.S2.bit0!=0)
+		ReadDRS2:
+176 68			inc	R8		; address = DR
+		
+		; ----- Read status WR.S2.bit0 - rounding switch "1=round" -> C
+		; $177 JPC ROUND		jump if rounding (jump if WR.S2.bit0!=0)
+		ReadWRS2:
+177 29			src	R89		; select register WR from R8R9
+178 EE			rd2			; A <- read status S2
+179 F6			rar			; rotate bit0 into C
+17A C1			ret	1		; return with A = 1, C = 1 jump if S0.bit0 = 1
+		
+		; ----------------------------------------------------------------------------
+		;      Macro command - check if bit 3 of status S2 is 1 (mul/div constant CR)
+		; ----------------------------------------------------------------------------
+		; INPUT: R6 = destination number register, default S2 = select DR
+		; OUTPUT: A = 1, C = bit3 of S2 (DR.S2.bit3 = mul/div constant in CR)
+		; ----------------------------------------------------------------------------
+		
+		; $17B JPC MOPCONST		jump if mul/div constant (jump if DR.S2.bit3!=0)
+		CheckDivCR:
+17B 27			src	R67		; select address R6R7
+17C EE			rd2			; read status S2
+17D F5			ral			; rotate bit 3 into C
+17E C1			ret	1		; return with A = 1, C = 1 jump if S0.bit3 = 1 (=mul/div constant CR)
+		
+		; ----------------------------------------------------------------------------
+		;                         Macro command - clear status S2
+		; ----------------------------------------------------------------------------
+		; INPUT: R6 = destination number register, default 2 = select DR
+		;	 A = 0 (to write to S2)
+		; OUTPUT: A = 0
+		; ----------------------------------------------------------------------------
+		
+		; ----- clear status SR.S2 (overflow)
+		; $17F CLR OVFL		clear overflow (SR.S2=0)
+		ClearSRS2:
+17F 66			inc	R6		; target = SR
+		
+		; ----- clear status CR.S2 (digit entry mode)
+		; $180 CLR DIGMODE	clear digit entry mode
+		ClearCRS2:
+180 66			inc	R6		; target = CR
+		
+		; ----- clear status RR.S2 (last operation)
+		; $181 CLR LASTOP	clear last operation
+		ClearRRS2:
+181 66			inc	R6		; target = RR
+		
+		; ----- clear status DR.S2 (div/mul status)
+		; $182 CLR MOP		clear div/mul (DR.S2=0)
+		ClearDRS2:
+182 27			src	R67		; select register DR from R6R7
+183 E6			wr2			; write status 2 to 0 (from A)
+184 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;                Macro command - set status S2
+		; ----------------------------------------------------------------------------
+		; INPUT: R6 = destination number register, default 2 = select DR
+		; OUTPUT: A = 0
+		; ----------------------------------------------------------------------------
+		
+		; ----- set SR.S2 overflow status to 1
+		; $185 SET OVFL		set overflow (SR.S2=1)
+185 66		SetOver:inc	R6		; target = SR
+		
+		; ----- set CR.S2 digit entry mode stats to 1 = digit with DP
+		; $186 SET MENTDP		set number with decimal point (CR.S2=1)
+		SetNumDP:
+186 66			inc	R6		; target = CR
+		
+		; ----- set RR.S2 status (last operation) to 1 = mul/div
+		; $187 SET MODEMD		set mul/div (RR.S2=1)
+		SetMulDiv:
+187 D1			ldi	1		; A <- 1
+188 41 81		jmp	ClearRRS2	; set status RR.S2 to 1
+		
+		; ----- set RR.S2 status (last operation) to 8 = add/sub
+		; $18A SET MODEAS		set add/sub (RR.S2=8)
+		SetAddSub:	
+18A D8			ldi	8		; A <- 8
+18B 41 81		jmp	ClearRRS2	; set status RR.S2 to 8
+		
+		; ----- set DR.S2 status (mul/div status to function parameter R4)
+		; $18D SET MOPPAR		set mul/div param (DR.S2=param)
+		SetMulPar:
+18D A4			ld	R4		; A <- function parameter from R4
+18E 41 82		jmp	ClearDRS2	; set status DR.S2 to R4
+		
+		; ----------------------------------------------------------------------------
+		;  Macro command - set status DR.S2.bit3 to 1 (set mul/div status constant CR)
+		; ----------------------------------------------------------------------------
+		; INPUT: R6 = destination number register, default 2 = select DR
+		; ----------------------------------------------------------------------------
+		
+		; $190 SET MOPCONST		set mul/div const (DR.S2.bit3=1)
+		SetDivCR:
+190 27			src	R67		; select register DR from R6R7
+191 EE			rd2			; A <- read status 2
+192 F5			ral			; rotate A left, C <- A.bit3
+193 FA			stc			; set C
+194 F6			rar			; rotate A right, A.bit3 <- 1
+195 E6			wr2			; write status 2 (with bit3 set)
+196 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;                  Macro command - check zero or small number
+		; ----------------------------------------------------------------------------
+		; INPUT: R8 = destination register, default $10 = select WR
+		;	 R5 = function code
+		;	 C = 0
+		; OUTPUT: A = 1, C = 1 if number is 0 (or if number is small <= 14 digits)
+		; ----------------------------------------------------------------------------
+		
+		; ----- Check if highest 2 digits of number IR (=R5+4) are zero (returns C = 1 if number is small)
+		; IR = indirect register = function code R5 + 4
+		; $197 JPC NBIG_IR		jump if IR not big (upper 2 digits are 0)
+		CheckSmallIR:
+197 D4			ldi	4		; A <- 4
+198 85			add	R5		; A <- 4 + R5 (C = 0) = function code + 4
+199 B8			xch	R8		; R8 <- A, function code + 4 (register index)
+		
+		; ----- Check if highest 2 digits of number R8R9 (WR) are zero (returns C = 1 if number is small)
+		; $19A JPC NBIG_WR		jump if WR not big (upper 2 digits are 0)
+		CheckSmallWR:
+19A DE			ldi	14		; A <- 14
+19B B9			xch	R9		; R9 <- 14, index of first digit to test
+19C 41 A2		jmp	Check0WR
+		
+		; ----- Check if highest 2 digits of number R8R9+1 (DR) are zero (returns C = 1 if number is small)
+		; $19E CLR DIGIT + JPC NBIG_DR		clear digit (R13=0), jump if DR not big (opper 2 digits are 0)
+		CheckSmallDR:
+19E DE			ldi	14		; A <- 14
+19F B9			xch	R9		; R9 <- 14, index of first digit to test
+		
+		; ----- Check if number R8R9+1 (DR) is zero (returns C = 1 if zero)
+		; $1A0 CLR DIGIT + JPC ZERO_DR		clear digit (R13=0), jump if DR is zero
+		Check0DR:
+1A0 BD			xch	R13		; R13 <- 0 (A = 0), first digit
+1A1 68			inc	R8		; register + 1
+		
+		; ----- Check if number R8R9 (WR) is zero (returns C = 1 if zero)
+		; $1A2 JPC ZERO_WR		jump if WR = 0
+		Check0WR:
+1A2 29			src	R89		; select register WR from R8R9
+1A3 DF			ldi	15		; A <- 15
+1A4 EB			adm			; A <- 15 + digit (C = 0), check if digit is zero, C <- 1 if digit is not 0, 0 if digit is 0
+1A5 79 A2		ijnz	R9,Check0WR	; increment R9 and loop to next digit
+						; result is C = 1 if number is not zero
+		; ----- (unconditional) jump
+		; $1A7 JMP			jump
+1A7 F3		Jump:	cmc			; complement Carry
+1A8 C1			ret	1		; return with A = 1, Carry = 1 to jump
+		
+		; ----------------------------------------------------------------------------
+		;                  Macro command - check digit R13
+		; ----------------------------------------------------------------------------
+		; INPUT: R13 = digit
+		; ----------------------------------------------------------------------------
+		
+		; ----- check digit R13, set C = 1 if R13 > 0
+		; $1A9 JPC BIG_DIGIT	jump if digit > 9 (R13 > 9)
+		CheckR139:
+1A9 AD			ld	R13		; A <- R13
+1AA FB			daa			; decimal correction, set Carry = 1 if R13 > 9
+1AB C1			ret	1		; return with A = 1, C = 1 jump if R13 > 9
+		
+		; ----- decrement digit R13 and jump if R13 was 0 (C = 1 if R13 was 0)
+		; $1AC JPC ZERO_DIGT + DEC DIGIT	decrement R13 and jump if R13 was 0
+		DecDigJmp0:
+1AC AD			ld	R13		; A <- R13
+1AD F8			dec	A		; decrement A (= R13 - 1), set C = 1 if R13 was not 0
+		
+		; ----- clear digit R13 and jump (C = 1)
+		; $1AE CLR DIGIT + JMP	clear digit (R13 = 0) and jump
+		ClrDigJmp:
+1AE BD			xch	R13		; R13 <- A (= 0)
+1AF F3			cmc			; complement Carry, negate jump condition
+1B0 C1			ret	1		; return with A = 1, C = 1 jump
+		
+		; ----------------------------------------------------------------------------
+		;                  Macro command - check function code
+		; ----------------------------------------------------------------------------
+		; INPUT: R5 = function code
+		;	 R4 = function parameter
+		; ----------------------------------------------------------------------------
+		
+		; ----- check new operation (set C = 1 if R5 < 8, new operation)
+		; $1B1 JPC NEWOP		jump at new operation (jump if function code < 8)
+		CheckNewOp:
+1B1 D7			ldi	7		; A <- 7
+1B2 95			sub	R5		; A <- 7 - R5 (C = 0)
+1B3 C1			ret	1		; return with A = 1, C = 1 jump if function code < 8
+		
+		; ----- check memory operation (set C = 1 if R4 > 3, memory operation)
+		; $1B4 JPC MEMOP		jump at new memor peration (jump if function code > 3)
+		CheckMemOp:
+1B4 DC			ldi	12		; A <- 12
+1B5 84			add	R4		; A <- 12 + R4 (C = 0), function parameter + 12, set Carry if R4 > 3
+1B6 C1			ret	1		; return with A = 1, jump if R4 > 3
+		
+		; ----- rotate function code R5 right and jump if bit0 was not 0
+		; $1B7 JPC ROTFC		rotate function code right and jump if out bit is zero
+1B7 A5		RotFC:	ld	R5		; A <- R5 function code
+1B8 F6			rar			; rotate bit 0 into CY
+1B9 B5			xch	R5		; R5 <- A, return rotated value
+1BA F3			cmc			; complement Carry
+1BB C1			ret	1		; return with A = 1, C = 1 jump if bit0 was != 0
+		
+		; ----- jump if function parameter R4 is odd (jump if bit0 of F4 is 1)
+		; $1BC JPC ODDPAR		jump if function parameter is odd
+1BC A4		OddPar:	ld	R4		; A <- R4 function parameter
+1BD F6			rar			; rotate bit 0 of R4 into CY
+1BE C1			ret	1		; return with A = 1, jump if bit 0 of function parameter = 1
+		
+		; ----------------------------------------------------------------------------
+		;      Macro command - set decimal point from decimal point counter R11
+		; ----------------------------------------------------------------------------
+		; INPUT: R8 = destination register, default $10 = select WR
+		;	 R11 = decimal point counter
+		; ----------------------------------------------------------------------------
+		
+		; ----- set decimal point IR.S1 from R11 (decimal point counter)
+		; IR = indirect register = function code R5 + 4
+		; $1BF SET DP_IR		set decimal point of IR (IR.S1 = R11)
+1BF D4		SetDPIR:ldi	4		; A <- 4
+1C0 85			add	R5		; A <- 4 + R5 (C = 0) = function code + 4
+1C1 B8			xch	R8		; R8 <- target address
+		
+		; ----- set decimal point WR.S1 from R11 (decimal point counter)
+		; $1C2 SET DP_WR		set decimal point of WR (WR.S1 = R11)
+1C2 29		SetDPWR:src	R89		; select register WR from R8R9
+1C3 AB			ld	R11		; A <- R11, decimal point counter
+1C4 E5			wr1			; write decimal point counter from A to S1
+1C5 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;      Macro command - get decimal point counter R11 from decimal point 	
+		; ----------------------------------------------------------------------------
+		; INPUT: R8 = source register, default $10 = select WR
+		; OUTPUT: R11 = decimal point counter
+		; ----------------------------------------------------------------------------
+		
+		; ----- get decimal point position WR.S1 to R11
+		; $1C6 GET DP_WR		get decimal point of WR (R11 = WR.S1)
+1C6 29		GetDPWR:src	R89		; select register WR from R8R9
+1C7 ED			rd1			; A <- read S1, position of decimal point
+1C8 BB			xch	R11		; R11 <- set decimal point counter
+1C9 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;          Macro command - increment decimal point counter R10R11
+		; ----------------------------------------------------------------------------
+		; INPUT/OUTPUT: R11 = decimal point counter
+		; ----------------------------------------------------------------------------
+		
+		; ----- increment decimal point counter R10R11
+		; $1CA INC DPCNT		increment decimal point counter (increment R10R11)
+1CA 7B CD	IncDP:	ijnz	R11,IncDP_2	; increment decimal point counter R11 low, jump if not zero
+1CC 6A			inc	R10		; increment high part of decimal point counter R10
+1CD C0		IncDP_2:ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;             Macro command - check decimal point counter R11
+		; ----------------------------------------------------------------------------
+		; INPUT: A = 0 or 13, to check R11 <= A
+		; INPUT/OUTPUT: R10R11 = decimal point counter
+		;	 C = 1 if decimal point counter R10R11 <= 0 or 13
+		; ----------------------------------------------------------------------------
+		
+		; ----- check decimal point counter R11 if it is <= 13
+		; $1CE JPC NBIG_DPCNT	jump if decimal point counter does not exceed limit (jump if R10R11 < 0E)
+		CheckDP13:
+1CE DD			ldi	13		; A <- 13, max. value
+		
+		; ----- check decimal point counter R11 if it is = 0
+		; $1CF JPC ZERO_DPCNT	jump if decimal point counter is zero (jump if R10R11 = 0)
+		CheckDP0:
+1CF 9B			sub	R11		; A <- 0,13 - R11 (C = 0), check decimal point counter, C = 1 
+1D0 F3			cmc			; complement carry
+1D1 D0			ldi	0		; A <- 0
+1D2 9A			sub	R10		; A <- 0 - R10 - C (= compare R10R11)
+1D3 C1			ret	1		; return with A = 1, C = 1 jump if decimal point counter <= 0 or 13
+		
+		; ----------------------------------------------------------------------------
+		;             Macro command - Jump to functions in next segment
+		; ----------------------------------------------------------------------------
+		
+		; $1D4 JPC DIFF_SIGN	jump if WR and IR have different sign
+		CheckSign:
+1D4 42 D3		jmp	CheckSign_2
+1D6 00			nop
+		
+		; $1D7 DIGIT		digit functions
+		DigStart:
+1D7 42 94		jmp	DigStart_2
+		
+		; $1D9 MOV WR,TR + CLR TR + CLR SR	move WR <- TR, clar TR, clear SR
+1D9 42 A3	LoadRes:jmp	LoadRes_2
+		
+		; $1DB SET MRMFUNC + JMP	set function code the memory function and jump
+1DB 42 AA	JmpMem:	jmp	JmpMem_2
+		
+		; $1DD DEC DPCNT		decrement decimal point counter (decrement R10R11)
+1DD 42 AE	DecDP:	jmp	DecDP_2
+		
+		; $1DF GET DPDIFF		difference of actual dedimal point (WR.S1 = WR.S3, R10R11 <- difference)
+1DF 42 B3	DiffDP:	jmp	DiffDP_2
+		
+		; $1E1 GET DPCNTDIV		adjust decimal point counter for div (R10R11 <- DR.S1 + (13-R11) - WR.S1)
+1E1 42 B9	AdjDiv:	jmp	AdjDiv_2
+		
+		; $1E3 GET DPCNTMUL		adjust decimal point counter for mul (R10R11 <- DR.S1 + R11 + WR.S1)
+1E3 42 CA	AdjMul:	jmp	AdjMul_2
+		
+		; $1E5 SET DIVMUL_SIGN + MOV DIGIT,15	set sign of RR, set DIGIT to 15 (R13=15 loop counting)
+		SetDMSign:
+1E5 42 DE		jmp	SetDMSign_2
+		
+		; $1E7 NEG WR		negate WR (WR.S0 <- !WR.S0)
+1E7 42 E7	NegWR:	jmp	NegWR_2
+		
+		; $1E9 ROUNDING		increment WR and R14 if DIGIT R13 > 4
+1E9 42 EC	RoundWR:jmp	RoundWR_2
+		
+		; $1EB PRN ADVANCE + CLR DPCNT	advancing printer paper, clear decimal point counter
+		PaperAdv:
+1EB 42 46		jmp	PaperAdv_2
+		
+		; $1ED SQRT			RR <- SQRT(WR)
+1ED 44 00	Sqrt:	jmp	Sqrt_2
+		
+		; ----------------------------------------------------------------------------
+		;                      Macro command - Clear functions
+		; ----------------------------------------------------------------------------
+		; INPUT: R6 = destination number register, default 2 = select DR
+		; ----------------------------------------------------------------------------
+		
+		; ----- clear mode to no decimal point, no overflow
+		; $1EF CLR MENT + CLR OVFL + RET	return + clear (CR.S2=0, SR.S2=0, TR.S2=0)
+		; 1) R6 + 2 = 4 = CR, set flag "no decimal point"
+		; 2) R6 + 1 = 5 = SR, clear flag "overflow"
+		; 3) R6 + 1 = 6 = TR, cleared but not used
+1EF 51 80	ClrOver:call	ClearCRS2		; R6 = R6 + 2, clear status digit 2 of NR(R6)
+		
+		; ----- clear mode to new number, no decimal point
+		; $1F1 CLR MODE + CLR MENT + RET	return + clear (RR.S2=0, CR.S2=0)
+		; 1) R6 + 1 = 3 = RR, set flag "new number"
+		; 2) R6 + 1 = 4 = CR, set flag "no decimal point"
+		ClrModeNoDP:
+1F1 51 81		call	ClearRRS2		; R6 = R6 + 1, clear status RR.S2 = last operation is new number
+		
+		; ----- clear mode to new number (set last operation = new number, reset decimal point counter, exit to main loop)
+		; $1F3 CLR MODE + RET	return + clear (RR.S2=0, CR.S2=0)
+		; 1) R6 + 1 = 3 = RR, set flag "new number"
+1F3 51 81	ClrMode:call	ClearRRS2		; R6 = R6 + 1, clear status RR.S2 = last operation is new number
+1F5 2A 00		fim	R1011,0			; R10R11 <- 0, reset decimal point counter
+1F7 40 00		jmp	Reset			; exit macro interpreter, jump to main loop
+		
+		; ----------------------------------------------------------------------------
+		;                       Macro command - Print functions
+		; ----------------------------------------------------------------------------
+		
+		; $1F9 PRN FPAR,C		print number with function parameter R4 in column 17 and character 'C' in column 18 (R15 will be = 6 -> 9)
+		PrintFParC:
+1F9 6F			inc	R15
+		
+		; $1FA PRN FPAR,MEM		print number with function parameter R4 in column 17 and character 'M' in column 18 (R15 will be = 5 -> 10)
+		PrintFParM:
+1FA 6F			inc	R15
+		
+		; $1FB PRN FPAR,EMPTY		print number with function parameter R4 in column 17 and empty column 18 (R15 will be = 4 -> 11)
+		PrintFParEmp:
+1FB 6F			inc	R15
+		
+		; $1FC PRN FPAR			print number with function parameter R4 in column 17 and empty column 18 (R15 will be = 3 -> 12)
+		PrintFPar:
+1FC 6F			inc	R15
+		
+		; $1FD PRN ROUND,FPAR		print number with rounding mark in column 17 and function parameter in column 18 (R15 will be = 2 -> 13)
+		PrintRoundFPar:
+1FD 6F			inc	R15
+		
+		; $1FE PRN FCODE		print number with function code in column 17 and empty column 18 (R15 will be = 1 -> 14)
+		PrintFCode:
+1FE 6F			inc	R15
+		
+		; $1FF PRN OVFL			print overflow (dots) and empty columns 17 and 18 (enter with R15 = 0 -> 15)
+		PrintOvfl:
+1FF BF			xch	R15		; A <-> R15
+200 F4			cma			; complement accumulator, A <- 15 - R15
+201 BF			xch	R15		; R15 <- complement R15
+		
+		; ----- R15 = 15: overflow, print 15 characters '.'
+		
+202 7F 10		ijnz	R15,Print2	; check if R15 = 15, increment R15
+		
+204 DA			ldi	10		; A <- 10, code of decimal point on print drum at columns 1..15
+205 51 4A		call	ClearWR		; set WR to digits '.'
+207 2E FF		fim	R1415,$FF	; R14R15 <- $FF, last two columns 17 and 18 will be empty
+209 BA			xch	R10		; R10 <- A = 10, position of decimal point HIGH
+20A DF			ldi	15		; A <- 15
+20B B9			xch	R9		; R9 <- 15, 14 valid characters, A <- 0 from R9
+20C 29			src	R89		; select register WR from R8R9, select M15
+20D E0			wrm			; write WR.M15 <- 0, column 16 is not used
+20E 42 2C		jmp	Print6		; start printing from register WR and R1415
+		
+		; ----- R15 = 14: number with function code in column 17 and empty column 18
+		
+210 7F 17	Print2:	ijnz	R15,Print3	; check if R15 = 14, increment R15
+		
+212 DF			ldi	15		; A <- 15
+213 BF			xch	R15		; R15 <- 15, empty column 18
+214 A5			ld	R5		; A <- function code
+215 42 26		jmp	Print5		; save A into R14
+		
+		; ----- R15 = 13: number with rounding mark in column 17 and function parameter in column 18
+		
+217 D1		Print3:	ldi	1		; A <- 1
+218 8F			add	R15		; A <- 1 + R15
+219 F7			tcc			; A <- C
+21A 14 25		jz	Print4		; jump if R15 < 13
+		
+21C A4			ld	R4		; A <- R4 function parameter
+21D BF			xch	R15		; R15 <- A, function parameter at column 18
+21E BE			xch	R14		; A <- R14, rounding selection (0,1,8)
+21F F6			rar			; get R14.bit0 -> C, "round" selected
+220 F3			cmc			; complement C (= !R14.bit0)
+221 DE			ldi	14		; A <- 14
+222 F6			rar			; A <- 8*CY + 7 (7 = rounding, 15 = empty char if truncated)
+223 42 26		jmp	Print5		; save A character into R14, to print rounding mark at column 17
+		
+		; ----- R15 < 13: print function parameter R4 in column 17 and character R15+2 in column 18
+		
+225 A4		Print4:	ld	R4		; A <- R4, function parameter
+226 BE		Print5:	xch	R14		; R14 <- A, code of character in column 17
+		
+		; ----- load position of decimal point -> R10, R11
+		
+227 29			src	R89		; select address R8R9 = WR
+228 ED			rd1			; A <- read status 1 (= position of decimal point)
+229 BA			xch	R10		; R10 <- position of decimal point
+22A ED			rd1			; A <- read status 1 (= position of decimal point)
+22B BB			xch	R11		; R11 <- position of decimal point
+		
+		; ----- wait for inactive printer drum sector signal
+		; Here is:
+		;  WR pattern of digits in columns 1..15, last digit 16 must be = 15 (not used column 16)
+		;  R10, R11 position of decimal point
+		;  R14 character in column 17
+		;  R15 character in column 18
+		
+22C 11 2C	Print6:	jt	Print6		; wait if TEST = 0 (wait if signal is active)
+		
+		; ----- select ribbon color
+		
+22E D2			ldi	2		; A <- 2
+22F BD			xch	R13		; R13 <- 2, sector loop counter (14 sectors to print)
+230 EC			rd0			; read A <- WR.S0 (sign)
+231 F6			rar			; rotate A right, sign flag -> C
+232 F7			tcc			; A <- C, 0 if positive, 1 if negative
+233 E1			wmp			; write A to RAM0 port, select color (bit 0): red if negative, black if positive
+		
+		; ----- keyboard service
+		; INPUT/OUTPUT: R12 drum sector counter (incremented by 1, or cleared to 0)
+		; OUTPUT: R89 = $00 (select KR)
+		;	  R67 = $10 (select WR)
+		;	  A = 0
+		; DESTROYS: R2, R3
+		; ----------------------------------------------------------------------------
+		; Should be called strictly after sector signal becomes inactive (TEST goes -> 1).
+		; On finish waits for sector signal becomes active (TEST goes -> 0).
+		
+234 50 B0		call	Keyboard	; keyboard handling, count sector
+236 68			inc	R8		; restore R8R9 to point to WR again
+		
+		; ----- count total number of digits (starting with R11 = decimal point position)
+		
+237 6B		Print7:	inc	R11		; total digits counter
+238 AB			ld	R11		; A <- R11, total digits counter
+239 B9			xch	R9		; R9 <- total digits counter, start behind highest digit
+23A 51 A2		call	Check0WR	; check whether remainging part of WR contains any digit (= higher part before number)
+23C F7			tcc			; A <- carry (1 = if number is zero)
+23D 14 37		jz	Print7		; loop if some digits remain
+		
+		; Here is:
+		;  R6 = 1 (select WR)
+		;  R7 = 0 (index of the digit)
+		;  R8 = 1 (select WR)
+		;  R9 = 0
+		;  R10 = place of decimal point
+		;  R11 = total number of digits
+		;  R12 = drum sector counter
+		;  R13 = 2 (printer sector loop counter)
+		;  R14 = character code on pre-last column
+		;  R15 = character code on last column
+		
+		; ----- process printing, R13 = loop couter for printer sectors
+		
+23F 11 3F	Drum1:	jt	Drum1		; wait for inactive printer drum sector signal (wait if TEST = 0)
+241 F0			clb			; clear A = 0 and Carry = 0
+242 E1			wmp			; write RAM0 port, printer control signals are set to inactive
+243 E2			wrr			; write ROM0 port, clear shifter signals
+244 7D 53		ijnz	R13,Drum2	; jump to next sector if R13 not 0
+		
+		; ----- end of printing, advance paper by 1 row
+		
+		; EB PRN ADVANCE + CLR DPCNT	advancing printer paper, clear decimal point counter
+		; ----- advance printer paper by 1 row (= time of 4 drum sector signals)
+		; Here is RAM0 chip selected
+		PaperAdv_2:
+246 2A 0C		fim	R1011,$0C	; R10R11 <- $0C, R11 = 12 counter to send ADV signal (number of steps 16 - 12 = 4)
+248 2E 00		fim	R1415,$00	; R14R15 <- $00
+24A D8			ldi	8		; A <- 8, bit 3 = advance printer paper
+		
+		PaperAdv_3:
+24B 11 4B		jt	PaperAdv_3	; wait for inactive printer drum sector signal (wait if TEST = 0)
+24D E1			wmp			; write RAM0 port: first 8 advance printer paper, later 0 to clear signals
+24E 50 B0		call	Keyboard	; keyboard handling (and wait for active drum sector signal)
+250 7B 4B		ijnz	R11,PaperAdv_3	; loop, send ADV signal (4 loops)
+252 C0			ret	0		; return with A = 0
+		
+		; ----- synchronize printer drum sector
+		; INPUT/OUTPUT: R12 drum sector counter (incremented by 1, or cleared to 0)
+		; OUTPUT: A = 0, C = 0
+		; DESTROYS: R2, R3
+		; ----------------------------------------------------------------------------
+		; Called strictly after sector signal becomes inactive (TEST goes -> 1).
+		; Increments R12 (sector counter), or clears R12 if index signal is active.
+		
+253 50 6A	Drum2:	call	DrumSync	; R12 synchronization with printer drum sector
+255 B8			xch	R8		; R8 <- A = 0, reset digit pointer in WR
+		
+		; ----- check if R15 = 13, print empty column
+		
+256 DD		Drum3:	ldi	13		; A <- 13
+257 9F			sub	R15		; A <- 13 - R15 (C=0), check if R15 = 13
+258 F1			clc			; clear carry
+259 1C 5F		jnz	Drum4		; skip if R15 is not 13
+		
+		; ----- print empty columns if R15 = 13
+		
+25B BA			xch	R10		; R10 <- 0, place of decimal point
+25C DF		Drum34:	ldi	15		; A <- 15, print no digit
+25D 42 61		jmp	Drum5
+		
+		; ----- load one digit from WR (in order from M0 to M14)
+		
+25F 27		Drum4:	src	R67		; select register and digit WR from R6R7
+260 E9			rdm			; A <- read one digit
+261 77 77	Drum5:	ijnz	R7,Drum8	; jump to next digit
+		
+		; ----- all digits from WR are done: skip column 16, add columns 17 and 18
+		
+263 AA			ld	R10		; A <- R10, position of decimal point
+264 1C 68		jnz	Drum6		; decimal point is already shifted (so column 16 is alredy skipped)
+266 52 8F		call	DrumShift2	; shift one inactive column into printer shifter - skip column 16
+		
+268 AF		Drum6:	ld	R15		; A <- R15, character in column 18
+269 52 8A		call	DrumShift	; if R15=R12, shift 1 into print shifter, or 0 otherwise
+26B AE			ld	R14		; A <- R14, character in column 17
+26C 52 8A		call	DrumShift	; if R14=R12, shift 1 into print shifter, or 0 otherwise
+		
+		; ----- wait for active sector signal
+		
+26E 19 6E	Drum7:	jnt	Drum7		; wait for active printer drum sector signal
+		
+		; ----- fire print hammers
+		; INPUT/OUTPUT: R12 drum sector counter (incremented by 1, or cleared to 0)
+		; OUTPUT: R89 = $00 (select KR)
+		;	  R67 = $10 (select WR)
+		;	  A = 0
+		; DESTROYS: R2, R3
+		; ----------------------------------------------------------------------------
+		; Should be called strictly after sector signal becomes inactive (TEST goes -> 1).
+		; On finish waits for sector signal becomes active (TEST goes -> 0).
+		
+270 D2			ldi	2		; A <- 2, bit 1 = fire print hammer
+271 29			src	R89		; select RAM0 from R8R9
+272 E1			wmp			; output port RAM0, fire print hammers
+273 50 B2		call	Keyboard1	; keyboard handling (R7 is cleared)
+275 42 3F		jmp	Drum1		; loop back to next sector
+		
+		; ----- add next digit (if A = R12)
+		
+277 52 8A	Drum8:	call	DrumShift	; if A = R12, shift 1 into printer shifter, or 0 otherwise
+		
+		; ----- check decimal point
+		
+279 AA			ld	R10		; A <- R10
+27A 14 83		jz	Drum9		; jump if R10 = 0 (decimal point is already sent)
+27C 97			sub	R7		; A <- A - R7 (C = 0)
+27D F1			clc			; clear Carry
+27E 1C 83		jnz	Drum9		; jump if R10 != R7 (decimal point is not in this position
+		
+		; ----- insert decimal point (if current sector R12 = 10 decimal point)
+		
+280 DA			ldi	10		; A <- 10, decimal point code character
+281 52 8A		call	DrumShift	; if R12=10, shift 1 into printer shifter, or 0 otherwise
+		
+		; ----- check number of valid digits
+		
+283 A7		Drum9:	ld	R7		; A <- R7, index of the digit
+284 9B			sub	R11		; A <- R7 - R11
+285 F7			tcc			; A <- Carry
+286 14 56		jz	Drum3		; loop back for next valid digits
+288 42 5C		jmp	Drum34		; loop back for empty columns
+		
+		; ----- Send bit to printer shifter (send 1 if A = R12 current sector, or 0 otherwise)
+		
+		DrumShift:
+28A 9C			sub	R12		; A <- A - R12 - CY
+28B F1			clc			; clear carry - hammer not fired
+28C 1C 8F		jnz	DrumShift2	; skip if A != R12
+28E FA			stc			; set carry - hammer will be fired
+		DrumShift2:
+28F D1			ldi	1		; A <- 1
+290 F5			ral			; A <- 2 + Carry
+291 F5			ral			; A <- bit 2 is set (clock), bit 1 = Carry (data)
+292 40 65		jmp	SendShift	; send bit into printer shifter
+		
+		; ----------------------------------------------------------------------------
+		;                  Macro command - start digit entry mode
+		; ----------------------------------------------------------------------------
+		; INPUT: R8 = source register, default $10 = select WR
+		; OUTPUT: R11 = decimal point counter
+		; ----------------------------------------------------------------------------
+		
+		; ----- check if calculator is already in digit entry mode
+		; $1D7, $294 DIGIT		digit functions (00, 000, . or - pressed)
+		DigStart_2:
+294 A4			ld	R4		; A <- R4, function parameter
+295 BD			xch	R13		; R13 <- function parameter (digit)
+296 26 40		fim	R67,$40		; R6R7 <- $40, address of CR
+298 27			src	R67		; select CR register from R6R7
+299 EE			rd2			; A <- read CR.S2, digit entry mode status
+29A 1C A1		jnz	DigStart_3	; jump if calculator is already in digit entry mode
+		
+		; ----- start digit entry mode (without DP), clear registers
+		
+29C D8			ldi	8		; A <- 8, mode digit without decimal point
+29D E6			wr2			; write 8 into CR.S2, flag of digit entry mode
+29E F0			clb			; clear A and C
+29F 51 4A		call	ClearWR		; clear WR, WR.S0 and WR.S1
+		DigStart_3:
+2A1 41 C6		jmp	GetDPWR		; R11 = WR.S1, get decimal point position
+		
+		; ----------------------------------------------------------------------------
+		;        Macro command - load result (load WR from TR, clear SR and TR)
+		; ----------------------------------------------------------------------------
+		; INPUT: R6R7 = source number register (R7=0), default $20 = select DR
+		;	 R8R9 = destination register (R9=0), default $10 = select WR
+		; ----------------------------------------------------------------------------
+		
+		; ----- load WR from TR, clear SR and TR
+		; $1D9, $2A3  MOV WR,TR + CLR TR + CLR SR	move WR <- TR, clar TR, clear SR
+		LoadRes_2:
+2A3 51 0A		call	MovWRTR		; WR <- TR
+2A5 51 46		call	ClearSR		; clear SR (including S0 and S1)
+2A7 51 49		call	ClearDR		; clear TR (including S0 and S1)
+2A9 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;          Macro command - set memory function code and jump
+		; ----------------------------------------------------------------------------
+		; OUTPUT: R5 = 3, A = 1, C = 1	  
+		; ----------------------------------------------------------------------------
+		
+		; $1DB, $2AA SET MRMFUNC + JMP	set function code the memory function and jump
+		JmpMem_2:
+2AA D3			ldi	3		; A <- 3
+2AB B5			xch	R5		; R5 <- 3, set function code
+2AC FA			stc			; set carry, jump to macro
+2AD C1			ret	1		; return with A = 1, C = 1, jump to macro
+		
+		; ----------------------------------------------------------------------------
+		;              Macro command - decrement decimal point counter R10R11
+		; ----------------------------------------------------------------------------
+		; INPUT/OUTPUT: R10R11 decimal point counter
+		; ----------------------------------------------------------------------------
+		
+		; $1DD, $2AE DEC DPCNT		decrement decimal point counter (decrement R10R11)
+2AE D1		DecDP_2:ldi	1		; A <- 1, to decrement
+2AF B3			xch	R3		; R3 <- 1, amount of decrement R10R11
+2B0 BB			xch	R11		; A <- R11, current decimal point counter
+2B1 42 C2		jmp	AdjDiv_3	; adjust R10R11
+		
+		; ----------------------------------------------------------------------------
+		;    Macro command - get difference of required decimals and current decimals
+		; ----------------------------------------------------------------------------
+		; INPUT/OUTPUT: R10R11 difference of decimal point counter
+		;   difference = required decimal point switch - current decimal point in WR
+		; ----------------------------------------------------------------------------
+		
+		; $1DF, $2B3 GET DPDIFF		difference of actual dedimal point (WR.S1 = WR.S3, R10R11 <- difference)
+		DiffDP_2:
+2B3 52 F9		call	ReadDP		; read decimal places of DR (->R2) and WR (->R3)
+2B5 EF			rd3			; A <- read decimal point switch WR.S3
+2B6 E5			wr1			; write decimal places to WR.S1 from A
+2B7 42 C2		jmp	AdjDiv_3	; adjust R10R11 = required DP - current DP
+		
+		; ----------------------------------------------------------------------------
+		;           Macro command - adjust decimal point counter for div
+		; ----------------------------------------------------------------------------
+		; INPUT/OUTPUT: R10R11 difference of decimal point counter
+		; ----------------------------------------------------------------------------
+		
+		; ----- adjust decimal point counter R10R11 for div
+		; R10R11 = DR.S1 (decimals of DR) + 13 (max. decimals) - R11 (current decimals) - WR.S1 (decimals of WR)
+		; $1E1, $2B9 GET DPCNTDIV	adjust decimal point counter for div (R10R11 <- DR.S1 + (13-R11) - WR.S1)
+		AdjDiv_2:
+2B9 52 F9		call	ReadDP		; read decimal places of DR (->R2) and WR (->R3)
+2BB DD			ldi	13		; A <- 13, max. decimal places
+2BC 9B			sub	R11		; A <- 13 - R11 (C=0), 13-current decimal places
+2BD F1			clc			; clear carry
+2BE 82			add	R2		; A <- 13 - R11 + R2 (add decimals of DR)
+2BF BA			xch	R10		; R10 <- 13 - R11 + R2
+2C0 F7			tcc			; A <- C
+2C1 BA			xch	R10		; R10 <- C (carry to high nibble), A <- 13 - R11 + R2
+		
+		; ----- decrease decimal point counter R10R11 by R3
+		; here is A = current decimal point counter LOW, R3 = amount to decrease
+		AdjDiv_3:
+2C2 93			sub	R3		; A <- A - R3, decrease decimal point counter LOW
+2C3 BB			xch	R11		; R11 <- new value LOW
+2C4 F3			cmc			; complement carry
+2C5 BA			xch	R10		; A <- decimal point counter HIGH
+2C6 99			sub	R9		; borrow is subtracted from upper half (here is R9=0)
+2C7 BA			xch	R10		; R10 <- R10 - C
+2C8 F1			clc			; clear carry
+2C9 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;           Macro command - adjust decimal point counter for mul
+		; ----------------------------------------------------------------------------
+		; INPUT/OUTPUT: R10R11 difference of decimal point counter
+		; ----------------------------------------------------------------------------
+		
+		; ----- adjust decimal point counter R10R11 for mul
+		; R10R11 = DR.S1 (decimals of DR) + R11 (current decimals) + WR.S1 (decimals of WR)
+		; $1E3, $2CA GET DPCNTMUL	adjust decimal point counter for mul (R10R11 <- DR.S1 + R11 + WR.S1)
+		AdjMul_2:
+2CA 52 F9		call	ReadDP		; read decimal places of DR (->R2) and WR (->R3)
+2CC A3			ld	R3		; A <- R3, decimal places of WR
+2CD 8B			add	R11		; A <- R3 + R11 (C=0), C<-0
+2CE 82			add	R2		; A <- R3 + R11 + R2 (C=0)
+2CF BB			xch	R11		; R11 <- R3 + R11 + R2
+2D0 F7			tcc			; A <- C
+2D1 BA			xch	R10		; R10 <- high nibble
+2D2 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;                   Macro command - compare sign WR and IR
+		; ----------------------------------------------------------------------------
+		; INPUT: R5 = command code (IR = R5+4)
+		;	 R8R9 = source register (R9=0), default $10 = select WR
+		; OUTPUT: A = 1, C = 1 if WR and IR have differente sign (= jump)
+		; ----------------------------------------------------------------------------
+		
+		; ----- compare sign or WR and IR, jump if have different sign (C = 1)
+		; IR = indirect register = function code R5 + 4
+		; $1D4, $2D3 JPC DIFF_SIGN	jump if WR and IR have different sign
+		CheckSign_2:
+2D3 D4			ldi	4		; A <- 4
+2D4 85			add	R5		; A <- 4 + R5, function code + 4
+2D5 B6			xch	R6		; R6 <- function code + 4 = indirect register
+		
+		; ----- compare sign of registers R6R7 (IR or DR) and R8R9 (WR)
+		CheckSign_3:
+2D6 27			src	R67		; select IR register from R6R7
+2D7 EC			rd0			; A <- read sign of IR
+2D8 B2			xch	R2		; R2 <- sign of IR
+2D9 29			src	R89		; select WR register from R8R9
+2DA EC			rd0			; A <- read sign of WR
+2DB 82			add	R2		; A <- sign IR + sign WR, bit 0 is 0 if both numbers have same sign
+2DC F6			rar			; rotate result bit 0 into C
+2DD C1			ret	1		; return with A = 1, C = 1 jump if numbers have different sign
+		
+		; ----------------------------------------------------------------------------
+		;             Macro command - set sign of mul/div result
+		; ----------------------------------------------------------------------------
+		; INPUT: R6R7 = destination number register (R7=0), default $20 = select DR
+		;	 R8R9 = source register (R9=0), default $10 = select WR
+		; OUTPUT: A = 0
+		;	 R13 = 15
+		; ----------------------------------------------------------------------------
+		
+		; $1E5, $2DE SET DIVMUL_SIGN + MOV DIGIT,15	set sign of RR, set DIGIT to 15 (R13=15 loop counting)
+		SetDMSign_2:
+2DE 52 D6		call	CheckSign_3	; compare WR and DR sign
+2E0 F7			tcc			; A <- CY, 1 if different sign
+2E1 66			inc	R6		; increment R6 to point to RR
+2E2 27			src	R67		; select RR from R6R7
+2E3 E4			wr0			; set sign of RR
+		
+2E4 DF			ldi	15		; A <- 15
+2E5 BD			xch	R13		; R13 <- 15, used as loop-end indicator
+2E6 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;                      Macro command - negate WR
+		; ----------------------------------------------------------------------------
+		; INPUT: R8R9 = source register (R9=0), default $10 = select WR
+		; OUTPUT: A = 0
+		; ----------------------------------------------------------------------------
+		
+		; ----- negate WR - flip sign WR.S0
+		; $1E7, $2E7 NEG WR		negate WR (WR.S0 <- !WR.S0)
+2E7 29		NegWR_2:src	R89		; select WR register from R8R9
+2E8 EC			rd0			; read sign WR.S0
+2E9 F4			cma			; complement accumulator
+2EA E4			wr0			; write new sign WR.S0
+2EB C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;                      Macro command - round WR
+		; ----------------------------------------------------------------------------
+		; INPUT: R8R9 = source register (R9=0), default $10 = select WR
+		;	 R13 = last digit
+		; OUTPUT: A = 0
+		; ----------------------------------------------------------------------------
+		
+		; ----- increment WR and R14 if DIGIT R13 > 4
+		; $1E9, $2EC ROUNDING		increment WR and R14 if DIGIT R13 > 4
+		RoundWR_2:
+2EC DB			ldi	11		; A <- 11
+2ED 8D			add	R13		; A <- R13 + 11 (C = 0), digit + 11, C <- 1 if R13 > 4
+2EE 1A F1		jnc	RoundWR_3	; skip if R1R675 (CY=0), no rounding
+2F0 6E			inc	R14		; increment R14, too
+		
+		; ----- increment WR in rounding (increment only if C = 1)
+		
+		RoundWR_3:
+2F1 D0			ldi	0		; A <- 0
+2F2 29			src	R89		; select WR register from R8R9
+2F3 EB			adm			; A <- A + mem + C
+2F4 FB			daa			; decimal adjust
+2F5 E0			wrm			; write new digit
+2F6 79 F1		ijnz	R9,RoundWR_3	; increment R9 (digit pointer) and loop to next digit
+2F8 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;             Macro command - read decimal places of DR and WR
+		; ----------------------------------------------------------------------------
+		; INPUT: R6R7 = destination number register (R7=0), default $20 = select DR
+		;	 R8R9 = source register (R9=0), default $10 = select WR
+		; OUTPUT: A = 0
+		;	 R2 = decimal places of DR
+		;	 R3 = decimal places of WR
+		; ----------------------------------------------------------------------------
+		
+		; ----- read decimal places of DR (->R2) and WR (->R3)
+		; $2F9
+2F9 27		ReadDP:	src	R67		; select DR from R6R7
+2FA ED			rd1			; read DR.S1, decimal places
+2FB B2			xch	R2		; R2 <- DR.S1 decimal places
+2FC 29			src	R89		; select WR from R8R9
+2FD ED			rd1			; read WR.S1, decimal places
+2FE B3			xch	R3		; R3 <- WR.S1 decimal plaves
+2FF C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;                            Macro programs
+		; ----------------------------------------------------------------------------
+		; $300
+		
+		; Address must be aligned to ROM page
+		.page	; address $300
+		
+		; ----------------------------------------------------------------------------
+		;             Fetch next command code indexed by R0R1 into R2R3
+		; ----------------------------------------------------------------------------
+		; INPUT: R0R1 = current address at this page
+		; OUTPUT: R2R3 = command code
+		;	 A = 0
+		; ----------------------------------------------------------------------------
+		
+		; ----- fetch next command code indexed by R0R1 into R2R3
+		
+		CmdFetch:
+300 32			fin	R23		; load code R2R3 <- [PC:R0R1]
+301 C0			ret	0		; return with A = 0
+		
+		; ----------------------------------------------------------------------------
+		;   Fetch jump address as new pointer, and continue to macro interpreter
+		; ----------------------------------------------------------------------------
+		; INPUT: R0R1 = current address at this page
+		; OUTPUT: R0R1 = new address
+		;	  Jump to macro interpreter to continue
+		; ----------------------------------------------------------------------------
+		
+		; ----- fetch jump address as new value of pointer
+		
+		JmpFetch:
+302 30			fin	R01		; load code R0R1 <- [PC:R0R1]
+303 40 4B		jmp	Exec		; jump to macro interpreter
+		
+		; ----------------------------------------------------------------------------
+		;                        Macro program - SQRT
+		; ----------------------------------------------------------------------------
+		; $305
+		
+305 ED		fn_sqrt:   = @Sqrt ;$ed    ;SQRT (+ JMP num_dpadj)			;square root of WR is placed into RR
+		
+		; ----------------------------------------------------------------------------
+		;                        Macro program - mul/div
+		; ----------------------------------------------------------------------------
+		; function F5=1 div/mul, parameter F4=4 div, 3 mul
+		; $306
+		
+		; ----- check if new number is entered
+		        
+		fn_muldiv:
+		
+			; check RR.S2 and jump if new number is entered
+306 6C 14		= @JmpNewNum, @md_prn2 ;$6c $14 ;JPC MODENN,md_prn2 ;jump, if new number is entered
+			; Read status RR.S2.bit0 - 'mul/div' last operation flag -> C (jump if last operation = mul/div)
+308 75 0E		= @ReadRRS2, @md_prn1 ;$75 $0e ;JPC MODEMD,md_prn1 ;jump, if mul or div was the last operation
+			; lat operation is add/sub - recall last total result
+30A D9			= @LoadRes ;$d9 ;MOV WR,TR + CLR TR + CLR SR ;if add or sub was the last operation, then main total is recalled
+			; print number
+30B FC			= @PrintFPar ;$fc ;PRN FPAR
+			; jump to exit
+30C A7 0F		= @Jump, @md_exitf ; $a7 $0f ;JMP md_exitf
+		
+		; ----- last operation is mul/div
+		
+		md_prn1:
+			; print number
+30E FB			= @PrintFParEmp ;$fb ;PRN FPAR,FCODE
+		md_exitf:
+			; set mul/div status DR.S2 from function parameter F4
+30F 8D			= @SetMulPar ;$8d ;SET MOPPAR ;keep the operation (from the parameter) for the next round
+		md_exitc:
+			; move DR <- WR
+310 04			= @MovDRWR ;$04 ;MOV DR,WR ;put the number into DR and CR
+			; move CR <- WR
+311 02			= @MovCRWR ;$02 ;MOV CR,WR
+			; set RR.S2 status (last operation) to 1 = mul/div
+312 87			= @SetMulDiv ;$87 ;SET MODEMD
+			; clear mode to no decimal point, no overflow
+313 EF			= @ClrOver ;$ef    ;CLR MENT + CLR OVFL + RET
+		
+		; ----- new number entered
+		
+		md_prn2:
+			; print number
+314 FC			= @PrintFPar ; $fc ;PRN FPAR
+			; jump if div/mul is not specified (other operand is not entered yet)
+315 6D 0F		= @JmpNMul, @md_exitf ; $6d $0f ;JPC MOPN,md_exitf ;jump, if the other operand is not entered yet
+			; jump if constant calculation
+317 7B 0F		= @CheckDivCR, @md_exitf ; $7b $0f ;JPC MOPCONST,md_exitf ;jump, at constant calculation (new number for calculation)
+			; jump if operation is mul
+319 76 46		= @ReadDRS2, @mul_start ;$76 $46 ;JPC MOPMUL,mul_start ;jump, if previous operation is multiply
+		
+		;----------------------------------------------------------------------------------------------------------------------------------
+		;dividing:	WR <- RR = DR / WR
+		;
+		;DR and WR is left adjusted into position WR.M14<>0 and DR.M14<>0, DR is decreased by WR till it becomes negative. WR is added back
+		;to DR for getting back the smallest non negative DR. The count, how many times it could be decreased gives the next digit of
+		;result, which is shifted into RR. DR is shifted left for doing the subfunction for the next digit. The same process is repeated
+		;14 times. Place of digit point of the result is calculated separately. Finally the result from RR is copied to WR.
+		;----------------------------------------------------------------------------------------------------------------------------------
+		; $31B
+			; set DR.S2 status (mul/div status) from function parameter R4
+31B 8D			= @SetMulPar ;$8d ;SET MOPPAR ;divide is marked into MOP
+		
+		; ----- prepare division (jump here from %)
+		
+		div_chk0:
+			; check if WR = 0 (divisor) and jump to overflow
+31C A2 3C		= @Check0WR, @num_overf ;$a2 $3c ;JPC ZERO_WR,num_overf ;divide by zero would result overflow
+			; clear RR (result register)
+31E 48			= @ClearRR ;$48 ;CLR RR
+			; check if DR = 0 (dividend) and jump to zero result
+31F A0 73		= @Check0DR, @num_res ;$a0 $73 ;CLR DIGIT + JPC ZERO_DR,num_res	;if dividend is zero, the result will be zero too
+			; adjust decimal point counter for div (R10R11 <- DR.S1 (dividend) + (13-R11) - WR.S1 (divisor)
+321 E1			= @AdjDiv ;$e1  ;GET DPCNTDIV ;digit point initialization for divide
+		
+		; ----- check dividend DR - shift left if it is too small
+		
+		div_chkDR: 
+			; check if dividend DR is small - rotate DR to leftmost position
+322 9E 32		= @CheckSmallDR, @div_lshDR ;$9e $32 ;CLR DIGIT + JPC NBIG_DR,div_lshDR ;rotate DR into leftmost position
+		
+		; ----- check dividend WR - shift left if it is too small
+		
+		div_chkWR: 
+			; check if divisor WR is small - rotate WR to leftmost position
+324 9A 36		= @CheckSmallWR, @div_lshWR ;$9a $36 ;JPC NBIG_WR,div_lshWR ;rotate WR into leftmost position
+		
+		; ----- set sign of result and prepare mark of loop-end
+		
+			; set sign of mul/div result (RR.S0 <- DR.S0 ^ WR.S0), set R13 to 15 as mark of loop-end
+326 E5			= @SetDMSign ;$e5  ;SET DIVMUL_SIGN + MOV DIGIT,15 ;sign of result is set
+			; shift RR left 2x, shift 15 from R13 into M0 as mark loop-end
+327 51			= @ShiftL_RR ;$51    ;SHL RR ;15 is shifted into the cleared RR, as a mark for loop end
+328 51			= @ShiftL_RR ;$51    ;SHL RR
+		
+		; ----- divide loop (on start R13 = 0, loop counter)
+		; - subtract DR-WR repeated until negative result, count R13 digit counter
+		; - add DR+WR back to previous value
+		; - shift digit R13 into result RR
+		; - check shifted mark R13 if end of loop
+		; - shift divider DR and repeat loop
+		
+		div_loop:
+			; subtract divisor from dividend, DR <- DR - WR, repeat if result is not negative, count R13
+329 34 29		= @SubDRWR, @div_loop ;$34 $29 ;SUB DR,WR + JPC NNEG,div_loop + INC DIGIT ;find, how many times the subtraction can be done
+			; result is negative - add divisor back to dvidend, DR <- DR + WR
+32B 21			= @AddDRWR ;$21  ;ADD DR,WR ;adding back the last unneeded subtract
+			; shift result RR left, insert new digit R13 into M0
+32C 51			= @ShiftL_RR ;$51  ;SHL RR ;next digit of result is shifted into RR
+			; check shifted-out digit R13 - if it is 15 (>9), it is end-loop mark, so finish
+32D A9 3F		= @CheckR139, @div_finsh ;$a9 $3f ;JPC BIG_DIGIT,div_finsh ;if shifted out number>9, end of division
+			; shift dividend DR left (here is R13 = 0)
+32F 52			= @ShiftL_DR ;$52  ;SHL DR ;next digit (shifted out from RR) is shifted into DR
+			; repeat divide loop
+330 A7 29		= @Jump, @div_loop ;$a7 $29 ;JMP div_loop
+		
+		; ------ rotate DR (dividend) to leftmost position
+		
+		div_lshDR:
+			; shift dividend DR one position left
+332 52			= @ShiftL_DR ;$52    ;SHL DR	;one digit rotate left of DR
+			; increment decimal point counter R10R11
+333 CA			= @IncDP ;$ca    ;INC DPCNT
+			; repeat check DR
+334 A7 22		= @Jump, @div_chkDR ;$a7 $22 ;JMP div_chkDR
+		
+		; ------ rotate WR (divisor) to leftmost position
+		
+		div_lshWR:
+			; shift divisor WR one position left
+336 53			= @ShiftL ;$53    ;SHL WR ;one digit rotate left of WR
+			; check decimal point counter R10R11 - if it is already = 0, it is overflow result
+337 CF 3C		= @CheckDP0, @num_overf ;$cf $3c ;JPC ZERO_DPCNT,num_overf ;jump if rotate would cause overflow
+			; decrement decimal point counter R10R11
+339 DD			= @DecDP ;$dd   ;DEC DPCNT
+			; repeat check WR
+33A A7 24		= @Jump, @div_chkWR ;$a7 $24 ;JMP div_chkWR
+		
+		; ----- overflow (divide by 0)
+		; $33C
+		num_overf:
+			; print overflow
+33C FF			= @PrintOvfl ;$ff  ;PRN OVFL ;print overflow
+			; set overflow flag
+33D 85			= @SetOver ;$85    ;SET OVFL					;set overflow flag
+			; clear mode and exit
+33E F1			= @ClrModeNoDP ;$f1  ;CLR MODE + CLR MENT + RET ;exit
+		
+		; ----- divide finish, adjust result to max. 13 decimal digits
+		; $33F
+		div_finsh:
+			; rotate result RR one position right
+33F 5D			= @ShiftR_RR ;$5d    ;SHR RR	;rotate the number right
+		; $340
+		num_dpadj:
+			; check decimal point counter R10R11 if it is <= 13 (jump if OK)
+340 CE 73		= @CheckDP13, @num_res ;$ce $73 ;JPC NBIG_DPCNT,num_res	;jump, if the result contains acceptable number of digits
+			; decrement decimal point counter
+342 DD			= @DecDP ;$dd    ;DEC DPCNT	;otherwise shift the number to right
+			; shift result right
+343 5D			= @ShiftR_RR ;$5d    ;SHR RR	;Note: the place of this instruction could have been saved,
+			; repeat adjust
+344 A7 40		= @Jump, @num_dpadj ;$a7 $40 ;JMP num_dpadj ;  if the jump would go back to div_finsh
+		
+		;----------------------------------------------------------------------------------------------------------------------------------
+		;multiplication: WR <- RR = DR * WR
+		;
+		;As starting WR is copied to RR and DR copied to WR. DR is cleared.
+		;DR and RR is shifted right. Last digit of RR is placed into R13, WR is added R13 times to DR. The process is repeated 14 times.
+		;Two 14 digit operand produces maximum 28 digit result. For us the most significant digits are interesting. Therefore the 28 digit
+		;result is rotated towards the lower digits, till the upper 14 digits contain nonzero digits, the place of digit point is counted
+		;in R10 and R11. After rotate the result is finally copied to WR.
+		;----------------------------------------------------------------------------------------------------------------------------------
+		; $346
+		mul_start:
+			; set DR.S2 status (mul/div status) from function parameter R4
+346 8D			= @SetMulPar ;$8d  ;SET MOPPAR  ;multiplication is marked in MOP
+		
+		; ----- prepare multiplication (jump here from %)
+		
+		mul_st2:
+			; move RR <- WR
+347 03			= @MovRRWR ;$03  ;MOV RR,WR
+			; adjust decimal point counter for mul (R10R11 <- DR.S1 + R11 + WR.S1)
+348 E3			= @AdjMul ;$e3  ;GET DPCNTMUL	;digit point initialization for multiply
+			; set sign of mul/div result (RR.S0 <- DR.S0 ^ WR.S0), set R13 to 15 as mark of loop-end
+349 E5			= @SetDMSign ;$e5  ;SET DIVMUL_SIGN + MOV DIGIT,15  ;sign of result is set
+			; move WR <- DR
+34A 0E			= @MovWRDR ;$0e  ;MOV WR,DR
+			; clear DR
+34B 49			= @ClearDR ;$49  ;CLR DR
+			; shift DR one position left, insert R15=15 as mark of loop-end
+34C 52			= @ShiftL_DR ;$52  ;SHL DR  ;shift R13=15 into DR, but it is immediately shifted into RR
+		
+		; ----- multiplication loop
+		; - shift DR right
+		; - shift RR right (old WR), shift-out one digit R13 (15 = end of loop)
+		; - add WR to DR with count R13-times
+		mul_loopn:
+			; shift DR one position right, to get next digit into R13
+34D 5E			= @ShiftR_DR ;$5e  ;SHR DR  ;DR-RR is shifted right
+			; shift RR one position right, insert digit R13
+34E 5A			= @ShiftRShort_RR ;$5a  ;SSR RR
+			; check shifted-out digit R13 - if it is 15 (>9), it is end-loop mark, so finish
+34F A9 56		= @CheckR139, @mul_shres ;$a9 $56 ;JPC BIG_DIGIT,mul_shres ;jump if R13=15 was shifted out (exit from the loop)
+		
+		; ----- add WR to DR with count R13 (=current digit)
+		
+		mul_loopd:
+			; decrement digit R13 and jump if R13 was 0 (C = 1 if R13 was 0) = end of loop
+351 AC 4D		= @DecDigJmp0, @mul_loopn ;$ac $4d ;JPC ZERO_DIGIT,mul_loopn + DEC DIGIT ;multiply the number with one digit
+			; add WR to DR
+353 21			= @AddDRWR ;$21  ;ADD DR,WR  ;finally DR=DR+R13*WR
+			; continue loop, to add WR to DR R13-times
+354 A7 51		= @Jump, @mul_loopd ;$a7 $51 ;JMP mul_loopd
+		
+		; ----- normalize result DR:RR to fit into RR
+		
+		mul_shres:
+			; check if DR is 0 - result is adjusted OK
+356 A0 40		= @Check0DR, @num_dpadj ;$a0 $40 ;CLR DIGIT + JPC ZERO_DR,num_dpadj ;rotate nonzero digits from DR to RR
+			; check decimal point counter R10R11 - if it is already = 0, it is overflow result
+358 CF 3C		= @CheckDP0, @num_overf ;$cf $3c ;JPC ZERO_DPCNT,num_overf ;jump if overflow occurred
+			; shift result DR:RR right
+35A 5E			= @ShiftR_DR ;$5e    ;SHR DR	;DR-RR is shifted right
+35B 5A			= @ShiftRShort_RR ;$5a    ;SSR RR
+			; decrease decimal point counter
+35C DD			= @DecDP ;$dd    ;DEC DPCNT
+			; continue loop
+35D A7 56		= @Jump, @mul_shres ;$a7 $56 ;JMP mul_shres
+		
+		; ----- mark mode with decimal point
+		; $35F
+		dp_mark:
+			; set digit entry mode to 1 = digit with DP
+35F 86			= @SetNumDP ;$86    ;SET MENTDP	;digit point flag
+			; clear mode to new number
+360 F3			= @ClrMode ;$f3    ;CLR MODE + RET
+		
+		; ----------------------------------------------------------------------------
+		;                        Macro program - % percentage
+		; ----------------------------------------------------------------------------
+		; $361
+		fn_percnt:
+			; print number
+361 FE			= @PrintFCode ;$fe    ;PRN FCODE
+			; increment decimal point counter R10R11 2-times (to shift result x 100)
+362 CA			= @IncDP ;$ca    ;INC DPCNT	;increment the digit point place counter by 2
+363 CA			= @IncDP ;$ca    ;INC DPCNT
+			; continue
+364 A7 67		= @Jump, @num_md ;$a7 $67 ;JMP num_md
+		
+		num_prm:
+			; print number
+366 FE			= @PrintFCode ;$fe    ;PRN FCODE
+		
+		; ----- check mul/div constant CR
+		
+		num_md:
+			; check CR.S2 status if mul/div constant CR
+367 7B 6F		= @CheckDivCR, @num_mul2 ;$7b $6f ;JPC MOPCONST,num_mul2  ;jump at const divide/multiply
+			; set mul/div status constant CR
+369 90			= @SetDivCR ;$90    ;SET MOPCONST
+		
+		; ----- jump to mul or div
+		
+		num_mul1:
+			; read status DR.S2.bit0 - 'mul started', jump to multiplication
+36A 76 47		= @ReadDRS2, @mul_st2 ;$76 $47 ;JPC MOPMUL,mul_st2  ;jump to multiply, if previous operation is multiply
+			; move CR <- WR (divisor for constant divide)
+36C 02			= @MovCRWR ;$02    ;MOV CR,WR	;save the divisor for constant divide
+			; jump to divide
+36D A7 1C		= @Jump, @div_chk0 ;$a7 $1c ;JMP div_chk0	;jump to divide
+		
+		; ----- mul/div by constant CR, load CR into WR
+		
+		num_mul2:
+			; move DR <- WR
+36F 04			= @MovDRWR ;$04    ;MOV DR,WR	;save the number into DR
+			; move WR <- CR
+370 0C			= @MovWRCR ;$0c    ;MOV WR,CR	;recall previous number from CR
+			; jump to mul or div
+371 A7 6A		= @Jump, @num_mul1 ;$a7 $6a ;JMP num_mul1	;jump to divide or multiply
+		
+		; ----- check operation
+		
+		num_res:
+			; move result WR <- RR
+373 0D			= @MovWRRR ;$0d    ;MOV WR,RR	;copy the RR result to WR
+			; set decimal point WR.S1 from R11 (decimal point counter)
+374 C2			= @SetDPWR ;$c2    ;SET DP_WR	;set the digit point position from R10R11
+			; check new operation (set C = 1 if R5 < 8, new operation)
+375 B1 10		= @CheckNewOp, @md_exitc ;$b1 $10 ;JPC NEWOP,md_exitc	;jump to exit at new mul and div operation
+			; check memory operation
+377 B4 7B		= @CheckMemOp, @num_adj ;$b4 $7b ;JPC MEMOP,num_adj	;jump to adjust at M=+/M=-
+			; check WR.S2 and jump if not truncated/rounded
+379 6E 9E		= @JmpNTrunc, @num_pra2 ;$6e $9e ;JPC NTRUNC,num_pra2	;jump to result print, if digit point should not be adjusted
+		
+		; ----- check difference of required decimals and current decimals
+		; $37B
+		num_adj:   
+			; get difference of decimal position
+37B DF			= @DiffDP ;$df    ;GET DPDIFF	;WR.S1=WR.S3, set R10R11 to the difference between required an actual digit point
+							;Rotate the number into the required digit point place
+		
+		; ----- check to normalize result to required number of decimal digits
+		
+		num_rotl:
+			; check decimal point counter R11 if it is alreaday 0
+37C CF 9A		= @CheckDP0, @num_pra1 ;$cf $9a ;JPC ZERO_DPCNT,num_pra1  ;jump, if number is at the right digit point place
+			; check decimal point counter R11 if it is <= 13 - go to shift left
+37E CE 84		= @CheckDP13, @num_lrot ;$ce $84 ;JPC NBIG_DPCNT,num_lrot
+			; increment decimal point counter R10R11
+380 CA			= @IncDP ;$ca    ;INC DPCNT	;Rotate right
+			; shift WR right
+381 5F			= @ShiftR ;$5f    ;SHR WR
+			; jump to next test
+382 A7 7C		= @Jump, @num_rotl ;$a7 $7c ;JMP num_rotl
+		
+		; ----- shift number left
+		
+		num_lrot:
+			; decrement decimal point counter R10R11
+384 DD			= @DecDP ;$dd    ;DEC DPCNT	;Rotate left
+			; shift WR left
+385 53			= @ShiftL ;$53    ;SHL WR
+			; check if WR is small, next shift if is it small enough
+386 9A 7C		= @CheckSmallWR, @num_rotl ;$9a $7c ;JPC NBIG_WR,num_rotl
+			; print overflow
+388 A7 3C		= @Jump, @num_overf ;$a7 $3c ;JMP num_overf	;print overflow
+		
+		; ----------------------------------------------------------------------------
+		;                        Macro program - =, M=+, M=-
+		; ----------------------------------------------------------------------------
+		; $38A
+		; ----- calculate result and jump M+ M-
+		
+		fn_memeq:
+			; check RR.S2 and jump if new number
+38A 6C 66		= @JmpNewNum, @num_prm ;$6c $66 ;JPC MODENN,num_prm	;jump, if new number is entered
+			; Read status RR.S2.bit0 - jump if 'mul/div' last operation flag -> C
+38C 75 66		= @ReadRRS2, @num_prm ;$75 $66 ;JPC MODEMD,num_prm	;jump, if there is started mul/div operation
+			; load WR from TR, clear SR and TR
+38E D9			= @LoadRes ;$d9    ;MOV WR,TR + CLR TR + CLR SR	  ;recall main total
+			; jump to M+ M-
+38F A7 98		= @Jump, @fn_memadd ;$a7 $98 ;JMP fn_memadd	;jump to add functions
+		
+		; ----------------------------------------------------------------------------
+		;                         Macro program - +/- add, sub
+		; ----------------------------------------------------------------------------
+		; function F5=2 add/sub, parameter F4=2 sub, 1 add
+		; $391
+		fn_addsub:
+			; check RR.S2 and jump if new number to M+ M-
+391 6C 98		= @JmpNewNum, @fn_memadd ;$6c $98 ;JPC MODENN,fn_memadd	 ;jump, if new number is enterer
+			; Read status RR.S2.bit0 - jump if 'mul/div' last operation flag -> C, clear div/mul status
+393 75 97		= @ReadRRS2, @clr_md ;$75 $97 ;JPC MODEMD,clr_md  ;jump, if there is started mul/div operation
+			; jump to M+ M-
+395 A7 98		= @Jump, @fn_memadd ;$a7 $98 ;JMP fn_memadd ;jump to add functions
+		
+		clr_md:
+			; clear status DR.S2 (div/mul status)
+397 82			= @ClearDRS2 ;$82    ;CLR MOP	;ignore previous mul/div operation
+		
+		; ----------------------------------------------------------------------------
+		;                        Macro program - M+/M-
+		; ----------------------------------------------------------------------------
+		; $398
+		fn_memadd:
+			; clear digit R13 and jump to adjust
+398 AE 7B		= @ClrDigJmp @num_adj ;$ae $7b ;CLR DIGIT + JMP num_adj	;jump to adjust the number to the required digits
+		
+		num_pra1:
+			; check new operation, jump at new add/sub operation (set C = 1 if R5 < 8, new operation) - do operation +-
+39A B1 AA		= @CheckNewOp, @num_pra3 ;$b1 $aa ;JPC NEWOP,num_pra3	;jump at new add/sub operation
+			; Read status WR.S2.bit0 - rounding switch "1=round" -> C jump
+39C 77 A3		= @ReadWRS2, @num_round ;$77 $a3 ;JPC ROUND,num_round	;jump to rounding, if rounding switch is in that position
+		
+		num_pra2:
+			; print number with round
+39E FD			= @PrintRoundFPar ;$fd    ;PRN ROUND,FPAR
+			; advancing paper
+39F EB			= @PaperAdv ;$eb    ;PRN ADVANCE + CLR DPCNT
+			; check if it is memory operation
+3A0 B4 A8		= @CheckMemOp, @mem_add ;$b4 $a8 ;JPC MEMOP,mem_add	;jump to change the function code at M=+/M=-/M+/M-
+			; clear mode to new number, no decimal point
+3A2 F1			= @ClrModeNoDP ;$f1    ;CLR MODE + CLR MENT + RET
+		
+		; ----- round WR and check overflow
+		; $3A3
+		num_round:
+			; round WR (by last digit R13)
+3A3 E9			= @RoundWR ;$e9    ;ROUNDING	;do the rounding based on the last shifted out digit in R13
+			; check if number WR is small enough
+3A4 9A 9E		= @CheckSmallWR, @num_pra2 ;$9a $9e ;JPC NBIG_WR,num_pra2  ;may generate overflow too
+			; print overflow
+3A6 A7 3C		= @Jump, @num_overf ;$a7 $3c ;JMP num_overf	;print overflow
+		
+		; ----- memory operation
+		; $3A8
+		mem_add:
+			; do add/sub memory operation
+3A8 DB AB		= @JmpMem, @do_prpadd ;$db $ab ;SET MEMFUNC + JMP do_prpadd	;Set M+/M- function code
+		
+		;----------------------------------------------------------------------------------------------------------------------------------
+		;add/subtract functions:
+		;
+		;By this point, numbers are shifted into the place determined by the digit point switch, thus no shifting is needed.
+		;
+		;!!! Note, if the digit point switch is changed during an operation, the numbers are incorrectly added/subtracted.
+		;
+		;	function code	    parameter		pre1		operation1	pre2	operation2
+		;+		2		1		RR=WR		TR=TR+WR	WR=RR	SR=SR+WR
+		;-		2		2		RR=WR		TR=TR-WR	WR=RR	SR=SR-WR
+		;M+ (M=+)	3		5		RR=WR		MR=MR+WR
+		;M- (M=-)	3		6		RR=WR		MR=MR-WR
+		;----------------------------------------------------------------------------------------------------------------------------------
+		; $3AA
+		num_pra3:
+			; print number
+3AA FC			= @PrintFPar ;$fc    ;PRN FPAR
+		
+		do_prpadd:
+			; get decimal point counter R11 from decimal point WR
+3AB C6			= @GetDPWR ;$c6    ;GET DP_WR
+		
+		; ----- change subtraction to addition (negate second operand)
+		; $3AC
+		do_addsub:
+			; move RR <- WR, save original second operand
+3AC 03			= @MovRRWR ;$03    ;MOV RR,WR
+			; jump if function parameter R4 is odd (jump if bit0 of F4 is 1) - add + M+
+3AD BC B0		= @OddPar, @skp_neg ;$bc $b0 ;JPC ODDPAR,skp_neg   ;skip negate the number at add
+			; negate WR
+3AF E7			= @NegWR ;$e7    ;NEG WR	;negate the number at sub (convert it to add)
+		
+		; ----- signs are identical, add second operand to first operand
+		
+		skp_neg:
+			; jump if WR and IR have different sign
+3B0 D4 B7		= @CheckSign, @do_sub ;$d4 $b7 ;JPC DIFF_SIGN,do_sub	;jump, when adding a negative and a positive number
+			; add numbers IR = IR + WR, destination is TR for +-, MR for M+-
+3B2 1E			= @AddIRWR ;$1e    ;ADD IR,WR	;ADD - may generate overflow
+			; check overflow, jump if no overflow
+3B3 97 BD		= @CheckSmallIR, @do_next ;$97 $bd ;JPC NBIG_IR,do_next, ;jump, if there is no overflow
+			; roll IR back IR = IR - WR, and repotr overflow
+3B5 31 3C		= @SubIRWR, @num_overf ;$31 $3c ;SUB IR,WR + JPC NNEG,num_overf + INC DIGIT	;correct back IR at overflow and jump always
+		
+		; ----- signs are different, subtract second operand from first operand
+		
+		do_sub:
+			; subtract numbers IR = IR - WR, destination is TR for +-, MR for M+-
+3B7 31 BD		= @SubIRWR, @do_next ;$31 $bd ;SUB IR,WR + JPC NNEG,do_next + INC DIGIT	;SUB - never generates overflow
+			; underflow, roll destination register back, IR = IR + WR
+3B9 1E			= @AddIRWR ;$1e    ;ADD IR,WR
+			; subtract numbers in reverse oder, WR = WR - IR
+3BA 2C BC		= @SubWRIR, @do_cont ;$2c $bc ;SUB WR,IR + JPC NNEG,do_cont	;always goes to the next instruction
+		do_cont:
+			; move result WR to IR
+3BC 01			= @MovIRWR ;$01    ;MOV IR,WR
+		
+		; ----- correct result, continue with next operation
+		
+		do_next:
+			; restore original second operand
+3BD 0D			= @MovWRRR ;$0d    ;MOV WR,RR	;take the original number from RR
+			; set decimal point of result from decimal point counter R10R11
+3BE BF			= @SetDPIR ;$bf    ;SET DP_IR	;set the place of digit point
+			; check memory operation, exit if so
+3BF B4 FF		= @CheckMemOp, @do_exit ;$b4 $ff ;JPC MEMOP,do_exit	;exit at memory function
+			; rotate function code R5, check bit 0
+3C1 B7 AC		= @RotFC, @do_addsub ;$b7 $ac ;JPC ROTFC,do_addsub	;do the addsub for the next number, if there is instruction for it
+			; mark last operation add/sub
+3C3 8A			= @SetAddSub ;$8a    ;SET MODEAS  ;mark, that last operation was add or sub
+			; clear mode to no decimal point, no overflow
+3C4 EF			= @ClrOver ;$ef    ;CLR MENT + CLR OVFL + RET	;exit
+		
+		; ----------------------------------------------------------------------------
+		;                          Macro program - C
+		; ----------------------------------------------------------------------------
+		; "C" Clear:	clear WR,DR,SR,TR and print. it does not clear RR,CR and RR.S2
+		; $3C5
+		
+		fn_clear:
+			; clear status DR.S2 (div/mul status)
+3C5 82			= @ClearDRS2 ;$82    ;CLR MOP
+			; clear DR divide register
+3C6 49			= @ClearDR ;$49    ;CLR DR
+			; load total result and cear TR,SR
+3C7 D9			= @LoadRes ;$d9    ;MOV WR,TR + CLR TR + CLR SR
+			; clear WR
+3C8 4A			= @ClearWR ;$4a    ;CLR WR
+			; print number
+3C9 FC			= @PrintFPar ;$fc    ;PRN FPAR
+		
+		; ----------------------------------------------------------------------------
+		;                          Macro program - CE
+		; ----------------------------------------------------------------------------
+		;"CE" Clear:	clear WR, RR.S2, CR.S2
+		; $3CA
+		
+		fn_cleare:
+			; clear WR
+3CA 4A			= @ClearWR ;$4a    ;CLR WR
+			; clear overflow flag
+3CB 7F			= @ClearSRS2 ;$7f    ;CLR OVFL
+			; clear mode to new number, no decimal point, exit
+3CC F1			= @ClrModeNoDP ;$f1    ;CLR MODE + CLR MENT + RET
+		
+		; ----------------------------------------------------------------------------
+		;                Macro program - Diamond (print sub total)
+		; ----------------------------------------------------------------------------
+		; "Diamond" - subtotal: print the number or the subtotal
+		; $3CD
+		
+		fn_diamnd:
+			; check RR.S2 and jump if new number
+3CD 6C D5		= @JmpNewNum, @dm_prn2 ;$6c $d5 ;JPC MODENN,dm_prn2	;jump in entry mode, print the number, and close the entry mode
+			; Read status RR.S2.bit0 - jump if 'mul/div' last operation
+3CF 75 D3		= @ReadRRS2, @dm_prn1 ;$75 $d3 ;JPC MODEMD,dm_prn1	;jump in mul/div mode, print the number, and init
+			; move WR <- SR
+3D1 0B			= @MovWRSR ;$0b    ;MOV WR,SR	;in add/sub mode, recall the subtotal number from SR and clear SR
+			; clear register SR
+3D2 46			= @ClearSR ;$46    ;CLR SR
+		
+		; ----- last operation is mul/div
+		
+		dm_prn1:
+			; print number
+3D3 FC			= @PrintFPar ;$fc    ;PRN FPAR
+			; clear mode to no decimal point, no overflow, exit
+3D4 EF			= @ClrOver ;$ef    ;CLR MENT + CLR OVFL + RET
+		
+		; ----- new number
+		
+		dm_prn2:
+			; print number with round
+3D5 FD			= @PrintRoundFPar ;$fd    ;PRN ROUND,FPAR
+			; clear mode to new number, no decimal point, exit
+3D6 F1			= @ClrModeNoDP ;$f1    ;CLR MODE + CLR MENT + RET
+		
+		; ----------------------------------------------------------------------------
+		;           Macro program - Digit, sign, decimal point, 00, 000
+		; ----------------------------------------------------------------------------
+		; $3D7               
+		;entry address at digit, digit number, minus sign button
+		;		fuction code		parameter
+		;0..9		13			0..9
+		;sign		13			10
+		;digit point	13			11
+		;00		6			0
+		;000		12			0
+		
+		fn_digit:
+			; start digit entry mode (save function parameter R4 into R13 = new digit, load decimal point counter R11 from WR.S1)
+3D7 D7			= @DigStart ;$d7  ;DIGIT ;save digit into R13, place of digit point (WR.S1) into R11
+						;at first entry: WR=0, CR.S2=8
+			; check if digit R13 > 9 (= jump at decimal point or minus sign)
+3D8 A9 DF		= @CheckR139, @dig_dpsgn ;$a9 $df ;JPC BIG_DIGIT,dig_dpsgn ;jump at digit point, minus sign
+		
+		dig_numsh:
+			; shift WR left and insert new digit int M0
+3DA 53			= @ShiftL ;$53    ;SHL WR	;rotate the number into WR
+			; check overflow of WR - jump if number is small
+3DB 9A E3		= @CheckSmallWR, @dig_chkdp ;$9a $e3 ;JPC NBIG_WR,dig_chkdp  ; jump, if there is now overflow
+			; at overflow rotate number back, additional digits are lost
+3DD 5F			= @ShiftR ;$5f    ;SHR WR	;at overflow, rotate back the number (additional digits are lost)
+			; clear mode to new number, and exit
+3DE F3			= @ClrMode ;$f3    ;CLR MODE + RET	;mark that new number is entered since the last operation, and exit
+		
+		; ------ entered decimal point or minus sign
+		
+		dig_dpsgn:
+			; check odd parameter (= decimal point), mark mode with decimal point
+3DF BC 5F		= @OddPar, @dp_mark ;$bc $5f ;JPC ODDPAR,dp_mark  ;digit point button is pressed
+			; sign button - negate WR
+3E1 E7			= @NegWR ;$e7    ;NEG WR	;minus sign button is pressed
+			; clear mode to new number, and exit
+3E2 F3			= @ClrMode ;$f3    ;CLR MODE + RET	;mark that new number is entered since the last operation, and exit
+		
+		; ----- check decimal point
+		
+		dig_chkdp:
+			; read status CR.S2.bit0 - decimal point is already entered, adjust it
+3E3 74 E8		= @ReadCRS2, @dig_incdp ;$74 $e8 ;JPC MENTDP,dig_incdp	;if digit point is already entered, jump to adjust it
+			; continue to next digit
+3E5 A7 EE		= @Jump, @dig_nextd ;$a7 $ee ;JMP dig_nextd
+		
+3E7 00		= $00    ;(unimplemented, never used)
+		
+		; ----- adjust decimal point
+		
+		dig_incdp:
+			; increment decimal point counter R10R11
+3E8 CA			= @IncDP ;$ca    ;INC DPCNT	;adjust the digit point place with one digit more
+			; check decimal point counter R10R11, continue ok if R10R11 <= 13
+3E9 CE ED		= @CheckDP13, @dig_savdp ;$ce $ed ;JPC NBIG_DPCNT,dig_savdp
+			; already too much digits, decrement decimal pouint counter back
+3EB DD			= @DecDP ;$dd    ;DEC DPCNT	;if already too much digit entered after the digit point,
+			; shift WR right, additional digits are lost
+3EC 5F			= @ShiftR ;$5f    ;SHR WR	; ignore the new digit
+		dig_savdp:
+			; save new position of decimal point
+3ED C2			= @SetDPWR ;$c2    ;SET DP_WR	;save the place of digit point
+		
+		; ------ continue with next digit (number of lower '0' bits if function code R5 = number of digits 0 to enter)
+		
+		dig_nextd:
+			; rotate function code R5 right and repeat if bit0 was not 0 (implementation of button '00' and '000' is here)
+3EE B7 DA		= @RotFC, @dig_numsh ;$b7 $da ;JPC ROTFC,dig_numsh  ;function code contains, how many '0's has to be entered yet
+			; clear mode to new number, and exit
+3F0 F3			= @ClrMode ;$f3    ;CLR MODE + RET   ;mark that new number is entered since the last operation, and exit
+		
+		; ----------------------------------------------------------------------------
+		;              Macro program - Ex (exchange operands DR and WR)
+		; ----------------------------------------------------------------------------
+		; Exchange function: CR,DR <- WR and WR,RR <- DR
+		; $3F1
+		
+		fn_ex:
+			; print number with rounding char
+3F1 FD			= @PrintRoundFPar ;$fd    ;PRN ROUND,FPAR
+			; move CR <- WR
+3F2 02			= @MovCRWR ;$02    ;MOV CR,WR	;CR=WR (WR is saved to CR)
+			; move WR <- DR
+3F3 0E			= @MovWRDR ;$0e    ;MOV WR,DR
+			; move RR <- WR
+3F4 03			= @MovRRWR ;$03    ;MOV RR,WR	;RR=DR
+			; move WR <- CR
+3F5 0C			= @MovWRCR ;$0c    ;MOV WR,CR
+			; move DR <- WR
+3F6 04			= @MovDRWR ;$04    ;MOV DR,WR	;DR=saved WR
+			; move WR <- RR
+3F7 0D			= @MovWRRR ;$0d    ;MOV WR,RR	;WR=RR
+			; clear mode to new number, no decimal point
+3F8 F1			= @ClrModeNoDP ;$f1    ;CLR MODE + CLR MENT + RET
+		
+		; ----------------------------------------------------------------------------
+		;                      Macro program - CM (print and clear MR)
+		; ----------------------------------------------------------------------------
+		; Clear memory:	recall (WR=MR), print and clear (R7=0)
+		; $3F9
+		
+		fn_clrmem:
+			; load memory register WR <- MR
+3F9 09			= @MovWRMR ;$09    ;MOV WR,MR
+			; print memory register
+3FA FA			= @PrintFParM ;$fa    ;PRN FPAR,MEM
+			; clear memory register MR
+3FB 44			= @ClearMR ;$44    ;CLR MR
+			; clear mode to new number, no decimal point
+3FC F1			= @ClrModeNoDP ;$f1    ;CLR MODE + CLR MENT + RET
+		
+		; ----------------------------------------------------------------------------
+		;                   Macro program - RM (recall and print MR)
+		; ----------------------------------------------------------------------------
+		; Recall memory: recall (WR=MR) and print
+		; $3FD
+		
+		fn_rm:
+			; load memory register WR <- MR
+3FD 09			= @MovWRMR ;$09    ;MOV WR,MR
+			; print memory register
+3FE FA			= @PrintFParM ;$fa    ;PRN FPAR,MEM
+		do_exit:
+			; clear mode to new number, no decimal point
+3FF F1			= @ClrModeNoDP ;$f1    ;CLR MODE + CLR MENT + RET
+		
+		;----------------------------------------------------------------------------------------------------------------------------------
+		; Optional program for making the SQRT function
+		;----------------------------------------------------------------------------------------------------------------------------------
+		; $400
+		
+		; aligned to ROM page $400
+		.page
+		
+		; ------ set macro code pointer to Sqrt
+		; ED SQRT			RR <- SQRT(WR)
+400 20 28	Sqrt_2:	fim R01 @sq_start ;$28		; pseudo code entry address of the SQRT function
+		;
+		;Similar pseudo code interpreter implementation, like at $04b-05f, just uses the pseudo instruction codes from address range $400-$4ff
+		;
+		
+402 11 06	$402: jt $406		;wait for the inactive printer drum sector signal
+404 50 B0	          call Keyboard		;keyboard handling
+406 26 20	$406: fim R67 $20
+408 28 10	          fim R89 $10
+40A 32		          fin R23		;fetch pseudo instruction code into R2R3
+40B F0		          clb
+40C 54 50	          call SqrtCode		;execute the associated routine
+40E 71 11	$40e: ijnz R1 $411		;inc R0R1, pseudo code instruction pointer
+410 60		          inc R0
+411 14 02	$411: jz $402		;jump back, if ACC returned by the pseudo instruction was 0
+413 F7		          tcc
+414 14 0E	          jz $40e		;if CY returned by the pseudo instruction was 0, R0R1 is incremented again
+416 30		          fin R01		;if CY was set to 1, read the pseudo code jump address
+417 44 02	          jmp $402		;jump to continue the pseudo code from the modified address
+		
+		; unused space
+419 00 00	= 0, 0
+41B 00 00	= 0, 0
+41D 00 00	= 0, 0
+41F 00 00	= 0, 0
+421 00 00	= 0, 0
+423 00 00	= 0, 0
+425 00 00	= 0, 0
+427 00		= 0
+		
+		;----------------------------------------------------------------------------------------------------------------------------------
+		;                   Macro program - Square root pseudo code implementation
+		;----------------------------------------------------------------------------------------------------------------------------------
+		; *= 0x428
+		
+		; ----- prepare registers
+		
+		sq_start:
+			; print number with function code (= SQRT) and empty column
+428 51			= @Sqrt_PrintFCode ;$51    ;PRN FCODE		;print number with function code (9: SQRT)
+			; move CR <- WR, number to compute
+429 A7			= @Sqrt_MovCRWR ;$a7    ;MOV CR,WR		;save the number to the constant register
+			; clear result register RR <- 0
+42A 53			= @Sqrt_ClearRR ;$53    ;CLR RR			;clear result register
+			; if number WR is zero, exit (all done)
+42B 61 3E		= @Sqrt_Check0WR, @sq_exit ;$61 $3e ;JPC ZERO_WR,sq_exit	;jump, if number is zero (the result will be also zero)
+			; clear digit R13 and load decimal point position WR.S1 into R11
+42D 65			= @Sqrt_ClrDigGetDP ;$65    ;CLR DIGIT + GET DP_WR 	;R10R11=place of digit point
+		
+		; ----- left shift WR if it is small
+		
+		sq_bshift:
+			; check if WR is small. left shift if so
+42E 63 44		= @Sqrt_CheckSmallWR, @sq_lshift ;$63 $44 ;JPC NBIG_WR,sq_lshift  ;number is adjusted to the leftmost position
+		
+			; shift WR one position back to right
+430 9C			= @Sqrt_ShiftR ;$9c    ;SHR WR		;one digit overshift is corrected back
+			; move DR <- WR (prepare remainder register)
+431 5B			= @Sqrt_MovDRWR ;$5b    ;MOV DR,WR	;remainder (DR) is initialized to the shifted number
+			; clear WR
+432 55			= @Sqrt_ClearWR ;$55    ;CLR WR		;initial subtrahend (WR) is cleared
+			; calculate one SQRT digit
+433 6A 36		= @Sqrt_Digit, @sq_loopns ;$6a $36 ;SET LPCSQRT + SET DPCNTSQRT + JPC EVENDP,sq_loopns	;R15=13, sqrt digit point calculation
+								;jump if original digit point position was even
+		
+		; ----- SQRT main loop
+		
+		sq_loopsh:
+			; decimal point position was odd, shift DR left
+435 58			= @Sqrt_ShiftL_DR ;$58    ;SHL DR		;multiplication by 10 of the remaining part
+									;(and possible additional shift if it is needed)
+		; ----- count one digit
+		
+		sq_loopns:
+			; increment WR from position R15
+436 7A			= @Sqrt_IncWRPos ;$7a    ;INC WR_POS		;increment the subtrahend (WR from position in R15) by 1
+			; subtract DR <- DR - WR, jump if non-negative with increment digit R13
+437 5D 41		= @Sqrt_SubDRWR, @sq_rptinc ;$5d $41 ;SUB DR,WR + JPC NNEG,sq_rptinc + INC DIGIT;remainder is decremented by the subtrahend (DR=DR-WR)
+									;and jump, if the result is not negative
+									;digit counter (R13) is incremented too
+		
+		; ----- roll-back if negative reached
+		
+			; add numbers back DR <- DR + WR
+439 5F			= @Sqrt_AddDRWR ;$5f    ;ADD DR,WR		;add the subtrahend to get back the last non negative value
+			; decrement register WR from position R15
+43A 85			= @Sqrt_DecWRPos ;$85    ;DEC WR_POS		;decrement the subtrahend by one (prepare it for the next round)
+		
+		; ----- left shift RR and go next loop
+		
+			; left shift register RR
+43B 57			= @Sqrt_ShiftL_RR ;$57    ;SHL RR		;shift the new digit into the number, R13 is cleared too
+			; decrement SQRT loop counter R15 and jump to sq_loopsh if was not 0
+43C 98 35		= @Sqrt_Loop, @sq_loopsh ;$98 $35 ;JPC NZERO_LPCSQRT,sq_loopsh + DEC LPCSQRT	;decrement R15, and jump, except when R15 becomes 0
+		
+		; ----- exit SQRT macro
+									;(next round calculates with one more digit)
+		sq_exit:
+			; move DR <- WR (or WR <- CR ?)
+43E A9			= @Sqrt_MovDRWR2 ;$a9    ;MOV DR,WR	(MOV WR,CR ???)	  ;??? subtrahend is saved (originally it may be WR=CR)
+			; move DR <- WR
+43F 5B			= @Sqrt_MovDRWR ;$5b    ;MOV DR,WR		;??? duplicated, but not disturbing code
+			; return back from SQRT macro, jump to num_dpadj
+440 9F			= @Sqrt_Ret ;$9f    ;CLR MOP + RET_BPC		;return back to basic pseudo code interpreter to address $40
+		
+		; ----- increment digit if result is not negative
+		
+		sq_rptinc:
+			; increment register WR from position R15
+441 7A			= @Sqrt_IncWRPos ;$7a    ;INC WR_POS		;increment the subtrahend by 1 (WR from position in R15)
+			; unconditional jump to sq_loopns
+442 96 36		= @Sqrt_Jump, @sq_loopns ;$96 $36 ;JMP sq_loopns	;jump back
+		
+		; ----- left shift WR if it is small
+		
+		sq_lshift:
+			; shift WR left (unsert R13 digit to M0)
+444 59			= @Sqrt_ShiftL ;$59    ;SHL WR		;rotate number into left position
+			; increment decimal point counter R10R11 and jump back
+445 93 2E		= @Sqrt_IncDPJmp, @sq_bshift ;$93 $2e ;INC DPCNT + JMP sq_bshift  ;increment R10R11, and jump back
+		
+		; unused space
+447 00 00	= 0, 0
+449 00 00	= 0, 0
+44B 00 00	= 0, 0
+44D 00 00	= 0, 0
+44F 00		= 0
+		
+		;----------------------------------------------------------------------------------------------------------------------------------
+		;                         Macro commands for Sqrt
+		;----------------------------------------------------------------------------------------------------------------------------------
+		; *= 0x450
+		
+		; ----- execute SQRT macro code - jump to address PC:R2R3
+		; $450
+		SqrtCode:
+450 33			jin	R23		;jump to the pseudo instruction code associated routine
+		
+		; ----- print number with function code and empty column
+		; $451, $1FE PRN FCODE		print number with function code in column 17 and empty column 18 (R15 will be = 1 -> 14)
+		Sqrt_PrintFCode:
+451 41 FE		jmp	PrintFCode	;PRN FCODE
+		
+		; ----- clear register R8R9+2 (RR)
+		; $453, $148 CLR RR		clear RR
+		Sqrt_ClearRR:
+453 41 48		jmp	ClearRR		;CLR RR
+		
+		; ----- clear register R8R9 (WR)
+		; $455, $14A CLR WR		clear WR
+		Sqrt_ClearWR:
+455 41 4A		jmp	ClearWR		;CLR WR
+		
+		; ----- left shift register R8R9+2 (RR)
+		; $457, $151 SHL RR		left shift RR with R13
+		Sqrt_ShiftL_RR:
+457 68			inc	R8		;SHL RR
+		
+		; ----- left shift register R8R9+1 (DR)
+		; $458, $152 SHL DR		left shift DR with R13
+		Sqrt_ShiftL_DR:
+458 68			inc	R8		;SHL DR
+		
+		; ----- left shift register R8R9 (WR)
+		; $459, $153 SHL WR		left shift WR with R13
+		Sqrt_ShiftL:
+459 41 53		jmp	ShiftL		;SHL WR
+		
+		; ----- copy number from R8R9 (=WR) to R6R7 (=DR), with S0 and S1
+		; $45B, $104 MOV DR,WR		move DR <- WR
+		Sqrt_MovDRWR:
+45B 41 04		jmp	MovDRWR		;MOV DR,WR
+		
+		; ----- subtract two numbers R6R7 (DR) <- R6R7 (DR) - R8R9 (WR), jump if non-negative with increment digit R13
+		; $45D, $134 SUB DR,WR + JPC NNEG + INC DIGIT		subtract DR <- DR - WR, jump at non-negative with increment the digit
+		Sqrt_SubDRWR:
+45D 41 34		jmp	SubDRWR		;SUB DR,WR + JPC NNEG + INC DIGIT
+		
+		; ----- add numbers R6R7 (DR) <- R6R7 (DR) + R8R9 (WR)
+		; $45F, $121 ADD DR,WR		add DR <- DR + WR
+		Sqrt_AddDRWR:
+45F 41 21		jmp	AddDRWR		;ADD DR,WR
+		
+		; ----- Check if number R8R9 (WR) is zero (returns C = 1 if zero)
+		; $461, $1A2 JPC ZERO_WR		jump if WR = 0
+		Sqrt_Check0WR:
+461 41 A2		jmp	Check0WR	;JPC ZERO_WR
+		
+		; ----- Check if highest 2 digits of number R8R9 (WR) are zero (returns C = 1 if number is small)
+		; $463, $19A JPC NBIG_WR		jump if WR not big (upper 2 digits are 0)
+		Sqrt_CheckSmallWR:
+463 41 9A		jmp	CheckSmallWR	;JPC NBIG_WR
+		
+		; ----- clear digit R13 and load decimal point position WR.S1 into R11
+		; $465, QPC_65:	CLR DIGIT + GET DP_WR
+		Sqrt_ClrDigGetDP:
+465 BD			xch	R13		; R13 <- A, clear digit (R13=0)
+466 29			src	R89		; select WR register from R8R9 (= $10)
+467 ED			rd1			; read status WR.S1 = decimal point position
+468 BB			xch	R11		; R11 <- WR.S1, decimal point position
+469 C0			ret	0		; return with A = 0
+		
+		; ----- calculate one SQRT digit
+		;QPC_6A:	SET LPCSQRT + SET DPCNTSQRT + JPC EVENDP
+		;		R15=13, R10R11=(R10R11/2+6+((R10R11 mod 2))), jump, if original R10R11 was even
+		Sqrt_Digit:
+46A 2E 6D		fim	R1415,$6d	; R14 <- 6, R15 <- 13
+46C AB			ld	R11		; A <- R11, decimal point position
+46D B7			xch	R7		; R7 <- R11 (save original R11 into R7)
+46E BA			xch	R10		; A <-> R10  (R10=0 [previous R7])
+46F F6			rar			; shift A right, C <- R10.bit0, check if decimal point position is even
+470 AB			ld	R11		; A <- R11, decimal point position
+471 F6			rar			; A <- 8*(R10.bit0) + (R11 div 2),  C=(R11 mod 2)
+472 8E			add	R14		; A <- 8*(R10.bit0) + (R11 div 2) + (R11 mod 2) + 6, C=overflow
+473 BB			xch	R11		; store it to R11
+474 F7			tcc			; A <- C
+475 BA			xch	R10		; R10 <- 0 or 1
+476 B7			xch	R7		; A <- original R11
+477 F6			rar			; C=(R11 mod 2), rotate bit 0 into C
+478 F3			cmc			; CY=1-(R11 mod 2), negate the pseudo jump condition
+479 C1			ret	1		; return with A = 1, C = 1 jump
+		
+		; ----- increment register WR from position R15
+		; $47A, QPC_7A:	INC WR_POS	increment WR from position in R15
+		Sqrt_IncWRPos:
+47A AF			ld	R15		; A <- R15, start digit position
+47B B9			xch	R9		; R9 <- R15, start digit position
+47C FA			stc			; C <- 1, overflow flag to increase digits
+		Sqrt_IncWRPos2:
+47D D0			ldi	0		; A <- 0
+47E 29			src	R89		; select WR register (and digit) from R8R9
+47F EB			adm			; A <- A + digit
+480 FB			daa			; decimal adjust
+481 E0			wrm			; write digit back from A
+482 79 7D		ijnz	R9, Sqrt_IncWRPos2 ; increment R9 position and loop back for the next digits
+484 C0			ret	0		; return with A = 0
+		
+		; ----- decrement register WR from position R15
+		; $485, QPC_85:	DEC WR_POS	Decrement WR from position in R15
+		;
+		;inside the loop when R7 is subtracted from A and C is complemented:
+		;
+		;		C=0			C=1
+		;-------------------------------------------------------
+		;A 0		A=0, C=0		A=15->9, C=1
+		;A 1..9		A=A, C=0		A=A-1, C=0
+		
+		Sqrt_DecWRPos:
+485 AF			ld	R15		; A <- R15, start digit position
+486 B9			xch	R9		; R9 <- R15, start digit position
+		Sqrt_DecWRPos2:
+487 F3			cmc			; at first: set CY=1, later complement the borrow bit
+488 29			src	R89		; select WR register (and digit) from R8R9
+489 E9			rdm			; A <- read next digit from WR
+48A 97			sub	R7		; subtract R7 (=0) from it (to subtract C), A <- A + ~0 + ~C
+48B 12 8E		jc	Sqrt_DecWRPos4	; jump, if there is no borrow
+48D D9			ldi	9		; A <- set the number to 9 (BCD adjust)
+		Sqrt_DecWRPos4:
+48E E0			wrm			; write back the result digit
+48F 79 87		ijnz	R9,Sqrt_DecWRPos2 ; increment R9 position and loop back for the next digits
+491 F0			clb			; A <- 0, C <- 0
+492 C0			ret	0		; return with A = 0
+		
+		; ----- increment decimal point counter R10R11 and jump
+		; $493, QPC_93:	INC DPCNT + JMP		Increment digit point counter (R10R11) and unconditional jump
+		Sqrt_IncDPJmp:
+493 7B 96		ijnz	R11,Sqrt_Jump	; inc R11, and skip if result is nonzero
+495 6A			inc	R10		; inc R10 (increment decimal point counter HIGH)
+		
+		; ----- unconditional jump
+		; $496, QPC_96:	unconditional jump
+		Sqrt_Jump:
+496 FA			stc			; C <- 1, flag to jump
+497 C1			ret	1		; return with A = 1, C = 1 (jump)
+		
+		; ----- decrement SQRT loop counter R15 and jump if was not 0
+		; $498, QPC_98:	JPC NZERO_LPCSQRT + DEC LPCSQRT		decrement R15, and jump, except when R15 was 0
+		Sqrt_Loop:
+498 AF			ld	R15		; A <- R15, sqrt loop counter
+499 F8			dec	A		; decrement sqrt loop counter, C <- 1 if A was not 0
+49A BF			xch	R15		; R15 <- new loop counter
+49B C1			ret	1		; return with A = 1, C = 1 if counter was not 0 (= continue to loop)
+		
+		; ----- right shift register R8R9 (WR)
+		; $49C, $15F SHR WR		right shift WR (A = new digit)
+		Sqrt_ShiftR:
+49C 41 5F		jmp	ShiftR		;one digit right shift of WR with R13 (0 is shifted from left)
+		
+49E 00		= 0	; unused space
+		
+		; ----- return back from SQRT macro, jump to num_dpadj
+		; $49F, QPC_9F:	CLR MOP + RET_BPC	Clear divide/multiply operation and return back to basic pseudo code interpreter
+		Sqrt_Ret:
+49F 27			src	R67		; select register DR from R6R7 (=$20)
+4A0 E6			wr2			; clear DR.S2 = mul/div status
+4A1 20 40		fim	R01,@num_dpadj	; entry address is num_dpadj (=$340), return to adjust result to max. 13 digits and print result
+4A3 26 00		fim	R67,$00
+4A5 40 4B		jmp	Exec		;jump back to basic pseudo code interpreter
+		
+		; ----- copy number from R8R9 (=WR) to R6R7+2 (=CR), with S0 and S1
+		; $4A7, $102 MOV CR,WR		move CR <- WR
+		Sqrt_MovCRWR:
+4A7 41 02		jmp	MovCRWR		; CR <- WR
+		
+		; ----- copy number from R8R9 (=WR) to R6R7 (=DR), with S0 and S1 (or copy WR <- CR ?)
+		; $4A9, $104 MOV DR,WR		move DR <- WR
+		;QPC_A9:	MOV DR,WR (or MOV WR,CR)
+		;	Move working register into dividend/multiplicand register (DR=WR), but it is very probable that this would be
+		;	move constant register into working register (WR=CR)
+		Sqrt_MovDRWR2:
+4A9 41 04		jmp	MovDRWR		; Maybe it is "jmp $10c"
+						;(the difference is only one bit in the code - was the source ROM damaged?)
+		
+		;4ab          00 00 00 00 00		;Unused NOPs
+		
+4AB 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    00 00 00 00 00	.page
+		
+		; fill-up to end of program space (4 KB)
+500 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+    FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF	*=$fff $ff
+FFF FF		=$ff
+		

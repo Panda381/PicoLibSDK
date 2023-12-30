@@ -15,6 +15,9 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+
+#if USE_PICOPAD
+
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "picopad_led.h"
 
@@ -86,3 +89,5 @@ void LedTerm()
 		GPIO_Reset(LedGpioTab[i]);
 	}
 }
+
+#endif // USE_PICOPAD

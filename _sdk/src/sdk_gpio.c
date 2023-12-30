@@ -190,7 +190,7 @@ void GPIO_DefIRQHandler(void)
 	gpio_irq_callback_t cb = GPIO_Callbacks[core];
 
 	// get control register
-	io_irq_ctrl_hw_t* base = core ? &iobank0_hw->proc1_irq_ctrl : &iobank0_hw->proc0_irq_ctrl;
+	//io_irq_ctrl_hw_t* base = core ? &iobank0_hw->proc1_irq_ctrl : &iobank0_hw->proc0_irq_ctrl;
 
 	// check pins
 	int pin, events;

@@ -24,12 +24,37 @@
 
 //#define USE_ORIGSDK		1		// include interface of original-SDK
 
+//#define USE_MINIVGA		1		// use mini-VGA display with simple frame buffer:
+						//	1=use only frame buffer
+						//	2=add full back buffer
+						//	3=add 1/2 back buffer
+						//	4=add 1/4 back buffer
+						//	5=add 1/8 back buffer
+
+//#define USE_DVI			1		// use DVI (HDMI) display with simple frame buffer:
+						//	1=use only frame buffer
+						//	2=add full back buffer
+						//	3=add 1/2 back buffer
+						//	4=add 1/4 back buffer
+						//	5=add 1/8 back buffer
+
+#define USE_DVIVGA		1		// use DVI (HDMI) + VGA display with simple frame buffer:
+						//	1=use only frame buffer
+						//	2=add full back buffer
+						//	3=add 1/2 back buffer
+						//	4=add 1/4 back buffer
+						//	5=add 1/8 back buffer
+
+
+
+//#define USE_EXTDISP	1		// external display
+
 // SDK modules
 #define USE_ADC		0		// use ADC controller (sdk_adc.c, sdk_adc.h)
 #define USE_DMA		1		// use DMA controller (sdk_dma.c, sdk_dma.h)
 #define USE_DOUBLE	0		// use Double-floating point (sdk_double.c, sdk_double_asm.S, sdk_double.h)
 #define USE_FIFO	1		// use Inter-core FIFO (sdk_fifo.c, sdk_fifo.h)
-#define USE_FLASH	0		// use Flash memory programming (sdk_flash.c, sdk_flash.h)
+#define USE_FLASH	1		// use Flash memory programming (sdk_flash.c, sdk_flash.h)
 #define USE_FLOAT	0		// use Single-floating point (sdk_float.c, sdk_float_asm.S, sdk_float.h)
 #define USE_I2C		0		// use I2C interface (sdk_i2c.c, sdk_i2c.h)
 #define USE_INTERP	1		// use interpolator (sdk_interp.c, sdk_interp.h)
@@ -60,7 +85,7 @@
 #define USE_CANVAS	0		// use Canvas (lib_canvas.c, lib_canvas.h)
 #define USE_COLOR	0		// use color vector (lib_color.c, lib_color.h)
 #define USE_CONFIG	0		// use device configuration (lib_config.c, lib_config.h)
-#define USE_CRC		0		// use CRC Check Sum (lib_crc.c, lib_crc.h)
+#define USE_CRC		1		// use CRC Check Sum (lib_crc.c, lib_crc.h)
 //#define USE_DECNUM	0		// use DecNum (decnum.c, decnum.h)
 #define USE_DRAW	1		// use drawing to frame buffer (lib_draw.c, lib_draw.h)
 #define USE_ESCPKT	0		// use escape packet protocol (lib_escpkt.c, lib_escpkt.h)

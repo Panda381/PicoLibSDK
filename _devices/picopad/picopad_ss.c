@@ -15,6 +15,9 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+
+#if USE_PICOPAD
+
 #include "../../_display/minivga/minivga.h"
 #include "../../_display/st7789/st7789.h"
 #include "../../_sdk/inc/sdk_timer.h"
@@ -218,3 +221,5 @@ void SmallScreenShot()
 }
 
 #endif // USE_SCREENSHOT		// use screen shots
+
+#endif // USE_PICOPAD

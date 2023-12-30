@@ -17,7 +17,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-#define SDK_VER		109	// SDK library version in hundredths
+#define SDK_VER		110	// SDK library version in hundredths
 
 // ----------------------------------------------------------------------------
 //                               Attributes
@@ -136,13 +136,13 @@ typedef unsigned char bool;
 // original-SDK macro
 #define __aligned(x) __attribute__((aligned(x)))
 #define __noinline __attribute__((noinline))
-#define __not_in_flash(group) __attribute__((section(".time_critical." group)))
+#define __not_in_flash(group) __attribute__((section(".time_critical." #group)))
 #define __not_in_flash_func(func_name) __not_in_flash(__STRING(func_name)) func_name
 #define __no_inline_not_in_flash_func(func_name) __noinline __not_in_flash_func(func_name)
 #define __time_critical_func(func_name) __not_in_flash_func(func_name)
 #define __uninitialized_ram(group) __attribute__((section(".uninitialized_data." #group))) group
-#define __scratch_x(group) __attribute__((section(".time_critical." group)))
-#define __scratch_y(group) __attribute__((section(".time_critical." group)))
+#define __scratch_x(group) __attribute__((section(".time_critical." #group)))
+#define __scratch_y(group) __attribute__((section(".time_critical." #group)))
 
 #ifndef assert
 #define assert(x)
@@ -307,7 +307,7 @@ STATIC_ASSERT(sizeof(u64) == 8, "Incorrect typedef u64!");
 #define CH_CUT		0x18	// '\30' CAN cancel ^X			... cut selected text
 #define CH_REDO		0x19	// '\31' EM end of medium ^Y		... redo previously undo action
 #define CH_UNDO		0x1A	// '\32' SUB subtitle character ^Z	... undo action
-#define CH_ESC		0x1B	// '\e'  ESC escape ^[			... Esc, break, menu
+#define CH_ESC		0x1B	// '\e' or '\33' ESC escape ^[		... Esc, break, menu
 #define CH_RIGHT	0x1C	// '\34' FS file separator "^\"		... Right, Shift: End, Ctrl: Word right
 #define CH_UP		0x1D	// '\35' GS group separator ^]		... Up, Shift: PageUp, Ctrl: Text start
 #define CH_LEFT		0x1E	// '\36' RS record separator ^^		... Left, Shift: Home, Ctrl: Word left

@@ -290,7 +290,7 @@ void RoscSetFreq(int freq10)
 u8 RoscRand8(void)
 {
 	int i;
-	u8 k;
+	u8 k = 0;
 	for (i = 8; i > 0; i--) k = (k << 1) | RoscRandBit();
 	return k;
 }
@@ -298,7 +298,7 @@ u8 RoscRand8(void)
 u16 RoscRand16(void)
 {
 	int i;
-	u16 k;
+	u16 k = 0;
 	for (i = 16; i > 0; i--) k = (k << 1) | RoscRandBit();
 	return k;
 }
@@ -306,7 +306,7 @@ u16 RoscRand16(void)
 u32 RoscRand32(void)
 {
 	int i;
-	u32 k;
+	u32 k = 0;
 	for (i = 32; i > 0; i--) k = (k << 1) | RoscRandBit();
 	return k;
 }

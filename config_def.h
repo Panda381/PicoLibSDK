@@ -22,8 +22,9 @@ but they can be used temporary by user program, too. Search: UARTSAMPLE_TXDMA,
 UARTSAMPLE_RXDMA, DMA_TEMP_CHAN.
 
 DMA channels 8 and 9 are used by miniVGA library.
+DMA channels 2 to 7 are used by DVI (HDMI) library.
 
-PIO1 is used by miniVGA library.
+PIO1 is used by miniVGA and DVI (HDMI) library.
 
 Hardware interpolators are used when drawing to canvas (DRAW_HWINTER_INX) and
 by VGA driver rendering service.
@@ -368,6 +369,10 @@ by VGA driver rendering service.
 
 #ifndef USE_FAT
 #define USE_FAT		0		// use FAT file system (lib_fat.c, lib_fat.h)
+#endif
+
+#ifndef USE_FILESEL
+#define USE_FILESEL	0		// use file selection (lib_filesel.c, lib_filesel.h)
 #endif
 
 #ifndef USE_FRAMEBUF

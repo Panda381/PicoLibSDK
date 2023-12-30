@@ -58,7 +58,7 @@ pFlashEnterXip	FlashEnterXip;
 void* RomFunc(u16 code)
 {
 	// prepare pointer to lookup function (.hword table_lookup + 1)
-	pTableLookup lookup = (pTableLookup)ROM_HWORD_PTR(0x18);
+	pTableLookup lookup = (pTableLookup)(u32)ROM_HWORD_PTR(0x18);
 
 	// prepare pointer to table with functions (.hword function_table)
 	u16* tab = (u16*)ROM_HWORD_PTR(0x14);
@@ -71,7 +71,7 @@ void* RomFunc(u16 code)
 void* RomData(u16 code)
 {
 	// prepare pointer to lookup function (.hword table_lookup + 1)
-	pTableLookup lookup = (pTableLookup)ROM_HWORD_PTR(0x18);
+	pTableLookup lookup = (pTableLookup)(u32)ROM_HWORD_PTR(0x18);
 
 	// prepare pointer to table with data (.hword data_table)
 	u16* tab = (u16*)ROM_HWORD_PTR(0x16);
@@ -83,21 +83,21 @@ void* RomData(u16 code)
 // initialize ROM functions
 void RomFncInit()
 {
-	popcount = (pPopCount)RomFunc(ROM_FUNC_POPCOUNT32);
-	reverse = (pReverse)RomFunc(ROM_FUNC_REVERSE32);
-	clz = (pClz)RomFunc(ROM_FUNC_CLZ32);
-	ctz = (pCtz)RomFunc(ROM_FUNC_CTZ32);
-	MemSet = (pMemSet)RomFunc(ROM_FUNC_MEMSET);
-	MemSet32 = (pMemSet32)RomFunc(ROM_FUNC_MEMSET4);
-	MemCopy = (pMemCopy)RomFunc(ROM_FUNC_MEMCPY);
-	MemCopy32 = (pMemCopy32)RomFunc(ROM_FUNC_MEMCPY44);
-	ResetUsb = (pResetUsb)RomFunc(ROM_FUNC_RESET_USB_BOOT);
-	FlashInternal = (pFlashInternal)RomFunc(ROM_FUNC_CONNECT_INTERNAL_FLASH);
-	FlashExitXip = (pFlashExitXip)RomFunc(ROM_FUNC_FLASH_EXIT_XIP);
-	RomFlashErase = (pFlashErase)RomFunc(ROM_FUNC_FLASH_RANGE_ERASE);
-	RomFlashProgram = (pFlashProgram)RomFunc(ROM_FUNC_FLASH_RANGE_PROGRAM);
-	FlashFlush = (pFlashFlush)RomFunc(ROM_FUNC_FLASH_FLUSH_CACHE);
-	FlashEnterXip = (pFlashEnterXip)RomFunc(ROM_FUNC_FLASH_ENTER_CMD_XIP);
+	popcount = (pPopCount)(u32)RomFunc(ROM_FUNC_POPCOUNT32);
+	reverse = (pReverse)(u32)RomFunc(ROM_FUNC_REVERSE32);
+	clz = (pClz)(u32)RomFunc(ROM_FUNC_CLZ32);
+	ctz = (pCtz)(u32)RomFunc(ROM_FUNC_CTZ32);
+	MemSet = (pMemSet)(u32)RomFunc(ROM_FUNC_MEMSET);
+	MemSet32 = (pMemSet32)(u32)RomFunc(ROM_FUNC_MEMSET4);
+	MemCopy = (pMemCopy)(u32)RomFunc(ROM_FUNC_MEMCPY);
+	MemCopy32 = (pMemCopy32)(u32)RomFunc(ROM_FUNC_MEMCPY44);
+	ResetUsb = (pResetUsb)(u32)RomFunc(ROM_FUNC_RESET_USB_BOOT);
+	FlashInternal = (pFlashInternal)(u32)RomFunc(ROM_FUNC_CONNECT_INTERNAL_FLASH);
+	FlashExitXip = (pFlashExitXip)(u32)RomFunc(ROM_FUNC_FLASH_EXIT_XIP);
+	RomFlashErase = (pFlashErase)(u32)RomFunc(ROM_FUNC_FLASH_RANGE_ERASE);
+	RomFlashProgram = (pFlashProgram)(u32)RomFunc(ROM_FUNC_FLASH_RANGE_PROGRAM);
+	FlashFlush = (pFlashFlush)(u32)RomFunc(ROM_FUNC_FLASH_FLUSH_CACHE);
+	FlashEnterXip = (pFlashEnterXip)(u32)RomFunc(ROM_FUNC_FLASH_ENTER_CMD_XIP);
 }
 
 // ----------------------------------------------------------------------------

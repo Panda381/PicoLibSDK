@@ -15,12 +15,15 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+
+#if USE_PICO
+
 #include "../../_sdk/inc/sdk_adc.h"
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "../../_sdk/inc/sdk_timer.h"
 #include "pico_bat.h"
 
-#if !USE_EXTDISP
+#if !USE_DVI && !USE_DVIVGA		// use DVI (HDMI) display with simple frame buffer:
 
 // init battery measurement
 void BatInit()
@@ -78,4 +81,6 @@ void BatTerm()
 	ADC_Disable();
 }
 
-#endif // !USE_EXTDISP
+#endif // !USE_DVI && !USE_DVIVGA
+
+#endif // USE_PICO

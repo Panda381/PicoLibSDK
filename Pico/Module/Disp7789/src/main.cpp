@@ -9,7 +9,7 @@
 
 //#define MINIVGA_IRQTIME		1	// debug flag - measure delta time of VGA service (use GRABBER_C flag)
 //#define DVI_IRQTIME		1	// debug flag - measure delta time of DVI service (use GRABBER_C flag)
-#define GRABBER_C	1	// use grabber in C code instead of assembler
+#define GRABBER_C	0	// use grabber in C code instead of assembler
 
 #define ST7789_CASET		0x2A	// set start and end column of draw window
 #define ST7789_RASET		0x2B	// set start and end row of draw window
@@ -214,20 +214,20 @@ int main()
 	SpiPioInit();
 
 	// select mode
-	GPIO_Init(DISPSEL_GPIO);
-	GPIO_DirIn(DISPSEL_GPIO);
-	GPIO_PullUp(DISPSEL_GPIO);
-	WaitUs(100);
+//	GPIO_Init(DISPSEL_GPIO);
+//	GPIO_DirIn(DISPSEL_GPIO);
+//	GPIO_PullUp(DISPSEL_GPIO);
+//	WaitUs(100);
 
-	if (GPIO_In(DISPSEL_GPIO))
+//	if (GPIO_In(DISPSEL_GPIO))
 		DviStart();
-	else
-		VgaStart();
+//	else
+//		VgaStart();
 
 	// draw rainbow gradient
 //	for (y; y < HEIGHT; y++) GenGrad(&FrameBuf[y*WIDTH], WIDTH);
-	DrawImgRle(MonoscopeImg, MonoscopeImg_Pal, 0, 0, WIDTH, HEIGHT);
-	DispUpdateAll();
+//	DrawImgRle(MonoscopeImg, MonoscopeImg_Pal, 0, 0, WIDTH, HEIGHT);
+//	DispUpdateAll();
 
 	// print setup
 //	printf("CLK_SYS=%dMHz\n", ClockGetHz(CLK_SYS)/1000000);

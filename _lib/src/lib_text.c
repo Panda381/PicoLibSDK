@@ -24,7 +24,7 @@
 #include "../inc/lib_print.h"
 
 // empty text string data
-sTextData EmptyTextData = { BIGINT, 0, 0 };
+sTextData EmptyTextData = { BIGINT, 0, {0} };
 
 // empty text
 pText EmptyText = &EmptyTextData;
@@ -1679,7 +1679,7 @@ Bool TextReformat(pText* text, int width)
 	if (!TextUnformat(text)) return False;
 	if (width < 1) return True;
 
-	u8* s = (*text)->data;
+	u8* s = (u8*)((*text)->data);
 	u8* rowstart = s;
 	u8* wordstart = s;
 	int len = (*text)->len;

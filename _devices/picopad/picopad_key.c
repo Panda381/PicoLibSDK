@@ -16,6 +16,8 @@
 
 #include "../../global.h"	// globals
 
+#if USE_PICOPAD
+
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "../../_sdk/inc/sdk_timer.h"
 #if USE_USBPAD		// simulate keypad with USB keyboard
@@ -347,7 +349,7 @@ char KeyChar()
 	if (ch != NOCHAR) return ch;
 #endif // USE_USBPAD
 
-	return KeyMapToChar[KeyGet()];
+	return KeyMapToChar[(u8)KeyGet()];
 }
 
 // flush keyboard buffer
@@ -386,3 +388,5 @@ void KeyWaitNoPressed()
 {
 	while (!KeyNoPressed()) {}
 }
+
+#endif // USE_PICOPAD

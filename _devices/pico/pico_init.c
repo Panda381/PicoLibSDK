@@ -15,6 +15,9 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+
+#if USE_PICO
+
 #include "../../_display/minivga/minivga.h" // VGA display
 #include "../../_display/dvi/dvi.h" // DVI display
 #include "../../_sdk/inc/sdk_gpio.h"
@@ -24,15 +27,7 @@
 // Device init
 void DeviceInit()
 {
-#if USE_DVI
-	// start DVI on CPU 1 (must be paired with DviStop)
-//	DviStart();
-#endif
-
-#if USE_EXTDISP
-	// start VGA on CPU 1 (must be paired with VgaStop)
-//	VgaStart();
-#else
+#if !USE_DVI && !USE_DVIVGA
 	// init battery measurement
 	BatInit();
 #endif
@@ -41,15 +36,7 @@ void DeviceInit()
 // Device terminate
 void DeviceTerm()
 {
-#if USE_DVI
-	// terminate DVI on CPU 1 (must be paired with DviStart)
-//	DviStop();
-#endif
-
-#if USE_EXTDISP
-	// terminate VGA on CPU 1 (must be paired with VgaStart)
-//	VgaStop();
-#else
+#if !USE_DVI && !USE_DVIVGA
 	// terminate battery measurement
 	BatTerm();
 #endif
@@ -78,3 +65,5 @@ void LedSet(u8 inx, u8 val)
 {
 	if (val == 0) LedOff(inx); else LedOn(inx);
 }
+
+#endif // USE_PICO

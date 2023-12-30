@@ -16,6 +16,8 @@
 
 #include "../../global.h"	// globals
 
+#if USE_PICOINO
+
 #if !USE_PICOINOMINI
 
 #include "../../_sdk/inc/sdk_gpio.h"
@@ -634,3 +636,5 @@ void KeyWaitNoPressed()
 }
 
 #endif // USE_PICOINOMINI
+
+#endif // USE_PICOINO

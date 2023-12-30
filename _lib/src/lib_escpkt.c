@@ -121,7 +121,7 @@ void EscPktSend(sEscPkt* esc, const u8* buf, int len)
 	int i;
 	u8 ch;
 	u16 crc;
-	Bool e = False;
+	//Bool e = False;
 
 	// no transmission ring buffer
 	if (esc->tx_ring == NULL) return;

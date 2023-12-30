@@ -27,6 +27,7 @@
 #include "../inc/sdk_vreg.h"
 #include "../inc/sdk_ssi.h"
 #include "../inc/sdk_float.h"
+#include "../inc/sdk_flash.h"
 #include "../../_lib/inc/lib_alarm.h"
 #include "../../_lib/inc/lib_config.h"
 #include "../../_lib/inc/lib_malloc.h"

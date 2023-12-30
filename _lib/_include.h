@@ -20,6 +20,7 @@
 #include "inc/lib_escpkt.h"		// escape packet protocol
 #include "inc/lib_event.h"		// event ring buffer
 #include "inc/lib_fat.h"		// FAT file system
+#include "inc/lib_filesel.h"		// file selection
 #include "inc/lib_list.h"		// Doubly Linked List
 #include "inc/lib_malloc.h"		// memory allocator
 #include "inc/lib_mat2d.h"		// 2D transformation matrix
@@ -38,6 +39,8 @@
 #include "inc/lib_textlist.h"		// list of text strings
 #include "inc/lib_tree.h"		// tree list
 #include "inc/lib_video.h"		// video player
+
+#include "emu/emu.h"			// emulators
 
 //#include "3d_inc/lib_d3def.h"		// 3D definitions
 //#include "3d_inc/lib_d3fixed.h"		// 3D fixed point

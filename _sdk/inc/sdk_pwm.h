@@ -221,6 +221,10 @@ INLINE void PWM_ClkDiv_hw(pwm_slice_hw_t* hw, int clkdiv) { hw->div = clkdiv; }
 INLINE void PWM_ClkDivFloat(int pwm, float clkdiv) { *PWM_DIV(pwm) = (u32)(clkdiv*16 + 0.5f); }
 INLINE void PWM_ClkDivFloat_hw(pwm_slice_hw_t* hw, float clkdiv) { hw->div = (u32)(clkdiv*16 + 0.5f); }
 
+// get clock divider (clock divider * 16, 12-bit value, lower 4 bits are fractional part, upper 8 bits are integer part)
+INLINE u16 PWM_GetClkDiv(int pwm) { return (u16)(*PWM_DIV(pwm) & 0xfff); }
+INLINE u16 PWM_GetClkDiv_hw(pwm_slice_hw_t* hw) { return (u16)(hw->div & 0xfff); }
+
 // set clock counter (16-bit value)
 INLINE void PWM_Count(int pwm, u16 cnt) { *PWM_CTR(pwm) = cnt; }
 INLINE void PWM_Count_hw(pwm_slice_hw_t* hw, u16 cnt) { hw->ctr = cnt; }
@@ -250,6 +254,13 @@ INLINE u16 PWM_GetTop_hw(const pwm_slice_hw_t* hw) { return (u16)hw->top; }
 //     (for TOP=256 sampling rate 1.9 kHz to 488 kHz)
 void PWM_Clock(int pwm, u32 freq);
 void PWM_Clock_hw(pwm_slice_hw_t* hw, u32 freq);
+
+// get real frequency of the PWM clock (in Hz)
+u32 PWM_GetClock(int pwm);
+u32 PWM_GetClock_hw(pwm_slice_hw_t* hw);
+
+// Find system clock in Hz that sets the most accurate PWM clock frequency.
+u32 PWM_FindSysClk(u32 min_hz, u32 max_hz, u32 freq);
 
 // === PWM interrupt
 

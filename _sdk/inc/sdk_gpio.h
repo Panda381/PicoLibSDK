@@ -181,6 +181,12 @@ STATIC_ASSERT(sizeof(iobank0_hw_t) == 0x190, "Incorrect iobank0_hw_t!");
 #define IRQ_EVENT_ALL		0x0f	// all events
 #define IRQ_EVENT_NONE		0	// no event
 
+// drive strength
+#define GPIO_DRIVE_2MA		0
+#define GPIO_DRIVE_4MA		1
+#define GPIO_DRIVE_8MA		2
+#define GPIO_DRIVE_12MA		3
+
 // generic callback function type for GPIO events (install with GPIO_IRQSetCallback() function)
 //   pin = 0..29
 //   events = bit mask with IRQ_EVENT_* of events
@@ -236,6 +242,10 @@ INLINE void GPIO_Drive8mA_hw(io32* hw) { RegMask(hw, B5, B4|B5); }
 // set output strength to 12 mA (pin = 0..31)
 INLINE void GPIO_Drive12mA(int pin) { RegSet(GPIO_PAD(pin), B4|B5); }
 INLINE void GPIO_Drive12mA_hw(io32* hw) { RegSet(hw, B4|B5); }
+
+// Set drive strength GPIO_DRIVE_*
+INLINE void GPIO_Drive(int pin, int drive) { RegMask(GPIO_PAD(pin), drive << 4, B4|B5); }
+INLINE void GPIO_Drive_hw(io32* hw, int drive) { RegMask(hw, drive << 4, B4|B5); }
 
 // set no pulls (pin = 0..31)
 INLINE void GPIO_NoPull(int pin) { RegClr(GPIO_PAD(pin), B2|B3); }
@@ -685,8 +695,7 @@ INLINE enum gpio_slew_rate gpio_get_slew_rate(uint gpio)
 	{ return (enum gpio_slew_rate)(*GPIO_PAD(gpio) & B0); }
 
 // Set drive strength for a specified GPIO
-INLINE void gpio_set_drive_strength(uint gpio, enum gpio_drive_strength drive)
-	{ RegMask(GPIO_PAD(gpio), drive << 4, B4|B5); }
+INLINE void gpio_set_drive_strength(uint gpio, enum gpio_drive_strength drive) { GPIO_Drive(gpio, drive); }
 
 // Determine current drive strength for a specified GPIO
 INLINE enum gpio_drive_strength gpio_get_drive_strength(uint gpio)

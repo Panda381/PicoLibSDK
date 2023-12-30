@@ -316,7 +316,7 @@ u16 UsbXferSync(u8 epinx, u8 bufid)
 Bool UsbXferCont(u8 epinx)
 {
 	// synchronize buffer 0
-	u16 len = UsbXferSync(epinx, 0);
+	/*u16 len =*/ UsbXferSync(epinx, 0);
 
 	// address of endpoint descriptor
 	sEndpoint* sep = &UsbEndpoints[epinx];

@@ -15,6 +15,9 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+
+#if USE_PICOINO
+
 #include "../../_display/minivga/minivga.h"
 #include "../../_sdk/inc/sdk_timer.h"
 #include "../../_lib/inc/lib_fat.h"
@@ -154,3 +157,5 @@ void ScreenShot()
 
 
 #endif // USE_SCREENSHOT		// use screen shots
+
+#endif // USE_PICOINO

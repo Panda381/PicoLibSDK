@@ -233,10 +233,9 @@ INLINE void lock_init(lock_core_t *core, uint lock_num) { core->spin_lock = Spin
 #define lock_internal_spin_unlock_with_notify(lock, save) spin_unlock((lock)->spin_lock, save), __sev()
 
 // Atomically unlock the lock's spin lock, and wait for a notification or a timeout
-#define lock_internal_spin_unlock_with_best_effort_wait_or_timeout(lock, save, until) ({ \
-	spin_unlock((lock)->spin_lock, save);	\
-	best_effort_wfe_or_timeout(until);	\
-})
+#define lock_internal_spin_unlock_with_best_effort_wait_or_timeout(lock, save, until) ( \
+	spin_unlock((lock)->spin_lock, save), 	\
+	best_effort_wfe_or_timeout(until) )
 
 // yield to other processing until some time before the requested time
 #define sync_internal_yield_until_before(until) ((void)0)

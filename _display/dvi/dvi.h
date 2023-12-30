@@ -31,6 +31,29 @@ extern "C" {
 #define DVI_IRQTIME		1	// debug flag - measure delta time of DVI service
 // Measured: IN=28 us, OUT=4 us, IN2=1 us, OUT2=31 us
 
+#if !USE_MINIVGA			// use mini-VGA display with simple frame buffer:
+
+// frame buffer
+//  Planar mode: Lines are interlaced in order blue, green and red.
+extern ALIGNED FRAMETYPE FrameBuf[];
+
+// back buffer
+#if USE_FRAMEBUF && (BACKBUFSIZE > 0)
+//  Planar mode: Lines are interlaced in order blue, green and red.
+extern ALIGNED FRAMETYPE BackBuf[BACKBUFSIZE]; // back buffer strip
+#endif
+
+// display setup
+extern FRAMETYPE* pDrawBuf;	// current draw buffer
+extern int DispStripInx;	// current index of back buffer strip (-1 = use full FrameBuf)
+extern int DispMinY;		// minimal Y; base of back buffer strip
+extern int DispMaxY;		// maximal Y + 1; end of back buffer strip
+
+// dirty window to update (used only with full back buffer, USE_MINIVGA = 2)
+extern int DispDirtyX1, DispDirtyX2, DispDirtyY1, DispDirtyY2;
+
+#endif // !USE_MINIVGA
+
 // data
 extern volatile int DviScanLine;	// current scan line 1...
 extern volatile u32 DviFrame;		// frame counter
@@ -61,6 +84,99 @@ void DviStart();
 
 // terminate DVI on core 1 from core 0 (must be paired with DviStart())
 void DviStop();
+
+#if !USE_MINIVGA
+
+// use back buffer
+#if BACKBUFSIZE > 0
+
+// set strip of back buffer (-1 = use full FrameBuffer)
+void DispSetStrip(int inx);
+INLINE void DispSetStripNext() { DispSetStrip(DispStripInx + 1); }
+
+// switch off the back buffer, use only frame buffer to output
+INLINE void DispSetStripOff() { DispSetStrip(-1); }
+
+// load back buffer from frame buffer
+void DispLoad();
+
+// use full back buffer
+#if USE_DVI == 2
+
+// set dirty all frame buffer
+void DispDirtyAll();
+
+// set dirty none (clear after update)
+void DispDirtyNone();
+
+// update dirty area by rectangle (check valid range)
+void DispDirtyRect(int x, int y, int w, int h);
+
+// update dirty area by pixel (check valid range)
+void DispDirtyPoint(int x, int y);
+
+#else // USE_DVI == 2
+
+// set dirty all frame buffer
+INLINE void DispDirtyAll() {}
+
+// set dirty none (clear after update)
+INLINE void DispDirtyNone() {}
+
+// update dirty area by rectangle (check valid range)
+INLINE void DispDirtyRect(int x, int y, int w, int h) {}
+
+// update dirty area by pixel (check valid range)
+INLINE void DispDirtyPoint(int x, int y) {}
+
+#endif // USE_DVI == 2
+
+// update - send dirty window to display (or write back buffer to frame buffer)
+void DispUpdate();
+
+// auto update after delta time in [ms] of running program
+void DispAutoUpdate(u32 ms);
+
+// refresh update all display
+void DispUpdateAll();
+
+// no back bufer
+#else // BACKBUFSIZE > 0
+
+// set strip of back buffer (-1 = use full FrameBuffer)
+INLINE void DispSetStrip(int inx) {}
+INLINE void DispSetStripNext() {}
+
+// switch off the back buffer, use only frame buffer to output
+INLINE void DispSetStripOff() {}
+
+// load back buffer from frame buffer
+INLINE void DispLoad() {}
+
+// set dirty all frame buffer
+INLINE void DispDirtyAll() {}
+
+// set dirty none (clear after update)
+INLINE void DispDirtyNone() {}
+
+// update dirty area by rectangle (check valid range)
+INLINE void DispDirtyRect(int x, int y, int w, int h) {}
+
+// update dirty area by pixel (check valid range)
+INLINE void DispDirtyPoint(int x, int y) {}
+
+// update - send dirty window to display (or write back buffer to frame buffer)
+INLINE void DispUpdate() {}
+
+// auto update after delta time in [ms] of running program
+INLINE void DispAutoUpdate(u32 ms) {}
+
+// refresh update all display
+INLINE void DispUpdateAll() {}
+
+#endif // BACKBUFSIZE > 0
+
+#endif // !USE_MINIVGA
 
 #ifdef __cplusplus
 }

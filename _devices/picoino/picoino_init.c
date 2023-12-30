@@ -15,6 +15,9 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+
+#if USE_PICOINO
+
 #include "../../_display/minivga/minivga.h" // QVGA display
 #include "../../_lib/inc/lib_pwmsnd.h"
 #include "../../_lib/inc/lib_fat.h"
@@ -134,3 +137,5 @@ void LedSet(u8 inx, u8 val)
 }
 
 #endif // USE_PICOINOMINI
+
+#endif // USE_PICOINO

@@ -211,8 +211,6 @@ void ADC_FifoFlush(void)
 // get current temperature in °C
 float ADC_Temp(void)
 {
-	int i;
-
 	// enable temperature sensor
 	ADC_TempEnable();
 	

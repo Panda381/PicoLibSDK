@@ -14,6 +14,8 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#if USE_PICO
+
 #ifndef _PICO_BAT_H
 #define _PICO_BAT_H
 
@@ -21,7 +23,7 @@
 extern "C" {
 #endif
 
-#if !USE_EXTDISP
+#if !USE_DVI && !USE_DVIVGA
 
 // init battery measurement
 void BatInit();
@@ -35,10 +37,12 @@ int GetBatInt();
 // terminate battery measurement
 void BatTerm();
 
-#endif // !USE_EXTDISP
+#endif // !USE_DVI && !USE_DVIVGA
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif // _PICO_BAT_H
+
+#endif // USE_PICO

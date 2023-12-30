@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
 ==================================================================
-SDK Programmer's Guide, Version 1.07, October 2023
+SDK Programmer's Guide, Version 1.10, October 2023
 
 Copyright (c) 2023 Miroslav Nemecek
 
@@ -32,11 +32,11 @@ easier to use. What you can find in the PicoLibSDK library:
 
 - Tool library: alarm, 32-bit Unix calendar, long 64-bit astronomic calendar,
   canvas drawing, RGBA color vector, CRC check with DMA support, decode numbers,
-  escape packet protocol, event ring buffer, FAT file system, doubly linked
-  list, memory allocator, 2D transformation matrix, mini-ring buffer, formatted
-  print, PWM sound output with ADPCM, random generator, rectangle, ring buffer,
-  DMA ring buffer, SD card, streams, text strings, text list, text print, tree
-  list, VGA drawing, video player.
+  emulators, escape packet protocol, event ring buffer, FAT file system, doubly
+  linked list, memory allocator, 2D transformation matrix, mini-ring buffer,
+  formatted print, PWM sound output with ADPCM, random generator, rectangle,
+  ring buffer, DMA ring buffer, SD card, streams, text strings, text list, text
+  print, tree list, VGA drawing, video player.
 
 - USB library: multiplayer mini-port, CDC device and host - serial communication,
   HID device and host - including external keyboard and mouse.
@@ -488,7 +488,10 @@ _loader - boot3 program loader, with the ability to run applications from the
 _sdk - SDK library for controlling the RP2040 hardware.
 
 _tools - support programs:
+	- AS4040 - Intel 4004/4040 assembler compiler
+	- BinC - export binary file into C/C++ byte array
 	- Boot2CRC - boot2 boot loader checksum calculation
+	- DviTms - generator of DVI TMDS 16-bit 2-symbol table
 	- HidComp - compiler and decompiler of HID descriptors
 	- PicoPadImg - converting BMP images to PicoPad format
 	- PicoPadLoaderBin - export boot3 loader to C source code
@@ -797,6 +800,8 @@ History of versions
 10/18/2023 version 1.08: simulate keypad using USB keyboard (USE_USBPAD,
 	A->Ctrl, B->Alt, X->Shift, Y->Esc).
 12/05/2023 version 1.09: ADPCM sound compression, original-SDK interface.
+12/30/2023 version 1.10: Intel 4004/4040 CPU emulator, DVI (HDMI) display,
+	DVIVGA (HDMI with VGA) display, file selector
 
 
 Missing and @TODO

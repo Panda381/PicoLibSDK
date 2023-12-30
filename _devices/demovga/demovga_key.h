@@ -14,6 +14,8 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#if USE_DEMOVGA
+
 #ifndef _DEMOVGA_KEY_H
 #define _DEMOVGA_KEY_H
 
@@ -69,3 +71,5 @@ void KeyWaitNoPressed();
 #endif
 
 #endif // _DEMOVGA_KEY_H
+
+#endif // USE_DEMOVGA

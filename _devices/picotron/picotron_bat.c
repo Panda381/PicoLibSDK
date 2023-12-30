@@ -15,6 +15,9 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+
+#if USE_PICOTRON
+
 #include "../../_sdk/inc/sdk_adc.h"
 #include "../../_sdk/inc/sdk_gpio.h"
 #include "../../_sdk/inc/sdk_timer.h"
@@ -75,3 +78,5 @@ void BatTerm()
 	// disable ADC
 	ADC_Disable();
 }
+
+#endif // USE_PICOTRON

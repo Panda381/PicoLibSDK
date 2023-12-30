@@ -59,7 +59,7 @@ void Core1Wrapper(pCore1Fnc entry)
 	dmb(); // data memory barrier
 
 	// jump to bootrom
-	pWaitForVector fnc = (pWaitForVector)RomFunc(ROM_FUNC_WAIT_FOR_VECTOR);
+	pWaitForVector fnc = (pWaitForVector)(u32)RomFunc(ROM_FUNC_WAIT_FOR_VECTOR);
 	fnc();
 }
 

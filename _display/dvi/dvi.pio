@@ -15,3 +15,12 @@
 	out	pc,1	side 0b10
 	out	pc,1	side 0b01
 .wrap						; wrap jump to .wrap_target
+
+.program dvi_inv ; inverted output
+.side_set	2	; 2-bit output
+.origin		0	; must be compiled from 0
+
+.wrap_target					; wrap jump target
+	out	pc,1	side 0b01
+	out	pc,1	side 0b10
+.wrap						; wrap jump to .wrap_target

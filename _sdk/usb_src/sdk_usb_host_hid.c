@@ -191,8 +191,8 @@ void UsbHostHidInxSend(u8 hid_inx)
 	if (UsbHostIsBusy(hid->dev_addr, hid->ep_out)) return; // transmission is active
 
 	// get endpoint
-	u8 ep = UsbHostDevEp(hid->dev_addr, hid->ep_out);
-	sEndpoint* sep = &UsbEndpoints[ep];
+	//u8 ep = UsbHostDevEp(hid->dev_addr, hid->ep_out);
+	//sEndpoint* sep = &UsbEndpoints[ep];
 
 	// send data
 	UsbHostXferStart(hid->dev_addr, hid->ep_out, hid->tx_buf, len, False);
@@ -564,7 +564,7 @@ Bool UsbHostHidCfg(u8 dev_addr, u8 itf_num)
 	if (hid_inx == USB_DRVID_INVALID) return False;
 
 	// pointer to HID interface
-	sUsbHostHidInter* hid = &UsbHostHidInter[hid_inx];
+	//sUsbHostHidInter* hid = &UsbHostHidInter[hid_inx];
 
 	// pointer to setup packet
 	sUsbSetupPkt* setup = &UsbSetupRequest;
@@ -1025,7 +1025,7 @@ const char HidKeyToAscii[2*HIDKEY_TO_ASCII_NUM] = {
 	'9',	'(',		// 0x26 HID_KEY_9
 	'0',	')',		// 0x27 HID_KEY_0
 	'\r',	'\r',		// 0x28 HID_KEY_ENTER
-	'\e',	'\e',		// 0x29 HID_KEY_ESCAPE
+	'\33',	'\33',		// 0x29 HID_KEY_ESCAPE ('\e')
 	'\b',	'\b',		// 0x2a HID_KEY_BACKSPACE
 	'\t',	'\t',		// 0x2b HID_KEY_TAB
 	' ',	' ',		// 0x2c HID_KEY_SPACE

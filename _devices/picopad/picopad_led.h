@@ -14,6 +14,8 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#if USE_PICOPAD
+
 #ifndef _PICOPAD_LED_H
 #define _PICOPAD_LED_H
 
@@ -56,3 +58,5 @@ void LedTerm();
 #endif
 
 #endif // _PICOPAD_LED_H
+
+#endif // USE_PICOPAD

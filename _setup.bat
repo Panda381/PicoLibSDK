@@ -13,7 +13,6 @@ rem   demovga ....... DemoVGA board with VGA RGB565 output
 rem   picopad08 ..... PicoPad beta version 0.8
 rem   picopad10 ..... PicoPad version 1.0 with TFT RGB565 output
 rem   picopadvga .... PicoPad with VGA RGB565 output
-rem   extdisp ....... extern VGA/DVI display module
 rem   (empty) ....... default compilation
 
 rem Move ":default" label before configuration, which you want to use as default.
@@ -26,7 +25,6 @@ if "%1"=="demovga" goto demovga
 if "%1"=="picopad08" goto picopad08
 if "%1"=="picopad10" goto picopad10
 if "%1"=="picopadvga" goto picopadvga
-if "%1"=="extdisp" goto extdisp
 if "%1"=="" goto default
 
 echo.
@@ -82,10 +80,4 @@ exit /b
 set DEVICE=picopadvga
 set DEVCLASS=picopad
 set DEVDIR=!PicoPadVGA
-exit /b
-
-:extdisp
-set DEVICE=extdisp
-set DEVCLASS=pico
-set DEVDIR=!Pico
 exit /b

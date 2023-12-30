@@ -14,6 +14,8 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#if USE_PICOTRON
+
 #ifndef _PICOTRON_KEY_H
 #define _PICOTRON_KEY_H
 
@@ -130,3 +132,5 @@ void KeyWaitNoPressed();
 #endif
 
 #endif // _PICOTRON_KEY_H
+
+#endif // USE_PICOTRON

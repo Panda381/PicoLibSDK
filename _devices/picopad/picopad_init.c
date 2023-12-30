@@ -15,6 +15,9 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+
+#if USE_PICOPAD
+
 #include "../../_lib/inc/lib_pwmsnd.h"
 #include "../../_display/minivga/minivga.h"
 #include "../../_display/st7789/st7789.h"
@@ -87,3 +90,5 @@ void DeviceTerm()
 	SDTerm();
 #endif
 }
+
+#endif // USE_PICOPAD

@@ -14,6 +14,8 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#if USE_PICOINO
+
 #ifndef _PICOINO_INIT_H
 #define _PICOINO_INIT_H
 
@@ -58,3 +60,5 @@ void LedSet(u8 inx, u8 val);
 #endif
 
 #endif // _PICOINO_INIT_H
+
+#endif // USE_PICOINO

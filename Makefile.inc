@@ -103,6 +103,7 @@ AFLAGS = $(ARCHCFG)
 CFLAGS = $(ARCHCFG)
 
 # Optimization level
+# - speed optimizations not supported (use Position-independent code)
 #CFLAGS += -O0	# do no optimization
 #CFLAGS += -O1	# optimize minimally
 #CFLAGS += -O2	# optimize more
@@ -120,8 +121,8 @@ CFLAGS += -ffunction-sections -fdata-sections
 # use unsigned char (this is default for ARM cpu)
 CFLAGS += -funsigned-char
 
-# pedantic - to report error when 'return' is missing
-#CFLAGS += -Wall -pedantic
+# pedantic - to report error when 'return' is missing ... cannot be used, it does not support noname structures
+#CFLAGS += -Wall -fms-extensions -ansi -pedantic
 
 # generate debug informations
 #CFLAGS += -g3

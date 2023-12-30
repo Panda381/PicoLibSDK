@@ -610,7 +610,7 @@ Bool CheckApp()
 }
 
 // display info screen
-void DispInfo()
+void DispInfoScr()
 {
 	int i, y;
 	const u8* s;
@@ -692,7 +692,7 @@ void DispBigErr(const char* text)
 
 	FrameFileList();
 	DispFileList();
-	DispInfo();
+	DispInfoScr();
 }
 
 // save flash
@@ -779,7 +779,7 @@ void SaveFlash(Bool full)
 	// redraw
 	FrameFileList();
 	DispFileList();
-	DispInfo();
+	DispInfoScr();
 }
 
 // load flash
@@ -867,7 +867,7 @@ void LoadFlash()
 	// redraw
 	FrameFileList();
 	DispFileList();
-	DispInfo();
+	DispInfoScr();
 }
 
 // main function
@@ -885,7 +885,7 @@ int main()
 	ResetRoot();
 
 	// display info screen
-	DispInfo();
+	DispInfoScr();
 
 	// display frame of file list
 	FrameFileList();

@@ -104,7 +104,7 @@ u16 RandU16()
 
 int rand()
 {
-	return (u16)(RandShift() >> 17);
+	return (int)(RandShift() >> 1);
 }
 
 // generate 64-bit unsigned integer random number

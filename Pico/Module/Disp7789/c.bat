@@ -14,9 +14,9 @@ goto stop
 
 :ok
 if "%1"=="" goto default
-if not "%1"=="extdisp" goto stop
+..\..\..\_c1.bat %1
 
 :default
-..\..\..\_c1.bat extdisp
+..\..\..\_c1.bat pico
 
 :stop

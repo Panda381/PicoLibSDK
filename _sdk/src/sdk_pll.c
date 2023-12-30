@@ -175,7 +175,7 @@ Bool PllCalc(u32 reqkhz, u32 input, u32 vcomin, u32 vcomax, Bool lowvco,
 Bool PllCalcDef(u32 reqkhz, u32* outkhz, u32* outvco, u16* outfbdiv, u8* outpd1, u8* outpd2)
 {
 	// get reference frequency in kHz (should be 12 MHz)
-	u32 input = CurrentFreq[CLK_XOSC]/1000;
+	u32 input = (CurrentFreq[CLK_XOSC] + 500)/1000;
 
 	// find PLL setup
 	return PllCalc(reqkhz, input, PLL_VCO_MIN*1000, PLL_VCO_MAX*1000, False,

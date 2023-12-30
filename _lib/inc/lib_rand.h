@@ -55,7 +55,7 @@ u16 RandU16();
 int rand();
 
 #ifndef RAND_MAX
-#define RAND_MAX 0x7fff
+#define RAND_MAX 0x7fffffff
 #endif
 
 // generate 32-bit unsigned integer random number

@@ -233,14 +233,12 @@ void PioFifoClear_hw(pio_hw_t* hw, int sm)
 // clear RX FIFO (read values)
 void PioRxFifoClear(int pio, int sm)
 {
-	u32 val;
-	while (!PioRxIsEmpty(pio, sm)) { val = PioRead(pio, sm); }
+	while (!PioRxIsEmpty(pio, sm)) { PioRead(pio, sm); }
 }
 
 void PioRxFifoClear_hw(pio_hw_t* hw, int sm)
 {
-	u32 val;
-	while (!PioRxIsEmpty_hw(hw, sm)) { val = PioRead_hw(hw, sm); }
+	while (!PioRxIsEmpty_hw(hw, sm)) { PioRead_hw(hw, sm); }
 }
 
 // clear TX FIFO (executes OUT/PULL instruction; state machine should not be enabled)

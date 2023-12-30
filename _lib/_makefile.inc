@@ -10,6 +10,7 @@ CSRC += ../../../_lib/src/lib_draw.c
 CSRC += ../../../_lib/src/lib_escpkt.c
 CSRC += ../../../_lib/src/lib_event.c
 CSRC += ../../../_lib/src/lib_fat.c
+CSRC += ../../../_lib/src/lib_filesel.c
 CSRC += ../../../_lib/src/lib_list.c
 CSRC += ../../../_lib/src/lib_malloc.c
 CSRC += ../../../_lib/src/lib_mat2d.c
@@ -35,6 +36,8 @@ CSRC += ../../../_lib/src/lib_video.c
 #CSRC += ../../../_lib/3d_src/lib_d3obj.c
 #CSRC += ../../../_lib/3d_src/lib_d3vect.c
 #CSRC += ../../../_lib/3d_src/lib_d3world.c
+
+CSRC += ../../../_lib/emu/emu.c
 
 # C big integers
 CSRC += ../../../_lib/bigint/bigint.c

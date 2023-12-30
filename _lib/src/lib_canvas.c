@@ -1254,8 +1254,8 @@ void CanvasImg(sCanvas* canvas, sCanvas* src, int xd, int yd, int xs, int ys, in
 			u8* s = src->img + xs/4 + ys*wbs;
 			u8* d0;
 			u8* s0;
-			u8 b, b2, ms, md;
-			int i, rs, rd, xs2, xd2;
+			u8 b, b2; //, ms, md;
+			int i, rs, rd; //, xs2, xd2;
 			
 			// faster mode
 			if (((xs & 0x03) == 0) && ((xd & 0x03) == 0) && ((w & 0x03) == 0))
@@ -1322,8 +1322,8 @@ void CanvasImg(sCanvas* canvas, sCanvas* src, int xd, int yd, int xs, int ys, in
 			u8* s = src->img + xs/8 + ys*wbs;
 			u8* d0;
 			u8* s0;
-			u8 b, b2, ms, md;
-			int i, rs, rd, xs2, xd2;
+			u8 b, b2; //, ms, md;
+			int i, rs, rd; //, xs2, xd2;
 			
 			// faster mode
 			if (((xs & 0x07) == 0) && ((xd & 0x07) == 0) && ((w & 0x07) == 0))
@@ -1394,8 +1394,8 @@ void CanvasImg(sCanvas* canvas, sCanvas* src, int xd, int yd, int xs, int ys, in
 			u8* d02;
 			u8* s0;
 			u8* s02;
-			u8 b, b2, bb, bb2, ms, md;
-			int i, rs, rd, xs2, xd2;
+			u8 b, b2, bb, bb2; //, ms, md;
+			int i, rs, rd; //, xs2, xd2;
 			
 			// faster mode
 			if (((xs & 0x07) == 0) && ((xd & 0x07) == 0) && ((w & 0x07) == 0))
@@ -1488,8 +1488,8 @@ void CanvasImg(sCanvas* canvas, sCanvas* src, int xd, int yd, int xs, int ys, in
 			u8* s0;
 			u8* d02;
 			u8* s02;
-			u8 b, b2, bb, ms, md;
-			int i, rs, rd, xs2, xd2;
+			u8 b, b2, bb; //, ms, md;
+			int i, rs, rd; //, xs2, xd2;
 			
 			// faster mode
 			if (((xs & 0x07) == 0) && ((xd & 0x07) == 0) && ((w & 0x07) == 0))
@@ -1658,8 +1658,8 @@ void CanvasBlit(sCanvas* canvas, sCanvas* src, int xd, int yd, int xs, int ys, i
 			u8* s = src->img + xs/2 + ys*wbs;
 			u8* d0;
 			u8* s0;
-			u8 b, b1, b2, ms, md;
-			int i, rs, rd, xs2, xd2;
+			u8 b, b1, b2; //, ms, md;
+			int i, rs, rd; //, xs2, xd2;
 			
 			for (; h > 0; h--)
 			{
@@ -1714,8 +1714,8 @@ void CanvasBlit(sCanvas* canvas, sCanvas* src, int xd, int yd, int xs, int ys, i
 			u8* s = src->img + xs/4 + ys*wbs;
 			u8* d0;
 			u8* s0;
-			u8 b, b1, b2, ms, md;
-			int i, rs, rd, xs2, xd2;
+			u8 b, b1, b2; //, ms, md;
+			int i, rs, rd; //, xs2, xd2;
 			
 			for (; h > 0; h--)
 			{
@@ -1770,8 +1770,8 @@ void CanvasBlit(sCanvas* canvas, sCanvas* src, int xd, int yd, int xs, int ys, i
 			u8* s = src->img + xs/8 + ys*wbs;
 			u8* d0;
 			u8* s0;
-			u8 b, b1, b2, ms, md;
-			int i, rs, rd, xs2, xd2;
+			u8 b, b1, b2;//, ms, md;
+			int i, rs, rd;//, xs2, xd2;
 			
 			for (; h > 0; h--)
 			{
@@ -1830,8 +1830,8 @@ void CanvasBlit(sCanvas* canvas, sCanvas* src, int xd, int yd, int xs, int ys, i
 			u8* d02;
 			u8* s0;
 			u8* s02;
-			u8 b, b1, b12, b2, bb, bb2, ms, md;
-			int i, rs, rd, xs2, xd2;
+			u8 b, b1, b12, b2, bb, bb2; //, ms, md;
+			int i, rs, rd; //, xs2, xd2;
 			
 			for (; h > 0; h--)
 			{
@@ -2268,20 +2268,24 @@ void CanvasTileMap(sCanvas* canvas, const sCanvas* src, const u8* map, int mapwb
 	Mat2D_ExportInt(mat, m);
 
 	// prepare variables
-	int wbs = src->wb; // source width bytes
+	//int wbs = src->wb; // source width bytes
 	const u8* s = src->img; // source image
 	int xy0m, yy0m; // temporary Y members
 	u8* d = canvas->img + canvas->wb*y + x; // destination image
 	int wbd = canvas->wb - w; // destination width bytes
-	int i, x2, y2;
+	int i;
+#if !DRAW_HWINTER
 	int tilesize = 1 << tilebits; // tile size
-	int tilebits2 = tilebits*2;
+	int x2, y2;
 	int tilemask = tilesize - 1; // tile mask
 	int tileinx; // tile index
 	int mapw = 1<<mapwbits;
 	int maph = 1<<maphbits;
 	int mapmaskx = (mapw * tilesize) - 1; // mask of map width
 	int mapmasky = (maph * tilesize) - 1; // mask of map height
+#else
+	int tilebits2 = tilebits*2;
+#endif
 
 #if DRAW_HWINTER // 1=use hardware interpolator
 
@@ -2401,7 +2405,7 @@ void CanvasImgLine(sCanvas* canvas, sCanvas* src, int xd, int yd, int xs, int ys
 	int wbs = src->wb; // source width bytes
 	u8* d = canvas->img + xd + yd*wbd; // destination address
 	u8* s = src->img + xs + ys*wbs; // source address
-	int i, j;
+	int i;
 
 #if DRAW_HWINTER // 1=use hardware interpolator to draw images
 

@@ -83,7 +83,6 @@ void BigIntFreeArr(bigint* arr, int num)
 bigint* BigIntResizeArr(bigint* arr, int oldnum, int newnum)
 {
 	int i;
-	bigint* d;
 
 	// create new array
 	if (arr == NULL) return BigIntGetArr(newnum);
@@ -103,7 +102,6 @@ bigint* BigIntResizeArr(bigint* arr, int oldnum, int newnum)
 	{
 		arr = (bigint*)MemResize(arr, newnum*sizeof(bigint));
 		if (arr == NULL) return NULL;
-		d = &arr[oldnum];
 		for (i = oldnum; i < newnum; i++) BigIntInit(&arr[i]);
 		return arr;
 	}
