@@ -1,1 +1,1 @@
-This folder contains emulators for PicoPad.
+This folder contains emulators for PicoPad. (not for VGA version)
