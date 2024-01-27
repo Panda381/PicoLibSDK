@@ -17,9 +17,11 @@
 // I8080 CPU speed: 2 MHz (instructions 4, 5, 7, 10 or 11 clock cycles)
 // I808A-1 CPU speed: 3.125 MHz
 
-// https://tobiasvl.github.io/optable/intel-8080/
-
 #if USE_EMU_I8080		// use I8080 CPU emulator
+
+// constants
+#define I8080_CLOCKMUL	4	// clock multiplier (to achieve lower frequencies and finer timing)
+#define I8080_MEMSIZE	0x10000	// memory size
 
 // flags
 #define I8080_C_BIT		0	// carry
@@ -41,50 +43,38 @@
 #define I8080_FLAGINV	(B1+B3+B5)		// mask of invalid flags
 #define I8080_FLAGDEF	B1			// default flags
 
-#define I8080_CLOCKMUL	8	// clock multiplier (to achieve lower frequencies and finer timing)
-
 // I8080 CPU descriptor
-// - Keep compatibility of the structure with the #define version in machine code!
-// - Entries must be aligned
-// - thumb1 on RP2040: offset of byte fast access must be <= 31, word fast access <= 62, dword fast access <= 124
+// - Optimization of thumb1 on RP2040: offset of byte should be <= 31, word <= 62, dword <= 124
+// - Entries should be aligned
 typedef struct {
-
-	sEmuSync	sync;		// 0x00: (8) time synchronization
-// align
+	sEmuSync	sync;		// 0x00: time synchronization
 	union { u16 pc; struct { u8 pcl, pch; }; }; // 0x08: program counter PC
 	union { u16 sp; struct { u8 spl, sph; }; }; // 0x0A: stack pointer SP
-// align
-	union { u32 afbc;
+	union {
 		struct {
-			union { u16 af; struct { u8 f, a; }; };	// 0x0C: registers A (high) and F (low)
-			union { u16 bc; struct { u8 c, b; }; };	// 0x0E: registers B (high) and C (low)
-		};
-	};
-// align
-	union { u32 dehl;
-		struct {
+			union { u16 fa; struct { u8 a, f; }; };	// 0x0C: registers F (high) and A (low)
+			union { u16 hl; struct { u8 l, h; }; };	// 0x0E: registers H (high) and L (low)
 			union { u16 de; struct { u8 e, d; }; };	// 0x10: registers D (high) and E (low)
-			union { u16 hl; struct { u8 l, h; }; };	// 0x12: registers H (high) and L (low)
+			union { u16 bc; struct { u8 c, b; }; };	// 0x12: registers B (high) and C (low)
 		};
+		u8	reg[8];		// registers accessible via index (0:A, 1:F, 2:L, 3:H, 4:E, 5:D, 6:C, 7:B)
+		u16	dreg[4];	// double registers (0:FA, 1:HL, 2:DE, 3:BC)
 	};
-// align
 	u8		ie;		// 0x14: interrupt enable flag (0=disable interrupts, 1=enable interrupts)
 	u8		tid;		// 0x15: temporary interrupt disable flag (1 instruction after enabling IE)
 	u8		halted;		// 0x16: 1=CPU is halted (HALT instruction)
 	volatile u8	stop;		// 0x17: 1=request to stop (pause) program execution
-// align
-	u8		intreq;		// 0x18: 1=interrupt request, execute instruction RST n
-	u8		intins;		// 0x19: instruction RST n to execute during interrupt
-	u8		res, res2;	// 0x1A: ... reserved (align)
-// align
-	pEmu16Read8	readmem;	// 0x1C: read byte from memory
-	pEmu16Write8	writemem;	// 0x20: write byte to memory
-	pEmu8Read8	readio;		// 0x24: read byte from port
-	pEmu8Write8	writeio;	// 0x28: write byte to port
-
+	volatile u8	intreq;		// 0x18: 1=interrupt request, execute instruction RST n
+	volatile u8	intins;		// 0x19: instruction RST n to execute during interrupt
+	u8		cond[4];	// 0x1A [4]: condition table (0:I8080_Z, 1:I8080_C, 2:I8080_P, 3:I8080_S)
+	u16		res;		// 0x1E: ... reserved (align)
+	pEmu16Read8	readmem;	// 0x20: read byte from memory
+	pEmu16Write8	writemem;	// 0x24: write byte to memory
+	pEmu8Read8	readport;	// 0x28: read byte from port
+	pEmu8Write8	writeport;	// 0x2C: write byte to port
 } sI8080;
 
-STATIC_ASSERT(sizeof(sI8080) == 0x2C, "Incorrect sI8080!");
+STATIC_ASSERT(sizeof(sI8080) == 0x30, "Incorrect sI8080!");
 
 // current CPU descriptor (NULL = not running)
 extern volatile sI8080* I8080_Cpu;
@@ -95,7 +85,7 @@ void I8080_InitTab();
 // initialize time synchronization (initialize PWM counter; returns real emulated frequency in Hz)
 //  pwm ... index of (unused) PWM slice (0..7)
 //  freq ... required emulated frequency in Hz (for 125 MHz system clock supported range: 64 kHz to 12 MHz)
-// To achieve accurate timing, an integer ratio between system clock and clock frequency*I8008_CLOCKMUL is recommended to maintain.
+// To achieve accurate timing, an integer ratio between system clock and clock frequency*I8080_CLOCKMUL is recommended to maintain.
 INLINE u32 I8080_SyncInit(sI8080* cpu, int pwm, u32 freq) { return (EmuSyncInit(&cpu->sync, pwm, freq*I8080_CLOCKMUL) + I8080_CLOCKMUL/2)/I8080_CLOCKMUL; }
 
 // reset processor
@@ -105,8 +95,10 @@ void I8080_Reset(sI8080* cpu);
 INLINE void I8080_SyncStart(sI8080* cpu) { EmuSyncStart(&cpu->sync); }
 
 // execute program (start or continue, until "stop" request)
-//  C code size in RAM: 8708 bytes (optimization -Os)
-void NOFLASH(I8080_Exec)(sI8080* cpu);
+// Size of code of this function: 2412 code + 1024 jump table = 3436 bytes
+// CPU loading at 2 MHz on 120 MHz: used 17-23%, max. 20-27%
+// CPU loading at 5 MHz on 120 MHz: used 46-63%, max. 52-70%
+void FASTCODE NOFLASH(I8080_Exec)(sI8080* cpu);
 
 // terminate time synchronization (stop PWM counter)
 //  pwm ... index of used PWM slice (0..7)
@@ -117,7 +109,7 @@ INLINE void I8080_SyncTerm(int pwm) { EmuSyncTerm(pwm); }
 //  pwm ... index of (unused) PWM slice (0..7)
 //  freq ... required emulated frequency in Hz (for 125 MHz system clock supported range: 62 kHz to 12 MHz)
 // Returns real emulated frequency in Hz.
-// To achieve accurate timing, an integer ratio between system clock and clock frequency*I8008_CLOCKMUL is recommended to maintain.
+// To achieve accurate timing, an integer ratio between system clock and clock frequency*I8080_CLOCKMUL is recommended to maintain.
 u32 I8080_Start(sI8080* cpu, int pwm, u32 freq);
 
 // stop emulation

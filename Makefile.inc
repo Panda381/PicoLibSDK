@@ -103,7 +103,6 @@ AFLAGS = $(ARCHCFG)
 CFLAGS = $(ARCHCFG)
 
 # Optimization level
-# - speed optimizations not supported (use Position-independent code)
 #CFLAGS += -O0	# do no optimization
 #CFLAGS += -O1	# optimize minimally
 #CFLAGS += -O2	# optimize more

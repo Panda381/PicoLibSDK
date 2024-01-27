@@ -19,62 +19,50 @@
 
 #if USE_EMU_I8008	// use I8008 CPU emulator
 
+// constants
+#define I8008_CLOCKMUL	8	// clock multiplier (to achieve lower frequencies and finer timing)
 #define I8008_STACKNUM	8	// number of entries in the stack ... must be power of 2
-
 #define I8008_STACKMASK	(I8008_STACKNUM-1) // stack index mask
-
+#define I8008_MEMSIZE	0x4000	// memory size
 #define I8008_ADDRMASK	0x3fff	// address mask
 
-#define I8008_CLOCKMUL	8	// clock multiplier (to achieve lower frequencies and finer timing)
-
-// flags
-#define I8008_C_BIT		0	// carry
-#define I8008_P_BIT		2	// parity (0=odd parity, 1=even parity)
-#define I8008_Z_BIT		6	// zero
-#define I8008_S_BIT		7	// sign
+// flags (order of flags must match order of conditions in instructions)
+#define I8008_C_BIT		0	// carry (hardcoded - must be bit 0)
+#define I8008_Z_BIT		1	// zero
+#define I8008_S_BIT		2	// sign
+#define I8008_P_BIT		3	// parity (0=odd parity, 1=even parity)
 
 #define I8008_C		BIT(I8008_C_BIT)	// 0x01 carry
-#define I8008_P		BIT(I8008_P_BIT)	// 0x04 parity
-#define I8008_Z		BIT(I8008_Z_BIT)	// 0x40 zero
-#define I8008_S		BIT(I8008_S_BIT)	// 0x80 sign
+#define I8008_Z		BIT(I8008_Z_BIT)	// 0x02 zero
+#define I8008_S		BIT(I8008_S_BIT)	// 0x04 sign
+#define I8008_P		BIT(I8008_P_BIT)	// 0x08 parity
 
 // I8008 CPU descriptor
-// - Keep compatibility of the structure with the #define version in machine code!
-// - Entries must be aligned
-// - thumb1 on RP2040: offset of byte fast access must be <= 31, word fast access <= 62, dword fast access <= 124
+// - Optimization of thumb1 on RP2040: offset of byte should be <= 31, word <= 62, dword <= 124
+// - Entries should be aligned
 typedef struct {
-
-	sEmuSync	sync;		// 0x00: (8) time synchronization
-// align
+	sEmuSync	sync;		// 0x00: time synchronization
 	union { u16 pc; struct { u8 pcl, pch; }; }; // 0x08: 14-bit program counter PC
 	u8		stack_top;	// 0x0A: stack top (= index of current program counter) ... masked with I8008_STACKMASK
-	u8		res;		// 0x0B: ... reserved (align)
-// align
-	union { u32 afbc;
+	volatile u8	stop;		// 0x0B: 1=request to stop (pause) program execution
+	union {
 		struct {
-			union { u16 af; struct { u8 f, a; }; };	// 0x0C: registers A (high) and F (low)
-			union { u16 bc; struct { u8 c, b; }; };	// 0x0E: registers B (high) and C (low)
+			union { u16 hl; struct { u8 l, h; }; };	// 0x0C: registers H (high) and L (low)
+			union { u16 de; struct { u8 e, d; }; };	// 0x0E: registers D (high) and E (low)
+			union { u16 bc; struct { u8 c, b; }; };	// 0x10: registers B (high) and C (low)
+			union { u16 fa; struct { u8 a, f; }; };	// 0x12: registers F (high) and A (low)
 		};
+		u8	reg[8];		// registers accessible via index (0:L, 1:H, 2:E, 3:D, 4:C, 5:B, 6:A, 7:F)
 	};
-// align
-	union { u32 dehl;
-		struct {
-			union { u16 de; struct { u8 e, d; }; };	// 0x10: registers D (high) and E (low)
-			union { u16 hl; struct { u8 l, h; }; };	// 0x12: registers H (high) and L (low)
-		};
-	};
-// align
-	volatile u8	stop;		// 0x14: 1=request to stop (pause) program execution
-	u8		halted;		// 0x15: 1=CPU is halted (HALT instruction)
-	u8		intreq;		// 0x16: 1=interrupt request, execute instruction RST n
-	u8		intins;		// 0x17: instruction RST n to execute during interrupt
-// align
-	u16		stack[I8008_STACKNUM];	// 0x18 (16 = 0x10), 14-bit stack
-// align
+	u8		halted;		// 0x14: 1=CPU is halted (HALT instruction)
+	volatile u8	intreq;		// 0x15: 1=interrupt request, execute instruction RST n
+	volatile u8	intins;		// 0x16: instruction RST n to execute during interrupt
+	u8		res;		// 0x17: ... reserved (align)
+	u16		stack[I8008_STACKNUM];	// 0x18 [16=0x10]: 14-bit stack
 	pEmu16Read8	readmem;	// 0x28: read byte from memory
 	pEmu16Write8	writemem;	// 0x2C: write byte to memory
-	pEmu8Read8	readio;		// 0x30: read byte from port 0..7
-	pEmu8Write8	writeio;	// 0x34: write byte to port 8..31
+	pEmu8Read8	readport;	// 0x30: read byte from port 0..7
+	pEmu8Write8	writeport;	// 0x34: write byte to port 8..31
 } sI8008;
 
 STATIC_ASSERT(sizeof(sI8008) == 0x38, "Incorrect sI8008!");
@@ -98,8 +86,10 @@ void I8008_Reset(sI8008* cpu);
 INLINE void I8008_SyncStart(sI8008* cpu) { EmuSyncStart(&cpu->sync); }
 
 // execute program (start or continue, until "stop" request)
-//  C code size in RAM: 6648 bytes (optimization -Os)
-void NOFLASH(I8008_Exec)(sI8008* cpu);
+// Size of code of this function: 1576 code + 1024 jump table = 2600 bytes
+// CPU loading at 500 kHz on 120 MHz: used 2%, max. 2-5%
+// CPU loading at 5 MHz on 120 MHz: used 25-29%, max. 25-50%
+void FASTCODE NOFLASH(I8008_Exec)(sI8008* cpu);
 
 // terminate time synchronization (stop PWM counter)
 //  pwm ... index of used PWM slice (0..7)

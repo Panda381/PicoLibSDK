@@ -14,12 +14,6 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-// load byte from program memory
-#define PROGBYTE()	cpu->readmem(cpu->pc++)
-
-// load word from program memory to result number
-#define PROGWORD(res)	{ u8 temp = PROGBYTE(); res = temp | ((u16)PROGBYTE() << 8); }
-
 // INC var (var = 8-bit variable)
 //	C ... not affected
 //	P ... parity
@@ -48,12 +42,12 @@
 		if ((temp & 0x0f) != 0x0f) f |= I8080_AC;	\
 		cpu->f = f; }
 
-// ADD HL,reg (reg = double register name)
+// ADD HL,val (val = 16-bit value)
 //	C ... carry from bit 15
 //	other ... not affected
-#define I8080_ADD16(reg) {				\
+#define I8080_ADD16(val) {				\
 		u16 hl = cpu->hl;			\
-		u16 nn = cpu->reg;			\
+		u16 nn = (val);				\
 		u32 nnnn = (u32)hl + nn;		\
 		cpu->hl = (u16)nnnn;			\
 		u8 f = cpu->f & ~I8080_C;		\

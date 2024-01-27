@@ -17,7 +17,7 @@ Non-standard extensions:
 	'A'			- ASCII character can be used as data byte
 	$12, 0x12, 12h - hex data byte can be entered with $, 0x or H
 	par,par2	- parameters can be separated with comma
-	= a,b		- constant data can have 1 of 2 bytes
+	= a,b		- constant data can have 1 or 2 bytes
 
 Instruction alternatives:
 	JCN 0001,a ... JCN 1,a .... JCN TZ,a ... JT a .... TEST signal is active (TEST = 0)

@@ -22,13 +22,29 @@
 //#define USE_UART_STDIO	1		// use UART stdio (UartPrint function)
 
 #define USE_EMU			1		// use emulators
+#define USE_EMU_I4004		1		// use I4004 CPU emulator
+//#define USE_EMU_I4040		1		// use I4040 CPU emulator
+//#define USE_EMU_I8008		1		// use I8008 CPU emulator
+//#define USE_EMU_I8048		1		// use I8048 CPU emulator
+//#define USE_EMU_I8052		1		// use I8051/I8052 CPU emulator
+//#define USE_EMU_I8080		1		// use I8080 CPU emulator
+//#define USE_EMU_I8085		1		// use I8085 CPU emulator
+//#define USE_EMU_I8086		1		// use I8086/I8088/I80186/I80188 CPU emulator
+//#define USE_EMU_M6502		1		// use M6502/M65C02 CPU emulator
+//#define USE_EMU_X80		1		// use Sharp X80 (LR35902) CPU emulator
 //#define USE_EMU_Z80		1		// use Z80 CPU emulator
-#define USE_EMU_I4040		1		// use I4004/I4040 CPU emulator
 
+// M6502 modifications
+//#define M6502_CPU_65C02	1		// 1=use modifications of 65C02 and later
+
+// x86 modifications
+//#define I8086_CPU_INTEL	1		// 1=use Intel vendor alternative
+//#define I8086_CPU_AMD		0		// 1=use AMD (and partially NEC) vendor alternative
+//#define I8086_CPU_8088	0		// 1=use 8088/80188 timings limitations
+//#define I8086_CPU_80186	0		// 1=use 80186 extension
 
 //#define USE_ORIGSDK		1		// include interface of original-SDK
 //#define USE_SCREENSHOT	1		// use screen shots
-
 //#define USE_USBPAD		1		// simulate keypad with USB keyboard
 
 //#define USE_USBPORT		1		// use USB Mini-Port (sdk_usbport.c, sdk_usbport.h)

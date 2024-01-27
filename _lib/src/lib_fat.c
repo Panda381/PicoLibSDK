@@ -22,6 +22,7 @@
 #include "../inc/lib_stream.h"
 #include "../inc/lib_text.h"
 #include "../inc/lib_print.h"
+#include "../inc/lib_crc.h"
 
 // disk buffer
 ALIGNED u8 DiskBuf[SECT_SIZE];
@@ -72,6 +73,9 @@ const char FSNoNameText[] = "NO NAME    ";
 const char FSFat12Text[] = "FAT12   ";
 const char FSFat16Text[] = "FAT16   ";
 const char FSFat32Text[] = "FAT32   ";
+
+// boot loader resident segment
+u8 __attribute__((section(".bootloaderdata"))) LoaderData[BOOTLOADER_DATA];
 
 // check if cluster is valid
 Bool Disk_ClustValid(u32 clust)
@@ -2951,6 +2955,94 @@ Bool FileCheckExt(sFileInfo* fi, const char* ext)
 	}
 
 	return True;
+}
+
+// check application in Flash memory (application starts at address APPSTART = XIP_BASE + BOOTLOADER_SIZE)
+//   applen ... pointer to get application length, without header (NULL = not needed)
+//   proglen ... pointer to get total program length, with boot loader and with header (NULL = not needed)
+//   appcrc ... pointer to get application CRC (NULL = not needed)
+Bool CheckApp(u32* applen, u32* proglen, u32* appcrc)
+{
+	// get pointer to application info header
+	const sAppInfo* app = APPINFO;
+
+	// check header base
+	if (app->magic != APPINFO_MAGIC) return False; // check magic "PPAD"
+
+	// get application size (without header)
+	int len = app->len;
+	if ((len < 4) || (len > 2*1024*1024)) return False;
+	if (applen != NULL) *applen = len;
+
+	// program length (with boot loader and with header)
+	if (proglen != NULL) *proglen = (u32)&app->data[0] - XIP_BASE + len;
+
+	// check application CRC
+	u32 crc = Crc32ADMA(&app->data[0], len);
+	if (appcrc != NULL) *appcrc = crc;
+	return crc == app->crc;
+}
+
+// check boot loader data (boot loader data are at address LOADERDATA)
+Bool CheckLoaderData()
+{
+	// get pointer to loader data
+	sLoaderData* ld = LOADERDATA;
+
+	// check length of name
+	if ((ld->lastnamelen < 1) || (ld->lastnamelen > 8)) return False;
+
+	// check CRC
+	return ld->crc == Crc32ADMA(ld, 20);
+}
+
+// check application home path (returns pointer to sAppPath, or NULL on error)
+const sAppPath* CheckAppPath()
+{
+	// check application in Flash memory (and get application length)
+	u32 applen;
+	if (!CheckApp(&applen, NULL, NULL)) return NULL;
+
+	// get pointer to application home path structure
+	applen += (u32)&APPINFO->data[0];
+	applen = (applen + 255) & ~0xff;
+	const sAppPath* ap = (const sAppPath*)applen;
+
+	// check
+	if (ap->magic != APPPATH_MAGIC) return NULL;
+	u8 len = ap->pathlen;
+	if ((len < 1) || (len > APPPATH_PATHMAX)) return NULL;
+	if (ap->path[len] != 0) return NULL;
+	if (ap->crc != Crc32ADMA(&ap->magic, len + 4 + 1)) return NULL;
+
+	return ap;
+}
+
+// get application home path
+//   path ... buffer of size APPPATH_PATHMAX+1 (= 248) to get path with terminating 0
+//   def ... default path (used on error)
+// Sets home path as current directory. Returns length of the path.
+int GetHomePath(char* path, const char* def)
+{
+	int len;
+
+	// check application home path
+	const sAppPath* ap = CheckAppPath();
+	if (ap != NULL)
+	{
+		len = ap->pathlen;
+		memcpy(path, ap->path, len+1);
+	}
+	else
+	{
+		// use default path
+		len = StrLen(def);
+		memcpy(path, def, len+1);
+	}
+
+	// set current directory
+	SetDir(path);
+	return len;
 }
 
 #endif // USE_FAT	// use FAT file system (lib_fat.c, lib_fat.h)

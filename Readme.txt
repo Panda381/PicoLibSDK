@@ -1,9 +1,9 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
 ==================================================================
-SDK Programmer's Guide, Version 1.10, October 2023
+SDK Programmer's Guide, Version 1.11, January 2024
 
-Copyright (c) 2023 Miroslav Nemecek
+Copyright (c) 2023-2024 Miroslav Nemecek
 
 Panda38@seznam.cz
 hardyplotter2@gmail.com
@@ -802,7 +802,9 @@ History of versions
 12/05/2023 version 1.09: ADPCM sound compression, original-SDK interface.
 12/30/2023 version 1.10: Intel 4004/4040 CPU emulator, DVI (HDMI) display,
 	DVIVGA (HDMI with VGA) display, file selector
-
+01/27/2024 version 1.11: loader passes home path to the application; CPU
+	emulators: I4004, I4040, I8008, I8048, I8052, I8080, I8085, I8086,
+	I8088, I80186, I80188, M6502, M65C02, X80, Z80.
 
 Missing and @TODO
 -----------------

@@ -16,9 +16,13 @@
 
 #include "../../global.h"	// globals
 
+#include "../inc/sdk_multicore.h"
+
+// Core 1 stack (located in reserved section stack1)
+u32 __attribute__((section(".stack1"))) Core1Stack[CORE1_STACK_SIZE/4];
+
 #if USE_MULTICORE	// use Multicore (sdk_multicore.c, sdk_multicore.h)
 
-#include "../inc/sdk_multicore.h"
 #include "../inc/sdk_cpu.h"
 #include "../inc/sdk_fifo.h"
 #include "../inc/sdk_irq.h"
@@ -26,9 +30,6 @@
 #include "../inc/sdk_reset.h"
 
 volatile Bool Core1IsRunning = False;	// flag that core 1 is running
-
-// Core 1 stack (located in reserved section stack1)
-u32 __attribute__((section(".stack1"))) Core1Stack[CORE1_STACK_SIZE/4];
 
 // Core1 trampoline to jump to Core1Wrapper
 static void __attribute__ ((naked)) Core1Trampoline()

@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                            I4004/I4040 CPU Emulator
+//                               I4040 CPU Emulator
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
@@ -14,10 +14,11 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#if USE_EMU_I4040		// use I4004/I4040 CPU emulator
+#if USE_EMU_I4040		// use I4040 CPU emulator
 
 // keyboard table (convert bit to bit index)
-const u8 I4040_KBPTab[16] = {
+//  Keep this table in RAM (without "const") for faster access.
+u8 I4040_KBPTab[16] = {
 	// only 1=0001b, 2=0010b, 4=0100b and 8=1000b are valid values
 	// 0  1  2   3  4   5   6   7  8   9  10  11  12  13  14  15
 	   0, 1, 2, 15, 3, 15, 15, 15, 4, 15, 15, 15, 15, 15, 15, 15 };
@@ -31,28 +32,22 @@ void I4040_Reset(sI4040* cpu)
 	cpu->pc = 0;		// program counter
 	cpu->src = 0;		// SRC send register
 	cpu->ram_bank = 0;	// RAM bank
-
 	cpu->stack_top = 0;	// stack top
 	cpu->reg_bank = 0;	// register bank selection
-
 	cpu->a = 0;		// accumulator
 	cpu->carry = 0;		// carry flag
 	cpu->halted = 0;	// halted
-	cpu->ie = 0;		// interrupt disable
-
+	cpu->ie = 0;		// interrupt disabled
 	cpu->rom_bank = 0;	// ROM bank
 	cpu->rom_delay = 0;	// ROM selection delay
 	cpu->firstlast = 0;	// first/last nibble of RPM/WPM
-
 	cpu->intreq = 0;	// clear interrupt request
 	cpu->intack = 0;	// clear interrupt acknowledge
 	cpu->stop = 0;		// stop request
 
 	int i;
 	for (i = 0; i < I4040_STACKNUM; i++) cpu->stack[i] = 0;	// stack
-
 	for (i = 0; i < I4040_REGNUM; i++) cpu->reg[i] = 0; // registers
-
 	for (i = 0; i < I4040_RAMDATASIZE; i++) cpu->data[i] = 0; // RAM data
 	for (i = 0; i < I4040_RAMSTATSIZE; i++) cpu->stat[i] = 0; // RAM status
 }
@@ -67,7 +62,6 @@ INLINE void I4040_RomDelay(sI4040* cpu)
 		if (del > 0)
 		{
 			del--;
-			cpu->rom_delay = del;
 			if (del == 0) cpu->rom_bank = 1;
 		}
 
@@ -75,14 +69,15 @@ INLINE void I4040_RomDelay(sI4040* cpu)
 		else
 		{
 			del++;
-			cpu->rom_delay = del;
 			if (del == 0) cpu->rom_bank = 0;
 		}
+
+		cpu->rom_delay = del;
 	}
 }
 
 // get next program byte, increment PC and shift time
-INLINE u8 I4040_ProgByte(sI4040* cpu)
+u8 NOFLASH(I4040_ProgByte)(sI4040* cpu)
 {
 	// read program byte
 	u8 n = cpu->readrom(cpu->pc, cpu->rom_bank);
@@ -95,13 +90,14 @@ INLINE u8 I4040_ProgByte(sI4040* cpu)
 
 	// ROM selection delay
 	I4040_RomDelay(cpu);
-
 	return n;
 }
 
 // execute program (start or continue, until "stop" request)
-//  C code size in RAM: 3144 bytes (optimization -Os)
-void NOFLASH(I4040_Exec)(sI4040* cpu)
+// Size of code of this function: 1460 code + 1016 jump table = 2476 bytes
+// CPU loading at 740 kHz on 133.2 MHz: used 4-5%, max. 4-6%
+// CPU loading at 5 MHz on 120 MHz: used 43-52%, max. 45-52%
+void FASTCODE NOFLASH(I4040_Exec)(sI4040* cpu)
 {
 	u8 op;
 
@@ -239,128 +235,44 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 			}
 			break;
 
-		// JCN 0000,a ... no jump
+		// JCN cc,a
 		case 0x10:
-			I4040_ProgByte(cpu);
-			break;
-
-		// JCN 0001,a ... JT a ... TEST signal is 0
 		case 0x11:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if (cpu->gettest() == 0) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 0010,a ... JC a ... carry is set
 		case 0x12:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if (cpu->carry != 0) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 0011,a ... carry is set || TEST signal is 0
 		case 0x13:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if ((cpu->gettest() == 0) || (cpu->carry != 0)) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 0100,a ... JZ a ... ACC is zero
 		case 0x14:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if (cpu->a == 0) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 0101,a ... ACC is zero || TEST signal is 0
 		case 0x15:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if ((cpu->gettest() == 0) || (cpu->a == 0)) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 0110,a ... ACC is zero || carry is set
 		case 0x16:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if ((cpu->carry != 0) || (cpu->a == 0)) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 0111,a ... ACC is zero || TEST signal is 0 || carry is set
 		case 0x17:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if ((cpu->gettest() == 0) || (cpu->carry != 0) || (cpu->a == 0)) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 1000,a ... JR a ... jump unconditional
 		case 0x18:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				cpu->pcl = n;
-			}
-			break;
-
-		// JCN 1001,a ... JNT a ... TEST signal is not 0
 		case 0x19:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if (cpu->gettest() != 0) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 1010,a ... JNC a ... carry is not set
 		case 0x1A:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if (cpu->carry == 0) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 1011,a ... carry is not set && TEST signal is not 0
 		case 0x1B:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if ((cpu->gettest() != 0) && (cpu->carry == 0)) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 1100,a ... JNZ a ... ACC is not zero
 		case 0x1C:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if (cpu->a != 0) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 1101,a ... ACC is not zero && TEST signal is not 0
 		case 0x1D:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if ((cpu->gettest() != 0) && (cpu->a != 0)) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 1110,a ... ACC is not zero && carry is not set
 		case 0x1E:
-			{
-				u8 n = I4040_ProgByte(cpu);
-				if ((cpu->carry == 0) && (cpu->a != 0)) cpu->pcl = n;
-			}
-			break;
-
-		// JCN 1111,a ... ACC is not zero && TEST signal is not 0 && carry is not set
 		case 0x1F:
 			{
+				// prepare condition
+				Bool cond = False;
+				if ((op & B0) != 0) if (cpu->gettest() == 0) cond = True;
+				if ((op & B1) != 0) if (cpu->carry != 0) cond = True;
+				if ((op & B2) != 0) if (cpu->a == 0) cond = True;
+
+				// load jump address
 				u8 n = I4040_ProgByte(cpu);
-				if ((cpu->gettest() != 0) && (cpu->carry == 0) && (cpu->a != 0)) cpu->pcl = n;
+
+				// jump
+				if ((op & B3) == 0)
+				{
+					// positive condition
+					if (cond) cpu->pcl = n;
+				}
+				else
+				{
+					// negative condition
+					if (!cond) cpu->pcl = n;
+				}
 			}
 			break;
 
@@ -375,7 +287,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		case 0x2E:
 			{
 				u8 n = I4040_ProgByte(cpu);
-				u8 r = op & 0x0e;
+				u8 r = op - 0x20;
 				if (r < 8) r += cpu->reg_bank*16;
 				cpu->reg[r] = n >> 4;
 				cpu->reg[r+1] = n & 0x0f;
@@ -392,7 +304,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		case 0x2D:
 		case 0x2F:
 			{
-				u8 r = op & 0x0e;
+				u8 r = op - 0x21;
 				if (r < 8) r += cpu->reg_bank*16;
 				cpu->src = (cpu->reg[r] << 4) | cpu->reg[r+1];
 			}
@@ -410,7 +322,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 			{
 				u8 r = cpu->reg_bank*16; // select register bank
 				u16 a = (cpu->pc & 0xf00) | (cpu->reg[r] << 4) | cpu->reg[r+1]; // address in ROM
-				u8 r2 = op & 0x0e;
+				u8 r2 = op - 0x30;
 				if (r2 < 8) r2 += r;
 				u8 n = cpu->readrom(a, cpu->rom_bank); // read program byte
 				cpu->sync.clock += I4040_CLOCKMUL*8; // shift clock counter
@@ -430,7 +342,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		case 0x3D:
 		case 0x3F:
 			{
-				u8 r = op & 0x0e;
+				u8 r = op - 0x31;
 				if (r < 8) r += cpu->reg_bank*16;
 				cpu->pc = (cpu->pc & 0xf00) | (cpu->reg[r] << 4) | cpu->reg[r+1];
 			}
@@ -453,7 +365,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		case 0x4D:
 		case 0x4E:
 		case 0x4F:
-			cpu->pc = ((u16)(op & 0x0f) << 8) | I4040_ProgByte(cpu);
+			cpu->pc = ((u16)(op - 0x40) << 8) | I4040_ProgByte(cpu);
 			break;
 
 		// JMS a (CALL a) ... call subroutine a
@@ -477,7 +389,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 				u8 n = I4040_ProgByte(cpu); // read destination address LOW
 				cpu->stack[cpu->stack_top] = cpu->pc; // save current program counter
 				cpu->stack_top = (cpu->stack_top + 1) & I4040_STACKMASK; // increase stack pointer
-				cpu->pc = ((u16)(op & 0x0f) << 8) | n; // new program counter (destination address)
+				cpu->pc = ((u16)(op - 0x50) << 8) | n; // new program counter (destination address)
 			}
 			break;
 
@@ -499,7 +411,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		case 0x6E:
 		case 0x6F:
 			{
-				u8 r = op & 0x0f;
+				u8 r = op - 0x60;
 				if (r < 8) r += cpu->reg_bank*16; // register index
 				u8* pr = &cpu->reg[r]; // pointer to the register
 				*pr = (*pr + 1) & 0x0f; // increment register
@@ -524,7 +436,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		case 0x7E:
 		case 0x7F:
 			{
-				u8 r = op & 0x0f;
+				u8 r = op - 0x70;
 				if (r < 8) r += cpu->reg_bank*16; // register index
 				u8* pr = &cpu->reg[r]; // pointer to the register
 				u8 d = (*pr + 1) & 0x0f; // increment register
@@ -552,7 +464,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		case 0x8E:
 		case 0x8F:
 			{
-				u8 r = op & 0x0f;
+				u8 r = op - 0x80;
 				if (r < 8) r += cpu->reg_bank*16; // register index
 				u8* pr = &cpu->reg[r]; // pointer to the register
 				u8 n = cpu->a + *pr + cpu->carry; // sum
@@ -579,7 +491,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		case 0x9E:
 		case 0x9F:
 			{
-				u8 r = op & 0x0f;
+				u8 r = op - 0x90;
 				if (r < 8) r += cpu->reg_bank*16; // register index
 				u8* pr = &cpu->reg[r]; // pointer to the register
 				u8 n = cpu->a + (*pr ^ 0x0f) + (cpu->carry ^ 1); // subtract
@@ -606,7 +518,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		case 0xAE:
 		case 0xAF:
 			{
-				u8 r = op & 0x0f;
+				u8 r = op - 0xa0;
 				if (r < 8) r += cpu->reg_bank*16; // register index
 				cpu->a = cpu->reg[r];
 			}
@@ -630,7 +542,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		case 0xBE:
 		case 0xBF:
 			{
-				u8 r = op & 0x0f;
+				u8 r = op - 0xb0;
 				if (r < 8) r += cpu->reg_bank*16; // register index
 				u8* pr = &cpu->reg[r]; // pointer to the register
 				u8 d = cpu->a;
@@ -657,7 +569,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		case 0xCE:
 		case 0xCF:
 			{
-				cpu->a = op & 0x0f; // return code
+				cpu->a = op - 0xc0; // return code
 				cpu->stack_top = (cpu->stack_top - 1) & I4040_STACKMASK; // decrease stack pointer
 				cpu->pc = cpu->stack[cpu->stack_top]; // restore program counter
 			}
@@ -680,7 +592,7 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		case 0xDD:
 		case 0xDE:
 		case 0xDF:
-			cpu->a = op & 0x0f;
+			cpu->a = op - 0xd0;
 			break;
 
 		// WRM ... write A into RAM memory
@@ -776,8 +688,6 @@ void NOFLASH(I4040_Exec)(sI4040* cpu)
 		// CLB ... clear both A and carry
 		case 0xF0:
 			cpu->a = 0;
-		// CLC continue, no break
-
 		// CLC ... clear carry
 		case 0xF1:
 			cpu->carry = 0;

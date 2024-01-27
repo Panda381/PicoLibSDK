@@ -16,9 +16,6 @@
 
 #include "../include.h"
 
-// boot loader resident segment
-u8 __attribute__((section(".bootloaderdata"))) LoaderData[BOOTLOADER_DATA];
-
 // custom frame buffer - used as buffer to load UF2 program into RAM
 ALIGNED FRAMETYPE FrameBuf[CUSTOM_FRAMEBUF_SIZE];
 
@@ -135,31 +132,36 @@ void SaveBootData()
 {
 	if ((uint)FileCur < (uint)FileNum)
 	{
-		sFileDesc* fd;
-		fd = &FileDesc[FileCur];
-		LoaderData[0] = fd->len;
-		LoaderData[1] = fd->attr & ATTR_DIR;
-		memcpy(LoaderData+2, fd->name, 8);
-		SetDir(Path);
-		*(u32*)&LoaderData[12] = CurDirClust;
-		*(u32*)&LoaderData[16] = FileTop;
-		*(u32*)&LoaderData[20] = Crc32ADMA(LoaderData, 20);
+		sFileDesc* fd = &FileDesc[FileCur]; // pointer to file descriptor
+		sLoaderData* ld = LOADERDATA; // pointer to boot loader data
+
+		// prepare base part of loader data
+		ld->lastnamelen = fd->len; // length of name of selected file
+		ld->lastnamedir = fd->attr & ATTR_DIR; // ATTR_DIR attribute of the selected file
+		memcpy(ld->lastname, fd->name, 8); // copy name of selected file
+		ld->res = 0;
+		ld->res2 = 0;
+		SetDir(Path); // set current path
+		ld->curdirclust = CurDirClust; // cluster of current directory
+		ld->filetop = FileTop; // index of first file in file window
+		ld->crc = Crc32ADMA(ld, 20); // checksum of loader data
 	}
 }
 
 // load boot loader data
 void LoadBootData()
 {
-	if (*(u32*)&LoaderData[20] == Crc32ADMA(LoaderData, 20))
+	sLoaderData* ld = LOADERDATA;
+	if (ld->crc == Crc32ADMA(ld, 20)) // check checksum of base part of loader data
 	{
-		LastNameLen = LoaderData[0];
-		LastNameDir = LoaderData[1];
-		memcpy(LastName, LoaderData+2, 8);
-		CurDirClust = *(u32*)&LoaderData[12];
-		FileTop = *(u32*)&LoaderData[16];
-		PathLen = GetDir(Path, PATHMAX);
+		LastNameLen = ld->lastnamelen; // length of name of selected file
+		LastNameDir = ld->lastnamedir; // ATTR_DIR attribute of the selected file
+		memcpy(LastName, ld->lastname, 8); // copy name of selected file
+		CurDirClust = ld->curdirclust; // cluster of current directory
+		FileTop = ld->filetop; // index of first file in file window
+		PathLen = GetDir(Path, PATHMAX); // get current directory
 	}
-	LoaderData[0] = 0;
+	ld->lastnamelen = 0; // destroy loader data
 }
 
 // display frame of file list
@@ -982,27 +984,6 @@ void Preview()
 	}
 }
 
-// check application in memory
-Bool CheckApp()
-{
-	// start of application
-	const u32* app = (const u32*)(XIP_BASE + BOOTLOADER_SIZE);
-
-	// application header
-	const u32* h = &app[48]; // 16+32 vectors
-
-	// check header base
-	if (h[0] != 0x44415050) return False; // check magic "PPAD"
-
-	// get application size
-	int len = h[1];
-	if ((len < 10) || (len > 2*1024*1024)) return False;
-
-	// check application CRC
-	u32 crc = Crc32ADMA(&app[51], len);
-	return crc == h[2];
-}
-
 // runtime terminate
 extern "C" void RuntimeTerm();
 
@@ -1278,7 +1259,7 @@ int main()
 	if (!DiskMount())
 	{
 		// cannot mount disk, try to run current application ... not if watchdog reset from application
-		if (!loader && CheckApp()) RunApp();
+		if (!loader && CheckApp(NULL, NULL, NULL)) RunApp();
 	}
 	else
 	{
@@ -1368,7 +1349,7 @@ int main()
 			case KEY_DOWN:
 #if USE_DEMOVGA
 				// restart program
-				if (KeyPressed(KEY_UP) && CheckApp())
+				if (KeyPressed(KEY_UP) && CheckApp(NULL, NULL, NULL))
 				{
 					SaveBootData();
 					RunApp();
@@ -1430,7 +1411,7 @@ int main()
 			case KEY_UP:
 #if USE_DEMOVGA
 				// restart program
-				if (KeyPressed(KEY_DOWN) && CheckApp())
+				if (KeyPressed(KEY_DOWN) && CheckApp(NULL, NULL, NULL))
 				{
 					SaveBootData();
 					RunApp();
@@ -1591,11 +1572,11 @@ int main()
 									j = BOOTLOADER_SIZE*2+32;
 									FileSeek(&PrevFile, j);
 									TempBufNum = FileRead(&PrevFile, TempBuf, 256);
-									m = 256;
-									u32* h = (u32*)&TempBuf[48*4];
+									m = 256; // offset in TempBuf
+									u32* h = (u32*)&TempBuf[48*4]; // pointer to header
 									i = h[1]; 			// application length
 									if ((TempBufNum != 256) ||	// check segment length
-										(h[0] != 0x44415050) ||	// check magix
+										(h[0] != APPINFO_MAGIC) ||	// check magic (= text "PPAD")
 										(i < 10) || (i > 2*1024*1024 - 4096 - BOOTLOADER_SIZE - 51*4)) // check program length
 									{
 										// error - incompatible program
@@ -1604,20 +1585,22 @@ int main()
 									}
 									else
 									{
-										i += 51*4;
-										n = i;
-										k = BOOTLOADER_SIZE;
+										i += 51*4; // add application header (vector table) = total length of data to process
+										n = i; // save total data size for Progress purpose
+										k = BOOTLOADER_SIZE; // destinaton address in flash
+										i -= 256; // first page processed
 
 										// loading program into memory
 										do {
 											// load next program block
-											while ((m <= TEMPBUF-256) && (i > 0))
+											while ((m <= TEMPBUF-256) && (i > 0)) // while there is space in the temp buffer and while there is some data left 
 											{
-												j += 512;
-												FileSeek(&PrevFile, j);
-												TempBufNum = FileRead(&PrevFile, &TempBuf[m], 256);
-												m += 256;
-												i -= 256;
+												j += 512; // shift pointer in the file
+												FileSeek(&PrevFile, j); // seek file pointer
+												TempBufNum = FileRead(&PrevFile, &TempBuf[m], 256); // load next page into temp buffer
+												if (TempBufNum == 0) break;
+												m += 256; // shift offset in temp buffer
+												i -= 256; // count remaining data left
 											}
 
 											// progress bar
@@ -1633,8 +1616,21 @@ int main()
 
 										FileClose(&PrevFile);
 
+										// write application home path
+										i = PathLen;
+										if ((k <= 2*1024*1024 - 4096 - 256) && (i <= APPPATH_PATHMAX))
+										{
+											sAppPath* ap = (sAppPath*)TempBuf;
+											memset(ap, 0xff, 256);
+											ap->magic = APPPATH_MAGIC; // magic
+											ap->pathlen = i; // path length
+											memcpy(ap->path, Path, i+1);
+											ap->crc = Crc32ADMA(&ap->magic, i + 4 + 1);
+											FlashProgram(k, (const u8*)TempBuf, 256);
+										}
+
 										// try to run the application
-										if (CheckApp())
+										if (CheckApp(NULL, NULL, NULL))
 										{
 											SaveBootData();
 											RunApp();
@@ -1685,7 +1681,7 @@ int main()
 #ifdef KEY_Y
 			// restart program
 			case KEY_Y:
-				if (CheckApp())
+				if (CheckApp(NULL, NULL, NULL))
 				{
 					SaveBootData();
 					RunApp();

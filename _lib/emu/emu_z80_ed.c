@@ -15,34 +15,77 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 	// switch 0xED operation code
-	switch (PROGBYTE())
+	switch (Z80_ProgByte(cpu))
 	{
 	// IN B,(C)
 	case 0x40:
-		Z80_IN(cpu->b);
+	// IN C,(C)
+	case 0x48:
+	// IN D,(C)
+	case 0x50:
+	// IN E,(C)
+	case 0x58:
+	// IN H,(C)
+	case 0x60:
+	// IN L,(C)
+	case 0x68:
+	// IN A,(C)
+	case 0x78:
+		{
+			op -= 0x40;
+			u8* rd = &cpu->reg[7 - (op >> 3)]; // destination register
+			Z80_IN(*rd);
+		}
 		cpu->sync.clock += Z80_CLOCKMUL*12;
 		break;
 
 	// OUT (C),B
 	case 0x41:
-		cpu->writeio(cpu->bc, cpu->b);
+	// OUT (C),C
+	case 0x49:
+	// OUT (C),D
+	case 0x51:
+	// OUT (C),E
+	case 0x59:
+	// OUT (C),H
+	case 0x61:
+	// OUT (C),L
+	case 0x69:
+	// OUT (C),A
+	case 0x79:
+		{
+			op -= 0x41;
+			u8* rd = &cpu->reg[7 - (op >> 3)]; // destination register
+			cpu->writeport(cpu->bc, *rd);
+		}
 		cpu->sync.clock += Z80_CLOCKMUL*12;
 		break;
 
 	// SBC HL,BC
 	case 0x42:
-		Z80_SBC16(bc);
+	// SBC HL,DE
+	case 0x52:
+	// SBC HL,HL
+	case 0x62:
+		{
+			u16* r = &cpu->dreg[3 - ((op >> 4) - 4)]; // double register
+			Z80_SBC16(*r);
+		}
 		cpu->sync.clock += Z80_CLOCKMUL*15;
 		break;
 
 	// LD (a),BC
 	case 0x43:
+	// LD (a),DE
+	case 0x53:
+	// LD (a),HL
+	case 0x63:
 		{
-			u16 nn;
-			PROGWORD(nn);	// read address -> nn
-			cpu->writemem(nn, cpu->c);
+			u16 nn = Z80_ProgWord(cpu);
+			u8* r = &cpu->reg[6 - ((op >> 3) - 8)]; // register low
+			cpu->writemem(nn, r[0]);
 			nn++;
-			cpu->writemem(nn, cpu->b);
+			cpu->writemem(nn, r[1]);
 		}
 		cpu->sync.clock += Z80_CLOCKMUL*20;
 		break;
@@ -107,32 +150,31 @@
 		cpu->sync.clock += Z80_CLOCKMUL*9;
 		break;
 
-	// IN C,(C)
-	case 0x48:
-		Z80_IN(cpu->c);
-		cpu->sync.clock += Z80_CLOCKMUL*12;
-		break;
-
-	// OUT (C),C
-	case 0x49:
-		cpu->writeio(cpu->bc, cpu->c);
-		cpu->sync.clock += Z80_CLOCKMUL*12;
-		break;
-
 	// ADC HL,BC
 	case 0x4A:
-		Z80_ADC16(bc);
+	// ADC HL,DE
+	case 0x5A:
+	// ADC HL,HL
+	case 0x6A:
+		{
+			u16* r = &cpu->dreg[3 - ((op >> 4) - 4)]; // double register
+			Z80_ADC16(*r);
+		}
 		cpu->sync.clock += Z80_CLOCKMUL*15;
 		break;
 
 	// LD BC,(a)
 	case 0x4B:
+	// LD DE,(a)
+	case 0x5B:
+	// LD HL,(a)
+	case 0x6B:
 		{
-			u16 nn;
-			PROGWORD(nn);	// read address -> nn
-			cpu->c = cpu->readmem(nn);
+			u16 nn = Z80_ProgWord(cpu);
+			u8* r = &cpu->reg[6 - ((op >> 3) - 9)]; // register low
+			r[0] = cpu->readmem(nn);
 			nn++;
-			cpu->b = cpu->readmem(nn);
+			r[1] = cpu->readmem(nn);
 		}
 		cpu->sync.clock += Z80_CLOCKMUL*20;
 		break;
@@ -145,36 +187,6 @@
 			cpu->r7 = n;
 		}
 		cpu->sync.clock += Z80_CLOCKMUL*9;
-		break;
-
-	// IN D,(C)
-	case 0x50:
-		Z80_IN(cpu->d);
-		cpu->sync.clock += Z80_CLOCKMUL*12;
-		break;
-
-	// OUT (C),D
-	case 0x51:
-		cpu->writeio(cpu->bc, cpu->d);
-		cpu->sync.clock += Z80_CLOCKMUL*12;
-		break;
-
-	// SBC HL,DE
-	case 0x52:
-		Z80_SBC16(de);
-		cpu->sync.clock += Z80_CLOCKMUL*15;
-		break;
-
-	// LD (a),DE
-	case 0x53:
-		{
-			u16 nn;
-			PROGWORD(nn);	// read address -> nn
-			cpu->writemem(nn, cpu->e);
-			nn++;
-			cpu->writemem(nn, cpu->d);
-		}
-		cpu->sync.clock += Z80_CLOCKMUL*20;
 		break;
 
 	// IM 1
@@ -206,36 +218,6 @@
 		cpu->sync.clock += Z80_CLOCKMUL*9;
 		break;
 
-	// IN E,(C)
-	case 0x58:
-		Z80_IN(cpu->e);
-		cpu->sync.clock += Z80_CLOCKMUL*12;
-		break;
-
-	// OUT (C),E
-	case 0x59:
-		cpu->writeio(cpu->bc, cpu->e);
-		cpu->sync.clock += Z80_CLOCKMUL*12;
-		break;
-
-	// ADC HL,DE
-	case 0x5A:
-		Z80_ADC16(de);
-		cpu->sync.clock += Z80_CLOCKMUL*15;
-		break;
-
-	// LD DE,(a)
-	case 0x5B:
-		{
-			u16 nn;
-			PROGWORD(nn);	// read address -> nn
-			cpu->e = cpu->readmem(nn);
-			nn++;
-			cpu->d = cpu->readmem(nn);
-		}
-		cpu->sync.clock += Z80_CLOCKMUL*20;
-		break;
-
 	// IM 2
 	case 0x5E:
 	case 0x7E:
@@ -265,36 +247,6 @@
 		cpu->sync.clock += Z80_CLOCKMUL*9;
 		break;
 
-	// IN H,(C)
-	case 0x60:
-		Z80_IN(cpu->h);
-		cpu->sync.clock += Z80_CLOCKMUL*12;
-		break;
-
-	// OUT (C),H
-	case 0x61:
-		cpu->writeio(cpu->bc, cpu->h);
-		cpu->sync.clock += Z80_CLOCKMUL*12;
-		break;
-
-	// SBC HL,HL
-	case 0x62:
-		Z80_SBC16(hl);
-		cpu->sync.clock += Z80_CLOCKMUL*15;
-		break;
-
-	// LD (a),HL
-	case 0x63:
-		{
-			u16 nn;
-			PROGWORD(nn);	// read address -> nn
-			cpu->writemem(nn, cpu->l);
-			nn++;
-			cpu->writemem(nn, cpu->h);
-		}
-		cpu->sync.clock += Z80_CLOCKMUL*20;
-		break;
-
 	// RRD
 	case 0x67:
 		{
@@ -317,36 +269,6 @@
 			cpu->f = f;
 		}
 		cpu->sync.clock += Z80_CLOCKMUL*18;
-		break;
-
-	// IN L,(C)
-	case 0x68:
-		Z80_IN(cpu->l);
-		cpu->sync.clock += Z80_CLOCKMUL*12;
-		break;
-
-	// OUT (C),L
-	case 0x69:
-		cpu->writeio(cpu->bc, cpu->l);
-		cpu->sync.clock += Z80_CLOCKMUL*12;
-		break;
-
-	// ADC HL,HL
-	case 0x6A:
-		Z80_ADC16(hl);
-		cpu->sync.clock += Z80_CLOCKMUL*15;
-		break;
-
-	// LD HL,(a)
-	case 0x6B:
-		{
-			u16 nn;
-			PROGWORD(nn);	// read address -> nn
-			cpu->l = cpu->readmem(nn);
-			nn++;
-			cpu->h = cpu->readmem(nn);
-		}
-		cpu->sync.clock += Z80_CLOCKMUL*20;
 		break;
 
 	// RLD
@@ -384,21 +306,20 @@
 
 	// OUT (C),0
 	case 0x71:
-		cpu->writeio(cpu->bc, 0);
+		cpu->writeport(cpu->bc, 0);
 		cpu->sync.clock += Z80_CLOCKMUL*12;
 		break;
 
 	// SBC HL,SP
 	case 0x72:
-		Z80_SBC16(sp);
+		Z80_SBC16(cpu->sp);
 		cpu->sync.clock += Z80_CLOCKMUL*15;
 		break;
 
 	// LD (a),SP
 	case 0x73:
 		{
-			u16 nn;
-			PROGWORD(nn);	// read address -> nn
+			u16 nn = Z80_ProgWord(cpu);
 			cpu->writemem(nn, cpu->spl);
 			nn++;
 			cpu->writemem(nn, cpu->sph);
@@ -406,29 +327,16 @@
 		cpu->sync.clock += Z80_CLOCKMUL*20;
 		break;
 
-	// IN A,(C)
-	case 0x78:
-		Z80_IN(cpu->a);
-		cpu->sync.clock += Z80_CLOCKMUL*12;
-		break;
-
-	// OUT (C),A
-	case 0x79:
-		cpu->writeio(cpu->bc, cpu->a);
-		cpu->sync.clock += Z80_CLOCKMUL*12;
-		break;
-
 	// ADC HL,SP
 	case 0x7A:
-		Z80_ADC16(sp);
+		Z80_ADC16(cpu->sp);
 		cpu->sync.clock += Z80_CLOCKMUL*15;
 		break;
 
 	// LD SP,(a)
 	case 0x7B:
 		{
-			u16 nn;
-			PROGWORD(nn);	// read address -> nn
+			u16 nn = Z80_ProgWord(cpu);
 			cpu->spl = cpu->readmem(nn);
 			nn++;
 			cpu->sph = cpu->readmem(nn);
@@ -509,7 +417,7 @@
 	// INI
 	case 0xA2:
 		{
-			u8 n = cpu->readio(cpu->bc);
+			u8 n = cpu->readport(cpu->bc);
 
 			u16 hl = cpu->hl;
 			cpu->writemem(hl, n);
@@ -549,7 +457,7 @@
 			u8 b = cpu->b - 1;
 			cpu->b = b;
 
-			cpu->writeio(cpu->bc, n);
+			cpu->writeport(cpu->bc, n);
 
 			//	C ... set if ((n + L) > 255)
 			//	N ... bit 7 of n
@@ -643,7 +551,7 @@
 	// IND
 	case 0xAA:
 		{
-			u8 n = cpu->readio(cpu->bc);
+			u8 n = cpu->readport(cpu->bc);
 
 			u16 hl = cpu->hl;
 			cpu->writemem(hl, n);
@@ -683,7 +591,7 @@
 			u8 b = cpu->b - 1;
 			cpu->b = b;
 
-			cpu->writeio(cpu->bc, n);
+			cpu->writeport(cpu->bc, n);
 
 			//	C ... set if ((n + L) > 255)
 			//	N ... bit 7 of n
@@ -791,7 +699,7 @@
 	// INIR
 	case 0xB2:
 		{
-			u8 n = cpu->readio(cpu->bc);
+			u8 n = cpu->readport(cpu->bc);
 
 			u16 hl = cpu->hl;
 			cpu->writemem(hl, n);
@@ -837,7 +745,7 @@
 			u8 b = cpu->b - 1;
 			cpu->b = b;
 
-			cpu->writeio(cpu->bc, n);
+			cpu->writeport(cpu->bc, n);
 
 			//	C ... set if ((n + L) > 255)
 			//	N ... bit 7 of n
@@ -951,7 +859,7 @@
 	// INDR
 	case 0xBA:
 		{
-			u8 n = cpu->readio(cpu->bc);
+			u8 n = cpu->readport(cpu->bc);
 
 			u16 hl = cpu->hl;
 			cpu->writemem(hl, n);
@@ -997,7 +905,7 @@
 			u8 b = cpu->b - 1;
 			cpu->b = b;
 
-			cpu->writeio(cpu->bc, n);
+			cpu->writeport(cpu->bc, n);
 
 			//	C ... set if ((n + L) > 255)
 			//	N ... bit 7 of n

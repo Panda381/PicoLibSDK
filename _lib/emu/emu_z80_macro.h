@@ -14,12 +14,6 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-// load byte from program memory
-#define PROGBYTE()	cpu->readmem(cpu->pc++)
-
-// load word from program memory to result number
-#define PROGWORD(res)	{ u8 temp = PROGBYTE(); res = temp | ((u16)PROGBYTE() << 8); }
-
 // INC var (var = 8-bit variable)
 //	C ... not affected
 //	N ... reset
@@ -59,7 +53,7 @@
 		if ((temp & 0x0f) == 0x0f) f |= Z80_H;	\
 		cpu->f = f; }
 
-// ADD reg1,reg2 (reg1,reg2 = double register name)
+// ADD var,val (var = 16-bit variable, val = 16-bit value)
 //	C ... carry from bit 15
 //	N ... reset
 //	PV ... not affected
@@ -68,11 +62,11 @@
 //	Y ... copy from result HIGH
 //	Z ... not affected
 //	S ... not affected
-#define Z80_ADD16(reg1, reg2) {					\
-		u16 nn = cpu->reg1;				\
-		u16 nn2 = cpu->reg2;				\
+#define Z80_ADD16(var, val) {					\
+		u16 nn = (var);					\
+		u16 nn2 = (val);				\
 		u32 nnnn = (u32)nn + nn2;			\
-		cpu->reg1 = (u16)nnnn;				\
+		(var) = (u16)nnnn;				\
 		u8 f = cpu->f & (Z80_PV | Z80_Z | Z80_S);	\
 		f |= ((nnnn ^ nn ^ nn2) >> 8) & Z80_H;		\
 		f |= (nnnn >> 8) & (Z80_X | Z80_Y);		\
@@ -407,6 +401,7 @@
 		u8 temp = (val) & BIT(bit);		\
 		u8 f = cpu->f & Z80_C;			\
 		if (temp == 0) f |= Z80_Z | Z80_PV;	\
+		f |= Z80_H;				\
 		f |= temp & (Z80_S | Z80_X | Z80_Y);	\
 		cpu->f = f; }
 
@@ -420,13 +415,13 @@
 //	Z ... set if result is 0
 //	S ... copy from result
 #define Z80_IN(reg) {					\
-		u8 temp = cpu->readio(cpu->bc);		\
+		u8 temp = cpu->readport(cpu->bc);	\
 		reg = temp;				\
 		u8 f = cpu->f & Z80_C;			\
 		f |= Z80_FlagParTab[temp];		\
 		cpu->f = f; }
 
-// SBC HL,reg (reg = double register name)
+// SBC HL,reg (val = 16-bit value)
 //	C ... borrow from bit 15
 //	N ... set
 //	PV ... set if overflow
@@ -435,9 +430,9 @@
 //	Y ... copy from result HIGH
 //	Z ... set if zero
 //	S ... copy from result HIGH
-#define Z80_SBC16(reg) {					\
+#define Z80_SBC16(val) {					\
 		u16 nn = cpu->hl;				\
-		u16 nn2 = cpu->reg;				\
+		u16 nn2 = (val);				\
 		u32 nnnn = (u32)nn - nn2 - (cpu->f & Z80_C);	\
 		u32 xor = nn ^ nn2 ^ nnnn;			\
 		u8 f = (xor >> 8) & Z80_H;			\
@@ -450,7 +445,7 @@
 		f |= (nn >> 8) & (Z80_S | Z80_X | Z80_Y);	\
 		cpu->f = f; }
 
-// ADC HL,reg (reg = double register name)
+// ADC HL,reg (val = 16-bit value)
 //	C ... carry from bit 15
 //	N ... reset
 //	PV ... set if overflow
@@ -459,9 +454,9 @@
 //	Y ... copy from result HIGH
 //	Z ... set if zero
 //	S ... copy from result HIGH
-#define Z80_ADC16(reg) {					\
+#define Z80_ADC16(val) {					\
 		u16 nn = cpu->hl;				\
-		u16 nn2 = cpu->reg;				\
+		u16 nn2 = (val);				\
 		u32 nnnn = (u32)nn + nn2 + (cpu->f & Z80_C);	\
 		u32 xor = nn ^ nn2 ^ nnnn;			\
 		u8 f = (xor >> 8) & Z80_H;			\

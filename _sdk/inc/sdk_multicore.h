@@ -14,6 +14,10 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+// Core 1 stack (located in reserved section stack1)
+#define CORE1_STACK_SIZE	(0x1000-BOOTLOADER_DATA) // core 1 stack size (= size of .stack1 section)
+extern u32 __attribute__((section(".stack1"))) Core1Stack[CORE1_STACK_SIZE/4];
+
 #if USE_MULTICORE	// use Multicore (sdk_multicore.c, sdk_multicore.h)
 
 #ifndef _SDK_MULTICORE_H
@@ -29,12 +33,8 @@ extern "C" {
 
 typedef void (*pCore1Fnc)();			// core 1 exec function (can exit to stop core 1)
 
-#define CORE1_STACK_SIZE	(0x1000-32)	// core 1 stack size (= size of .stack1 section)
 
 extern volatile Bool Core1IsRunning;	// flag that core 1 is running
-
-// Core 1 stack (located in reserved section stack1)
-extern u32 __attribute__((section(".stack1"))) Core1Stack[CORE1_STACK_SIZE/4];
 
 // reset CPU core 1 (core 1 will send '0' to the FIFO when done)
 void Core1Reset(void);

@@ -645,7 +645,7 @@ by VGA driver rendering service.
 #endif
 
 #define BOOTLOADER_SIZE	0x8000		// size of boot loader
-#define BOOTLOADER_DATA	32		// boot loader resident data
+#define BOOTLOADER_DATA		32	// size of boot loader resident data
 
 #ifndef USB_DEV_CDC_RX_BUFSIZE
 #define USB_DEV_CDC_RX_BUFSIZE	256	// USB CDC device RX buffer size

@@ -1,0 +1,336 @@
+usage: ASL.EXE [options] [file] [options] ...
+
+options:
+  -p                   : share file formatted for Pascal
+  -c                   : share file formatted for C
+  -a                   : share file formatted for AS
+  -o <name>            : change name of code file
+  -olist <nname>       : change name of list file
+  -shareout <nname>    : change name of share file
+  -q, -quiet           : silent operation
+  -cpu <name>          : set target processor
+                         ('?' or 'list' to list available ones and exit)
+  -alias <new>=<old>   : define processor alias
+  -l                   : listing to console
+  -L                   : listing to file
+  -listradix <2...36>  : number system in listing
+  -i <path>[;path]...  : list of paths for include files
+  -D <symbol>[,symbol] : predefine symbols
+  -gnuerrors           : error messages in GNU format
+  -maxerrors <number>  : terminate assembly after <number> errors
+  -maxinclevel <number>: limit include nesting level to <number>
+  -Werror              : treat warnings as errors
+  -w[no-]implicit-sign-extension : enable/disable sign extension warnings
+  -version             : print version info and exit
+  -E <name>            : target file for error list,
+                         !0..!4 for standard handles
+                         default is <srcname>.LOG
+  -r                   : generate messages if repassing necessary
+  -relaxed             : allow arbitrary integer syntax by default
+  -Y                   : branch error suppression (see manual)
+  -v                   : verbose operation
+  -w                   : suppress warnings
+  +G                   : suppress code generation
+  -s                   : generate section list
+  -t                   : enable/disable parts of listing
+  -u                   : generate usage list
+  -C                   : generate cross reference list
+  -I                   : generate include nesting list
+  -g [map|atmel|noice] : write debug info
+  -A                   : compact symbol table
+  -U                   : case-sensitive operation
+  -x                   : extended error messages
+  -n                   : add error #s to error messages
+  -P                   : write macro processor output
+  -M                   : extract macro definitions
+  -h                   : use lower case in hexadecimal output
+  -help                : print help and exit
+  -splitbyte [char]    : use split byte display of numbers
+  -screenheight <#>    : set screen height for paging of '-help'
+                         and '-cpu list'
+
+source file specification may contain wildcards
+
+
+implemented processors :
+
+68008           68000           68010           68012           
+MCF5202         MCF5204         MCF5206         MCF5208         
+MCF52274        MCF52277        MCF5307         MCF5329         
+MCF5373         MCF5407         MCF5470         MCF5471         
+MCF5472         MCF5473         MCF5474         MCF5475         
+MCF51QM         68332           68340           68360           
+68020           68030           68040           
+56000           56002           56300           
+PPC403          PPC403GC        MPC505          MPC601          
+MPC821          RS6000          
+IBM5100         IBM5110         IBM5120         
+MCORE           
+XGATE           
+6800            6801            6301            6811            
+68HC11K4        
+6805            68HC05          68HC08          68HCS08         
+6809            6309            
+68HC12          68HC12X         
+S912ZVC19F0MKH  S912ZVC19F0MLF  S912ZVCA19F0MKH S912ZVCA19F0MLF 
+S912ZVCA19F0WKH S912ZVH128F2CLQ S912ZVH128F2CLL S912ZVH64F2CLQ  
+S912ZVHY64F1CLQ S912ZVHY32F1CLQ S912ZVHY64F1CLL S912ZVHY32F1CLL 
+S912ZVHL64F1CLQ S912ZVHL32F1CLQ S912ZVHL64F1CLL S912ZVHL32F1CLL 
+S912ZVFP64F1CLQ S912ZVFP64F1CLL S912ZVH128F2VLQ S912ZVH128F2VLL 
+S912ZVH64F2VLQ  S912ZVHY64F1VLQ S912ZVHY32F1VLQ S912ZVHY64F1VL  
+S912ZVHY32F1VLL S912ZVHL64F1VLQ 
+68HC16          
+68RS08          
+H8/300L         HD6413308       H8/300          HD6413309       
+H8/300H         
+HD6475328       HD6475348       HD6475368       HD6475388       
+SH7000          SH7600          SH7700          
+052001          
+6502            65SC02          65C02           65CE02          
+W65C02S         65C19           MELPS740        HUC6280         
+6502UNDOC       
+PPS-4           
+HD641016        
+65816           MELPS7700       MELPS7750       MELPS7751       
+HD614023        HD614043        HD614081        
+MELPS4500       
+M16             
+M16C            M30600M8        M30610          M30620          
+PDP-11/03       PDP-11/04       PDP-11/05       PDP-11/10       
+PDP-11/15       PDP-11/20       PDP-11/23       PDP-11/24       
+PDP-11/34       PDP-11/35       PDP-11/40       PDP-11/44       
+PDP-11/45       PDP-11/50       MICROPDP-11/53  PDP-11/55       
+PDP-11/60       PDP-11/70       MICROPDP-11/73  MICROPDP-11/83  
+PDP-11/84       MICROPDP-11/93  PDP-11/94       T-11            
+WD16            
+VAX-11/750      VAX-11/780      
+4004            4040            
+8008            8008NEW         
+8021            8022            8401            8421            
+8441            8461            8039            8048            
+80C39           80C48           8041            8042            
+80C382          MSM80C39        MSM80C48        
+87C750          8051            8052            80C320          
+80C501          80C502          80C504          80515           
+80517           80C390          80C251          80C251T         
+8096            80196           80196N          80296           
+8080            V30EMU          8085            8085UNDOC       
+8088            8086            80188           80186           
+V20             V25             V30             V33             
+V35             V40             V50             V53             
+V55             V55SC           V55PI           
+80960           
+8X300           8X305           
+2650            
+XAG1            XAG2            XAG3            
+AT90S1200       AT90S2313       AT90S2323       AT90S2333       
+AT90S2343       AT90S4414       AT90S4433       AT90S4434       
+AT90S8515       AT90C8534       AT90S8535       AT90USB646      
+AT90USB647      AT90USB1286     AT90USB1287     AT43USB355      
+ATTINY4         ATTINY5         ATTINY9         ATTINY10        
+ATTINY11        ATTINY12        ATTINY13        ATTINY13A       
+ATTINY15        ATTINY20        ATTINY24        ATTINY24A       
+ATTINY25        ATTINY26        ATTINY28        ATTINY40        
+ATTINY44        ATTINY44A       ATTINY45        ATTINY48        
+ATTINY84        ATTINY84A       ATTINY85        ATTINY87        
+ATTINY88        ATTINY102       ATTINY104       ATTINY167       
+ATTINY261       ATTINY261A      ATTINY43U       ATTINY441       
+ATTINY461       ATTINY461A      ATTINY828       ATTINY841       
+ATTINY861       ATTINY861A      ATTINY1634      ATTINY2313      
+ATTINY2313A     ATTINY4313      ATMEGA48        ATMEGA8         
+ATMEGA8515      ATMEGA8535      ATMEGA88        ATMEGA8U2       
+ATMEGA16        ATMEGA161       ATMEGA162       ATMEGA163       
+ATMEGA164       ATMEGA165       ATMEGA168       ATMEGA169       
+ATMEGA16U2      ATMEGA16U4      ATMEGA32        ATMEGA323       
+ATMEGA324       ATMEGA325       ATMEGA3250      ATMEGA328       
+ATMEGA329       ATMEGA3290      ATMEGA32U2      ATMEGA32U4      
+ATMEGA32U6      ATMEGA406       ATMEGA64        ATMEGA640       
+ATMEGA644       ATMEGA644RFR2   ATMEGA645       ATMEGA6450      
+ATMEGA649       ATMEGA6490      ATMEGA103       ATMEGA128       
+ATMEGA1280      ATMEGA1281      ATMEGA1284      ATMEGA1284RFR2  
+ATMEGA2560      ATMEGA2561      ATMEGA2564RFR2  
+AM29245         AM29243         AM29240         AM29000         
+80C166          80C167          80C167CS        
+GBZ80           LR35902         Z80             Z80UNDOC        
+Z180            RABBIT2000      Z380            
+Z8601           Z8603           Z86C03          Z86E03          
+Z86C06          Z86E06          Z86C08          Z86C30          
+Z86C21          Z86E21          Z86C31          Z86C32          
+Z86C40          Z88C00          Z88C01          EZ8             
+Z8F0113         Z8F011A         Z8F0123         Z8F012A         
+Z8F0130         Z8F0131         Z8F0213         Z8F021A         
+Z8F0223         Z8F022A         Z8F0230         Z8F0231         
+Z8F0411         Z8F0412         Z8F0413         Z8F041A         
+Z8F0421         Z8F0422         Z8F0423         Z8F042A         
+Z8F0430         Z8F0431         Z8F0811         Z8F0812         
+Z8F0813         Z8F081A         Z8F0821         Z8F0822         
+Z8F0823         Z8F082A         Z8F0830         Z8F0831         
+Z8F0880         Z8F1232         Z8F1233         Z8F1621         
+Z8F1622         Z8F1680         Z8F1681         Z8F1682         
+Z8F2421         Z8F2422         Z8F2480         Z8F3221         
+Z8F3222         Z8F3281         Z8F3282         Z8F4821         
+Z8F4822         Z8F4823         Z8F6081         Z8F6082         
+Z8F6421         Z8F6422         Z8F6423         Z8F6481         
+Z8F6482         
+Z8001           Z8002           Z8003           Z8004           
+KCPSM           
+KCPSM3          
+MICO8_05        MICO8_V3        MICO8_V31       
+96C141          93C141          
+90C141          
+87C00           87C20           87C40           87C70           
+TLCS-870/C      
+47C00           470C00          470AC00         
+97C241          
+TC9331          
+16C54           16C55           16C56           16C57           
+16C64           16C84           16C873          16C874          
+16C876          16C877          
+17C42           
+SX20            SX28            
+PMC150          PMS150          PFS154          PMC131          
+PMS130          PMS131          PMS132          PMS132B         
+PMS152          PMS154B         PMS154C         PFS173          
+PMS133          PMS134          DF69            MCS11           
+PMC232          PMC234          PMC251          PMC271          
+PMC884          PMS232          PMS234          PMS271          
+ST6200          ST6201          ST6203          ST6208          
+ST6209          ST6210          ST6215          ST6218          
+ST6220          ST6225          ST6228          ST6230          
+ST6232          ST6235          ST6240          ST6242          
+ST6245          ST6246          ST6252          ST6253          
+ST6255          ST6260          ST6262          ST6263          
+ST6265          ST6280          ST6285          
+ST7             ST7232AK1       ST7232AK2       ST7232AJ1       
+ST7232AJ2       ST72251G1       ST72251G2       ST72311J2       
+ST72311J4       ST72321BR6      ST72321BR7      ST72321BR9      
+ST72324J6       ST72324K6       ST72324J4       ST72324K4       
+ST72324J2       ST72324K2       ST72325S4       ST72325S6       
+ST72325J7       ST72325R9       ST72344K2       ST72344K4       
+ST72345C4       ST72521BR6      ST72521BM9      ST72361AR4      
+ST72361AR6      ST72361AR7      ST72361AR9      ST7FOXK1        
+ST7FOXK2        ST7LITES2Y0     ST7LITES5Y0     ST7LITE02Y0     
+ST7LITE05Y0     ST7LITE09Y0     ST7LITE10F1     ST7LITE15F1     
+ST7LITE19F1     ST7LITE10BF0    ST7LITE15BF0    ST7LITE15BF1    
+ST7LITE19BF0    ST7LITE19BF1    ST7LITE20F2     ST7LITE25F2     
+ST7LITE29F2     ST7LITE30F2     ST7LITE35F2     ST7LITE39F2     
+ST7LITE49K2     ST7MC1K2        ST7MC1K4        ST7MC2N6        
+ST7MC2S4        ST7MC2S6        ST7MC2S7        ST7MC2S9        
+ST7MC2R6        ST7MC2R7        ST7MC2R9        ST7MC2M9        
+STM8            STM8S001J3      STM8S003F3      STM8S003K3      
+STM8S005C6      STM8S005K6      STM8S007C8      STM8S103F2      
+STM8S103F3      STM8S103K3      STM8S105C4      STM8S105C6      
+STM8S105K4      STM8S105K6      STM8S105S4      STM8S105S6      
+STM8S207MB      STM8S207M8      STM8S207RB      STM8S207R8      
+STM8S207R6      STM8S207CB      STM8S207C8      STM8S207C6      
+STM8S207SB      STM8S207S8      STM8S207S6      STM8S207K8      
+STM8S207K6      STM8S208MB      STM8S208RB      STM8S208R8      
+STM8S208R6      STM8S208CB      STM8S208C8      STM8S208C6      
+STM8S208SB      STM8S208S8      STM8S208S6      STM8S903K3      
+STM8S903F3      STM8L050J3      STM8L051F3      STM8L052C6      
+STM8L052R8      STM8L001J3      STM8L101F1      STM8L101F2      
+STM8L101G2      STM8L101F3      STM8L101G3      STM8L101K3      
+STM8L151C2      STM8L151K2      STM8L151G2      STM8L151F2      
+STM8L151C3      STM8L151K3      STM8L151G3      STM8L151F3      
+STM8L151C4      STM8L151C6      STM8L151K4      STM8L151K6      
+STM8L151G4      STM8L151G6      STM8L152C4      STM8L152C6      
+STM8L152K4      STM8L152K6      STM8L151R6      STM8L151C8      
+STM8L151M8      STM8L151R8      STM8L152R6      STM8L152C8      
+STM8L152K8      STM8L152M8      STM8L152R8      STM8L162M8      
+STM8L162R8      STM8AF6366      STM8AF6388      STM8AF6213      
+STM8AF6223      STM8AF6226      STM8AF6246      STM8AF6248      
+STM8AF6266      STM8AF6268      STM8AF6269      STM8AF6286      
+STM8AF6288      STM8AF6289      STM8AF628A      STM8AF62A6      
+STM8AF62A8      STM8AF62A9      STM8AF62AA      STM8AF5268      
+STM8AF5269      STM8AF5286      STM8AF5288      STM8AF5289      
+STM8AF528A      STM8AF52A6      STM8AF52A8      STM8AF52A9      
+STM8AF52AA      STM8AL3136      STM8AL3138      STM8AL3146      
+STM8AL3148      STM8AL3166      STM8AL3168      STM8AL3L46      
+STM8AL3L48      STM8AL3L66      STM8AL3L68      STM8AL3188      
+STM8AL3189      STM8AL318A      STM8AL3L88      STM8AL3L89      
+STM8AL3L8A      STM8TL52F4      STM8TL52G4      STM8TL53C4      
+STM8TL53F4      STM8TL53G4      
+ST9020          ST9030          ST9040          ST9050          
+6804            
+32010           32015           
+320C25          320C26          320C28          
+320C30          320C31          320C40          320C44          
+320C203         320C50          320C51          320C53          
+320C541         
+32060           
+TI990/4         TI990/10        TI990/12        TMS9900         
+TMS9940         TMS9995         TMS99105        TMS99110        
+TMS70C00        TMS70C20        TMS70C40        TMS70CT20       
+TMS70CT40       TMS70C02        TMS70C42        TMS70C82        
+TMS70C08        TMS70C48        
+370C010         370C020         370C030         370C040         
+370C050         
+MSP430          MSP430X         
+TMS1000         TMS1100         TMS1200         TMS1300         
+7800            7801            7802            78C05           
+78C06           7807            7808            7809            
+7810            78C10           78C11           78C12           
+78C14           78C17           78C18           
+7566            7508            
+75402           75004           75006           75008           
+75268           75304           75306           75308           
+75312           75316           75328           75104           
+75106           75108           75112           75116           
+75206           75208           75212           75216           
+75512           75516           
+78070           
+78214           
+78310           
+784026          
+7720            7725            
+77230           
+70616           
+SC/MP           
+IMP-16C/200     IMP-16C/300     IMP-16P/200     IMP-16P/300     
+IMP-16L         IPC-16          INS8900         
+8070            
+COP410          COP420          COP440          COP444          
+COP87L84        
+SC14400         SC14401         SC14402         SC14404         
+SC14405         SC14420         SC14421         SC14422         
+SC14424         
+NS16008         NS32008         NS08032         NS16032         
+NS32016         NS32032         NS32332         NS32CG16        
+NS32532         
+ACE1101         ACE1202         
+CP-3F           M380            LP8000          
+F3850           MK3850          
+MK3870          MK3870/10       MK3870/12       MK3870/20       
+MK3870/22       MK3870/30       MK3870/32       MK3870/40       
+MK3870/42       MK3872          MK3873          MK3873/10       
+MK3873/12       MK3873/20       MK3873/22       MK3874          
+MK3875          MK3875/22       MK3875/42       MK3876          
+MK38P70/02      
+MK38CP70/02     MK38C70         
+MK38C70/10      MK38C70/20      MK97400         MK97410         
+MK97500         MK97501         MK97503         
+SYM53C810       SYM53C860       SYM53C815       SYM53C825       
+SYM53C875       SYM53C895       
+MB89190         
+MB90500         
+MN1610          MN1613          
+MN1610ALT       MN1613ALT       
+MSM5840         MSM5842         MSM58421        MSM58422        
+MSM5847         
+MSM5054         MSM5055         MSM5056         MSM6051         
+MSM6052         
+1802            1804            1805            1806            
+1804A           1805A           1806A           
+ATARI_VECTOR    
+XS1             
+1750            
+KENBAK          
+CP-1600         
+NANO            
+6100            6120            
+RXV1            RX110           RX111           RX113           
+RX130           RX210           RX21A           RX220           
+RX610           RX621           RX62N           RX630           
+RX631           RXV2            RX140           RX230           
+RX231           RX64M           RX651           RXV3            
+

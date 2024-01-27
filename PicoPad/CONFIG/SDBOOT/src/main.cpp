@@ -583,32 +583,6 @@ Bool AppOK;		// application is OK
 u32 AppLen;		// application length
 u32 AppCRC;		// application CRC
 
-// check application in memory
-Bool CheckApp()
-{
-	// start of application
-	const u32* app = (const u32*)(XIP_BASE + BOOTLOADER_SIZE);
-
-	// application header
-	const u32* h = &app[48]; // 16+32 vectors
-
-	// check header base
-	if (h[0] != 0x44415050) return False; // check magic "PPAD"
-
-	// get application size
-	int len = h[1];
-	if ((len < 10) || (len > 2*1024*1024)) return False;
-	AppLen = len;
-
-	// program length
-	ProgLen = (u32)&app[51] - XIP_BASE + len;
-
-	// check application CRC
-	u32 crc = Crc32ADMA(&app[51], len);
-	AppCRC = crc;
-	return crc == h[2];
-}
-
 // display info screen
 void DispInfoScr()
 {
@@ -644,7 +618,7 @@ void DispInfoScr()
 	y += FONTH/2;
 
 	// check application
-	AppOK = CheckApp();
+	AppOK = CheckApp(&AppLen, &ProgLen, &AppCRC);
 
 	// check program size
 	while (((u32)s > (u32)XIP_BASE) && (s[-1] == 0xff)) s--;

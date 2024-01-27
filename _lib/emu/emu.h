@@ -14,7 +14,22 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+/*
+Optimization note: For maximum emulation speed, the *_Exec() function is set to optimize
+for maximum speed using attribute "__attribute__ ((optimize("-Ofast")))" and is placed
+in RAM using the "__attribute__((section(".time_critical." #fnc)))" attribute.
+The instructions are handled by the switch(op) statement - the compiler normally uses
+a jump table, which it places in the .rodata section, which is normally placed in Flash
+memory (except for optimization -Os, which uses a table of 16-bit offsets in RAM). For
+the compiler to place the jump table in RAM, this is provided in the linker script. Only
+the common .rodata.* symbols are placed in the .rodata section. The jump table is named
+.rodata (no name) and is placed in RAM:
+ *(EXCLUDE_FILE(*libgcc.a: *libc.a:*lib_a-mem*.o *libm.a:) .rodata.*).
+*/
+
 #if USE_EMU			// use emulators
+
+#include "../../_sdk/sdk_addressmap.h"
 
 #ifndef _EMU_H
 #define _EMU_H
@@ -23,24 +38,29 @@
 extern "C" {
 #endif
 
+#ifndef EMU_DEBUG_SYNC
 #define EMU_DEBUG_SYNC	0	// 1 = debug measure time synchronization
+#endif
 
 #if EMU_DEBUG_SYNC	// 1 = debug measure time synchronization
-extern volatile Bool EmuDebClockRes;	// request to reset measure
-extern u32 EmuDebClockOld;		// old clock counter
-extern volatile u32 EmuDebClockTotal;	// sum of total clock intervals
-extern volatile u32 EmuDebClockUsed;	// sum of used clock intervals
-extern volatile s32 EmuDebClockMax;	// max used clock interval
-extern volatile u32 EmuDebClockMaxTot;	// total clock interval on max
+typedef struct {
+	u32		old;		// old clock counter
+	volatile u32	used;		// sum of used clock intervals
+	volatile u32	total;		// sum of total clock intervals
+	volatile u32	maxused;	// max used clock interval
+	volatile u32	maxtot;		// total clock interval on max
+	volatile u8	reset;		// request to reset measure
+} sEmuDebClock;
+extern sEmuDebClock EmuDebClock;
 #endif // EMU_DEBUG_SYNC
 
-// time synchronization (8 bytes)
-// - Keep compatibility of the structure with the #define version in machine code!
-// - Entries must be aligned
+// time synchronization
 typedef struct {
-	u32		clock;		// 0x00: clock counter
-	volatile u32*	timer;		// 0x04: pointer to timer
+	u32		clock;		// clock counter
+	volatile u32*	timer;		// pointer to timer
 } sEmuSync;
+
+STATIC_ASSERT(sizeof(sEmuSync) == 0x08, "Incorrect sEmuSync!");
 
 // initialize time synchronization (initialize PWM counter; returns real frequency in Hz)
 //  pwm ... index of (unused) PWM slice (0..7)
@@ -56,7 +76,7 @@ INLINE void EmuSyncStart(sEmuSync* s)
 {
 	s->clock = *s->timer;
 #if EMU_DEBUG_SYNC	// 1 = debug measure time synchronization
-	EmuDebClockRes = True; // request to reset measure
+	EmuDebClock.reset = True; // request to reset measure
 #endif
 }
 
@@ -68,35 +88,84 @@ INLINE void EmuSync(sEmuSync* s)
 
 #if EMU_DEBUG_SYNC	// 1 = debug measure time synchronization
 
+	sEmuDebClock* ec = &EmuDebClock;
+
+	u32 clockused = ec->used;
+	u32 clocktotal = ec->total;
+
 	// reset measure
-	if (EmuDebClockRes)
+	if (ec->reset)
 	{
-		EmuDebClockMax = 0;
-		EmuDebClockRes = False;
+		ec->reset = False;
+		ec->maxused = 0;
+		clockused = 0;
+		clocktotal = 0;
 	}
 	else
 	{
+		u32 clockold = ec->old;
+
 		// total
-		s16 total = (s16)(c - EmuDebClockOld);
-		EmuDebClockTotal += total;
-		s16 used = (s16)(*t - EmuDebClockOld);
-		EmuDebClockUsed += used;
+		u16 total = (u16)(c - clockold);
+		clocktotal += total;
+		u16 used = (u16)(*t - clockold);
+		clockused += used;
+
+		// overflow, rollback
+		if ((u32)used > clockused)
+		{
+			clocktotal -= total;
+			clockused -= used;
+		}
 
 		// max
-		if (used > EmuDebClockMax)
+		if (used > ec->maxused)
 		{
-			EmuDebClockMax = used;
-			EmuDebClockMaxTot = total;
+			ec->maxused = used;
+			ec->maxtot = total;
 		}
 	}
 
+	ec->used = clockused;
+	ec->total = clocktotal;
+
 	// new start interval
-	EmuDebClockOld = c;
+	ec->old = c;
 
 #endif // EMU_DEBUG_SYNC
 
 	while ((s16)(c - *t) > 0) {}
 }
+
+/*
+// get interrupt register (register of PWM, which can be used to exclusive atomic bit access between cores)
+//  Initialized to 0.
+INLINE u32 EmuInterGet(sEmuSync* s) { return s->timer[1]; }
+
+// set value of interrupt register
+INLINE void EmuInterSet(sEmuSync* s, u32 val) { s->timer[1] = val; }
+
+// set bits masked in interrupt register
+INLINE void EmuInterSetMask(sEmuSync* s, u32 mask) { RegSet(&s->timer[1], mask); }
+
+// clear bits masked in interrupt register
+INLINE void EmuInterClrMask(sEmuSync* s, u32 mask) { RegClr(&s->timer[1], mask); }
+
+// flip bits masked in interrupt register
+INLINE void EmuInterFlipMask(sEmuSync* s, u32 mask) { RegXor(&s->timer[1], mask); }
+
+// set bit in interrupt register
+INLINE void EmuInterSetBit(sEmuSync* s, int bit) { RegSet(&s->timer[1], BIT(bit)); }
+
+// clear bit in interrupt register
+INLINE void EmuInterClrBit(sEmuSync* s, int bit) { RegClr(&s->timer[1], BIT(bit)); }
+
+// flip bit in interrupt register
+INLINE void EmuInterFlipBit(sEmuSync* s, int bit) { RegXor(&s->timer[1], BIT(bit)); }
+*/
+
+// function to read byte from memory or port (without address)
+typedef u8 (*pEmuRead8)();
 
 // function to read byte from memory or port (8-bit address)
 typedef u8 (*pEmu8Read8)(u8 addr);
@@ -104,11 +173,17 @@ typedef u8 (*pEmu8Read8)(u8 addr);
 // function to read byte from memory or port (16-bit address)
 typedef u8 (*pEmu16Read8)(u16 addr);
 
+// function to read byte from memory or port (32-bit address)
+typedef u8 (*pEmu32Read8)(u32 addr);
+
 // function to read word from memory or port
-//typedef u16 (*pEmu16Read16)(u16 addr);
+typedef u16 (*pEmu16Read16)(u16 addr);
 
 // function to read dword from memory or port
 //typedef u32 (*pEmu16Read32)(u16 addr);
+
+// function to write byte to memory or port (without address)
+typedef void (*pEmuWrite8)(u8 data);
 
 // function to write byte to memory or port (8-bit address)
 typedef void (*pEmu8Write8)(u8 addr, u8 data);
@@ -116,18 +191,33 @@ typedef void (*pEmu8Write8)(u8 addr, u8 data);
 // function to write byte to memory or port (16-bit address)
 typedef void (*pEmu16Write8)(u16 addr, u8 data);
 
+// function to write byte to memory or port (32-bit address)
+typedef void (*pEmu32Write8)(u32 addr, u8 data);
+
 // function to write word to memory or port
-//typedef void (*pEmu16Write16)(u16 addr, u16 data);
+typedef void (*pEmu16Write16)(u16 addr, u16 data);
 
 // function to write dword to memory or port
 //typedef void (*pEmu16Write32)(u16 addr, u32 data);
 
-#if USE_EMU_I4040		// use I4004/I4040 CPU emulator
-#include "emu_i4040.h"		// I4004/I4040 CPU
+#if USE_EMU_I4004		// use I4004 CPU emulator
+#include "emu_i4004.h"		// I4004 CPU
+#endif
+
+#if USE_EMU_I4040		// use I4040 CPU emulator
+#include "emu_i4040.h"		// I4040 CPU
 #endif
 
 #if USE_EMU_I8008		// use I8008 CPU emulator
 #include "emu_i8008.h"		// I8008 CPU
+#endif
+
+#if USE_EMU_I8048		// use I8048 CPU emulator
+#include "emu_i8048.h"		// I8048 CPU
+#endif
+
+#if USE_EMU_I8052		// use I8052 CPU emulator
+#include "emu_i8052.h"		// I8052 CPU
 #endif
 
 #if USE_EMU_I8080		// use I8080 CPU emulator
@@ -136,6 +226,18 @@ typedef void (*pEmu16Write8)(u16 addr, u8 data);
 
 #if USE_EMU_I8085		// use I8085 CPU emulator
 #include "emu_i8085.h"		// I8085 CPU
+#endif
+
+#if USE_EMU_I8086		// use I8086/I8088 CPU emulator
+#include "emu_i8086.h"		// I8086/I8088 CPU
+#endif
+
+#if USE_EMU_M6502		// use M6502 CPU emulator
+#include "emu_m6502.h"		// M6502 CPU
+#endif
+
+#if USE_EMU_X80			// use X80 CPU emulator
+#include "emu_x80.h"		// X80 CPU
 #endif
 
 #if USE_EMU_Z80			// use Z80 CPU emulator

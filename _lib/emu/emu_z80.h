@@ -35,6 +35,10 @@
 
 #if USE_EMU_Z80			// use Z80 CPU emulator
 
+// constants
+#define Z80_CLOCKMUL	2	// clock multiplier (to achieve lower frequencies and finer timing)
+#define Z80_MEMSIZE	0x10000	// memory size
+
 // flags
 #define Z80_C_BIT		0	// carry (or borrow)
 #define Z80_N_BIT		1	// negative (1=last instruction was SUB, 0=last instruction was ADD)
@@ -59,71 +63,50 @@
 #define Z80_INTMODE1		1	// restart at address 0x0038
 #define Z80_INTMODE2		2	// jump to address at vector table (high byte is in I register, low 7 bits come from the device)
 
-#define Z80_CLOCKMUL	8	// clock multiplier (to achieve lower frequencies and finer timing)
-
 // Z80 CPU descriptor
-// - Keep compatibility of the structure with the #define version in machine code!
-// - Entries must be aligned
-// - thumb1 on RP2040: offset of byte fast access must be <= 31, word fast access <= 62, dword fast access <= 124
+// - Optimization of thumb1 on RP2040: offset of byte should be <= 31, word <= 62, dword <= 124
+// - Entries should be aligned
 typedef struct {
-
-	sEmuSync	sync;		// 0x00: (8) time synchronization
-// align
+	sEmuSync	sync;		// 0x00: time synchronization
 	union { u16 pc; struct { u8 pcl, pch; }; }; // 0x08: program counter PC
 	union { u16 sp; struct { u8 spl, sph; }; }; // 0x0A: stack pointer SP
-// align
-	union { u16 ix; struct { u8 ixl, ixh; }; }; // 0x0C: index register IX
-	union { u16 iy; struct { u8 iyl, iyh; }; }; // 0x0E: index register IY
-// align
-	u8		r;		// 0x10: memory refresh address, lower 7 bits are auto incremented
-	u8		r7;		// 0x11: bit 7 of R register, as programmed by user
-	u8		i;		// 0x12: high byte of address of interrupt service
-	u8		iff1;		// 0x13: interrupt flag IFF1 (0=disable interrupts, 1=enable interrupts)
-// align
-	u8		iff2;		// 0x14: interrupt flag IFF2 (temporary storage of IFF1 during nonmaskable interrupt)
-	u8		mode;		// 0x15: interrupt mode Z80_INTMODE*
-	u8		halted;		// 0x16: 1=CPU is halted (HALT instruction)
-	u8		tid;		// 0X17: 1=temporary disable interrupt after EI instruction
-// align
-	volatile u8	stop;		// 0x18: 1=request to stop (pause) program execution
-	u8		res, res2, res3; // 0x19: ... reserved (align)
-// align
-	union { u32 afbc;
+	u8		r;		// 0x0C: memory refresh address, lower 7 bits are auto incremented
+	u8		i;		// 0x0D: high byte of address of interrupt service
+	u8		iff1;		// 0x0E: interrupt flag IFF1 (1=enable interrupts, 0=disable interrupts)
+	u8		iff2;		// 0x0F: interrupt flag IFF2 (temporary storage of IFF1 during nonmaskable interrupt; can be tested with LD A,I or LD A,R)
+	u8		mode;		// 0x10: interrupt mode Z80_INTMODE*
+	u8		halted;		// 0x11: 1=CPU is halted (HALT instruction)
+	u8		tid;		// 0x12: 1=temporary disable interrupt after EI instruction (protect following RET instruction from interrupt)
+	volatile u8	stop;		// 0x13: 1=request to stop (pause) program execution
+	union {
 		struct {
-			union { u16 af; struct { u8 f, a; }; };		// 0x1C: registers A (high) and F (low)
-			union { u16 bc; struct { u8 c, b; }; };		// 0x1E: registers B (high) and C (low)
+			union { u16 fa; struct { u8 a, f; }; };	// 0x14: registers F (high) and A (low)
+			union { u16 hl; struct { u8 l, h; }; };	// 0x16: registers H (high) and L (low)
+			union { u16 de; struct { u8 e, d; }; };	// 0x18: registers D (high) and E (low)
+			union { u16 bc; struct { u8 c, b; }; };	// 0x1A: registers B (high) and C (low)
 		};
+		u8	reg[8];		// registers accessible via index (0:A, 1:F, 2:L, 3:H, 4:E, 5:D, 6:C, 7:B)
+		u16	dreg[4];	// double registers (0:FA, 1:HL, 2:DE, 3:BC)
 	};
-// align
-	union { u32 dehl;
-		struct {
-			union { u16 de; struct { u8 e, d; }; };		// 0x20: registers D (high) and E (low)
-			union { u16 hl; struct { u8 l, h; }; };		// 0x22: registers H (high) and L (low)
-		};
-	};
-// align
-	union { u32 afbc2;
-		struct {
-			union { u16 af2; struct { u8 f2, a2; }; };	// 0x24: registers A' (high) and F' (low)
-			union { u16 bc2; struct { u8 c2, b2; }; };	// 0x26: registers B' (high) and C' (low)
-		};
-	};
-// align
-	union { u32 dehl2;
-		struct {
-			union { u16 de2; struct { u8 e2, d2; }; };	// 0x28: registers D' (high) and E' (low)
-			union { u16 hl2; struct { u8 l2, h2; }; };	// 0x2A: registers H' (high) and L' (low)
-		};
-	};
-// align
-	pEmu16Read8	readmem;	// 0x2C: read byte from memory
-	pEmu16Write8	writemem;	// 0x30: write byte to memory
-	pEmu16Read8	readio;		// 0x34: read byte from port
-	pEmu16Write8	writeio;	// 0x38: write byte to port
+	volatile u8	intreq;		// 0x1C: 1=maskable interrupt INT request, execute instruction RST n or jump to address
+	volatile u8	nmi;		// 0x1D: 1=nonmaskable interrupt NMI request, jump to address 0x66
+	u8		cond[4];	// 0x1E: condition table (0:I8080_Z, 1:I8080_C, 2:I8080_P, 3:I8080_S)
+	u8		r7;		// 0x22: bit 7 of R register, as programmed by user
+	volatile u8	intins;		// 0x23: instruction RST n to execute during interrupt, or low address of vector
+	union { u16 ix; struct { u8 ixl, ixh; }; }; // 0x24: index register IX
+	union { u16 iy; struct { u8 iyl, iyh; }; }; // 0x26: index register IY
+	u16 fa2;			// 0x28: registers F' (high) and A' (low)
+	u16 hl2;			// 0x2A: registers H' (high) and L' (low)
+	u16 de2;			// 0x2C: registers D' (high) and E' (low)
+	u16 bc2;			// 0x2E: registers B' (high) and C' (low)
+	pEmu16Read8	readmem;	// 0x30: read byte from memory
+	pEmu16Write8	writemem;	// 0x34: write byte to memory
+	pEmu16Read8	readport;	// 0x38: read byte from port
+	pEmu16Write8	writeport;	// 0x3C: write byte to port
 
 } sZ80;
 
-STATIC_ASSERT(sizeof(sZ80) == 0x3C, "Incorrect sZ80!");
+STATIC_ASSERT(sizeof(sZ80) == 0x40, "Incorrect sZ80!");
 
 // current CPU descriptor (NULL = not running)
 extern volatile sZ80* Z80_Cpu;
@@ -144,8 +127,9 @@ void Z80_Reset(sZ80* cpu);
 INLINE void Z80_SyncStart(sZ80* cpu) { EmuSyncStart(&cpu->sync); }
 
 // execute program (start or continue, until "stop" request)
-//  C code size in Flash: 42840 bytes (optimization -Os)
-void Z80_Exec(sZ80* cpu);
+// Size of code of this function: 10320 code + 2996 jump table = 13316 bytes
+// CPU loading at 4 MHz on 120 MHz: used 29-55%, max. 40-55%
+void FASTCODE NOFLASH(Z80_Exec)(sZ80* cpu);
 
 // terminate time synchronization (stop PWM counter)
 //  pwm ... index of used PWM slice (0..7)

@@ -14,8 +14,10 @@
 //   ext GPIO28 ... PWM 6
 //   sound (GPIO15) ... PWM 7
 
-#define EMU_PWM		2		// index of PWM used to synchronize emulations
-#define EMU_FREQ	740000		// emulation frequency (nominal frequency = 740 kHz)
+#define EMU_PWM		2	// index of PWM used to synchronize emulations
+#define EMU_FREQ	740000	// emulation frequency (nominal frequency = 740 kHz)
+#define EMU_CLKSYS_MIN	120	// minimal system clock in MHz
+#define EMU_CLKSYS_MAX	180	// maximal system clock in MHz
 
 #include "../include.h"
 
@@ -27,7 +29,7 @@
 #define ROUND_54	1	// round
 #define ROUND_N		8	// truncate
 
-sI4040 i4040cpu;
+sI4004 i4004cpu;
 
 int I4_KeyShift;	// keyboard shifter (10 bits, 0=row is selected)
 int I4_PrintShift;	// printer shifter (20 bits, 1=hammer is selected)
@@ -262,16 +264,16 @@ const sKeyMap KeyMap[KEYMAP_NUM2] = {
 // ============================================================================
 
 // read byte from ROM (only bank 0 used)
-u8 NOFLASH(GetRomMem)(u16 addr, u8 bank)
+u8 FASTCODE NOFLASH(GetRomMem)(u16 addr)
 {
 	return busicom_Prog[addr];
 }
 
 // write byte to ROM (not used)
-void NOFLASH(SetRomMem)(u16 addr, u8 bank, u8 val) { }
+void FASTCODE NOFLASH(SetRomMem)(u16 addr, u8 val) { }
 
 // write nibble to RAM port
-void NOFLASH(SetRamPort)(u8 addr, u8 val)
+void FASTCODE NOFLASH(SetRamPort)(u8 addr, u8 val)
 {
 	int i;
 	u8 ch, col;
@@ -341,7 +343,7 @@ void NOFLASH(SetRamPort)(u8 addr, u8 val)
 }
 
 // write nibble to ROM port
-void NOFLASH(SetRomPort)(u8 addr, u8 val)
+void FASTCODE NOFLASH(SetRomPort)(u8 addr, u8 val)
 {
 	int k;
 
@@ -374,7 +376,7 @@ void NOFLASH(SetRomPort)(u8 addr, u8 val)
 }
 
 // read nibble from ROM port
-u8 NOFLASH(GetRomPort)(u8 addr)
+u8 FASTCODE NOFLASH(GetRomPort)(u8 addr)
 {
 	int i;
 
@@ -421,7 +423,7 @@ u8 NOFLASH(GetRomPort)(u8 addr)
 
 // get TEST signal (0=TEST is active, 1=TEST is not active)
 // - increase sector every 28 ms when TEST is HIGH, index every 364 ms, flip TEST every 14 ms)
-u8 NOFLASH(GetTest)()
+u8 FASTCODE NOFLASH(GetTest)()
 {
 	// get current TEST signal
 	u8 test = I4_Test;
@@ -1042,13 +1044,17 @@ void Init141PF()
 	memset((void*)I4_PrintBuf, 0, sizeof(I4_PrintBuf));
 
 	// setup callback functions
-	i4040cpu.readrom = GetRomMem;
-	i4040cpu.writerom = SetRomMem;
-	i4040cpu.writeramport = SetRamPort;
-	i4040cpu.writeromport = SetRomPort;
-	i4040cpu.readromport = GetRomPort;
-	i4040cpu.gettest = GetTest;
+	i4004cpu.readrom = GetRomMem;
+	i4004cpu.writerom = SetRomMem;
+	i4004cpu.writeramport = SetRamPort;
+	i4004cpu.writeromport = SetRomPort;
+	i4004cpu.readromport = GetRomPort;
+	i4004cpu.gettest = GetTest;
 }
+
+// ============================================================================
+//                             Main function
+// ============================================================================
 
 // main function
 int main()
@@ -1063,9 +1069,10 @@ int main()
 	SelFontUpdate(); // update size of text screen
 
 	// Find system clock in Hz that sets the most accurate PWM clock frequency.
-	u32 sysclk = PWM_FindSysClk(120*MHZ, 180*MHZ, EMU_FREQ*I4040_CLOCKMUL);
+	u32 sysclk = PWM_FindSysClk(EMU_CLKSYS_MIN*MHZ, EMU_CLKSYS_MAX*MHZ, EMU_FREQ*I4004_CLOCKMUL);
 
 	// setup system clock to get precise frequency of emulation
+	if (sysclk > 160*MHZ) VregSetVoltage(VREG_VOLTAGE_1_20);
 	ClockPllSysFreq((sysclk+500)/1000);
 
 	// initialize USB
@@ -1075,13 +1082,13 @@ int main()
 	Init141PF();
 
 	// start emulation
-	u32 freq = I4040_Start(&i4040cpu, EMU_PWM, EMU_FREQ);
+	u32 freq = I4004_Start(&i4004cpu, EMU_PWM, EMU_FREQ);
 
 	// idle sound
 	PlaySoundChan(1, IdleSnd, count_of(IdleSnd), True, 1, 1, SNDFORM_PCM, 0);
 
 	// debug display frequency (freq = 740 kHz, syclk = 133200 kHz, div = 45)
-//	printf("freq=%d on sysclk=%d, div=%#f\n", freq, sysclk, (double)sysclk/(freq*I4040_CLOCKMUL));
+//	printf("freq=%d on sysclk=%d, div=%#f\n", freq, sysclk, (double)sysclk/(freq*I4004_CLOCKMUL));
 //	WaitMs(5000);
 
 	// display all
@@ -1106,10 +1113,16 @@ int main()
 		if ((t - t0) >= 1000000)
 		{
 			t0 = t;
-			int used = EmuDebClockUsed*100/EmuDebClockTotal;
-			int mx = EmuDebClockMax*100/EmuDebClockMaxTot;
-			printf("\rPC=%04X used=%d%% max=%d%%   ", i4040cpu.pc, used, mx);
+			sEmuDebClock* ec = &EmuDebClock;
+			int used = (int)((u64)ec->used*100/ec->total);
+			if (used > 999) used = 999;
+			int mx = ec->maxused*100/ec->maxtot;
+			if (mx < used) mx = used;
+			if (mx > 999) mx = 999;
+			printf("\rPC=%04X used=%d%% max=%d%%   ", i4004cpu.pc, used, mx);
 			EmuDebClockRes = True;
+			dsb();
+			ec->reset = True;
 		}
 
 #endif // EMU_DEBUG_SYNC

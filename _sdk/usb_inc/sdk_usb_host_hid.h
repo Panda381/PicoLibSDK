@@ -248,6 +248,12 @@ void UsbFlushKey();
 //    bit 24..31: delta wheel movement (signed s8) ... most mouse does not report wheel movement on uset boot mode
 u32 UsbGetMouse();
 
+// check no pressed key
+Bool UsbKeyNoPressed();
+
+// wait for no key pressed
+void UsbKeyWaitNoPressed();
+
 #ifdef __cplusplus
 }
 #endif

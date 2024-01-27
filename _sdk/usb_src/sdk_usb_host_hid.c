@@ -976,6 +976,26 @@ u32 UsbGetMouse()
 	return e.data[0];
 }
 
+// check no pressed key
+Bool UsbKeyNoPressed()
+{
+	const sUsbHidKey* report = &UsbHidKeyOld;
+
+	u8 i;
+	for (i = 0; i < 6; i++)
+	{
+		if (report->key[i] != 0) return False;
+	}
+
+	return report->modi == 0;
+}
+
+// wait for no key pressed
+void UsbKeyWaitNoPressed()
+{
+	while (!UsbKeyNoPressed()) {}
+}
+
 #endif // USE_USB_HOST_HID	// use USB HID Human Interface Device, value = number of interfaces (host)
 #endif // USE_USB_HOST		// use USB Host Class Driver (sdk_usb_host.c, sdk_usb_host.h; value = number of devices without HUB devices)
 #endif // USE_USB		// use USB (sdk_usb_*.c, sdk_usb_*.h)

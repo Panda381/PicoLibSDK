@@ -15,5 +15,7 @@ and more. The programs are compiled in MS Visual Studio 2005.
 - RaspPicoPal332 - palette generator for Picoino and QVGA output
 - RaspPicoRle - RLE compression of BMP images for PicoVGA library
 - RaspPicoSnd - export WAV audio files to C source code
+- test_6502 - test ADC and SBC 6502 instructions, comparing with real CPU.
+- test_8086 - test of some 8086 instructions, comparing with real CPU
 - elf2uf2 - convert ELF file to UF2 file
 - pioasm - PIO program assembler

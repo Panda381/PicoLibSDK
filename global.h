@@ -17,7 +17,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-#define SDK_VER		110	// SDK library version in hundredths
+#define SDK_VER		111	// SDK library version in hundredths
 
 // ----------------------------------------------------------------------------
 //                               Attributes
@@ -46,6 +46,9 @@
 
 // place time critical function into RAM
 #define NOFLASH(fnc) NOINLINE __attribute__((section(".time_critical." #fnc))) fnc
+
+// fast function optimization
+#define FASTCODE __attribute__ ((optimize("-Ofast")))
 
 // wrapper function (to replace standard library function)
 #define WRAPPER_FUNC(x) __wrap_ ## x

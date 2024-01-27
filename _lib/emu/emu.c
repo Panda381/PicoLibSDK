@@ -24,20 +24,27 @@
 #include "emu.h"
 
 #if EMU_DEBUG_SYNC	// 1 = debug measure time synchronization
-volatile Bool EmuDebClockRes;	// request to reset measure
-u32 EmuDebClockOld;		// old clock counter
-volatile u32 EmuDebClockTotal;	// sum of total clock intervals
-volatile u32 EmuDebClockUsed;	// sum of used clock intervals
-volatile s32 EmuDebClockMax;	// max used clock interval
-volatile u32 EmuDebClockMaxTot;	// total clock interval on max
+sEmuDebClock EmuDebClock;
 #endif // EMU_DEBUG_SYNC
 
-#if USE_EMU_I4040		// use I4004/I4040 CPU emulator
-#include "emu_i4040.c"		// I4004/I4040 CPU
+#if USE_EMU_I4004		// use I4004 CPU emulator
+#include "emu_i4004.c"		// I4004 CPU
+#endif
+
+#if USE_EMU_I4040		// use I4040 CPU emulator
+#include "emu_i4040.c"		// I4040 CPU
 #endif
 
 #if USE_EMU_I8008		// use I8008 CPU emulator
 #include "emu_i8008.c"		// I8008 CPU
+#endif
+
+#if USE_EMU_I8048		// use I8048 CPU emulator
+#include "emu_i8048.c"		// I8048 CPU
+#endif
+
+#if USE_EMU_I8052		// use I8052 CPU emulator
+#include "emu_i8052.c"		// I8052 CPU
 #endif
 
 #if USE_EMU_I8080		// use I8080 CPU emulator
@@ -46,6 +53,18 @@ volatile u32 EmuDebClockMaxTot;	// total clock interval on max
 
 #if USE_EMU_I8085		// use I8085 CPU emulator
 #include "emu_i8085.c"		// I8085 CPU
+#endif
+
+#if USE_EMU_I8086		// use I8086/I8088 CPU emulator
+#include "emu_i8086.c"		// I8086/I8088 CPU
+#endif
+
+#if USE_EMU_M6502		// use M6502 CPU emulator
+#include "emu_m6502.c"		// M6502 CPU
+#endif
+
+#if USE_EMU_X80			// use X80 CPU emulator
+#include "emu_x80.c"		// X80 CPU
 #endif
 
 #if USE_EMU_Z80			// use Z80 CPU emulator
@@ -71,6 +90,9 @@ u32 EmuSyncInit(sEmuSync* s, int pwm, u32 freq)
 
 	// save pointer to PWM counter
 	s->timer = PWM_CTR(pwm);
+
+	// reset interrupt bit register
+	//EmuInterSet(s, 0);
 
 	// start synchronization
 	EmuSyncStart(s);

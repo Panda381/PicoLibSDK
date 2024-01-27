@@ -26,7 +26,7 @@ MEMORY
     RAM(rwx) : ORIGIN =  0x20000000, LENGTH = 256k /* main RAM 256KB */
     SCRATCH_X(rwx) : ORIGIN = 0x20040000, LENGTH = 4k /* core 0 stack 4KB */
     BOOTRAM(rwx) : ORIGIN = 0x20041000, LENGTH = 32 /* boot loader resident RAM 32B */
-    SCRATCH_Y(rwx) : ORIGIN = 0x20041020, LENGTH = 4k-32 /* core 1 stack 4KB-32B */
+    SCRATCH_Y(rwx) : ORIGIN = 0x20041000+32, LENGTH = 4k-32 /* core 1 stack 4KB-32B */
 }
 
 ENTRY(_reset_handler)
@@ -201,7 +201,7 @@ SECTIONS
         . = ALIGN(16);
 	__malloc_end__ = .;
 
-        *(.stack0*)
+        KEEP (*(.stack0*))
     } > SCRATCH_X
 
     .bootloaderdata (COPY):
@@ -211,7 +211,7 @@ SECTIONS
 
     .stack1_dummy (COPY): /* core 1 stack (4 KB) */
     {
-        *(.stack1*)
+        KEEP (*(.stack1*))
     } > SCRATCH_Y
 
     /* stack limit is poorly named, but historically is maximum heap ptr */

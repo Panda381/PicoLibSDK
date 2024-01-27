@@ -22,7 +22,7 @@
 
 // ==== Vector table
 
-.global __vectors
+.global __vectors	// 48 vectors
 __vectors:
 	// ARM Cortex-M0+ core interrupt request indices - Exceptions
 	.word	__StackTop	// -16 end of stack for CPU0
@@ -76,11 +76,12 @@ __vectors:
 	.word	isr_irq30	// 30
 	.word	isr_irq31	// 31
 
-// ==== Application info header
+// ==== Application info header (start at offset 48*4)
 
-	.ascii	"PPAD"		// identification magic mark
-	.word	0x01234567	// application length
-	.word	0x89ABCDEF	// application CRC (including vector table)
+	.ascii	"PPAD"		// app[48]: identification magic mark
+	.word	0x01234567	// app[49]: application length after this header (=total length without boot loader and 51*4)
+	.word	0x89ABCDEF	// app[50]: application CRC of following program data
+				// app[51]: ...start of program data
 
 // ==== Declare weak symbols for each ISR (default fall to breakpoint), can be overriden by C function
 

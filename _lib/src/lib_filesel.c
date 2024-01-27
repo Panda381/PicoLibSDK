@@ -22,6 +22,7 @@
 #include "../../_devices/key.h"		// key interface
 
 #include "../../_sdk/inc/sdk_timer.h"
+#include "../../_sdk/usb_inc/sdk_usb_host_hid.h"
 
 #include "../inc/lib_decnum.h"
 #include "../inc/lib_draw.h"
@@ -1146,7 +1147,13 @@ void FileSelDispBigErr(const char* text)
 	DispUpdate();
 
 	KeyFlush();
+
+#if USE_USB_HOST_HID	// use USB HID Human Interface Device, value = number of interfaces (host)
+	UsbFlushKey();
+	while ((KeyGet() == NOKEY) && (UsbGetKey() == 0)) {}
+#else
 	while (KeyGet() == NOKEY) {}
+#endif
 
 	FileSelPreviewClr();
 	FileSelFrameFileList();
@@ -1232,6 +1239,9 @@ Bool FileSel()
 
 	// flush keyboard
 	KeyFlush();
+#if USE_USB_HOST_HID	// use USB HID Human Interface Device, value = number of interfaces (host)
+	UsbFlushKey();
+#endif
 
 	// main loop
 	while (True)
@@ -1290,6 +1300,54 @@ Bool FileSel()
 		while (True)
 		{
 			u8 ch = KeyGet();
+
+#if USE_USB_HOST_HID	// use USB HID Human Interface Device, value = number of interfaces (host)
+			if (ch == NOKEY)
+			{
+				ch = (u8)(UsbGetKey() & 0xff);
+				switch (ch)
+				{
+				case HID_KEY_ARROW_UP:
+					ch = KEY_UP;
+					break;
+
+				case HID_KEY_ARROW_DOWN:
+					ch = KEY_DOWN;
+					break;
+
+				case HID_KEY_ARROW_RIGHT:
+					ch = KEY_RIGHT;
+					break;
+
+				case HID_KEY_ARROW_LEFT:
+					ch = KEY_LEFT;
+					break;
+
+				case HID_KEY_Y:
+				case HID_KEY_ESCAPE:
+					ch = KEY_Y;
+					break;
+
+				case HID_KEY_X:
+					ch = KEY_X;
+					break;
+
+				case HID_KEY_A:
+				case HID_KEY_ENTER:
+				case HID_KEY_SPACE:
+					ch = KEY_A;
+					break;
+
+				case HID_KEY_B:
+					ch = KEY_B;
+					break;
+
+				default:
+					ch = NOKEY;
+				}
+			}
+#endif
+
 			if (ch == NOKEY) break;
 
 			// key switch

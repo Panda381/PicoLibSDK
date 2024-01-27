@@ -22,6 +22,7 @@
 #define _LIB_FAT_H
 
 #include "lib_sd.h"
+#include "../../_sdk/sdk_addressmap.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -257,7 +258,67 @@ extern sFile DirTmp;		// working directory
 // file info
 extern sFileInfo FileInfoTmp;	// file info
 
+// --- application info header
+#define APPINFO_MAGIC	0x44415050	// application info header magic (= text "PPAD")
+
+typedef struct {
+	u32	magic;		// app[48]: identification magic mark APPINFO_MAGIC (= text "PPAD")
+	u32	len;		// app[49]: application length without vector table and without this header
+	u32	crc;		// app[50]: Crc32ADMA checmsum of the application (without vector table and without this header)
+	u8	data[0];	// app[51]: start of application data, to calculate CRC
+} sAppInfo;
+
+STATIC_ASSERT(sizeof(sAppInfo) == 12, "Incorrect sAppInfo!");
+
+// pointer to application info header (vector table contains 16+32=48 u32 vectors)
+#define APPINFO  ((const sAppInfo*)(XIP_BASE + BOOTLOADER_SIZE + 48*4))
+
+// pointer to start of application (pointer to start of vector table)
+#define APPSTART ((const u32*)(XIP_BASE + BOOTLOADER_SIZE))
+
+// --- boot loader data
+// This structure is located at the beginning of the scratch-Y segment of
+// RAM memory, at address 0x20041000 (under the CPU core 1 stack). It contains
+// information about the last selected file and the path, as it is set by the
+// boot loader. It is used to return the cursor to its original position after
+// program exit.
+
+typedef struct {
+	u8	lastnamelen;	// 0x00: length of name of selected file
+	u8	lastnamedir;	// 0x01: ATTR_DIR attribute of the selected file
+	u8	lastname[8];	// 0x02: name of last selected file (without terminating 0)
+	u8	res, res2;	// 0x0A: ... reserved (align), contains 0
+	u32	curdirclust;	// 0x0C: cluster of current directory
+	u32	filetop;	// 0x10: index of first file in file window
+	u32	crc;		// 0x14: CRC32ADMA checksum of first 20 bytes of this structure
+} sLoaderData;
+
+STATIC_ASSERT(sizeof(sLoaderData) == 24, "Incorrect sLoaderData!");
+
+// boot loader resident segment
+extern u8 __attribute__((section(".bootloaderdata"))) LoaderData[BOOTLOADER_DATA];
+#define LOADERDATA ((sLoaderData*)LoaderData) // pointer to loader data
+
+// --- application home path
+// This structure is located in next 256-byte page in Flash after application end.
+
+#define APPPATH_MAGIC	'P'	// magic byte
+#define APPPATH_PATHMAX	(256 - 8 - 1) // max. length of the path, without terminating 0 (= 247)
+
+typedef struct {
+	u32	crc;		// 0x00: CRC32ADMA checksum of following data and path with terminating 0
+	u8	magic;		// 0x04: magic byte APPPATH_MAGIC
+	u8	pathlen;	// 0x05: length of the path (without terminating 0)
+	u8	res, res2;	// 0x06: ... reserved (align), contains 0xff
+	char	path[APPPATH_PATHMAX+1]; // 0x08: path with terminating 0 ... 0xff data fill rest of buffer
+} sAppPath;
+
+STATIC_ASSERT(sizeof(sAppPath) == 256, "Incorrect sAppPath!");
+
 // --- public functions
+
+// check if cluster is valid
+Bool Disk_ClustValid(u32 clust);
 
 // compose DOS date and DOS time
 INLINE u16 DosDate(u8 d, u8 m, u16 y) { return d + (m << 5) + ((y - 1980) << 9); }
@@ -507,6 +568,24 @@ INLINE Bool DiskFormatDef(u32 magic) { return DiskFormat(FS_NONE, 0, True, magic
 // check file extension
 Bool FileCheckExt(sFileInfo* fi, const char* ext);
 
+// check application in Flash memory (application starts at address APPSTART = XIP_BASE + BOOTLOADER_SIZE)
+//   applen ... pointer to get application length, without header (NULL = not needed)
+//   proglen ... pointer to get total program length, with boot loader and with header (NULL = not needed)
+//   appcrc ... pointer to get application CRC (NULL = not needed)
+Bool CheckApp(u32* applen, u32* proglen, u32* appcrc);
+
+// check boot loader data (boot loader data are at address LOADERDATA)
+Bool CheckLoaderData();
+
+// check application home path (returns pointer to sAppPath, or NULL on error)
+const sAppPath* CheckAppPath();
+
+// get application home path
+//   path ... buffer of size APPPATH_PATHMAX+1 (= 248) to get path with terminating 0
+//   def ... default path (used on error)
+// Sets home path as current directory. Returns length of the path.
+int GetHomePath(char* path, const char* def);
+                                             
 #ifdef __cplusplus
 }
 #endif

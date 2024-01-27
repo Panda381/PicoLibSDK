@@ -14,12 +14,6 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-// load byte from program memory
-#define PROGBYTE()	cpu->readmem(cpu->pc++)
-
-// load word from program memory to result number
-#define PROGWORD(res)	{ u8 temp = PROGBYTE(); res = temp | ((u16)PROGBYTE() << 8); }
-
 // INC var (var = 8-bit variable)
 //	C ... not affected
 //	V ... set if result is 0x80
@@ -56,16 +50,16 @@
 		f |= ((f >> 2) ^ (f << 4)) & I8085_K;		\
 		cpu->f = f; }
 
-// ADD HL,reg (reg = double register name)
+// ADD HL,val (val = 16-bit value)
 //	C ... carry from bit 15
 //	V ... set if overflow
 //	other ... not affected
-#define I8085_ADD16(reg) {					\
+#define I8085_ADD16(val) {					\
 		u16 hl = cpu->hl;				\
-		u16 nn = cpu->reg;				\
+		u16 nn = (val);					\
 		u32 nnnn = (u32)hl + nn;			\
 		cpu->hl = (u16)nnnn;				\
-		u8 f = cpu->f & ~I8085_C;			\
+		u8 f = cpu->f & ~(I8085_C | I8085_V);		\
 		f |= nnnn >> 16; /* I8085_C */;			\
 		u32 xor = hl ^ nn ^ nnnn;			\
 		f |= ((xor ^ (xor >> 1)) >> 14) & I8085_V;	\
