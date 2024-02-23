@@ -1,0 +1,6 @@
+        ^YLines Demo^0
+
+^WY^0 ................... menu
+
+      ^XUSB keyboard:^0
+^WPause^0 ............... menu
