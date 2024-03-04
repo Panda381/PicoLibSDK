@@ -180,21 +180,21 @@ l4f27    PROC      NEAR
 ;         je        cccc
 ;         pop       ds
 
-         sti                                ; p©eru¨en¡ povoleno
-         mov       dx,3dah                  ; stavov˜ registr videokarty
-wait11:  in        al,dx                    ; ‡ten¡ stavov‚ho registru
-         test      al,8                     ; je vertik ln¡ impuls ?
-         jnz       wait11                  ; ‡ek n¡ na konec synchroimpulsu
-wait12:  in        al,dx                    ; ‡ten¡ stavov‚ho registru
-         test      al,8                     ; je vertik ln¡ impuls ?
-         jz        wait12                  ; ‡ek n¡ na vertik ln¡ impuls
+;         sti                                ; p©eru¨en¡ povoleno
+;         mov       dx,3dah                  ; stavov˜ registr videokarty
+;wait11:  in        al,dx                    ; ‡ten¡ stavov‚ho registru
+;         test      al,8                     ; je vertik ln¡ impuls ?
+;         jnz       wait11                  ; ‡ek n¡ na konec synchroimpulsu
+;wait12:  in        al,dx                    ; ‡ten¡ stavov‚ho registru
+;         test      al,8                     ; je vertik ln¡ impuls ?
+;         jz        wait12                  ; ‡ek n¡ na vertik ln¡ impuls
 
-wait13:  in        al,dx                    ; ‡ten¡ stavov‚ho registru
-         test      al,8                     ; je vertik ln¡ impuls ?
-         jnz       wait13                  ; ‡ek n¡ na konec synchroimpulsu
-wait14:  in        al,dx                    ; ‡ten¡ stavov‚ho registru
-         test      al,8                     ; je vertik ln¡ impuls ?
-         jz        wait14                  ; ‡ek n¡ na vertik ln¡ impuls
+;wait13:  in        al,dx                    ; ‡ten¡ stavov‚ho registru
+;         test      al,8                     ; je vertik ln¡ impuls ?
+;         jnz       wait13                  ; ‡ek n¡ na konec synchroimpulsu
+;wait14:  in        al,dx                    ; ‡ten¡ stavov‚ho registru
+;         test      al,8                     ; je vertik ln¡ impuls ?
+;         jz        wait14                  ; ‡ek n¡ na vertik ln¡ impuls
 
 
          jmp       l4f27                    ; nov˜ cyklus
@@ -449,7 +449,7 @@ l50d3    ENDP
 ; -----------------------------------------------------------------------------
 ;    £vodn¡ zobrazen¡ sc‚ny (pozad¡)
 ; -----------------------------------------------------------------------------
-;þ
+
 l50e6    PROC      NEAR
 
 ; ------ zobrazen¡ oblohy v pozad¡ (56 linek)
@@ -2226,7 +2226,7 @@ l5b80    ENDP
 ;                  6 = test proletˆn¡ rakety branou
 ;                  7 = generov n¡ nov‚ho pohybu objektu 17 nebo 18
 ; -----------------------------------------------------------------------------
-;þ
+
 l5c19    PROC      NEAR
 
 ; ------ skok na obsluhu objektu
@@ -2761,7 +2761,7 @@ l5f51    ENDP
 ; -----------------------------------------------------------------------------
 ;        Obsluha pohybu objekt– (SI=offset definice objektu)
 ; -----------------------------------------------------------------------------
-;þ
+
 l5f7b    PROC      NEAR
 
 ; ------ ukazatel v tabulce akc¡ objekt–
@@ -4375,7 +4375,7 @@ Data2    ENDS
 ;
 ; °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
 
-;þ
+
 Data     SEGMENT   PARA
 
 DataStrt label     byte                     ; za‡ tek datov‚ho segmentu
@@ -4701,7 +4701,7 @@ da72c    dw        0                        ; adresa obr zku k zobrazen¡
          db        0
 da72f    db        0                        ; omezen  ¨¡©ka obr zku (bajt–)
          db        0                        ; (doplnˆk pro p©evod na slovo)
-;þ
+
 da731    db        0                        ; ‡¡ta‡ linek obr zku k zobrazen¡
 da732    db        0                        ; ‡¡slo obr zku k zobrazen¡
                                             ;   3=st¡n letadla
@@ -4996,7 +4996,7 @@ dad92    label     word                     ; tabulka adres pohyb– objekt–
 ;                  5 = nastaven¡ p©¡rustku sou©adnice X (n sleduje bajt p©¡rustku X)
 ;                  6 = test proletˆn¡ rakety branou
 ;                  7 = generov n¡ nov‚ho pohybu objektu 17 nebo 18
-;þ
+
 dade0    label     byte                     ; 0: st©ela
 
          db        24                       ; rychlost Y

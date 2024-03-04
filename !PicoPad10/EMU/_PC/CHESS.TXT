@@ -1,11 +1,11 @@
           ^YChess^0
 
+Start ^WLeft^0=W/^WRight^0=B/^WUp^0=A
 ^Warrows^0 ............ cursor
 ^WA^0 ................... move
 ^WB^0 ................... quit
 ^WX^0 ................... zoom
 ^WY^0 ................... menu
-select color:left/right/up
 
       ^XUSB keyboard:^0
 ^Warrows^0 ............ cursor
