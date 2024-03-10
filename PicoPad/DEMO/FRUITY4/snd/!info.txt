@@ -1,0 +1,20 @@
+List of music loops (format Intel IMA ADPCM 4-bit mono 22050 Hz):
+
+71 DanR-WhatDoesThatKnobDoAgain
+72 Duda-Drumsynth Trigger
+73 Fuego+Reegz-Aura
+74 Fuego-AHintOfReggae
+75 Fuego-Behaviour 9
+76 Fuego-FL303
+77 Fuego-Skyhigh
+78 gol-Random
+79 Inginer-Housy Shuffle
+80 Inginer-Jungle Fever
+81 JasonC-After Hours
+82 JasonC-Dark Corners
+83 JasonC-Glint
+84 JasonC-Groundswell
+85 JasonC-Kinetic
+86 Pilchard-D-S-L
+87 Pilchard-Goathing
+88 Reegz-Foxy Sista

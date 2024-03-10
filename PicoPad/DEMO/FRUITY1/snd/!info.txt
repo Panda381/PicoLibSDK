@@ -1,0 +1,32 @@
+List of music loops (format Intel IMA ADPCM 4-bit mono 22050 Hz):
+
+01 3xOSC fun
+02 C_HC
+03 C_kick
+04 Dance_X_B
+05 dnbautoscratch
+06 Dreamzofluxury
+07 DrumCircle
+08 ElvisInADress
+09 FruityExample-alpharisc
+10 Fuego-BigKilling
+11 Fuego-FenderBender
+12 Fuego-GraySunshine
+13 H441-GOA
+14 Halfwaytonowhere
+15 ISuckAtTitles
+16 JasonC-Ebb_and_Flow
+17 JasonC-Faded@4am
+18 JasonC-Glimmer
+19 JasonC-Highpass
+20 JasonC-Stasis
+21 JasonC-Tranced@4am
+22 Land of rock
+23 Light already (remixed)
+24 MentalFusion
+25 Myopic-DepartureLounge
+26 Native soil
+27 Oscar22
+28 Oscarparty
+29 Oscillations
+30 Pilchard-KickingBeat

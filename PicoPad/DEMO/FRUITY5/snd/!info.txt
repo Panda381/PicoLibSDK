@@ -1,0 +1,23 @@
+List of music loops (format Intel IMA ADPCM 4-bit mono 22050 Hz):
+
+89 Reegz-IFI
+90 Reegz-Messin Around
+91 Reegz-The Way (Instrumental)
+92 Toby-Carrier
+93 Toby-Striker
+94 XOR-Eliminator
+95 AmbushInTheBush
+96 BeatMachine
+97 StringLoop
+98 NewStuff Rap
+99 Korben Dallas
+100 Aknot! Wot
+101 Holymen - The Last Universe
+102 Holymen - Area 51 (Shiva Shidapu)
+103 Holymen - Seven'th Heaven
+104 Holymen - Sicko Leako
+105 Holymen - Time for Peace
+106 Holymen - Romeo 4 Juliete
+107 prodigy-out_of_space_(techno_remix)
+108 D.O.N.S feat. Technotronic - Pump Up
+109 punk city - mission-(sample.b6)

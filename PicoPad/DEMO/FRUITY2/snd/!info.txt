@@ -1,0 +1,22 @@
+List of music loops (format Intel IMA ADPCM 4-bit mono 22050 Hz):
+
+31 Pilchard-NewFruity
+32 Reegz-Loungin
+33 Reegz-Vibe
+34 Roof garden_B
+35 SpaceAce
+36 speecher
+37 spookytriangle
+38 Sympathy
+39 Tears
+40 Techmatik
+41 TheAmericanPropertyNetwork
+42 threeosc
+43 Toby-Falling
+44 Toby-Hydrosphere
+45 Toby-Industro
+46 Toby-RainDrops
+47 Toby-Reaper
+48 Vlad-She'saRican
+49 XOR-Chop my slice please
+50 XOR-Osmosis

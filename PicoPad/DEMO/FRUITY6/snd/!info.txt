@@ -1,0 +1,23 @@
+List of music loops (format Intel IMA ADPCM 4-bit mono 22050 Hz):
+
+110 Supa-Dupa-Fly (Sezam Remix)
+111 a-reflective-dbu
+112 Aphex Twins - Star Wars Theme (Trance)
+113 beethoven - 9th symphony (techno)
+114 beethoven - 9th symphony (techno) 2
+115 carl cox - TECHNO SETS (Live)
+116 Crystal Techno
+117 Disco Kandi 3 - DJD Hydraulic Dogs
+118 Dj Disco - Let's Dance(Extended Rmx)
+119 Dj Quicksilver - Techno Macht Spass
+120 DJ Tiesto - Forbidden Paradise
+121 DJ Tiesto - Forbidden Paradise 2
+122 robert miles - x files (techno mix)
+123 X-Perience - Land of Tomatoes
+124 Holymen - Monkey Buieness
+125 Astral Projection - Analog Voyager
+126 Astral Projection - Aurora Borealis
+127 Astral Projection - Dancing Galaxy
+128 Astral Projection - Enlightened
+129 Astral Projection - Power Gen
+130 Astral Projection - Still on Mars

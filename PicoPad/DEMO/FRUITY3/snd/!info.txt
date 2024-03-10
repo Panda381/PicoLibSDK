@@ -1,0 +1,22 @@
+List of music loops (format Intel IMA ADPCM 4-bit mono 22050 Hz):
+
+51 XOR-Reggophany
+52 asche
+53 drwho
+54 Fuego96-NashvilleWest
+55 404lament
+56 hERETIC-Tubular
+57 Try Again (remixed)
+58 Try Again (remixed) 2
+59 JasonC-Fubar
+60 JasonC-Greyscale
+61 MakeMeFeelLove
+62 Ori'sBminors
+63 Vlad-FeveriaMagma4-InstrumentalRemix
+64 FruityTechTrance
+65 JasonC-Shear
+66 Arpeggiator
+67 NewStuff
+68 Daft Punk - Revolution 909
+69 CWCrisman-Real Mellow
+70 DanR-Taken
