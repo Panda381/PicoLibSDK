@@ -80,7 +80,10 @@ typedef struct {
 	// 32-bit aligned
 	u32	crystal;	// 20: crystal frequency in [Hz] (default 12000000) ... value (u32)-1 indicates invalid config
 	// 32-bit aligned
-	u8	stuffing[CONFIG_SIZE-24]; // 24: (8) alignment to page size (default value 0xff)
+	u8	screensaver;	// 24: 0=do not use screen saver on charging, not 0=use screen saver
+	u8	res[3];		// 25: ... reserved (align)
+	// 32-bit aligned
+	u8	stuffing[CONFIG_SIZE-28]; // 28: (8) alignment to page size (default value 0xff)
 } sConfig;
 
 // compile-time check 
@@ -236,6 +239,14 @@ void ConfigIncCrystal();
 
 // decrease crystal (limits range, does not save configuration)
 void ConfigDecCrystal();
+
+// === ScreenSaver
+
+// get screensaver state
+INLINE Bool ConfigGetScreenSaver() { return Config.screensaver != 0; }
+
+// set screensaver state
+INLINE void ConfigSetScreenSaver(Bool on) { Config.screensaver = on ? 0xff : 0; }
 
 #ifdef __cplusplus
 }

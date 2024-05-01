@@ -57,10 +57,11 @@
 #define ATTR_BMP	B7	// internal: bitmap indicator BMP present
 #define ATTR_MASK	0x3F	// mask of valid bits
 
-typedef struct { // 15(+1) bytes
+typedef struct { // 16 bytes
 	u32	size;		// file size
 	u8	attr;		// attributes ATTR_*
 	u8	len;		// file name length
+//	u8	ext;		// index of file extension 0..1
 	char	name[8+1];	// file name (without extension, with terminating zero)
 } sFileDesc;
 
@@ -106,6 +107,12 @@ int FileSelTitleLen; // length of title
 // file extension
 char FileSelExt[4]; // file extension in uppercase (1 to 3 characters, with terminating 0)
 int FileSelExtLen; // length of file extension (1 to 3 characters)
+
+//char FileSelExt2[4]; // file extension 2 in uppercase (0 to 3 characters, with terminating 0)
+//int FileSelExtLen2; // length of file extension 2 (0 to 3 characters)
+
+//char FileSelExt3[4]; // file extension 3 in uppercase (0 to 3 characters, with terminating 0)
+//int FileSelExtLen3; // length of file extension 3 (0 to 3 characters)
 
 // colors template - blue theme
 const sFileSelColors FileSelColBlue = {
@@ -174,6 +181,7 @@ char FileSelLastName[9]; // last selected name (without extension, with terminat
 int FileSelLastNameLen = 0; // length of last name (without extension), 0 = not used
 int FileSelLastNameTop = 0; // top file of last name
 u8 FileSelLastNameAttr; // attributes of last name
+//u8 FileSelLastNameExt; // index of extension of last name 0..1
 u32 FileSelLastNameSize; // size of last name
 
 // preview
@@ -524,6 +532,9 @@ void FileSelLoadFileList()
 		// get size
 		fd->size = FileSelFileInfo.size;
 
+		// default extension
+//		fd->ext = 0;
+
 		// copy directory ".."
 		if (dir && (len == 2) && (name[0] == '.') && (name[1] == '.'))
 		{
@@ -575,9 +586,40 @@ void FileSelLoadFileList()
 					fd->len = len-FileSelExtLen-1;
 					memcpy(fd->name, name, len-FileSelExtLen-1);
 					fd->name[fd->len] = 0;
+					//fd->ext = 0;
 					fd++;
 					FileSelFileNum++;
 				}
+
+/*
+				// check file extension 2
+				else if ((FileSelExtLen2 != 0) &&	
+					(len > FileSelExtLen2+1) && (name[len-FileSelExtLen2-1] == '.')
+					&& (memcmp(&name[len-FileSelExtLen2], FileSelExt2, FileSelExtLen2) == 0))
+				{
+					// copy file name (without extension)
+					fd->len = len-FileSelExtLen2-1;
+					memcpy(fd->name, name, len-FileSelExtLen2-1);
+					fd->name[fd->len] = 0;
+					fd->ext = 1;
+					fd++;
+					FileSelFileNum++;
+				}
+
+				// check file extension 3
+				else if ((FileSelExtLen3 != 0) &&	
+					(len > FileSelExtLen3+1) && (name[len-FileSelExtLen3-1] == '.')
+					&& (memcmp(&name[len-FileSelExtLen3], FileSelExt3, FileSelExtLen3) == 0))
+				{
+					// copy file name (without extension)
+					fd->len = len-FileSelExtLen3-1;
+					memcpy(fd->name, name, len-FileSelExtLen3-1);
+					fd->name[fd->len] = 0;
+					fd->ext = 2;
+					fd++;
+					FileSelFileNum++;
+				}
+*/
 			}
 		}
 	}
@@ -683,6 +725,10 @@ void FileSelLoadFileList()
 			ch = fd[0].len;
 			fd[0].len = fd[1].len;
 			fd[1].len = ch;
+
+//			ch = fd[0].ext;
+//			fd[0].ext = fd[1].ext;
+//			fd[1].ext = ch;
 
 			int k = fd[0].size;
 			fd[0].size = fd[1].size;
@@ -1169,8 +1215,10 @@ void FileSelDispBigErr(const char* text)
 //   - do not end path with '/' character (except root path)
 //  title... title on file panel, used instead of root path (terminated with 0; max. 20 characters)
 //  ext ... file extension (1 to 3 characters in uppercase, terminated with 0)
+//  ... ext2 ... file extension 2 (1 to 3 characters in uppercase, terminated with 0, or 0 characters if not used)
+//  ... ext3 ... file extension 3 (1 to 3 characters in uppercase, terminated with 0, or 0 characters if not used)
 //  col ... colors (recommended &FileSelColGreen or &FileSelColBlue)
-void FileSelInit(const char* root, const char* title, const char* ext, const sFileSelColors* col)
+void FileSelInit(const char* root, const char* title, const char* ext, /*const char* ext2, const char* ext3,*/ const sFileSelColors* col)
 {
 	int n;
 
@@ -1192,6 +1240,33 @@ void FileSelInit(const char* root, const char* title, const char* ext, const sFi
 	memcpy(FileSelExt, ext, n+1); // copy file extension
 	FileSelExtLen = n; // length of file extension
 
+/*
+	// get file extension 2
+	if (ext2 == NULL)
+	{
+		FileSelExt2[0] = 0;
+		FileSelExtLen2 = 0;
+	}
+	else
+	{
+		n = StrLen(ext2); // get length of file extension
+		memcpy(FileSelExt2, ext2, n+1); // copy file extension
+		FileSelExtLen2 = n; // length of file extension
+	}
+
+	// get file extension 3
+	if (ext3 == NULL)
+	{
+		FileSelExt3[0] = 0;
+		FileSelExtLen3 = 0;
+	}
+	else
+	{
+		n = StrLen(ext3); // get length of file extension
+		memcpy(FileSelExt3, ext3, n+1); // copy file extension
+		FileSelExtLen3 = n; // length of file extension
+	}
+*/
 	// colors
 	FileSelColors = col;
 }
@@ -1502,8 +1577,13 @@ Bool FileSel()
 						// prepare filename of the file
 						memcpy(FileSelTempBuf, fd->name, fd->len);
 						FileSelTempBuf[fd->len] = '.';
-						memcpy(&FileSelTempBuf[fd->len+1], FileSelExt, FileSelExtLen+1);
-
+//						if (fd->ext == 0)
+							memcpy(&FileSelTempBuf[fd->len+1], FileSelExt, FileSelExtLen+1);
+/*						else if (fd->ext == 1)
+							memcpy(&FileSelTempBuf[fd->len+1], FileSelExt2, FileSelExtLen2+1);
+						else
+							memcpy(&FileSelTempBuf[fd->len+1], FileSelExt3, FileSelExtLen3+1);
+*/
 						// save last name
 						memcpy(FileSelLastName, fd->name, fd->len+1);
 						FileSelLastNameLen = fd->len;

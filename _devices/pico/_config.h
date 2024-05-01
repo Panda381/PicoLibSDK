@@ -12,6 +12,13 @@
 // and GPIO1 (RX input to Pico) and set COM port to 115200 Baud, 8 bits, no parity,
 // 1 stop bit, no flow control.
 
+// If using ExtDisp v1 module, set USE_EXTDISP flag to 1 (mixed mode will be used)
+#if USE_EXTDISP			// use ExtDisp module: 0=use version 0 (with Pico), 1=use version 1 (with RP2040)
+#if !USE_DVI && !USE_MINIVGA && !USE_DVIVGA
+#define USE_DVIVGA 1		// ExtDisp v1: default use mixed mode
+#endif
+#endif
+
 #ifndef USE_FRAMEBUF
 #if USE_VIDEO
 #define USE_FRAMEBUF	0
@@ -36,13 +43,46 @@
 #endif
 
 #ifndef USE_DRAW_STDIO
+#if !USE_USB_STDIO
 #define USE_DRAW_STDIO	1	// use DRAW stdio (DrawPrint function)
+#endif
 #endif
 
 #ifndef WIDTH
 #define WIDTH	320		// display width
 #endif
 
+
+
+
+#if USE_EXTDISP			// use ExtDisp module: 0=use version 0 (with Pico), 1=use version 1 (with RP2040)
+
+// Use ExtDisp version 1 (with RP2040)
+#ifndef DVI_GPIO_D2
+#define DVI_GPIO_D2	6	// GPIO pin with DVI_D2+ (DVI requires DVI_D2- = DVI_D2+ + 1)
+#endif
+
+#ifndef DVI_GPIO_D1
+#define DVI_GPIO_D1	4	// GPIO pin with DVI_D1+ (DVI requires DVI_D1- = DVI_D1+ + 1)
+#endif
+
+#ifndef DVI_GPIO_D0
+#define DVI_GPIO_D0	2	// GPIO pin with DVI_D0+ (DVI requires DVI_D0- = DVI_D0+ + 1)
+#endif
+
+#ifndef DVI_GPIO_CLK
+#define DVI_GPIO_CLK	0	// GPIO pin with DVI_CLK+ (DVI requires DVI_D2- = DVI_D2+ + 1) ... DVI_GPIO_CLK must be even! (uses PWM)
+#endif
+
+#ifndef DVI_GPIO_INV
+#define DVI_GPIO_INV	1	// 1=invert GPIO DVI pins
+#endif
+
+#define SPI_GPIO_FIRST	26	// first SPI GPIO
+
+#else // USE_EXTDISP
+
+// Use ExtDisp version 0 (with Pico)
 #ifndef DVI_GPIO_D2
 #define DVI_GPIO_D2	0	// GPIO pin with DVI_D2+ (DVI requires DVI_D2- = DVI_D2+ + 1)
 #endif
@@ -62,6 +102,13 @@
 #ifndef DVI_GPIO_INV
 #define DVI_GPIO_INV	0	// 1=invert GPIO DVI pins
 #endif
+
+#define SPI_GPIO_FIRST	19	// first SPI GPIO
+
+#endif // USE_EXTDISP
+
+
+
 
 #ifndef DVI_PIO
 #define DVI_PIO		1	// DVI PIO
@@ -96,13 +143,36 @@
 #endif
 
 #ifndef USE_DRAW_STDIO
+#if !USE_USB_STDIO
 #define USE_DRAW_STDIO	1	// use DRAW stdio (DrawPrint function)
+#endif
 #endif
 
 #ifndef WIDTH
 #define WIDTH	320		// display width
 #endif
 
+
+
+#if USE_EXTDISP			// use ExtDisp module: 0=use version 0 (with Pico), 1=use version 1 (with RP2040)
+
+// Use ExtDisp version 1 (with RP2040)
+#ifndef VGA_GPIO_HSYNC
+#define VGA_GPIO_HSYNC	24	// VGA HSYNC GPIO (VGA requires VSYNC = HSYNC+1)
+#endif
+
+//#define VGA_USECSYNC	1	// 1=use only CSYNC signal instead of HSYNC (VSYNC not used)
+
+
+#ifndef VGA_GPIO_FIRST
+#define VGA_GPIO_FIRST	8	// first VGA GPIO
+#endif
+
+#define SPI_GPIO_FIRST	26	// first SPI GPIO
+
+#else // USE_EXTDISP
+
+// Use ExtDisp version 0 (with Pico)
 #ifndef VGA_GPIO_HSYNC
 #define VGA_GPIO_HSYNC	26	// VGA HSYNC GPIO (VGA requires VSYNC = HSYNC+1)
 #endif
@@ -113,6 +183,12 @@
 #ifndef VGA_GPIO_FIRST
 #define VGA_GPIO_FIRST	3	// first VGA GPIO
 #endif
+
+#define SPI_GPIO_FIRST	19	// first SPI GPIO
+
+#endif // USE_EXTDISP
+
+
 
 #ifndef VGA_GPIO_NUM
 #define VGA_GPIO_NUM	16	// number of VGA color GPIOs, without HSYNC and VSYNC, including SCK if should skip it
@@ -153,9 +229,51 @@
 #endif
 
 #ifndef USE_DRAW_STDIO
+#if !USE_USB_STDIO
 #define USE_DRAW_STDIO	1	// use DRAW stdio (DrawPrint function)
 #endif
+#endif
 
+
+
+#if USE_EXTDISP			// use ExtDisp module: 0=use version 0 (with Pico), 1=use version 1 (with RP2040)
+
+// Use ExtDisp version 1 (with RP2040)
+#ifndef DVI_GPIO_D2
+#define DVI_GPIO_D2	6	// GPIO pin with DVI_D2+ (DVI requires DVI_D2- = DVI_D2+ + 1)
+#endif
+
+#ifndef DVI_GPIO_D1
+#define DVI_GPIO_D1	4	// GPIO pin with DVI_D1+ (DVI requires DVI_D1- = DVI_D1+ + 1)
+#endif
+
+#ifndef DVI_GPIO_D0
+#define DVI_GPIO_D0	2	// GPIO pin with DVI_D0+ (DVI requires DVI_D0- = DVI_D0+ + 1)
+#endif
+
+#ifndef DVI_GPIO_CLK
+#define DVI_GPIO_CLK	0	// GPIO pin with DVI_CLK+ (DVI requires DVI_D2- = DVI_D2+ + 1) ... DVI_GPIO_CLK must be even! (uses PWM)
+#endif
+
+#ifndef DVI_GPIO_INV
+#define DVI_GPIO_INV	1	// 1=invert GPIO DVI pins
+#endif
+
+#ifndef VGA_GPIO_HSYNC
+#define VGA_GPIO_HSYNC	24	// VGA HSYNC GPIO (VGA requires VSYNC = HSYNC+1)
+#endif
+
+//#define VGA_USECSYNC	1	// 1=use only CSYNC signal instead of HSYNC (VSYNC not used)
+
+#ifndef VGA_GPIO_FIRST
+#define VGA_GPIO_FIRST	8	// first VGA GPIO
+#endif
+
+#define SPI_GPIO_FIRST	26	// first SPI GPIO
+
+#else // USE_EXTDISP
+
+// Use ExtDisp version 0 (with Pico)
 #ifndef DVI_GPIO_D2
 #define DVI_GPIO_D2	0	// GPIO pin with DVI_D2+ (DVI requires DVI_D2- = DVI_D2+ + 1)
 #endif
@@ -176,6 +294,23 @@
 #define DVI_GPIO_INV	0	// 1=invert GPIO DVI pins
 #endif
 
+#ifndef VGA_GPIO_HSYNC
+#define VGA_GPIO_HSYNC	26	// VGA HSYNC GPIO (VGA requires VSYNC = HSYNC+1)
+#endif
+
+//#define VGA_USECSYNC	1	// 1=use only CSYNC signal instead of HSYNC (VSYNC not used)
+
+#ifndef VGA_GPIO_FIRST
+#define VGA_GPIO_FIRST	3	// first VGA GPIO
+#endif
+
+#define SPI_GPIO_FIRST	19	// first SPI GPIO
+
+#endif // USE_EXTDISP
+
+
+
+
 #ifndef DVIVGA_PIO
 #define DVIVGA_PIO	1	// DVI PIO
 #endif
@@ -195,16 +330,6 @@
 
 #ifndef VGA_DMA
 #define VGA_DMA		8	// VGA first DMA channel (uses 2 channels)
-#endif
-
-#ifndef VGA_GPIO_HSYNC
-#define VGA_GPIO_HSYNC	26	// VGA HSYNC GPIO (VGA requires VSYNC = HSYNC+1)
-#endif
-
-//#define VGA_USECSYNC	1	// 1=use only CSYNC signal instead of HSYNC (VSYNC not used)
-
-#ifndef VGA_GPIO_FIRST
-#define VGA_GPIO_FIRST	3	// first VGA GPIO
 #endif
 
 #ifndef VGA_GPIO_NUM

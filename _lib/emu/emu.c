@@ -27,6 +27,52 @@
 sEmuDebClock EmuDebClock;
 #endif // EMU_DEBUG_SYNC
 
+// ----------------------------------------------------------------------------
+//                             Time synchronization
+// ----------------------------------------------------------------------------
+
+// initialize time synchronization (initialize PWM counter; returns real frequency in Hz)
+//  pwm ... index of (unused) PWM slice (0..7)
+//  freq ... required frequency in Hz (for 125 MHz system clock supported range: 488 kHz to 125 MHz)
+u32 EmuSyncInit(sEmuSync* s, int pwm, u32 freq)
+{
+	// reset PWM to default state
+	PWM_Reset(pwm);
+
+	// set PWM frequency
+	PWM_Clock(pwm, freq);
+
+	// set period to 16 bits
+	PWM_Top(pwm, 0xffff);
+
+	// enable PWM
+	PWM_Enable(pwm);
+
+	// save pointer to PWM counter
+	s->timer = PWM_CTR(pwm);
+
+	// reset interrupt bit register
+	EmuInterSet(s, 0);
+
+	// start synchronization
+	EmuSyncStart(s);
+
+	// return real frequency
+	return PWM_GetClock(pwm);
+}
+
+// terminate time synchronization (stop PWM counter)
+//  pwm ... index of used PWM slice (0..7)
+void EmuSyncTerm(int pwm)
+{
+	// reset PWM to default state
+	PWM_Reset(pwm);
+}
+
+// ----------------------------------------------------------------------------
+//                               CPU emulators
+// ----------------------------------------------------------------------------
+
 #if USE_EMU_I4004		// use I4004 CPU emulator
 #include "emu_i4004.c"		// I4004 CPU
 #endif
@@ -71,42 +117,12 @@ sEmuDebClock EmuDebClock;
 #include "emu_z80.c"		// Z80 CPU
 #endif
 
-// initialize time synchronization (initialize PWM counter; returns real frequency in Hz)
-//  pwm ... index of (unused) PWM slice (0..7)
-//  freq ... required frequency in Hz (for 125 MHz system clock supported range: 488 kHz to 125 MHz)
-u32 EmuSyncInit(sEmuSync* s, int pwm, u32 freq)
-{
-	// reset PWM to default state
-	PWM_Reset(pwm);
+// ----------------------------------------------------------------------------
+//                             Device emulators
+// ----------------------------------------------------------------------------
 
-	// set PWM frequency
-	PWM_Clock(pwm, freq);
-
-	// set period to 16 bits
-	PWM_Top(pwm, 0xffff);
-
-	// enable PWM
-	PWM_Enable(pwm);
-
-	// save pointer to PWM counter
-	s->timer = PWM_CTR(pwm);
-
-	// reset interrupt bit register
-	//EmuInterSet(s, 0);
-
-	// start synchronization
-	EmuSyncStart(s);
-
-	// return real frequency
-	return PWM_GetClock(pwm);
-}
-
-// terminate time synchronization (stop PWM counter)
-//  pwm ... index of used PWM slice (0..7)
-void EmuSyncTerm(int pwm)
-{
-	// reset PWM to default state
-	PWM_Reset(pwm);
-}
+#if USE_EMU_PC			// use PC emulator
+#include "pc/emu_pc.c"		// PC emulator
+#endif
 
 #endif // USE_EMU

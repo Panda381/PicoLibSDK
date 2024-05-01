@@ -1,0 +1,25 @@
+Turbo Assembler  Version 3.2  Copyright (c) 1988, 1992 Borland International
+Syntax:  TASM [options] source [,object] [,listing] [,xref]
+/a,/s         Alphabetic or Source-code segment ordering
+/c            Generate cross-reference in listing
+/dSYM[=VAL]   Define symbol SYM = 0, or = value VAL
+/e,/r         Emulated or Real floating-point instructions
+/h,/?         Display this help screen
+/iPATH        Search PATH for include files
+/jCMD         Jam in an assembler directive CMD (eg. /jIDEAL)
+/kh#          Hash table capacity # symbols
+/l,/la        Generate listing: l=normal listing, la=expanded listing
+/ml,/mx,/mu   Case sensitivity on symbols: ml=all, mx=globals, mu=none
+/mv#          Set maximum valid length for symbols
+/m#           Allow # multiple passes to resolve forward references
+/n            Suppress symbol tables in listing
+/os,/o,/op,/oiObject code: standard, standard w/overlays, Phar Lap, or IBM
+/p            Check for code segment overrides in protected mode
+/q            Suppress OBJ records not needed for linking
+/t            Suppress messages if successful assembly
+/uxxxx        Set version emulation, version xxxx
+/w0,/w1,/w2   Set warning level: w0=none, w1=w2=warnings on
+/w-xxx,/w+xxx Disable (-) or enable (+) warning xxx
+/x            Include false conditionals in listing
+/z            Display source line with error message
+/zi,/zd,/zn   Debug info: zi=full, zd=line numbers only, zn=none

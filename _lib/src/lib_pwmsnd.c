@@ -18,6 +18,9 @@
 
 #include "../../global.h"	// globals
 
+// global sound OFF
+Bool GlobalSoundOff = False;
+
 #if USE_PWMSND		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
 
 #include "../../_sdk/inc/sdk_irq.h"
@@ -26,9 +29,6 @@
 
 // PWM sound channels
 sPwmSnd PwmSound[USE_PWMSND];
-
-// global sound OFF
-Bool GlobalSoundOff = False;
 
 // IMA ADPCM tables
 #define ADPCM_MINVAL	-32768		// IMA ADPCM minimal value

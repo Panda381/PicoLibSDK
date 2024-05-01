@@ -64,9 +64,9 @@ u16 KeyLastRelease[KEY_NUM];
 volatile Bool KeyPressMap[KEY_NUM];
 
 // keyboard buffer
-#define KEYBUF_SIZE	10 // size of keyboard buffer
-char KeyBuf[KEYBUF_SIZE]; // keyboard buffer
-char KeyRetBuf = NOKEY;	// returned key to keyboard buffer (NOKEY = no key)
+#define KEYBUF_SIZE	16 // size of keyboard buffer
+u8 KeyBuf[KEYBUF_SIZE]; // keyboard buffer
+u8 KeyRetBuf = NOKEY;	// returned key to keyboard buffer (NOKEY = no key)
 volatile u8 KeyWriteOff = 0; // write offset to keyboard buffer
 volatile u8 KeyReadOff = 0;	// read offset from keyboard buffer
 
@@ -111,7 +111,7 @@ void KeyTerm()
 }
 
 // write key to keyboard buffer
-void KeyWriteKey(char key)
+void KeyWriteKey(u8 key)
 {
 	u8 w = KeyWriteOff;
 	u8 w2 = w + 1;
@@ -166,6 +166,7 @@ void KeyScan()
 				if ((s16)(t - KeyLastRelease[i]) >= (s16)KEY_REL_TIME)
 				{
 					KeyPressMap[i] = False;
+					KeyWriteKey((i+1) | KEY_RELEASE);
 				}
 			}
 		}
@@ -173,8 +174,10 @@ void KeyScan()
 }
 
 // check if key KEY_* is currently pressed
-Bool KeyPressed(char key)
+Bool KeyPressed(u8 key)
 {
+	key &= KEY_MASK; // clear release flag
+
 #if !SYSTICK_KEYSCAN	// call KeyScan() function from SysTick system timer
 	KeyScan();
 #endif
@@ -246,8 +249,8 @@ Bool KeyPressed(char key)
 	return KeyPressMap[key-1];
 }
 
-// get button from keyboard buffer (returns NOKEY if no scan code)
-char KeyGet()
+// get button from keyboard buffer, including release keys (returns NOKEY if no scan code; B7 = KEY_RELEASE = release flag)
+u8 KeyGetRel()
 {
 #if !SYSTICK_KEYSCAN	// call KeyScan() function from SysTick system timer
 	// scan keyboard
@@ -255,7 +258,7 @@ char KeyGet()
 #endif
 
 	// get key from temporary 1-key buffer
-	char ch = KeyRetBuf;
+	u8 ch = KeyRetBuf;
 	if (ch != NOKEY)
 	{
 		KeyRetBuf = NOKEY;
@@ -267,42 +270,43 @@ char KeyGet()
 	{
 		for (;;)
 		{
-			u32 key = UsbGetKey();
+			u32 key = UsbGetKeyRel();
 			if (key == 0) break;
 
 			ch = key & 0xff;
-			switch ((u8)ch)
+			u8 rel = ((key & B24) == 0) ? 0 : KEY_RELEASE; // release flag
+			switch (ch)
 			{
 			case HID_KEY_ARROW_UP:
 			case HID_KEY_KEYPAD_8:
-				return KEY_UP;
+				return KEY_UP | rel;
 
 			case HID_KEY_ARROW_LEFT:
 			case HID_KEY_KEYPAD_4:
-				return KEY_LEFT;
+				return KEY_LEFT | rel;
 
 			case HID_KEY_ARROW_RIGHT:
 			case HID_KEY_KEYPAD_6:
-				return KEY_RIGHT;
+				return KEY_RIGHT | rel;
 
 			case HID_KEY_ARROW_DOWN:
 			case HID_KEY_KEYPAD_2:
 			case HID_KEY_KEYPAD_5:
-				return KEY_DOWN;
+				return KEY_DOWN | rel;
 
 			case HID_KEY_TAB:
 			case HID_KEY_KEYPAD_SUBTRACT:
 			case HID_KEY_SHIFT_LEFT:
 			case HID_KEY_SHIFT_RIGHT:
 			case HID_KEY_X:
-				return KEY_X;
+				return KEY_X | rel;
 
 			case HID_KEY_ESCAPE:
 			case HID_KEY_BACKSPACE:
 			case HID_KEY_KEYPAD_MULTIPLY:
 			case HID_KEY_Y:
 			case HID_KEY_Z:
-				return KEY_Y;
+				return KEY_Y | rel;
 
 			case HID_KEY_CONTROL_LEFT:
 			case HID_KEY_CONTROL_RIGHT:
@@ -311,14 +315,14 @@ char KeyGet()
 //			case HID_KEY_SPACE:
 			case HID_KEY_KEYPAD_0:
 			case HID_KEY_A:
-				return KEY_A;
+				return KEY_A | rel;
 
 			case HID_KEY_ALT_LEFT:
 			case HID_KEY_ALT_RIGHT:
 			case HID_KEY_KEYPAD_ADD:
 			case HID_KEY_KEYPAD_DECIMAL:
 			case HID_KEY_B:
-				return KEY_B;
+				return KEY_B | rel;
 			}
 		}
 	}
@@ -338,6 +342,17 @@ char KeyGet()
 	KeyReadOff = r;
 
 	return ch;
+}
+
+// get button from keyboard buffer (returns NOKEY if no scan code)
+u8 KeyGet()
+{
+	u8 ch;
+	for (;;)
+	{
+		ch = KeyGetRel();
+		if ((ch & KEY_RELEASE) == 0) return ch; // release key of NOKEY
+	}
 }
 
 // get character from local keyboard
@@ -365,7 +380,7 @@ void KeyFlush()
 }
 
 // return key to keyboard buffer (can hold only 1 key)
-void KeyRet(char key)
+void KeyRet(u8 key)
 {
 	KeyRetBuf = key;
 }

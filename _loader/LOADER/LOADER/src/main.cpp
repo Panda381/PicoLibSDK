@@ -1100,50 +1100,73 @@ void DispBigErr(const char* text)
 
 char BatTxt[] = "Battery 0.00V";
 
+// display battery
+void DispBattery(int y)
+{
+	// display battery voltage
+	int bat = (GetBatInt() + 5)/10;
+	int i = bat / 10;
+	BatTxt[11] = bat - i*10 + '0';
+	bat = i / 10;
+	BatTxt[10] = i - bat*10 + '0';
+	BatTxt[8] = bat + '0';
+	SelFont8x16();
+	DrawTextBg2(BatTxt, (WIDTH - 13*16)/2, y, COL_YELLOW, COL_BLACK);
+	y += 34;
+
+		// display battery voltage progress bar
+#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
+	bat = GetBatInt() - ConfigGetBatEmptyInt();
+	if (bat < 0) bat = 0;
+	if (bat > ConfigGetBatFullInt() - ConfigGetBatEmptyInt()) bat = ConfigGetBatFullInt() - ConfigGetBatEmptyInt();
+	Progress(bat, ConfigGetBatFullInt() - ConfigGetBatEmptyInt(), y, COL_GREEN);
+#else
+	bat = GetBatInt() - BATTERY_EMPTY_INT;
+	if (bat < 0) bat = 0;
+	if (bat > BATTERY_FULL_INT - BATTERY_EMPTY_INT) bat = BATTERY_FULL_INT - BATTERY_EMPTY_INT;
+	Progress(bat, BATTERY_FULL_INT - BATTERY_EMPTY_INT, y, COL_GREEN);
+#endif
+}
+
 void Battery()
 {
 	DrawClear();
 	KeyFlush();
 	u8 key;
+	int y;
 	Bool cfg = False;
 
 	do {
-		// display battery voltage
-		int bat = (GetBatInt() + 5)/10;
-		int i = bat / 10;
-		BatTxt[11] = bat - i*10 + '0';
-		bat = i / 10;
-		BatTxt[10] = i - bat*10 + '0';
-		BatTxt[8] = bat + '0';
-		SelFont8x16();
-		DrawTextBg2(BatTxt, (WIDTH - 13*16)/2, 23, COL_YELLOW, COL_BLACK);
+		y = 23;
 
-		// display battery voltage progress bar
-#if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
-		bat = GetBatInt() - ConfigGetBatEmptyInt();
-		if (bat < 0) bat = 0;
-		if (bat > ConfigGetBatFullInt() - ConfigGetBatEmptyInt()) bat = ConfigGetBatFullInt() - ConfigGetBatEmptyInt();
-		Progress(bat, ConfigGetBatFullInt() - ConfigGetBatEmptyInt(), 57, COL_GREEN);
-#else
-		bat = GetBatInt() - BATTERY_EMPTY_INT;
-		if (bat < 0) bat = 0;
-		if (bat > BATTERY_FULL_INT - BATTERY_EMPTY_INT) bat = BATTERY_FULL_INT - BATTERY_EMPTY_INT;
-		Progress(bat, BATTERY_FULL_INT - BATTERY_EMPTY_INT, 57, COL_GREEN);
+		// display battery voltage
+		DispBattery(y);
+		y += 34 + 20;
+
+#if !USE_PICOINO10 && !USE_PICOTRON
+		DrawText("A=ScreenSaver while Charging:", PROGRESS_X-4, y, COL_WHITE);
+		DrawTextBg(ConfigGetScreenSaver() ? "ON " : "off", PROGRESS_X-4+30*8, y, COL_WHITE, COL_BLACK);
 #endif
+		y += 25;
 
 		// volume
-		DrawText("Volume UP/DOWN:", PROGRESS_X, 95, COL_WHITE);
+		DrawText("Volume UP/DOWN:", PROGRESS_X, y, COL_WHITE);
+		y += 16;
 		COLTYPE col = COL_GREEN;
 		u8 vol = ConfigGetVolume();
 		if (vol > CONFIG_VOLUME_FULL) col = COL_YELLOW;
 		if (vol > (CONFIG_VOLUME_FULL+CONFIG_VOLUME_MAX)/2) col = COL_RED;
-		Progress(vol, CONFIG_VOLUME_MAX, 111, col);
-		DrawText("0%    50%   100%  150%  200%  250%", 26, 131, COL_WHITE);
+		Progress(vol, CONFIG_VOLUME_MAX, y, col);
+		y += 20;
+		DrawText("0%    50%   100%  150%  200%  250%", 26, y, COL_WHITE);
+		y += 25;
 
 		// bright
-		DrawText("Backlight LEFT/RIGHT:", PROGRESS_X, 160, COL_WHITE);
-		Progress(ConfigGetBacklight(), CONFIG_BACKLIGHT_MAX, 176, COL_GREEN);
-		DrawText("0   1   2   3   4   5   6   7   8", 26, 196, COL_WHITE);
+		DrawText("Backlight LEFT/RIGHT:", PROGRESS_X, y, COL_WHITE);
+		y += 16;
+		Progress(ConfigGetBacklight(), CONFIG_BACKLIGHT_MAX, y, COL_GREEN);
+		y += 20;
+		DrawText("0   1   2   3   4   5   6   7   8", 26, y, COL_WHITE);
 
 		// help
 #if USE_PICOINO10 || USE_PICOTRON
@@ -1158,6 +1181,14 @@ void Battery()
 		key = KeyGet();
 		switch (key)
 		{
+		// ScreenSaver
+		case KEY_A:
+#if !USE_PICOINO10 && !USE_PICOTRON
+			ConfigSetScreenSaver(!ConfigGetScreenSaver());
+			KeyFlush();
+			cfg = True;
+#endif
+			break;
 
 		// BOOTSEL
 #ifdef KEY_B
@@ -1228,11 +1259,79 @@ void RunRAM(int num)
 	((void(*)(void))(SRAM_BASE+1))();
 }
 
+#if USE_ST7789		// use ST7789 TFT display (st7789.c, st7789.h)
+// screen saver
+void BootScreenSaver()
+{
+	int cnt, j;
+
+	// short wait to stabilize power supply (1 ms works fine)
+	WaitMs(10);
+
+	// measure power supply
+	if (GetBatInt() <= 4600) return;
+
+	// flush keyboard
+	KeyFlush();
+
+	// wait for continue
+	while (True)
+	{
+		// counter
+		for (cnt = 5; cnt > 0; cnt--)
+		{
+			// clear screen
+			DrawClear();
+
+			// title
+			SelFont8x16();
+			DrawText2("Going To Sleep:", (WIDTH - 16*16)/2, 50, COL_YELLOW);
+
+			// counter
+			DrawChar2((char)(cnt + '0'), (WIDTH - 16*16)/2 + 15*16, 50, COL_YELLOW);
+
+			// prompt
+			DrawText("Press any key to start...", (WIDTH - 25*8)/2, HEIGHT - 50, COL_WHITE);
+
+			// display update
+			DispUpdate();
+
+			// wait 1 second
+			for (j = 100; j > 0; j--)
+			{
+				if (KeyGet() != NOKEY) return;
+				WaitMs(10);
+			}
+		}
+
+		// going to sleep
+		DrawClear();
+		DispUpdate();
+		DispBacklight(0);
+
+		// wait for a key
+		while (KeyGet() == NOKEY) {}
+
+		// backlight update
+		DispBacklightUpdate();
+	}
+}
+#endif
+
 int main()
 {
 	int i, j, k, m, n;
 	u32 t;
 	sFileDesc* fd;
+
+	// check loader magic
+	Bool loader = (WATCHDOG_SCRATCH[4] == WATCHDOG_LOADER_MAGIC);
+	WATCHDOG_SCRATCH[4] = 0;
+
+	// boot screen saver
+#if USE_ST7789		// use ST7789 TFT display (st7789.c, st7789.h)
+	if (!loader && ConfigGetScreenSaver()) BootScreenSaver();
+#endif
 
 	// clear screen
 	memset(FrameBuf, 0, sizeof(FrameBuf));
@@ -1250,10 +1349,6 @@ int main()
 	// initialize remount
 	LastMount = Time()-2000000; // invalidate last mount time = current time - 2 seconds
 	Remount = True; // remount request
-
-	// check loader magic
-	Bool loader = (WATCHDOG_SCRATCH[4] == WATCHDOG_LOADER_MAGIC);
-	WATCHDOG_SCRATCH[4] = 0;
 
 	// try to mount disk
 	if (!DiskMount())

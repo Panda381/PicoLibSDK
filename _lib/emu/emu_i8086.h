@@ -17,31 +17,7 @@
 // I8086 CPU speed: 5 to 10 MHz
 // I8088 CPU speed: 4.77 to 9 MHz
 // I80186 CPU speed: 6 MHz
-
-// IBM PC 5150, CPU 8088 at 4.77 MHz, memory 16 KB or 64 KB expandable to 640 KB, display MDA or CGA, PC speaker, PC DOS 1.0, 2x floppy 5.25"
-// IBM PC-XT 5160, CPU 8088 at 4.77 MHz, memory 128 KB expandable to 640 KB, display MDA or CGA or EGA or PGC, PC DOS 2.0, harddisk 10 or 20 MB, floppy 5.25" or 3.5"
-// CPU frequency = NTSC subcarrier frequency * 4 / 3 = 3.579545 MHz * 4 / 3 = 4.772727 MHz
-
-//   CGA (Color Graphics Adapter): 16 KB video RAM, text mode, graphics 640 x 200, 16 colors https://en.wikipedia.org/wiki/Color_Graphics_Adapter
-//		mode 0,1: text 40 x 25 with 8x8 font (resolution 320x200) (2 KB)
-//		mode 2,3: text 80 x 25 with 8x8 font (resolution 640x200) (4 KB)
-//		modified text mode 3: graphics 160 x 100 / 16 colors (16 KB as modified attribute text mode)
-//		mode 4,5: graphics 320 x 200 / 4 colors (chosen from 3 fixed palettes, color 1 chosen from 16-color palette) (16 KB)
-//		mode 6: graphics 640 x 200 / 2 colors, black + 1 color from 16-color palette (16 KB)
-//   MDA (Monochrome Display Adapter): mono text mode only, 4 KB video RAM
-//		mode 7: text 80 x 25 mono, characters 8x16 (400 lines) or 9x14 (350 lines) (4 KB) https://en.wikipedia.org/wiki/IBM_Monochrome_Display_Adapter
-//   EGA (Enhanced Graphic Adapter): 64 KB (up to 256 KB) video RAM
-//		graphics 640 x 350 / 16 colors (112 KB)
-//		graphics 640 x 350 / 2 colors (56 KB)
-//		graphics 640 x 200 / 16 colors (64 KB)
-//		graphics 320 x 200 / 16 colors (32 KB)
-//   VGA (Video Graphics Array): 256 KB video RAM, 16 or 256 colors
-//		graphics 640 x 480 / 16 colors
-//		graphics 640 x 350 or 640 x 200 / 16 colors
-//		graphics 320 x 200 / 16 colors
-//		mode 13h (19): graphics 320 x 200 / 256 colors
-//   MCGA (Multicolor Graphics Adapter): compatible with VGA, 64 KB video RAM, max. resolution 640x480 / 2 colors
-//   PGC (Professional Graphics Controller): graphics 640 x 480 / 256 colors
+//    CPU frequency = NTSC subcarrier frequency * 4 / 3 = 3.579545 MHz * 4 / 3 = 4.772727 MHz
 
 /* ==== SYSINFO test detects this CPU as 8088 - 8-bit bus check does not pass:
 
@@ -95,8 +71,6 @@ testproa:sti			; enable interrupts again
 	add	ax,cx		; correction CPU code (16-bit bus CX = 1, 8-bit bus CX = 0)
 
 */
-
-// @TODO: interrupts
 
 #if USE_EMU_I8086		// use I8086/I8088/I80186/I80188 CPU emulator
 
@@ -203,6 +177,37 @@ testproa:sti			; enable interrupts again
 #define I8086_REP_Z	1	// REP or REPZ
 #define I8086_REP_NZ	2	// REPNZ
 
+// some instructions
+#define I8086_INS_NOP	0x90	// instruction NOP
+#define I8086_INS_IRET	0xCF	// instruction IRET
+
+// IBM PC hardware interrupt control (register in sEmuSync)
+// - on change, update interrupt service in I8086_Exec ("find INT")
+#define I8086_IRQ_INT08	0	// IRQ0, INT 08h, system clock (18.2 Hz)
+#define I8086_IRQ_INT09	1	// IRQ1, INT 09h, keyboard interrupt
+#define I8086_IRQ_INT0A	2	// IRQ2, INT 0Ah, EGA vertical retrace, cascade interrupt from interrupt controller #2
+#define I8086_IRQ_INT0B	3	// IRQ3, INT 0Bh, COM2
+#define I8086_IRQ_INT0C	4	// IRQ4, INT 0Ch, COM1
+#define I8086_IRQ_INT0D	5	// IRQ5, INT 0Dh, XT hard disk, AT LPT2
+#define I8086_IRQ_INT0E	6	// IRQ6, INT 0Eh, floppy disk controller
+#define I8086_IRQ_INT0F	7	// IRQ7, INT 0Fh, LPT1
+
+#define I8086_IRQ_INT1B	8	// INT 1Bh - raised from INT 09h
+#define I8086_IRQ_INT1C	9	// INT 1Ch - raised from INT 08h
+
+#define I8086_IRQ_INT23	10	// INT 23h - raised from INT 21h to break program
+
+#define I8086_IRQ_INT70	11	// IRQ8, INT 70h, CMOS timer (1024 Hz)
+#define I8086_IRQ_INT71	12	// IRQ9, INT 71h, redirect to INT 0Ah
+#define I8086_IRQ_INT72	13	// IRQ10, INT 72h
+#define I8086_IRQ_INT73	14	// IRQ11, INT 73h
+#define I8086_IRQ_INT74	15	// IRQ12, INT 74h, pointing device PS
+#define I8086_IRQ_INT75	16	// IRQ13, INT 75h, mathematic coprocessor exception
+#define I8086_IRQ_INT76	17	// IRQ14, INT 76h, AT hard disk controller
+#define I8086_IRQ_INT77	18	// IRQ15, INT 77h, secondary IDE controller
+
+#define I8086_IRQ_ALL	0x7ffff	// mask of all IRQs
+
 // I8086 CPU descriptor
 // - Optimization of thumb1 on RP2040: offset of byte should be <= 31, word <= 62, dword <= 124
 // - Entries should be aligned
@@ -227,26 +232,26 @@ typedef struct {
 	union {
 		// 16-bit registers must have same order as in instruction, mode 3, w=1
 		struct {
-			union { u16 ax; struct { u8 al, ah; }; };	// 0x18: registers AH (high) and AL (low)
-			union { u16 cx; struct { u8 cl, ch; }; };	// 0x1A: registers CH (high) and CL (low)
-			union { u16 dx; struct { u8 dl, dh; }; };	// 0x1C: registers DH (high) and DL (low)
-			union { u16 bx; struct { u8 bl, bh; }; };	// 0x1E: registers BH (high) and BL (low)
+			union { volatile u16 ax; struct { volatile u8 al, ah; }; };	// 0x18: registers AH (high) and AL (low)
+			union { volatile u16 cx; struct { volatile u8 cl, ch; }; };	// 0x1A: registers CH (high) and CL (low)
+			union { volatile u16 dx; struct { volatile u8 dl, dh; }; };	// 0x1C: registers DH (high) and DL (low)
+			union { volatile u16 bx; struct { volatile u8 bl, bh; }; };	// 0x1E: registers BH (high) and BL (low)
 
-			u16	sp;	// 0x20: stack pointer SP
-			u16	bp;	// 0x22: base pointer BP
-			u16	si;	// 0x24: source index SI
-			u16	di;	// 0x26: destination index DI
+			volatile u16	sp;	// 0x20: stack pointer SP
+			volatile u16	bp;	// 0x22: base pointer BP
+			volatile u16	si;	// 0x24: source index SI
+			volatile u16	di;	// 0x26: destination index DI
 		};
 
-		u16	reg16[8];	// 0x18: 16-bit registers indexed
+		volatile u16	reg16[8];	// 0x18: 16-bit registers indexed
 
-		u8	reg8[16];	// 0x18: 8-bit registers indexed
+		volatile u8	reg8[16];	// 0x18: 8-bit registers indexed
 	};
 
 	u16		src16;		// 0x28: 16-bit source operand
 	u16		dst16;		// 0x2A: 16-bit destination operand
-	u16		ip;		// 0x2C: instruction pointer IP
-	u16		flags;		// 0x2E: flags
+	volatile u16	ip;		// 0x2C: instruction pointer IP
+	volatile u16	flags;		// 0x2E: flags
 	u16		eoff;		// 0x30: offset of effective address (undocumented: LEA with mod == 3 returns previous effective address)
 	u16		eseg;		// 0x32: segment of effective address
 	u16		res2[2];	// 0x34: ... reserved
@@ -256,13 +261,13 @@ typedef struct {
 	union {
 		// segment registers must have same order as in instruction
 		struct {
-			u16	es;		// 0x38: extra segment ES
-			u16	cs;		// 0x3A: code segment CS
-			u16	ss;		// 0x3C: stack segment SS
-			u16	ds;		// 0x3E: data segment DS
+			volatile u16	es;	// 0x38: extra segment ES
+			volatile u16	cs;	// 0x3A: code segment CS
+			volatile u16	ss;	// 0x3C: stack segment SS
+			volatile u16	ds;	// 0x3E: data segment DS
 		};
 
-		u16	regseg[4];	// 0x38: segment registers indexed
+		volatile u16	regseg[4];	// 0x38: segment registers indexed
 	};
 
 	pEmu32Read8	readmem;	// 0x40: read byte from memory
@@ -320,5 +325,8 @@ u32 I8086_Cont(sI8086* cpu, int pwm, u32 freq);
 
 // check if emulation is running
 INLINE Bool I8086_IsRunning() { return I8086_Cpu != NULL; }
+
+// raise IRQ interrupt request I8086_IRQ*
+INLINE void I8086_RaiseIRQ(sI8086* cpu, int irq) { EmuInterSetBit(&cpu->sync, irq); }
 
 #endif // USE_EMU_I8086

@@ -47,6 +47,7 @@ void ConfigSetDef(sConfig* cfg)
 	cfg->temp_base = TEMP_BASE;		// temperature base voltage at 27°C (default TEMP_BASE = 0.706f)
 	cfg->temp_slope = TEMP_SLOPE;		// temperature slope - voltage per 1 degree (default TEMP_SLOPE = 0.001721f)
 	cfg->crystal = 12000000;		// crystal frequency in [Hz] (default 12000000)
+	cfg->screensaver = 255;			// screensaver default ON
 }
 
 // clear configuration memory

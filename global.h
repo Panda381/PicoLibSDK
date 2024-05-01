@@ -17,7 +17,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-#define SDK_VER		111	// SDK library version in hundredths
+#define SDK_VER		112	// SDK library version in hundredths
 
 // ----------------------------------------------------------------------------
 //                               Attributes
@@ -226,6 +226,10 @@ STATIC_ASSERT(sizeof(s32) == 4, "Incorrect typedef s32!");
 STATIC_ASSERT(sizeof(u32) == 4, "Incorrect typedef u32!");
 STATIC_ASSERT(sizeof(s64) == 8, "Incorrect typedef s64!");
 STATIC_ASSERT(sizeof(u64) == 8, "Incorrect typedef u64!");
+
+extern const u8* __etext;	// end of .text section
+extern const u8* __data_start__; // start of initialize .data section
+extern const u8* __data_end__; // end of initialize .data section
 
 // ----------------------------------------------------------------------------
 //                               Constants

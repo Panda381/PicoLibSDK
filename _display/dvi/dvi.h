@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-#define DVI_IRQTIME		1	// debug flag - measure delta time of DVI service
+#define DVI_IRQTIME	0	// debug flag - measure delta time of DVI service
 // Measured: IN=28 us, OUT=4 us, IN2=1 us, OUT2=31 us
 
 #if !USE_MINIVGA			// use mini-VGA display with simple frame buffer:

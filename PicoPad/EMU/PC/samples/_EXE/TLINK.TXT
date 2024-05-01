@@ -1,0 +1,18 @@
+Turbo Link  Version 5.1 Copyright (c) 1992 Borland International
+Syntax: TLINK objfiles, exefile, mapfile, libfiles, deffile
+@xxxx indicates use response file xxxx
+/m  Map file with publics         /x  No map file at all
+/i  Initialize all segments       /l  Include source line numbers
+/L  Specify library search paths  /s  Detailed map of segments
+/n  No default libraries          /d  Warn if duplicate symbols in libraries
+/c  Case significant in symbols   /3  Enable 32-bit processing
+/o  Overlay switch                /v  Full symbolic debug information
+/P[=NNNNN]  Pack code segments    /A=NNNN  Set NewExe segment alignment
+/ye Expanded memory swapping      /yx Extended memory swapping
+/e  Ignore Extended Dictionary
+/t  Create COM file (same as /Tdc)
+/C  Case sensitive exports and imports
+/Txx  Specify output file type
+	       /Tdx  DOS image (default)
+	       /Twx  Windows image
+                (third letter can be c=COM, e=EXE, d=DLL)

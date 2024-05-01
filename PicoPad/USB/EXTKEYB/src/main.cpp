@@ -10,6 +10,7 @@
 int main()
 {
 	u32 k;
+	u8 ch;
 	
 Restart:
 	// initialize USB
@@ -26,11 +27,26 @@ Restart:
 		if (!UsbKeyIsMounted()) goto Restart;
 
 		// get keyboard key
-		k = UsbGetKey();
+		k = UsbGetKeyRel();
 		if (k != 0)
 		{
-			printf("key=%02X (%d) modi=%02X char=%c\n",
-				k & 0xff, k & 0xff, (k >> 8) & 0xff, (char)(k >> 16));
+			if ((k & B24) != 0)
+				printf("key=0x%02X (%d) modi=0x%02X RELEASE\n",
+					k & 0xff, k & 0xff, (k >> 8) & 0xff);
+			else
+			{
+				ch = (u8)(k >> 16);
+				if (ch < 32)
+					if (ch == 0)
+						printf("key=0x%02X (%d) modi=0x%02X\n",
+							k & 0xff, k & 0xff, (k >> 8) & 0xff);
+					else
+						printf("key=0x%02X (%d) modi=0x%02X char=0x%02X\n",
+							k & 0xff, k & 0xff, (k >> 8) & 0xff, ch);
+				else
+					printf("key=0x%02X (%d) modi=0x%02X char=%c\n",
+						k & 0xff, k & 0xff, (k >> 8) & 0xff, (char)ch);
+			}
 		}
 
 		// control

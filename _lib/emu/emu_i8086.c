@@ -77,9 +77,11 @@ void I8086_Reset(sI8086* cpu)
 // 8086: Size of code of this function and subfunctions: 12752 code + 1356 jump table = 14108 bytes
 // 80186: Size of code of this function and subfunctions: 14472 code + 1412 jump table = 15884 bytes
 // CPU loading at 4.77 MHz on 252 MHz: used 17-44%, max. 30-130%
+// CPU loading at 12 MHz on 252 MHz: used 46-999%, max. 98-999%
 void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 {
 	u8 op, m;
+	u32 irq;
 
 	// clear stop flag
 	cpu->stop = 0;
@@ -87,6 +89,39 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 	// program loop
 	while (cpu->stop == 0)
 	{
+		// check interrupt request
+		irq = EmuInterGet(&cpu->sync);
+		if (((irq & I8086_IRQ_ALL) != 0) && (cpu->tid == 0) && ((cpu->flags & I8086_IF) != 0))
+		{
+			// continue after HALT
+			if (cpu->halted != 0)
+			{
+				cpu->ip++;
+				cpu->halted = 0;
+			}
+
+			// find INT
+			// IRQ0..IRQ7: raise INT 08h..INT 0Fh
+			// IRQ8..IRQ15: raise INT 70h..INT 77h
+			m = 8;
+			op = 0;
+			while ((irq & 1) == 0)
+			{
+				irq >>= 1;
+				op++;
+				m++;
+				if (m == 0x10) m = 0x1b;
+				if (m == 0x1d) m = 0x23;
+				if (m == 0x24) m = 0x70;
+			}
+			
+			// clear interrupt request
+			EmuInterClrBit(&cpu->sync, op);
+
+			// raise INT
+			I8086_INT(cpu, m);
+		}
+
 		// shift segment pregix
 		cpu->segpref = cpu->segpref_next;
 		cpu->segpref_next = I8086_SEG_NO;
@@ -94,20 +129,6 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 		// shift REP prefix
 		cpu->reppref = cpu->reppref_next;
 		cpu->reppref_next = I8086_REP_NO;
-
-// @TODO: interrupts
-
-		// if ( ... && (cpu->tid == 0))
-
-
-/*			// continue after HALT
-			if (cpu->halted != 0)
-			{
-				cpu->ip++;
-				cpu->halted = 0;
-			}
-*/
-
 
 		// temporary interrupt disable
 		if (cpu->tid > 0) cpu->tid--;
@@ -790,6 +811,16 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 			cpu->sync.clock += I8086_CLOCKMUL*2;
 			break;
 
+		// PUSH SP
+		case 0x54:
+#if I8086_CPU_80186	// 1=use 80186 or later ... Note: This difference occurs from the 80286 processor onwards.
+			I8086_PUSH(cpu, cpu->sp);
+#else
+			I8086_PUSH(cpu, cpu->sp - 2);
+#endif
+			cpu->sync.clock += I8086_CLOCKMUL*11;
+			break;
+
 		// PUSH AX
 		case 0x50:
 		// PUSH CX
@@ -798,8 +829,6 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 		case 0x52:
 		// PUSH BX
 		case 0x53:
-		// PUSH SP
-		case 0x54:
 		// PUSH BP
 		case 0x55:
 		// PUSH SI
@@ -948,6 +977,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					cpu->cx--;
 
 					// repeat
+					cpu->tid = 1; // temporary interrupt disable
 					cpu->reppref_next = cpu->reppref; // hold next REP prefix
 					cpu->segpref_next = cpu->segpref; // hold next segment prefix
 					cpu->ip--; // return to the instruction
@@ -989,6 +1019,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					cpu->cx--;
 
 					// repeat
+					cpu->tid = 1; // temporary interrupt disable
 					cpu->reppref_next = cpu->reppref; // hold next REP prefix
 					cpu->segpref_next = cpu->segpref; // hold next segment prefix
 					cpu->ip--; // return to the instruction
@@ -1030,6 +1061,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					cpu->cx--;
 
 					// repeat
+					cpu->tid = 1; // temporary interrupt disable
 					cpu->reppref_next = cpu->reppref; // hold next REP prefix
 					cpu->segpref_next = cpu->segpref; // hold next segment prefix
 					cpu->ip--; // return to the instruction
@@ -1071,6 +1103,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					cpu->cx--;
 
 					// repeat
+					cpu->tid = 1; // temporary interrupt disable
 					cpu->reppref_next = cpu->reppref; // hold next REP prefix
 					cpu->segpref_next = cpu->segpref; // hold next segment prefix
 					cpu->ip--; // return to the instruction
@@ -1546,6 +1579,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					cpu->cx--;
 
 					// repeat
+					cpu->tid = 1; // temporary interrupt disable
 					cpu->reppref_next = cpu->reppref; // hold next REP prefix
 					cpu->segpref_next = cpu->segpref; // hold next segment prefix
 					cpu->ip--; // return to the instruction
@@ -1595,6 +1629,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					cpu->cx--;
 
 					// repeat
+					cpu->tid = 1; // temporary interrupt disable
 					cpu->reppref_next = cpu->reppref; // hold next REP prefix
 					cpu->segpref_next = cpu->segpref; // hold next segment prefix
 					cpu->ip--; // return to the instruction
@@ -1664,6 +1699,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					// repeat
 					if (!stop)
 					{
+						cpu->tid = 1; // temporary interrupt disable
 						cpu->reppref_next = cpu->reppref; // hold next REP prefix
 						cpu->segpref_next = cpu->segpref; // hold next segment prefix
 						cpu->ip--; // return to the instruction
@@ -1734,6 +1770,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					// repeat
 					if (!stop)
 					{
+						cpu->tid = 1; // temporary interrupt disable
 						cpu->reppref_next = cpu->reppref; // hold next REP prefix
 						cpu->segpref_next = cpu->segpref; // hold next segment prefix
 						cpu->ip--; // return to the instruction
@@ -1789,6 +1826,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					cpu->cx--;
 
 					// repeat
+					cpu->tid = 1; // temporary interrupt disable
 					cpu->reppref_next = cpu->reppref; // hold next REP prefix
 					cpu->segpref_next = cpu->segpref; // hold next segment prefix
 					cpu->ip--; // return to the instruction
@@ -1827,6 +1865,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					cpu->cx--;
 
 					// repeat
+					cpu->tid = 1; // temporary interrupt disable
 					cpu->reppref_next = cpu->reppref; // hold next REP prefix
 					cpu->segpref_next = cpu->segpref; // hold next segment prefix
 					cpu->ip--; // return to the instruction
@@ -1865,6 +1904,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					cpu->cx--;
 
 					// repeat
+					cpu->tid = 1; // temporary interrupt disable
 					cpu->reppref_next = cpu->reppref; // hold next REP prefix
 					cpu->segpref_next = cpu->segpref; // hold next segment prefix
 					cpu->ip--; // return to the instruction
@@ -1903,6 +1943,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					cpu->cx--;
 
 					// repeat
+					cpu->tid = 1; // temporary interrupt disable
 					cpu->reppref_next = cpu->reppref; // hold next REP prefix
 					cpu->segpref_next = cpu->segpref; // hold next segment prefix
 					cpu->ip--; // return to the instruction
@@ -1964,6 +2005,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					// repeat
 					if (!stop)
 					{
+						cpu->tid = 1; // temporary interrupt disable
 						cpu->reppref_next = cpu->reppref; // hold next REP prefix
 						cpu->segpref_next = cpu->segpref; // hold next segment prefix
 						cpu->ip--; // return to the instruction
@@ -2026,6 +2068,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					// repeat
 					if (!stop)
 					{
+						cpu->tid = 1; // temporary interrupt disable
 						cpu->reppref_next = cpu->reppref; // hold next REP prefix
 						cpu->segpref_next = cpu->segpref; // hold next segment prefix
 						cpu->ip--; // return to the instruction
@@ -2096,7 +2139,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 				I8086_GetEA(cpu); // calculate effective address
 
 				u32 cc = (cpu->modrm >= 0xc0) ? (I8086_CLOCKMUL*5) : (I8086_CLOCKMUL*17);
-				u8 c = I8086_ProgByte(cpu);
+				u8 c = I8086_ProgByte(cpu) & 0x1f;
 				cc += c;
 				cpu->sync.clock += cc;
 
@@ -2131,7 +2174,7 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 				I8086_GetEA(cpu); // calculate effective address
 
 				u32 cc = (cpu->modrm >= 0xc0) ? (I8086_CLOCKMUL*5) : (I8086_CLOCKMUL*17);
-				u8 c = I8086_ProgByte(cpu);
+				u8 c = I8086_ProgByte(cpu) & 0x1f;
 				cc += c;
 				cpu->sync.clock += cc;
 
@@ -2391,7 +2434,11 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 				I8086_GetEA(cpu); // calculate effective address
 
 				u32 cc = (cpu->modrm >= 0xc0) ? (I8086_CLOCKMUL*8) : (I8086_CLOCKMUL*20);
+#if I8086_CPU_80186	// 1=use 80186 or later
+				u8 c = cpu->cl & 0x1f;
+#else
 				u8 c = cpu->cl;
+#endif
 				cc += c * 4;
 				cpu->sync.clock += cc;
 
@@ -2426,7 +2473,11 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 				I8086_GetEA(cpu); // calculate effective address
 
 				u32 cc = (cpu->modrm >= 0xc0) ? (I8086_CLOCKMUL*8) : (I8086_CLOCKMUL*20);
+#if I8086_CPU_80186	// 1=use 80186 or later
+				u8 c = cpu->cl & 0x1f;
+#else
 				u8 c = cpu->cl;
+#endif
 				cc += c * 4;
 				cpu->sync.clock += cc;
 
@@ -2712,6 +2763,8 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 		// op mem/reg (byte)
 		case 0xF6:
 			{
+				u16 ip0 = cpu->ip; // save fot case of divide zero interrupt
+
 				I8086_GetEA(cpu); // calculate effective address
 				u8 n = I8086_GetRM8(cpu); // get operation register/memory
 
@@ -2796,7 +2849,12 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					{
 						u16 ax = cpu->ax; // 1st operand
 						if ((u8)(ax >> 8) >= n) // check overflow
+						{
+#if I8086_CPU_80186	// 1=use 80186 or later
+							cpu->ip = ip0 - 1;
+#endif
 							I8086_INT(cpu, 0); // interrupt divide by zero ((ax >> 8) is >= n)
+						}
 						else
 						{
 							// divide
@@ -2825,7 +2883,12 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 				// IDIV mem/reg
 				default: // case 7:
 					if (n == 0) // check zero division
+					{
+#if I8086_CPU_80186	// 1=use 80186 or later
+						cpu->ip = ip0 - 1;
+#endif
 						I8086_INT(cpu, 0); // interrupt divide by zero ((ax >> 8) is >= n)
+					}
 					else
 					{
 						s16 ax = cpu->ax; // 1st operand
@@ -2844,7 +2907,12 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 
 						// check overflow
 						if ((res < -128) || (res > 127))
+						{
+#if I8086_CPU_80186	// 1=use 80186 or later
+							cpu->ip = ip0 - 1;
+#endif
 							I8086_INT(cpu, 0); // interrupt divide by zero ((ax >> 8) is >= n)
+						}
 						else
 						{
 							cpu->al = (u8)res; // quotient
@@ -2872,6 +2940,8 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 		// op mem/reg (word)
 		case 0xF7:
 			{
+				u16 ip0 = cpu->ip; // save fot case of divide zero interrupt
+
 				I8086_GetEA(cpu); // calculate effective address
 				u16 n = I8086_GetRM16(cpu); // get operation register/memory
 
@@ -2963,7 +3033,12 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 					{
 						u16 dx = cpu->dx;
 						if (dx >= n) // check overflow
+						{
+#if I8086_CPU_80186	// 1=use 80186 or later
+							cpu->ip = ip0 - 1;
+#endif
 							I8086_INT(cpu, 0); // interrupt divide by zero
+						}
 						else
 						{
 							u32 dxax = ((u32)dx << 16) | cpu->ax; // 1st operand
@@ -3000,7 +3075,12 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 				// IDIV mem/reg
 				default: // case 7:
 					if (n == 0) // check zero division
+					{
+#if I8086_CPU_80186	// 1=use 80186 or later
+						cpu->ip = ip0 - 1;
+#endif
 						I8086_INT(cpu, 0); // interrupt divide by zero ((ax >> 8) is >= n)
+					}
 					else
 					{
 						s32 dxax = (s32)(((u32)cpu->dx << 16) | cpu->ax); // 1st operand
@@ -3019,7 +3099,12 @@ void FASTCODE NOFLASH(I8086_Exec)(sI8086* cpu)
 
 						// check overflow
 						if ((res < -32768) || (res > 32767))
+						{
+#if I8086_CPU_80186	// 1=use 80186 or later
+							cpu->ip = ip0 - 1;
+#endif
 							I8086_INT(cpu, 0); // interrupt divide by zero ((ax >> 8) is >= n)
+						}
 						else
 						{
 							cpu->ax = (u16)res; // quotient

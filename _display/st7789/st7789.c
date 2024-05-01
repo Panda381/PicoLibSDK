@@ -25,6 +25,7 @@
 #include "../../_sdk/inc/sdk_pwm.h"
 #include "../../_sdk/inc/sdk_dma.h"
 #include "../../_lib/inc/lib_config.h"
+#include "../../_devices/picopad/picopad_ss.h"
 
 // ST7789 commands
 #define ST7789_NOP		0x00	// no operation
@@ -94,6 +95,10 @@
 // frame buffer in RGB 5-6-5 pixel format
 ALIGNED u16 FrameBuf[FRAMESIZE];
 #endif // USE_FRAMEBUF
+
+#if USE_EMUSCREENSHOT		// use emulator screen shots
+volatile Bool DoEmuScreenShot = False;	// request to do emulator screenshot
+#endif
 
 // rotation mode for ST7789_MADCTL
 const u8 RotationTab[4] = {
@@ -239,8 +244,19 @@ void DispWindow(u16 x1, u16 x2, u16 y1, u16 y2)
 }
 
 // LOW level control: start sending image data to display window (DispSendImg() must follow)
+//   On emulator screenshot - only window on full display is supported
 void DispStartImg(u16 x1, u16 x2, u16 y1, u16 y2)
 {
+#if USE_EMUSCREENSHOT		// use emulator screen shots
+	if (DoEmuScreenShot)	// request to do emulator screenshot
+	{
+		DoEmuScreenShot = False;
+
+		// open screenshot
+		OpenScreenShot();
+	}
+#endif
+
 	// set draw window
 	DispWindow(x1, x2, y1, y2);
 
@@ -252,9 +268,37 @@ void DispStartImg(u16 x1, u16 x2, u16 y1, u16 y2)
 // LOW level control: send one byte of image data to display (follows after DispStartImg())
 void DispSendImg(u8 data)
 {
+#if USE_EMUSCREENSHOT		// use emulator screen shots
+	// write data to screenshot file
+	WriteScreenShot(&data, 1);
+#endif
+
 	// send data
 	while (SPI_TxIsFull(DISP_SPI)) {}
 	SPI_Write(DISP_SPI, data);
+
+	// flush received data
+	SPI_RxFlush(DISP_SPI);
+}
+
+// LOW level control: send one word of image data to display (follows after DispStartImg())
+void DispSendImg2(u16 data)
+{
+#if USE_EMUSCREENSHOT		// use emulator screen shots
+	// write data to screenshot file
+	WriteScreenShot(&data, 2);
+#endif
+
+	// send data LOW
+	while (SPI_TxIsFull(DISP_SPI)) {}
+	SPI_Write(DISP_SPI, (u8)data);
+
+	// flush received data
+	SPI_RxFlush(DISP_SPI);
+
+	// send data HIGH
+	while (SPI_TxIsFull(DISP_SPI)) {}
+	SPI_Write(DISP_SPI, (u8)(data >> 8));
 
 	// flush received data
 	SPI_RxFlush(DISP_SPI);
@@ -274,6 +318,11 @@ void DispStopImg()
 
 	// deactivate chip selection
 	CS_OFF;
+
+#if USE_EMUSCREENSHOT		// use emulator screen shots
+	// close screenshot
+	CloseScreenShot();
+#endif
 }
 
 // set dirty all frame buffer

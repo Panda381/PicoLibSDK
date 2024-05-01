@@ -1042,6 +1042,9 @@ by VGA driver rendering service.
 #endif
 
 #if USE_USB_STDIO
+#ifndef USE_DRAW_STDIO
+#define USE_DRAW_STDIO 0
+#endif
 #undef USE_USB
 #define USE_USB 1
 #undef USE_USB_DEV

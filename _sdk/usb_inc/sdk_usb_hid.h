@@ -970,3 +970,117 @@ typedef struct PACKED {
 #define HID_KEY_SHIFT_RIGHT		0xE5	// Right Shift
 #define HID_KEY_ALT_RIGHT		0xE6	// Right Alt
 #define HID_KEY_GUI_RIGHT		0xE7	// Right Window (GUI)
+
+// PC key scan codes
+#define PC_KEYSCAN_ESC		0x01	// Esc
+#define PC_KEYSCAN_1		0x02	// 1 !
+#define PC_KEYSCAN_2		0x03	// 2 @
+#define PC_KEYSCAN_3		0x04	// 3 #
+#define PC_KEYSCAN_4		0x05	// 4 $
+#define PC_KEYSCAN_5		0x06	// 5 %
+#define PC_KEYSCAN_6		0x07	// 6 ^
+#define PC_KEYSCAN_7		0x08	// 7 &
+#define PC_KEYSCAN_8		0x09	// 8 *
+#define PC_KEYSCAN_9		0x0A	// 9 ( 
+#define PC_KEYSCAN_0		0x0B	// 0 )
+#define PC_KEYSCAN_HYPHEN	0x0C	// - _
+#define PC_KEYSCAN_EQU		0x0D	// = +
+#define PC_KEYSCAN_BS		0x0E	// BackSpace
+#define PC_KEYSCAN_TAB		0x0F	// Tab
+#define PC_KEYSCAN_Q		0x10	// Q
+#define PC_KEYSCAN_W		0x11	// W
+#define PC_KEYSCAN_E		0x12	// E
+#define PC_KEYSCAN_R		0x13	// R
+#define PC_KEYSCAN_T		0x14	// T
+#define PC_KEYSCAN_Y		0x15	// Y
+#define PC_KEYSCAN_U		0x16	// U
+#define PC_KEYSCAN_I		0x17	// I
+#define PC_KEYSCAN_O		0x18	// O
+#define PC_KEYSCAN_P		0x19	// P
+#define PC_KEYSCAN_LBRACKET	0x1A	// [ {
+#define PC_KEYSCAN_RBRACKET	0x1B	// ] }
+#define PC_KEYSCAN_ENTER	0x1C	// Enter
+#define PC_KEYSCAN_LCTRL	0x1D	// Left Ctrl
+#define PC_KEYSCAN_A		0x1E	// A
+#define PC_KEYSCAN_S		0x1F	// S
+#define PC_KEYSCAN_D		0x20	// D
+#define PC_KEYSCAN_F		0x21	// F
+#define PC_KEYSCAN_G		0x22	// G
+#define PC_KEYSCAN_H		0x23	// H
+#define PC_KEYSCAN_J		0x24	// J
+#define PC_KEYSCAN_K		0x25	// K
+#define PC_KEYSCAN_L		0x26	// L
+#define PC_KEYSCAN_SEMICOLON	0x27	// ; :
+#define PC_KEYSCAN_SQUOTE	0x28	// ' "
+#define PC_KEYSCAN_BACKQUOTE	0x29	// ` ~
+#define PC_KEYSCAN_LSHIFT	0x2A	// Left Shift
+#define PC_KEYSCAN_BACKSLASH	0x2B	// \ |
+#define PC_KEYSCAN_Z		0x2C	// Z
+#define PC_KEYSCAN_X		0x2D	// X
+#define PC_KEYSCAN_C		0x2E	// C
+#define PC_KEYSCAN_V		0x2F	// V
+#define PC_KEYSCAN_B		0x30	// B
+#define PC_KEYSCAN_N		0x31	// N
+#define PC_KEYSCAN_M		0x32	// M
+#define PC_KEYSCAN_COMMA	0x33	// , <
+#define PC_KEYSCAN_PERIOD	0x34	// . >
+#define PC_KEYSCAN_SLASH	0x35	// / ?
+#define PC_KEYSCAN_RSHIFT	0x36	// Right Shift
+#define PC_KEYSCAN_GREYSTAR	0x37	// Grey [*]
+#define PC_KEYSCAN_LALT		0x38	// Left Alt
+#define PC_KEYSCAN_SPACE	0x39	// SpaceBar
+#define PC_KEYSCAN_CAPSLOCK	0x3A	// Caps Lock
+#define PC_KEYSCAN_F1		0x3B	// F1
+#define PC_KEYSCAN_F2		0x3C	// F2
+#define PC_KEYSCAN_F3		0x3D	// F3
+#define PC_KEYSCAN_F4		0x3E	// F4
+#define PC_KEYSCAN_F5		0x3F	// F5
+#define PC_KEYSCAN_F6		0x40	// F6
+#define PC_KEYSCAN_F7		0x41	// F7
+#define PC_KEYSCAN_F8		0x42	// F8
+#define PC_KEYSCAN_F9		0x43	// F9
+#define PC_KEYSCAN_F10		0x44	// F10
+#define PC_KEYSCAN_NUMLOCK	0x45	// Num Lock
+#define PC_KEYSCAN_SCROLL	0x46	// Scroll Lock
+#define PC_KEYSCAN_NUM7		0x47	// [7 Home]
+#define PC_KEYSCAN_NUM8		0x48	// [8 Up]
+#define PC_KEYSCAN_NUM9		0x49	// [9 PgUp]
+#define PC_KEYSCAN_GREYMINUS	0x4A	// Grey [-]
+#define PC_KEYSCAN_NUM4		0x4B	// [4 Left]
+#define PC_KEYSCAN_NUM5		0x4C	// [5]
+#define PC_KEYSCAN_NUM6		0x4D	// [6 Right]
+#define PC_KEYSCAN_GREYPLUS	0x4E	// Grey [+]
+#define PC_KEYSCAN_NUM1		0x4F	// [1 End]
+#define PC_KEYSCAN_NUM2		0x50	// [2 Down]
+#define PC_KEYSCAN_NUM3		0x51	// [3 PgDn]
+#define PC_KEYSCAN_NUM0		0x52	// [0 Ins]
+#define PC_KEYSCAN_DECIMAL	0x53	// [. Del]
+#define PC_KEYSCAN_SYSRQ	0x54	// SysRq (PrintScr with Alt)
+				// 0x55
+#define PC_KEYSCAN_BACKSLASH2	0x56	// \ | alternative
+#define PC_KEYSCAN_F11		0x57	// F11
+#define PC_KEYSCAN_F12		0x58	// F12
+
+// PC extended key scan codes - with prefix 0xE0
+#define PC_KEYSCAN_EXT		0xE0	// 0xE0 prefix
+
+#define PC_KEYSCAN_GREYENTER	0x1C	// grey [Enter]
+#define PC_KEYSCAN_RCTRL	0x1D	// Right Ctrl
+#define PC_KEYSCAN_GREYSLASH	0x35	// grey [/]
+#define PC_KEYSCAN_PRINTSCR	0x37	// Print Scrn
+#define PC_KEYSCAN_RALT		0x38	// Right Alt
+#define PC_KEYSCAN_PAUSE	0x45	// Pause (E1 1D 45 E1 9D C5)
+#define PC_KEYSCAN_BREAK	0x46	// Break (Pause with Ctrl)
+#define PC_KEYSCAN_HOME		0x47	// Home
+#define PC_KEYSCAN_UP		0x48	// Up
+#define PC_KEYSCAN_PGUP		0x49	// PgUp
+#define PC_KEYSCAN_LEFT		0x4B	// Left
+#define PC_KEYSCAN_RIGHT	0x4D	// Right
+#define PC_KEYSCAN_END		0x4F	// End
+#define PC_KEYSCAN_DOWN		0x50	// Down
+#define PC_KEYSCAN_PGDN		0x51	// PgDn
+#define PC_KEYSCAN_INS		0x52	// Ins
+#define PC_KEYSCAN_DEL		0x53	// Del
+#define PC_KEYSCAN_LWIN		0x5B	// Left Window
+#define PC_KEYSCAN_RWIN		0x5C	// Right Window
+#define PC_KEYSCAN_MENU		0x5D	// Menu

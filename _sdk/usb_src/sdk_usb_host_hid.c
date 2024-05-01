@@ -29,10 +29,12 @@
 #include "../usb_inc/sdk_usb_host.h"
 
 // keyboard ring buffer (contains u32 packed keyboard event)
-//   keyboard event - u32 number (only pressed key, not released)
+//   keyboard event - u32 number
 //    bit 0..7: key code HID_KEY_* (NOKEY = no valid key code)
 //    bit 8..15: modifiers USB_KEY_MODI_*
-//    bit 16..23: ASCII character (NOCHAR = no valid character)
+//    bit 16..23: ASCII character CH_* (NOCHAR = no valid character or release key)
+//    bit 24: 1=release key, 0=press key
+// In case of key release, ASCII character is invalid (= 0).
 sEvent UsbHostHidKeyRingBuf[USB_HOST_HID_KEY_BUFSIZE];
 sEventRing UsbHostHidKeyRing;
 
@@ -705,15 +707,43 @@ Bool UsbHostHidComp(u8 dev_addr, u8 dev_epinx, u8 xres, u16 len)
 				// no key
 				if (i == 6) UsbHidKeyRepeat = 0;
 
+				// check release keys
+				for (i = 0; i < 6; i++)
+				{
+					// get old key
+					u8 key = UsbHidKeyOld.key[i];
+
+					// this key is valid
+					if (key != 0)
+					{
+						// check new key - is it release?
+						if (!UsbHostHidFindKey(rep, key))
+						{
+							// send keyboard event
+							e.data[0] = key | ((u32)rep->modi << 8) | B24;
+							EventRingWrite(&UsbHostHidKeyRing, &e);
+						}
+					}
+				}
+
 				// check modifiers, simulate key press
 				u8 mask = B0;
 				for (i = 0; i < 8; i++)
 				{
+					// press modifier
 					if (((rep->modi & mask) != 0) && ((UsbHidKeyOld.modi & mask) == 0))
 					{
 						e.data[0] = (i + 0xe0) | ((u32)rep->modi << 8);
 						EventRingWrite(&UsbHostHidKeyRing, &e);
 					}
+
+					// release modifier
+					if (((rep->modi & mask) == 0) && ((UsbHidKeyOld.modi & mask) != 0))
+					{
+						e.data[0] = (i + 0xe0) | ((u32)rep->modi << 8) | B24;
+						EventRingWrite(&UsbHostHidKeyRing, &e);
+					}
+
 					mask <<= 1;
 				}
 
@@ -923,8 +953,51 @@ Bool UsbMouseIsMounted()
 u32 UsbGetKey()
 {
 	sEvent e;
+	u32 k;
+	while (EventRingRead(&UsbHostHidKeyRing, &e))
+	{
+		k = e.data[0];
+		if ((k & B24) == 0) return k;
+	}
+	return 0;
+}
+
+// get USB key, including release key (returns u32 packed keyboard event, or 0 if no key)
+//    bit 0..7: key code HID_KEY_* (NOKEY = no valid key code)
+//    bit 8..15: modifiers USB_KEY_MODI_*
+//    bit 16..23: ASCII character CH_* (NOCHAR = no valid character or release key)
+//    bit 24: 0=press key, 1=release key
+// In case of key release, ASCII character is invalid (= 0).
+u32 UsbGetKeyRel()
+{
+	sEvent e;
 	if (!EventRingRead(&UsbHostHidKeyRing, &e)) return 0;
 	return e.data[0];
+}
+
+// convert USB key to PC scan code
+//    key ... USB key, as returned from UsbGetKeyRel() function (including release flag)
+// Output:
+//    bit 0..6: PC key scan code (0=invalid)
+//    bit 7: 1=release key
+//    bit 8: 1=extended key
+u16 UsbKeyToScan(u32 key)
+{
+	u8 hid = key & 0xff;
+	u16 scan = 0;
+
+	if ((hid >= HIDKEY_TO_SCAN1_FIRST) && (hid <= HIDKEY_TO_SCAN1_LAST))
+		scan = HidKeyToScan1[hid - HIDKEY_TO_SCAN1_FIRST];
+	else if ((hid >= HIDKEY_TO_SCAN2_FIRST) && (hid <= HIDKEY_TO_SCAN2_LAST))
+		scan = HidKeyToScan2[hid - HIDKEY_TO_SCAN2_FIRST];
+
+	if (scan != 0)
+	{
+		scan = (scan & 0x7f) | ((scan & B7) << 1); // extended flag
+		if ((key & B24) != 0) scan |= B7; // release flag
+	}
+
+	return scan;
 }
 
 // check if key is pressed
@@ -1108,4 +1181,119 @@ const char HidKeyToAscii[2*HIDKEY_TO_ASCII_NUM] = {
 	0,	0,		// 0x65 HID_KEY_APPLICATION
 	0,	0,		// 0x66 HID_KEY_POWER
 	'=',	'='		// 0x67 HID_KEY_KEYPAD_EQUAL
+};
+
+// Convert HID key code to PC scan code (B7: extended scan code with 0xE0 prefix)
+//   1st part: HID code 0x04..0x65
+const u8 HidKeyToScan1[HIDKEY_TO_SCAN1_LAST+1-HIDKEY_TO_SCAN1_FIRST] = {
+	PC_KEYSCAN_A,		// 0x04 HID_KEY_A
+	PC_KEYSCAN_B,		// 0x05 HID_KEY_B
+	PC_KEYSCAN_C,		// 0x06 HID_KEY_C
+	PC_KEYSCAN_D,		// 0x07 HID_KEY_D
+	PC_KEYSCAN_E,		// 0x08 HID_KEY_E
+	PC_KEYSCAN_F,		// 0x09 HID_KEY_F
+	PC_KEYSCAN_G,		// 0x0A HID_KEY_G
+	PC_KEYSCAN_H,		// 0x0B HID_KEY_H
+	PC_KEYSCAN_I,		// 0x0C HID_KEY_I
+	PC_KEYSCAN_J,		// 0x0D HID_KEY_J
+	PC_KEYSCAN_K,		// 0x0E HID_KEY_K
+	PC_KEYSCAN_L,		// 0x0F HID_KEY_L
+	PC_KEYSCAN_M,		// 0x10 HID_KEY_M
+	PC_KEYSCAN_N,		// 0x11 HID_KEY_N
+	PC_KEYSCAN_O,		// 0x12 HID_KEY_O
+	PC_KEYSCAN_P,		// 0x13 HID_KEY_P
+	PC_KEYSCAN_Q,		// 0x14 HID_KEY_Q
+	PC_KEYSCAN_R,		// 0x15 HID_KEY_R
+	PC_KEYSCAN_S,		// 0x16 HID_KEY_S
+	PC_KEYSCAN_T,		// 0x17 HID_KEY_T
+	PC_KEYSCAN_U,		// 0x18 HID_KEY_U
+	PC_KEYSCAN_V,		// 0x19 HID_KEY_V
+	PC_KEYSCAN_W,		// 0x1A HID_KEY_W
+	PC_KEYSCAN_X,		// 0x1B HID_KEY_X
+	PC_KEYSCAN_Y,		// 0x1C HID_KEY_Y
+	PC_KEYSCAN_Z,		// 0x1D HID_KEY_Z
+	PC_KEYSCAN_1,		// 0x1E HID_KEY_1 (1 and !)
+	PC_KEYSCAN_2,		// 0x1F HID_KEY_2 (2 and @)
+	PC_KEYSCAN_3,		// 0x20 HID_KEY_3 (3 and #)
+	PC_KEYSCAN_4,		// 0x21 HID_KEY_4 (4 and $)
+	PC_KEYSCAN_5,		// 0x22 HID_KEY_5 (5 and %)
+	PC_KEYSCAN_6,		// 0x23 HID_KEY_6 (6 and ^)
+	PC_KEYSCAN_7,		// 0x24 HID_KEY_7 (7 and &)
+	PC_KEYSCAN_8,		// 0x25 HID_KEY_8 (8 and *)
+	PC_KEYSCAN_9,		// 0x26 HID_KEY_9 (9 and ()
+	PC_KEYSCAN_0,		// 0x27 HID_KEY_0 (0 and ))
+	PC_KEYSCAN_ENTER,	// 0x28 HID_KEY_ENTER
+	PC_KEYSCAN_ESC,		// 0x29 HID_KEY_ESCAPE
+	PC_KEYSCAN_BS,		// 0x2A HID_KEY_BACKSPACE
+	PC_KEYSCAN_TAB,		// 0x2B HID_KEY_TAB
+	PC_KEYSCAN_SPACE,	// 0x2C HID_KEY_SPACE
+	PC_KEYSCAN_HYPHEN,	// 0x2D HID_KEY_MINUS (- and _)
+	PC_KEYSCAN_EQU,		// 0x2E HID_KEY_EQUAL (= and +)
+	PC_KEYSCAN_LBRACKET,	// 0x2F HID_KEY_BRACKET_LEFT ([ and {)
+	PC_KEYSCAN_RBRACKET,	// 0x30 HID_KEY_BRACKET_RIGHT (] and })
+	PC_KEYSCAN_BACKSLASH,	// 0x31 HID_KEY_BACKSLASH ('\' and |)
+	PC_KEYSCAN_BACKQUOTE,	// 0x32 HID_KEY_HASH (Europe # and ~)
+	PC_KEYSCAN_SEMICOLON,	// 0x33 HID_KEY_SEMICOLON (; and :)
+	PC_KEYSCAN_SQUOTE,	// 0x34 HID_KEY_APOSTROPHE (' and ")
+	PC_KEYSCAN_BACKQUOTE,	// 0x35 HID_KEY_GRAVE (` and ~)
+	PC_KEYSCAN_COMMA,	// 0x36 HID_KEY_COMMA (, and <)
+	PC_KEYSCAN_PERIOD,	// 0x37 HID_KEY_PERIOD (. and >)
+	PC_KEYSCAN_SLASH,	// 0x38 HID_KEY_SLASH (/ and ?)
+	PC_KEYSCAN_CAPSLOCK,	// 0x39 HID_KEY_CAPS_LOCK
+	PC_KEYSCAN_F1,		// 0x3A HID_KEY_F1
+	PC_KEYSCAN_F2,		// 0x3B HID_KEY_F2
+	PC_KEYSCAN_F3,		// 0x3C HID_KEY_F3
+	PC_KEYSCAN_F4,		// 0x3D HID_KEY_F4
+	PC_KEYSCAN_F5,		// 0x3E HID_KEY_F5
+	PC_KEYSCAN_F6,		// 0x3F HID_KEY_F6
+	PC_KEYSCAN_F7,		// 0x40 HID_KEY_F7
+	PC_KEYSCAN_F8,		// 0x41 HID_KEY_F8
+	PC_KEYSCAN_F9,		// 0x42 HID_KEY_F9
+	PC_KEYSCAN_F10,		// 0x43 HID_KEY_F10
+	PC_KEYSCAN_F11,		// 0x44 HID_KEY_F11
+	PC_KEYSCAN_F12,		// 0x45 HID_KEY_F12
+	B7 + PC_KEYSCAN_PRINTSCR, // 0x46 HID_KEY_PRINT_SCREEN
+	PC_KEYSCAN_SCROLL,	// 0x47 HID_KEY_SCROLL_LOCK
+	B7 + PC_KEYSCAN_PAUSE,	// 0x48 HID_KEY_PAUSE
+	B7 + PC_KEYSCAN_INS,	// 0x49 HID_KEY_INSERT
+	B7 + PC_KEYSCAN_HOME,	// 0x4A HID_KEY_HOME
+	B7 + PC_KEYSCAN_PGUP,	// 0x4B HID_KEY_PAGE_UP
+	B7 + PC_KEYSCAN_DEL,	// 0x4C HID_KEY_DELETE
+	B7 + PC_KEYSCAN_END,	// 0x4D HID_KEY_END
+	B7 + PC_KEYSCAN_PGDN,	// 0x4E HID_KEY_PAGE_DOWN
+	B7 + PC_KEYSCAN_RIGHT,	// 0x4F HID_KEY_ARROW_RIGHT
+	B7 + PC_KEYSCAN_LEFT,	// 0x50 HID_KEY_ARROW_LEFT
+	B7 + PC_KEYSCAN_DOWN,	// 0x51 HID_KEY_ARROW_DOWN
+	B7 + PC_KEYSCAN_UP,	// 0x52 HID_KEY_ARROW_UP
+	PC_KEYSCAN_NUMLOCK,	// 0x53 HID_KEY_NUM_LOCK
+	B7 + PC_KEYSCAN_GREYSLASH, // 0x54 HID_KEY_KEYPAD_DIVIDE
+	PC_KEYSCAN_GREYSTAR,	// 0x55 HID_KEY_KEYPAD_MULTIPLY
+	PC_KEYSCAN_GREYMINUS,	// 0x56 HID_KEY_KEYPAD_SUBTRACT
+	PC_KEYSCAN_GREYPLUS,	// 0x57 HID_KEY_KEYPAD_ADD
+	B7 + PC_KEYSCAN_GREYENTER, // 0x58 HID_KEY_KEYPAD_ENTER
+	PC_KEYSCAN_NUM1,	// 0x59 HID_KEY_KEYPAD_1 (keypad 1 and End)
+	PC_KEYSCAN_NUM2,	// 0x5A HID_KEY_KEYPAD_2 (keypad 2 and Arrow Down)
+	PC_KEYSCAN_NUM3,	// 0x5B HID_KEY_KEYPAD_3 (keypad 3 and Page Down)
+	PC_KEYSCAN_NUM4,	// 0x5C HID_KEY_KEYPAD_4 (keypad 4 and Arrow Left)
+	PC_KEYSCAN_NUM5,	// 0x5D HID_KEY_KEYPAD_5
+	PC_KEYSCAN_NUM6,	// 0x5E HID_KEY_KEYPAD_6 (keypad 6 and Arrow Right)
+	PC_KEYSCAN_NUM7,	// 0x5F HID_KEY_KEYPAD_7 (keypad 7 and Home)
+	PC_KEYSCAN_NUM8,	// 0x60 HID_KEY_KEYPAD_8 (keypad 8 and Arrow Up)
+	PC_KEYSCAN_NUM9,	// 0x61 HID_KEY_KEYPAD_9 (keypad 9 and Page Up)
+	PC_KEYSCAN_NUM0,	// 0x62 HID_KEY_KEYPAD_0 (keypad 0 and Insert)
+	PC_KEYSCAN_DECIMAL,	// 0x63 HID_KEY_KEYPAD_DECIMAL
+	PC_KEYSCAN_BACKSLASH2,	// 0x64 HID_KEY_INTL_BACKSLASH (Europe '\' and |)
+	B7 + PC_KEYSCAN_MENU,	// 0x65 HID_KEY_APPLICATION (Menu)
+};
+
+//   2nd part: HID code 0xE0..0xE7
+const u8 HidKeyToScan2[HIDKEY_TO_SCAN2_LAST+1-HIDKEY_TO_SCAN2_FIRST] = {
+	PC_KEYSCAN_LCTRL,	// 0xE0 HID_KEY_CONTROL_LEFT
+	PC_KEYSCAN_LSHIFT,	// 0xE1 HID_KEY_SHIFT_LEFT
+	PC_KEYSCAN_LALT,	// 0xE2 HID_KEY_ALT_LEFT
+	B7 + PC_KEYSCAN_LWIN,	// 0xE3 HID_KEY_GUI_LEFT (Left Window)
+	B7 + PC_KEYSCAN_RCTRL,	// 0xE4 HID_KEY_CONTROL_RIGHT
+	PC_KEYSCAN_RSHIFT,	// 0xE5 HID_KEY_SHIFT_RIGHT
+	B7 + PC_KEYSCAN_RALT,	// 0xE6 HID_KEY_ALT_RIGHT
+	B7 + PC_KEYSCAN_RWIN,	// 0xE7 HID_KEY_GUI_RIGHT (Right Window)
 };

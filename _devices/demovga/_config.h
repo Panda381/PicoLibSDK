@@ -67,7 +67,9 @@
 #endif
 
 #ifndef USE_DRAW_STDIO
+#if !USE_USB_STDIO
 #define USE_DRAW_STDIO	1	// use DRAW stdio (DrawPrint function)
+#endif
 #endif
 
 #ifndef SYSTICK_KEYSCAN

@@ -15,7 +15,7 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 // merge segment and offset into absolute address
-#define I8086_ADDR(seg, off) (((u32)(seg) << 4) + (u16)(off))
+#define I8086_ADDR(seg, off) ((((u32)(seg) << 4) + (u16)(off)) & 0xfffff)
 
 // get DS segment (can be overridden)
 INLINE u16 I8086_DS(sI8086* cpu)

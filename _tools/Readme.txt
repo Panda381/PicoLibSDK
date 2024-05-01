@@ -2,7 +2,9 @@ This folder contains utilities for converting images and sounds,
 and more. The programs are compiled in MS Visual Studio 2005.
 
 - AS4040 - Intel 4004/4040 assembler compiler
+- BinAsm - export binary file into ASM byte array
 - BinC - export binary file into C/C++ byte array
+- BinS - export binary file into S assembler byte array
 - Boot2CRC - boot2 boot loader checksum calculation
 - DviTms - generator of DVI TMDS 16-bit 2-symbol table
 - HidComp - compiler and decompiler of HID descriptors

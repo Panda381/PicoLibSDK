@@ -73,6 +73,10 @@ extern ALIGNED FRAMETYPE FrameBuf[];
 
 //extern u16 /*DispWidth,*/ DispHeight; // current display size
 
+#if USE_EMUSCREENSHOT		// use emulator screen shots
+extern volatile Bool DoEmuScreenShot;	// request to do emulator screenshot
+#endif
+
 // dirty window to update
 extern int DispDirtyX1, DispDirtyX2, DispDirtyY1, DispDirtyY2;
 
@@ -109,6 +113,9 @@ void DispStartImg(u16 x1, u16 x2, u16 y1, u16 y2);
 
 // LOW level control: send one byte of image data to display (follows after DispStartImg())
 void DispSendImg(u8 data);
+
+// LOW level control: send one word of image data to display (follows after DispStartImg())
+void DispSendImg2(u16 data);
 
 // LOW level control: stop sending image data (follows after DispStartImg() and DispSendImg())
 void DispStopImg();

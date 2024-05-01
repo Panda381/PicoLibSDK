@@ -38,6 +38,10 @@ the common .rodata.* symbols are placed in the .rodata section. The jump table i
 extern "C" {
 #endif
 
+// ----------------------------------------------------------------------------
+//                             Time synchronization
+// ----------------------------------------------------------------------------
+
 #ifndef EMU_DEBUG_SYNC
 #define EMU_DEBUG_SYNC	0	// 1 = debug measure time synchronization
 #endif
@@ -134,10 +138,18 @@ INLINE void EmuSync(sEmuSync* s)
 
 #endif // EMU_DEBUG_SYNC
 
-	while ((s16)(c - *t) > 0) {}
+	if ((s16)(c - *t) < -20000)
+		s->clock = *t; // time underflow, emulation is too slow
+	else
+		while ((s16)(c - *t) > 0) {}
 }
 
-/*
+// ----------------------------------------------------------------------------
+//                          Interrupt control
+// ----------------------------------------------------------------------------
+// Interrupt flags can be used to atomically control interrupts between
+// the main program (on CPU core 0) and the emulator (on CPU core 1).
+
 // get interrupt register (register of PWM, which can be used to exclusive atomic bit access between cores)
 //  Initialized to 0.
 INLINE u32 EmuInterGet(sEmuSync* s) { return s->timer[1]; }
@@ -162,43 +174,76 @@ INLINE void EmuInterClrBit(sEmuSync* s, int bit) { RegClr(&s->timer[1], BIT(bit)
 
 // flip bit in interrupt register
 INLINE void EmuInterFlipBit(sEmuSync* s, int bit) { RegXor(&s->timer[1], BIT(bit)); }
-*/
+
+// ----------------------------------------------------------------------------
+//                          Callback functions
+// ----------------------------------------------------------------------------
+
+// --- without address
 
 // function to read byte from memory or port (without address)
 typedef u8 (*pEmuRead8)();
 
+// function to write byte to memory or port (without address)
+typedef void (*pEmuWrite8)(u8 data);
+
+// --- 8-bit address
+
 // function to read byte from memory or port (8-bit address)
 typedef u8 (*pEmu8Read8)(u8 addr);
 
-// function to read byte from memory or port (16-bit address)
-typedef u8 (*pEmu16Read8)(u16 addr);
-
-// function to read byte from memory or port (32-bit address)
-typedef u8 (*pEmu32Read8)(u32 addr);
-
-// function to read word from memory or port
-typedef u16 (*pEmu16Read16)(u16 addr);
-
-// function to read dword from memory or port
-//typedef u32 (*pEmu16Read32)(u16 addr);
-
-// function to write byte to memory or port (without address)
-typedef void (*pEmuWrite8)(u8 data);
+// function to read word from memory or port (8-bit address)
+typedef u16 (*pEmu8Read16)(u8 addr);
 
 // function to write byte to memory or port (8-bit address)
 typedef void (*pEmu8Write8)(u8 addr, u8 data);
 
+// function to write word to memory or port (8-bit address)
+typedef void (*pEmu8Write16)(u8 addr, u16 data);
+
+// --- 16-bit address
+
+// function to read byte from memory or port (16-bit address)
+typedef u8 (*pEmu16Read8)(u16 addr);
+
+// function to read word from memory or port (16-bit address)
+typedef u16 (*pEmu16Read16)(u16 addr);
+
+// function to read dword from memory or port (16-bit address)
+typedef u32 (*pEmu16Read32)(u16 addr);
+
 // function to write byte to memory or port (16-bit address)
 typedef void (*pEmu16Write8)(u16 addr, u8 data);
+
+// function to write word to memory or port (16-bit address)
+typedef void (*pEmu16Write16)(u16 addr, u16 data);
+
+// function to write dword to memory or port (16-bit address)
+typedef void (*pEmu16Write32)(u16 addr, u32 data);
+
+// --- 32-bit address
+
+// function to read byte from memory or port (32-bit address)
+typedef u8 (*pEmu32Read8)(u32 addr);
+
+// function to read word from memory or port (32-bit address)
+typedef u16 (*pEmu32Read16)(u32 addr);
+
+// function to read dword from memory or port (32-bit address)
+typedef u32 (*pEmu32Read32)(u32 addr);
 
 // function to write byte to memory or port (32-bit address)
 typedef void (*pEmu32Write8)(u32 addr, u8 data);
 
-// function to write word to memory or port
-typedef void (*pEmu16Write16)(u16 addr, u16 data);
+// function to write word to memory or port (32-bit address)
+typedef void (*pEmu32Write16)(u32 addr, u16 data);
 
-// function to write dword to memory or port
-//typedef void (*pEmu16Write32)(u16 addr, u32 data);
+// function to write dword to memory or port (32-bit address)
+typedef void (*pEmu32Write32)(u32 addr, u32 data);
+
+// ----------------------------------------------------------------------------
+//                               CPU emulators
+// ----------------------------------------------------------------------------
 
 #if USE_EMU_I4004		// use I4004 CPU emulator
 #include "emu_i4004.h"		// I4004 CPU
@@ -242,6 +287,14 @@ typedef void (*pEmu16Write16)(u16 addr, u16 data);
 
 #if USE_EMU_Z80			// use Z80 CPU emulator
 #include "emu_z80.h"		// Z80 CPU
+#endif
+
+// ----------------------------------------------------------------------------
+//                             Device emulators
+// ----------------------------------------------------------------------------
+
+#if USE_EMU_PC			// use PC emulator
+#include "pc/emu_pc.h"		// PC emulator
 #endif
 
 #ifdef __cplusplus

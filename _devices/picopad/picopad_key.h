@@ -35,8 +35,14 @@ extern "C" {
 
 #define KEY_NUM		8	// number of buttons
 
+#define KEY_MASK	0x7f	// key code mask (to clear key release flag)
+#define KEY_RELEASE	B7	// key release flag
+
 // timings
 #define KEY_REL_TIME	50	// delta time of release in [ms]
+
+// keys are currently pressed (index = button code - 1)
+extern volatile Bool KeyPressMap[KEY_NUM];
 
 // initialize keys
 void KeyInit();
@@ -45,13 +51,17 @@ void KeyInit();
 void KeyTerm();
 
 // check if button KEY_* is currently pressed
-Bool KeyPressed(char key);
+Bool KeyPressed(u8 key);
+INLINE Bool KeyPressedFast(u8 key) { return KeyPressMap[key-1]; }
 
 // scan keyboard (called from SysTick)
 void KeyScan();
 
+// get button from keyboard buffer, including release keys (returns NOKEY if no scan code; B7 = KEY_RELEASE = release flag)
+u8 KeyGetRel();
+
 // get button from keyboard buffer (returns NOKEY if no scan code)
-char KeyGet();
+u8 KeyGet();
 
 // get character from local keyboard (returns NOCHAR if no character)
 char KeyChar();
@@ -60,7 +70,7 @@ char KeyChar();
 void KeyFlush();
 
 // return key to keyboard buffer (can hold only 1 key)
-void KeyRet(char key);
+void KeyRet(u8 key);
 
 // check no pressed key
 Bool KeyNoPressed();

@@ -46,7 +46,7 @@ extern "C" {
 #endif
 
 #ifndef USB_HOST_HID_KEY_BUFSIZE
-#define USB_HOST_HID_KEY_BUFSIZE 16	// USB HID host keyboard ring buffer size
+#define USB_HOST_HID_KEY_BUFSIZE 32	// USB HID host keyboard ring buffer size
 #endif
 
 #ifndef USB_HOST_HID_MOUSE_BUFSIZE
@@ -232,6 +232,22 @@ Bool UsbMouseIsMounted();
 //    bit 16..23: ASCII character CH_* (NOCHAR = no valid character)
 u32 UsbGetKey();
 
+// get USB key, including release key (returns u32 packed keyboard event, or 0 if no key)
+//    bit 0..7: key code HID_KEY_* (NOKEY = no valid key code)
+//    bit 8..15: modifiers USB_KEY_MODI_*
+//    bit 16..23: ASCII character CH_* (NOCHAR = no valid character or release key)
+//    bit 24: 0=press key, 1=release key
+// In case of key release, ASCII character is invalid (= 0).
+u32 UsbGetKeyRel();
+
+// convert USB key to PC scan code
+//    key ... USB key, as returned from UsbGetKeyRel() function (including release flag)
+// Output:
+//    bit 0..6: PC key scan code (0=invalid)
+//    bit 7: 1=release key
+//    bit 8: 1=extended key
+u16 UsbKeyToScan(u32 key);
+
 // check if key is pressed
 Bool UsbKeyIsPressed(u8 key);
 
@@ -269,3 +285,14 @@ void UsbKeyWaitNoPressed();
 //	ascii = table[key_code*2 + shift]
 #define HIDKEY_TO_ASCII_NUM	0x68	// number of codes
 extern const char HidKeyToAscii[2*HIDKEY_TO_ASCII_NUM];
+
+// Convert HID key code to PC scan code (B7: extended scan code with 0xE0 prefix)
+#define HIDKEY_TO_SCAN1_FIRST	0x04	// first scan code of 1st part
+#define HIDKEY_TO_SCAN1_LAST	0x65	// last scan code of 1st part
+//   1st part: HID code 0x04..0x65
+extern const u8 HidKeyToScan1[HIDKEY_TO_SCAN1_LAST+1-HIDKEY_TO_SCAN1_FIRST];
+
+#define HIDKEY_TO_SCAN2_FIRST	0xE0	// first scan code of 2nd part
+#define HIDKEY_TO_SCAN2_LAST	0xE7	// last scan code of 2nd part
+//   2nd part: HID code 0xE0..0xE7
+extern const u8 HidKeyToScan2[HIDKEY_TO_SCAN2_LAST+1-HIDKEY_TO_SCAN2_FIRST];

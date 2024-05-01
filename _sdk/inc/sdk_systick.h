@@ -33,11 +33,13 @@
 extern "C" {
 #endif
 
-// SysTick period (number of 1 us ticks to interrupt every SYSTICK_MS ms)
-#define SYSTICK_TICKS	5000
-
-// increment of system time on SysTick interrupt
+// increment of system time in [ms] on SysTick interrupt
+#ifndef SYSTICK_MS
 #define SYSTICK_MS	5
+#endif
+
+// SysTick period (number of 1 us ticks to interrupt every SYSTICK_MS ms)
+#define SYSTICK_TICKS	(SYSTICK_MS*1000)
 
 // system time counter, counts time from system start - incremented every SYSTICK_MS ms
 // with overflow after 49 days (use difference, not absolute value!)

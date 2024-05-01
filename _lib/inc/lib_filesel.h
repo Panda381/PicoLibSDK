@@ -86,6 +86,12 @@ extern int FileSelRootLen; // length of root
 extern char FileSelExt[4]; // file extension in uppercase (1 to 3 characters, with terminating 0)
 extern int FileSelExtLen; // length of file extension (1 to 3 characters)
 
+//extern char FileSelExt2[4]; // file extension 2 in uppercase (0 to 3 characters, with terminating 0)
+//extern int FileSelExtLen2; // length of file extension 2 (0 to 3 characters)
+
+//extern char FileSelExt3[4]; // file extension 3 in uppercase (0 to 3 characters, with terminating 0)
+//extern int FileSelExtLen3; // length of file extension 3 (0 to 3 characters)
+
 // temporary buffer
 #define FILESEL_TEMPBUF 512 // size of temporary buffer
 extern char FileSelTempBuf[FILESEL_TEMPBUF+1];
@@ -96,6 +102,7 @@ extern char FileSelLastName[9]; // last selected name (without extension, with t
 extern int FileSelLastNameLen; // length of last name (without extension), 0 = not used
 extern int FileSelLastNameTop; // top file of last name
 extern u8 FileSelLastNameAttr; // attributes of last name
+//extern u8 FileSelLastNameExt; // index of extension of last name 0..1
 extern u32 FileSelLastNameSize; // size of last name
 
 extern sFile FileSelPrevFile; // preview file (name[0] = 0 if not open)

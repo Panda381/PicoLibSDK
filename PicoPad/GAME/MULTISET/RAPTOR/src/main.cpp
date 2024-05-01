@@ -81,7 +81,7 @@ int Energy;	// current energy
 int Score;	// current score
 int ShipX, ShipY; // spaceship current position
 u8 Move = MOVE_NO; // spaceship moving state
-int Frame;	// frame counter (to do animations)
+int GameFrame;	// frame counter (to do animations)
 int NextShield;	// score to get next shield
 int ReloadNext0, ReloadNext; // reload time of weapon 0 (machine gun) and current weapon
 
@@ -129,7 +129,7 @@ void NewGame()
 	ShipX = (WIDTH - SPRITEW)/2; // spaceship X coordinate
 	ShipY = HEIGHT - SPRITEH; // spaceship Y coordinate
 	Move = 0; // spaceship moving mode
-	Frame = 0; // frame counter
+	GameFrame = 0; // frame counter
 	NextShield = 10000; // score to get next shield
 	ReloadNext0 = 0; // reload time of weapon 0 (machine gun)
 	ReloadNext = 0; // reload time of current weapon
@@ -731,7 +731,7 @@ void DispShip()
 	// dead
 	if (Shields < 0)
 	{
-		DispSprite(SPRITE_EXPLOSE5 + (Frame & 3), ShipX, ShipY);
+		DispSprite(SPRITE_EXPLOSE5 + (GameFrame & 3), ShipX, ShipY);
 	}
 	else
 	{
@@ -745,7 +745,7 @@ void DispShip()
 		else if (Move == MOVE_U) // up
 			inx = SPRITE_SHIPU;
 		else
-			inx = SPRITE_SHIP + (Frame & 1);
+			inx = SPRITE_SHIP + (GameFrame & 1);
 		DispSprite(inx, ShipX, ShipY);
 	}
 }
@@ -916,7 +916,7 @@ void game()
 		WaitTime(100);
 
 		// drame counter (to serve some animations)
-		Frame++;
+		GameFrame++;
 	}
 }
 

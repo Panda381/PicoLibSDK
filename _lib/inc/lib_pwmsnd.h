@@ -20,22 +20,23 @@
 
 // ... GP19 ... MOSI + sound output (PWM1 B)
 
-#if USE_PWMSND		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
-
 #ifndef _LIB_PWMSND_H
 #define _LIB_PWMSND_H
 
 #include "../../_sdk/inc/sdk_cpu.h"
 #include "../../_sdk/inc/sdk_pwm.h"
 
+#define PWMSND_SLICE	PWM_GPIOTOSLICE(PWMSND_GPIO) // PWM slice index
+#define PWMSND_CHAN	PWM_GPIOTOCHAN(PWMSND_GPIO) // PWM channel index (=1)
+
+// global sound OFF
+extern Bool GlobalSoundOff;
+
+#if USE_PWMSND		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-//#define PWMSND_GPIO	0	// PWM output GPIO pin (0..29)
-
-#define PWMSND_SLICE	PWM_GPIOTOSLICE(PWMSND_GPIO) // PWM slice index
-#define PWMSND_CHAN	PWM_GPIOTOCHAN(PWMSND_GPIO) // PWM channel index (=1)
 
 #define SOUNDRATE	22050	// sound rate [Hz]
 #define PWMSND_TOP	255	// PRM top (period = PWMSND_TOP + 1 = 256)
@@ -73,9 +74,6 @@ typedef struct {
 
 // PWM sound channels
 extern sPwmSnd PwmSound[USE_PWMSND];
-
-// global sound OFF
-extern Bool GlobalSoundOff;
 
 // initialize PWM sound output (must be re-initialized after changing CLK_SYS system clock)
 void PWMSndInit();
@@ -144,6 +142,6 @@ void GlobalVolumeUpdate();
 }
 #endif
 
-#endif // _LIB_PWMSND_H
-
 #endif // USE_PWMSND		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
+
+#endif // _LIB_PWMSND_H
