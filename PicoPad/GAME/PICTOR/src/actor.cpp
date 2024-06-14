@@ -23,7 +23,7 @@ int BloodX, BloodY;	// blood coordinate
 // actor templates
 const sActorTemp ActorTemp[ACT_NUM] = {
 	// name			missile name		pal			img		w		wall			h		trans			walk
-	{ "Bara",		"Shurigen",		JillImg_Pal,		JillImg,	JILL_W,		JILL_WALL,		JILL_H,		JILL_TRANS,		True,	},
+	{ "Bara",		"Shuriken",		JillImg_Pal,		JillImg,	JILL_W,		JILL_WALL,		JILL_H,		JILL_TRANS,		True,	},
 	{ "Bird",		"Seed",			BirdImg_Pal,		BirdImg,	BIRD_W,		BIRD_WALL,		BIRD_H,		BIRD_TRANS,		False,	},
 	{ "Parrot",		"Berry",		ParrotImg_Pal,		ParrotImg,	PARROT_W,	PARROT_WALL,		PARROT_H,	PARROT_TRANS,		False,	},
 	{ "Scarabeus",		"Sand Ball",		ScarabeusImg_Pal,	ScarabeusImg,	SCARABEUS_W,	SCARABEUS_WALL,		SCARABEUS_H,	SCARABEUS_TRANS,	True,	},

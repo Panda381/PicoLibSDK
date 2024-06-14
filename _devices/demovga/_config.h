@@ -99,6 +99,11 @@
 				//   is 12.5 MB/s, suggested max. bitrate 15 Mbit/s, min. writting speed 2 MB/s)
 #endif
 
+#ifndef SD_BAUDWRITE
+#define SD_BAUDWRITE	1000000 // SD card baud speed of write (should be max. 7-12 Mbit/s; default standard bus speed
+				//   is 12.5 MB/s, suggested max. bitrate 15 Mbit/s, min. writting speed 2 MB/s)
+#endif
+
 // Battery
 #define BAT_PIN		29		// input from battery
 #define BAT_ADC		ADC_MUX_GPIO29	// ADC input

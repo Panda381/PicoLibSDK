@@ -19,7 +19,7 @@
 #include "../../global.h"	// globals
 
 // global sound OFF
-Bool GlobalSoundOff = False;
+volatile Bool GlobalSoundOff = False;
 
 #if USE_PWMSND		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
 

@@ -570,3 +570,15 @@ NOINLINE u32 DrawPrint(const char* fmt, ...);
 #endif // _LIB_DRAW_H
 
 #endif // USE_DRAW		// use drawing to frame buffer (lib_draw.c, lib_draw.h)
+
+// blend two 16-bit colors with ratio 50%+50%
+u16 FASTCODE NOFLASH(RGB16Blend50)(u16 col1, u16 col2);
+
+// blend two 16-bit colors with ratio 25%+75%
+u16 FASTCODE NOFLASH(RGB16Blend25)(u16 col1, u16 col2);
+
+// blend two 16-bit colors with ratio 12%+87%
+u16 FASTCODE NOFLASH(RGB16Blend12)(u16 col1, u16 col2);
+
+// blend four 16-bit colors together
+u16 FASTCODE NOFLASH(RGB16Blend4)(u16 col1, u16 col2, u16 col3, u16 col4);

@@ -57,11 +57,11 @@
 #define ATTR_BMP	B7	// internal: bitmap indicator BMP present
 #define ATTR_MASK	0x3F	// mask of valid bits
 
-typedef struct { // 16 bytes
+typedef struct {
 	u32	size;		// file size
 	u8	attr;		// attributes ATTR_*
 	u8	len;		// file name length
-//	u8	ext;		// index of file extension 0..1
+	u8	ext;		// index of file extension 0..2
 	char	name[8+1];	// file name (without extension, with terminating zero)
 } sFileDesc;
 
@@ -108,11 +108,11 @@ int FileSelTitleLen; // length of title
 char FileSelExt[4]; // file extension in uppercase (1 to 3 characters, with terminating 0)
 int FileSelExtLen; // length of file extension (1 to 3 characters)
 
-//char FileSelExt2[4]; // file extension 2 in uppercase (0 to 3 characters, with terminating 0)
-//int FileSelExtLen2; // length of file extension 2 (0 to 3 characters)
+char FileSelExt2[4]; // file extension 2 in uppercase (0 to 3 characters, with terminating 0)
+int FileSelExtLen2; // length of file extension 2 (0 to 3 characters)
 
-//char FileSelExt3[4]; // file extension 3 in uppercase (0 to 3 characters, with terminating 0)
-//int FileSelExtLen3; // length of file extension 3 (0 to 3 characters)
+char FileSelExt3[4]; // file extension 3 in uppercase (0 to 3 characters, with terminating 0)
+int FileSelExtLen3; // length of file extension 3 (0 to 3 characters)
 
 // colors template - blue theme
 const sFileSelColors FileSelColBlue = {
@@ -181,7 +181,7 @@ char FileSelLastName[9]; // last selected name (without extension, with terminat
 int FileSelLastNameLen = 0; // length of last name (without extension), 0 = not used
 int FileSelLastNameTop = 0; // top file of last name
 u8 FileSelLastNameAttr; // attributes of last name
-//u8 FileSelLastNameExt; // index of extension of last name 0..1
+u8 FileSelLastNameExt; // index of extension of last name 0..2
 u32 FileSelLastNameSize; // size of last name
 
 // preview
@@ -533,7 +533,7 @@ void FileSelLoadFileList()
 		fd->size = FileSelFileInfo.size;
 
 		// default extension
-//		fd->ext = 0;
+		fd->ext = 0;
 
 		// copy directory ".."
 		if (dir && (len == 2) && (name[0] == '.') && (name[1] == '.'))
@@ -586,12 +586,11 @@ void FileSelLoadFileList()
 					fd->len = len-FileSelExtLen-1;
 					memcpy(fd->name, name, len-FileSelExtLen-1);
 					fd->name[fd->len] = 0;
-					//fd->ext = 0;
+					fd->ext = 0;
 					fd++;
 					FileSelFileNum++;
 				}
 
-/*
 				// check file extension 2
 				else if ((FileSelExtLen2 != 0) &&	
 					(len > FileSelExtLen2+1) && (name[len-FileSelExtLen2-1] == '.')
@@ -619,7 +618,6 @@ void FileSelLoadFileList()
 					fd++;
 					FileSelFileNum++;
 				}
-*/
 			}
 		}
 	}
@@ -711,7 +709,12 @@ void FileSelLoadFileList()
 			}
 			else // names are equal, check name lengths
 			{
-				if (fd[1].len < fd[0].len) ok = False;
+				if (fd[1].len < fd[0].len)
+					ok = False;
+
+				// lengths are equal, check extension
+				else if ((fd[1].len == fd[0].len) && (fd[1].ext < fd[0].ext))
+					ok = False;
 			}
 		}
 
@@ -726,9 +729,9 @@ void FileSelLoadFileList()
 			fd[0].len = fd[1].len;
 			fd[1].len = ch;
 
-//			ch = fd[0].ext;
-//			fd[0].ext = fd[1].ext;
-//			fd[1].ext = ch;
+			ch = fd[0].ext;
+			fd[0].ext = fd[1].ext;
+			fd[1].ext = ch;
 
 			int k = fd[0].size;
 			fd[0].size = fd[1].size;
@@ -801,6 +804,7 @@ void FileSelSetLastName()
 	{
 		fd = &FileSelList[FileSelFileCur];
 		if ((fd->len == FileSelLastNameLen) &&
+			(fd->ext == FileSelLastNameExt) &&
 			((fd->attr & ATTR_DIR) == (FileSelLastNameAttr & ATTR_DIR)) &&
 			(memcmp(FileSelLastName, fd->name, FileSelLastNameLen) == 0)) break;
 	}
@@ -1218,7 +1222,7 @@ void FileSelDispBigErr(const char* text)
 //  ... ext2 ... file extension 2 (1 to 3 characters in uppercase, terminated with 0, or 0 characters if not used)
 //  ... ext3 ... file extension 3 (1 to 3 characters in uppercase, terminated with 0, or 0 characters if not used)
 //  col ... colors (recommended &FileSelColGreen or &FileSelColBlue)
-void FileSelInit(const char* root, const char* title, const char* ext, /*const char* ext2, const char* ext3,*/ const sFileSelColors* col)
+void FileSelInit3(const char* root, const char* title, const char* ext, const char* ext2, const char* ext3, const sFileSelColors* col)
 {
 	int n;
 
@@ -1240,7 +1244,6 @@ void FileSelInit(const char* root, const char* title, const char* ext, /*const c
 	memcpy(FileSelExt, ext, n+1); // copy file extension
 	FileSelExtLen = n; // length of file extension
 
-/*
 	// get file extension 2
 	if (ext2 == NULL)
 	{
@@ -1266,7 +1269,7 @@ void FileSelInit(const char* root, const char* title, const char* ext, /*const c
 		memcpy(FileSelExt3, ext3, n+1); // copy file extension
 		FileSelExtLen3 = n; // length of file extension
 	}
-*/
+
 	// colors
 	FileSelColors = col;
 }
@@ -1538,6 +1541,7 @@ Bool FileSel()
 							FileSelLastNameLen = i - FileSelPathLen;
 							memcpy(FileSelLastName, &FileSelPath[FileSelPathLen], FileSelLastNameLen);
 							FileSelLastNameAttr = ATTR_DIR;
+							FileSelLastNameExt = 0;
 
 							// delete path separator if not root
 							if (FileSelPathLen > 1) FileSelPathLen--;
@@ -1577,19 +1581,20 @@ Bool FileSel()
 						// prepare filename of the file
 						memcpy(FileSelTempBuf, fd->name, fd->len);
 						FileSelTempBuf[fd->len] = '.';
-//						if (fd->ext == 0)
+						if (fd->ext == 0)
 							memcpy(&FileSelTempBuf[fd->len+1], FileSelExt, FileSelExtLen+1);
-/*						else if (fd->ext == 1)
+						else if (fd->ext == 1)
 							memcpy(&FileSelTempBuf[fd->len+1], FileSelExt2, FileSelExtLen2+1);
 						else
 							memcpy(&FileSelTempBuf[fd->len+1], FileSelExt3, FileSelExtLen3+1);
-*/
+
 						// save last name
 						memcpy(FileSelLastName, fd->name, fd->len+1);
 						FileSelLastNameLen = fd->len;
 						FileSelLastNameTop = FileSelFileTop;
 						FileSelLastNameAttr = fd->attr;
 						FileSelLastNameSize = fd->size; // size of last name
+						FileSelLastNameExt = fd->ext;
 
 						// prepare file
 						FileSelDispBigInfo("Loading...");
@@ -1612,6 +1617,7 @@ Bool FileSel()
 					FileSelLastNameLen = i - FileSelPathLen;
 					memcpy(FileSelLastName, &FileSelPath[FileSelPathLen], FileSelLastNameLen);
 					FileSelLastNameAttr = ATTR_DIR;
+					FileSelLastNameExt = 0;
 
 					// delete path separator if not root
 					if (FileSelPathLen > 1) FileSelPathLen--;

@@ -331,7 +331,7 @@ Bool SDConnect()
 	SDUnsel();
 
 	// set SPI to high speed
-	SPI_Baudrate(SD_SPI, SD_BAUD);
+	SPI_Baudrate(SD_SPI, SD_BAUDWRITE);
 
 	return True;
 }
@@ -377,7 +377,7 @@ Bool SDReadBlock(u8* buffer, int num)
 void SDOpen()
 {
 	// set SPI to high speed
-	SPI_Baudrate(SD_SPI, SD_BAUD);
+	SPI_Baudrate(SD_SPI, SD_BAUDWRITE);
 
 	// select SD card
 	SDSel();
@@ -411,6 +411,9 @@ Bool SDReadSect(u32 sector, u8* buffer)
 	// open SD card
 	SDOpen();
 
+	// set SPI to high speed
+	SPI_Baudrate(SD_SPI, SD_BAUD);
+
 	// convert sector number to offset
 	if (SDType != SD_SDHC) sector *= SECT_SIZE;
 
@@ -441,6 +444,9 @@ Bool SDWriteSect(u32 sector, const u8* buffer)
 
 	// open SD card
 	SDOpen();
+
+	// set SPI to high speed
+	SPI_Baudrate(SD_SPI, SD_BAUDWRITE);
 
 	// convert sector number to offset
 	if (SDType != SD_SDHC) sector *= SECT_SIZE;
@@ -503,6 +509,9 @@ u32 SDMediaSize()
 
 	// open SD card
 	SDOpen();
+
+	// set SPI to high speed
+	SPI_Baudrate(SD_SPI, SD_BAUD);
 
 	// send command to read CSD
 	u32 size = 0;

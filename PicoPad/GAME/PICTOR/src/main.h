@@ -6,7 +6,7 @@
 // ****************************************************************************
 
 /* Levels: background ... actor ... attack ... enemy1, enemy2, enemy3
- 0                  Jill .............. Shurigen
+ 0                  Jill .............. Shuriken
  1 Meadow ......... Bird .............. Seed ................ Fly, Wasp, Hornet
  2 Jungle ......... Parrot ............ Berry ............... Dragonfly, Moth, Kestrel
  3 Sandy Beach .... Scarabeus ......... Sand Ball ........... Maggot, Eagle, Antman

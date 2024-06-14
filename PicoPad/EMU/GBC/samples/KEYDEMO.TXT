@@ -1,0 +1,15 @@
+^YKeyboard Demo Test Program^0
+
+         ^XButtons:^0
+^WARROWS^0 ............ arrows
+^WA,B^0 ........... action A,B
+^WX^0 .................. START
+^WY^0 ................. SELECT
+^WY+UP^0 ........... game menu
+
+      ^XUSB keyboard:^0
+^Warrows^0 ............ arrows
+^WCtrl,Shift^0 ........... A,B
+^WEnter^0 .............. START
+^WBackSpace^0 ......... SELECT
+^WEsc^0 ............ game menu

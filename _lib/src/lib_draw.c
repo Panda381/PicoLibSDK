@@ -5642,3 +5642,47 @@ DrawPrint test sample:
 */
 
 #endif // USE_DRAW		// use drawing to frame buffer (lib_draw.c, lib_draw.h)
+
+// blend two 16-bit colors with ratio 50%+50%
+u16 FASTCODE NOFLASH(RGB16Blend50)(u16 col1, u16 col2)
+{
+	u32 m = 0xf81f;
+	u32 col = (((u32)(col1 & m) + (u32)(col2 & m)) >> 1) & m; // blend red and blue components
+	m = 0x07e0;
+	col |= (((u32)(col1 & m) + (u32)(col2 & m)) >> 1) & m; // blend green components
+	return (u16)col;
+}
+
+// blend two 16-bit colors with ratio 25%+75%
+u16 FASTCODE NOFLASH(RGB16Blend25)(u16 col1, u16 col2)
+{
+	u32 m = 0xf81f;
+	u32 c = col2 & m;
+	u32 col = ((c + c + c + (col1 & m)) >> 2) & m; // blend red and blue components
+	m = 0x07e0;
+	c = col2 & m;
+	col |= ((c + c + c + (col1 & m)) >> 2) & m; // blend green components
+	return (u16)col;
+}
+
+// blend two 16-bit colors with ratio 12%+87%
+u16 FASTCODE NOFLASH(RGB16Blend12)(u16 col1, u16 col2)
+{
+	u32 m = 0xf81f;
+	u32 c = col2 & m;
+	u32 col = ((c*7 + (col1 & m)) >> 3) & m; // blend red and blue components
+	m = 0x07e0;
+	c = col2 & m;
+	col |= ((c*7 + (col1 & m)) >> 3) & m; // blend green components
+	return (u16)col;
+}
+
+// blend four 16-bit colors together
+u16 FASTCODE NOFLASH(RGB16Blend4)(u16 col1, u16 col2, u16 col3, u16 col4)
+{
+	u32 m = 0xf81f;
+	u32 col = (((col1 & m) + (col2 & m) + (col3 & m) + (col4 & m)) >> 2) & m; // blend red and blue components
+	m = 0x07e0;
+	col |= (((col1 & m) + (col2 & m) + (col3 & m) + (col4 & m)) >> 2) & m; // blend green components
+	return (u16)col;
+}

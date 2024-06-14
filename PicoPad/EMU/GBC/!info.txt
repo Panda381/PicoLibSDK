@@ -1,0 +1,7 @@
+Game menu: press Y + Up
+
+A ... screenshot
+press B and then add A ... locked screenshot, program is not moving, but may freeze in some cases
+
+
+To compile all samples *.GB and *.GBC use c_all_samples.bat.

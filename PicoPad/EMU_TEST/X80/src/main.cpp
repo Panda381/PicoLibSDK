@@ -96,6 +96,27 @@ u32 DebCheckSync;
 //                 Callbacks from CPU emulator from core 1
 // ============================================================================
 
+// stopped instruction (return True = continue, False = repeat STOP instruction)
+Bool FASTCODE NOFLASH(EmuStopIns)()
+{
+	return True;
+}
+
+// process LCD scanline
+void FASTCODE NOFLASH(EmuLcdLine)()
+{
+}
+
+// process OAM access
+void FASTCODE NOFLASH(EmuLcdOam)()
+{
+}
+
+// process LCD transfer
+void FASTCODE NOFLASH(EmuLcdTrans)()
+{
+}
+
 // read memory
 u8 FASTCODE NOFLASH(EmuGetMem)(u16 addr)
 {
@@ -326,6 +347,10 @@ void EmuDevInit()
 	// setup callback functions
 	x80cpu.readmem = EmuGetMem;
 	x80cpu.writemem = EmuSetMem;
+	x80cpu.stopins = EmuStopIns;
+	x80cpu.lcdline = EmuLcdLine;
+	x80cpu.lcdoam = EmuLcdOam;
+	x80cpu.lcdtrans = EmuLcdTrans;
 
 	// clear title
 	for (i = 0; i < TITLE_NUM; i++) TitleBuf[i] = ' ';

@@ -275,7 +275,7 @@ Bool PC_Menu()
 		// Right
 		case HID_KEY_ARROW_RIGHT:
 			if (PC_MenuSlot == PC_MENU_SLOTNUM-1)
-				PC_MenuSlot =0;
+				PC_MenuSlot = 0;
 			else
 				PC_MenuSlot++;
 			PC_MenuDraw();
@@ -327,7 +327,7 @@ Bool PC_Menu()
 		// Right
 		case KEY_RIGHT:
 			if (PC_MenuSlot == PC_MENU_SLOTNUM-1)
-				PC_MenuSlot =0;
+				PC_MenuSlot = 0;
 			else
 				PC_MenuSlot++;
 			PC_MenuDraw();

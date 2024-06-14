@@ -1910,6 +1910,9 @@ Bool FileSeek(sFile* file, u32 off)
 	// seek to required offset
 	if (off > 0)
 	{
+		// aligning down (offset points to end of cluster and sector)
+		off--;
+
 		// find cluster with required offset
 		u32 clust = file->sclust;
 		while (off >= ClustSize)

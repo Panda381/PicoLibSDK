@@ -26,19 +26,23 @@ void X80_Reset(sX80* cpu)
 {
 	cpu->pc = 0;		// program counter
 	cpu->sp = 0xfefe;	// stack pointer (under port area starting at 0xFF00 = X80_PORTBASE port base)
-	cpu->ie = 0;		// disable interrupts
-	cpu->tid = 0;		// temporary disable interrupt
+	cpu->ime = 0;		// disable interrupts
+	cpu->ie = 0;		// interrupt enable mask
 	cpu->halted = 0;	// halted
 	cpu->stop = 0;		// stop request
+	cpu->tma = 0;		// timer modulo
+	cpu->divshift = 255;	// number of shifts (255 = disabled)
+	cpu->tima = 0;		// TIMA counter
+	cpu->lcd_mode = X80_LCD_MODE0; // LCD mode
 	cpu->fa = 0;		// registers A and F
 	cpu->hl = 0;		// registers HL
 	cpu->de = 0;		// registers DE
 	cpu->bc = 0;		// registers BC
-	cpu->vblank_req = 0;	// 1=starting V-blank interrupt request
-	cpu->lcdc_req = 0;	// 1=LCD STAT register interrupt request
-	cpu->timer_req = 0;	// 1=timer 0xff->0x00 overflow interrupt request
-	cpu->serial_req = 0;	// 1=serial transfer completed interrupt request
-	cpu->input_req = 0;	// 1=keypad interrupt request
+	cpu->div = 0;		// DIV counter
+	cpu->lcd_count = 0;	// LCD scanline time counter
+	cpu->lcd_cycles = 456;	// LCD cycles per scanline (456/4.194304 = 912/8.388608 = 108.72 us)
+	cpu->lcd_cycles2 = 204;	// LCD cycles per start mode 2 (OAM access, 204 cycles)
+	cpu->lcd_cycles3 = 284;	// LCD cycles per start mode 3 (LCD transfer, 284 cycles)
 }
 
 // load byte from program memory
@@ -68,7 +72,9 @@ INLINE u16 X80_ProgWord(sX80* cpu)
 // CPU loading at 4.194350 MHz on 154.667 MHz: used 29-40%, max. 37-45%
 void FASTCODE NOFLASH(X80_Exec)(sX80* cpu)
 {
-	u8 op;
+	u8 op, divshift;
+	u16 addr, newdiv, olddiv;
+	u32 irq, oldclock;
 
 	// clear stop flag
 	cpu->stop = 0;
@@ -76,13 +82,15 @@ void FASTCODE NOFLASH(X80_Exec)(sX80* cpu)
 	// program loop
 	while (cpu->stop == 0)
 	{
+		// save old clock (to update DIV divider)
+		oldclock = cpu->sync.clock;
+
 		// check interrupts
-		u32 req = cpu->irq;
-		u8 input_req = cpu->input_req;
-		if (((req != 0) || (input_req != 0)) && (cpu->ie != 0) && (cpu->tid == 0))
+		irq = EmuInterGet(&cpu->sync) & cpu->ie;
+		if (((irq & X80_IRQ_ALL) != 0) && (cpu->ime != 0))
 		{
 			// disable interrupts
-			cpu->ie = 0;
+			cpu->ime = 0;
 
 			// continue after HALT
 			if (cpu->halted != 0)
@@ -92,51 +100,22 @@ void FASTCODE NOFLASH(X80_Exec)(sX80* cpu)
 			}
 
 			// prepare service address
-			u16 addr;
-
-			// V-blank
-			if ((req & 0x000000ff) != 0)
+			op = 0;
+			addr = 0x0040;
+			while ((irq & 1) == 0)
 			{
-				cpu->vblank_req = 0;
-				addr = 0x0040;
+				irq >>= 1;
+				op++;
+				addr += 8;
 			}
 
-			// LCDC
-			else if ((req & 0x0000ff00) != 0)
-			{
-				cpu->lcdc_req = 0;
-				addr = 0x0048;
-			}
-
-			// Timer
-			else if ((req & 0x00ff0000) != 0)
-			{
-				cpu->timer_req = 0;
-				addr = 0x0050;
-			}
-
-			// Serial
-			else if ((req & 0xff000000) != 0)
-			{
-				cpu->serial_req = 0;
-				addr = 0x0058;
-			}
-
-			// input
-			else
-			{
-				cpu->input_req = 0;
-				addr = 0x0060;
-			}
+			// clear interrupt request
+			EmuInterClrBit(&cpu->sync, op);
 
 			// jump to service
 			X80_CALL(addr);
 			cpu->sync.clock += X80_CLOCKMUL*16;
-			continue;
 		}
-
-		// clear temporary disable interrupts flag
-		cpu->tid = 0;
 
 		// get next instruction
 		op = X80_ProgByte(cpu);
@@ -325,11 +304,13 @@ void FASTCODE NOFLASH(X80_Exec)(sX80* cpu)
 
 		// STOP 0
 		case 0x10:
-			{
-				u8 n = X80_ProgByte(cpu);
-				cpu->stop = True;
-			}
+			X80_ProgByte(cpu); // read argument
 			cpu->sync.clock += X80_CLOCKMUL*4;
+			if (!cpu->stopins()) // callback STOP instruction
+			{
+				// repeat STOP instruction
+				cpu->pc -= 2; // repeat
+			}
 			break;
 
 		// LD (DE),A
@@ -433,38 +414,29 @@ void FASTCODE NOFLASH(X80_Exec)(sX80* cpu)
 				u8 f = cpu->f;
 				u8 a = cpu->a;
 
-				u8 add = 0;
-				u8 carry = 0;
-				if ((a > 0x99) || ((f & X80_C) != 0))
+				if ((f & X80_N) != 0) // subtraction (carry not affected)
 				{
-					carry = X80_C;
-					add = 0x60;
+					if ((f & X80_H) != 0) a -= 6;
+					if ((f & X80_C) != 0) a -= 0x60;
+				}
+				else // adddition (carry set or not affected)
+				{
+					if (((f & X80_H) != 0) || ((a & 0x0f) > 9)) a += 6;
+					if (((f & X80_C) != 0) || (a > 0x9f))
+					{
+						a += 0x60;
+						f |= X80_C;
+					}
 				}
 
-				if (((a & 0x0f) > 0x09) || ((f & X80_H) != 0)) add += 0x06;
-				
-				u8 a2;
-				u8 f2 = f;
-				f &= X80_N;
-				if (f != 0) // negative
-				{
-					// subtraction
-					a2 = a - add;
-				}
-				else
-				{
-					// addition
-					a2 = a + add;
-				}
-				cpu->a = a2;
-
-				//	C ... carry if add = 0x60 or 0x66
+				//	C ... carry (only set, never cleared)
 				//	N ... not affected
 				//	H ... reset
 				//	Z ... set if result is 0
-				f |= carry;
-				if (a2 == 0) f |= X80_Z;
+				f &= X80_C | X80_N;
+				if (a == 0) f |= X80_Z;
 				cpu->f = f;
+				cpu->a = a;
 			}
 			cpu->sync.clock += X80_CLOCKMUL*4;
 			break;
@@ -624,9 +596,8 @@ void FASTCODE NOFLASH(X80_Exec)(sX80* cpu)
 				//	H ... reset
 				//	N ... reset
 				//	Z ... not affected
-				u8 f0 = cpu->f;
-				u8 f = f0 & X80_Z;
-				if ((f0 & X80_C) == 0) f |= X80_C;
+				u8 f = cpu->f ^ X80_C;
+				f &= X80_Z | X80_C;
 				cpu->f = f;
 			}
 			cpu->sync.clock += X80_CLOCKMUL*4;
@@ -1272,7 +1243,7 @@ void FASTCODE NOFLASH(X80_Exec)(sX80* cpu)
 		// RETI
 		case 0xD9:
 			X80_RET();
-			cpu->ie = 1; // enable interrupts
+			cpu->ime = 1; // enable interrupts
 			cpu->sync.clock += X80_CLOCKMUL*16;
 			break;
 
@@ -1410,7 +1381,7 @@ void FASTCODE NOFLASH(X80_Exec)(sX80* cpu)
 
 		// DI
 		case 0xF3:
-			cpu->ie = 0;
+			cpu->ime = 0;
 			cpu->sync.clock += X80_CLOCKMUL*4;
 			break;
 
@@ -1467,8 +1438,7 @@ void FASTCODE NOFLASH(X80_Exec)(sX80* cpu)
 
 		// EI
 		case 0xFB:
-			cpu->ie = 1;
-			cpu->tid = 1; // temporary disable interrupt (to disable 1 next instruction)
+			cpu->ime = 1;
 			cpu->sync.clock += X80_CLOCKMUL*4;
 			break;
 
@@ -1480,6 +1450,48 @@ void FASTCODE NOFLASH(X80_Exec)(sX80* cpu)
 			}
 			cpu->sync.clock += X80_CLOCKMUL*8;
 			break;
+		}
+
+		// update DIV counter
+		olddiv = cpu->div; // old DIV counter
+		newdiv = (u16)((cpu->sync.clock - oldclock)/X80_CLOCKMUL); // clock increment
+		cpu->div = olddiv + newdiv; // new divider
+
+		// update LCD scanline time counter
+		cpu->lcd_count += newdiv; // shift LCD scanline time counter
+		if (cpu->lcd_count >= cpu->lcd_cycles)
+		{
+			cpu->lcd_count -= cpu->lcd_cycles;
+			cpu->lcd_mode = X80_LCD_MODE0;
+			cpu->lcdline();
+		}
+		else if ((cpu->lcd_mode == X80_LCD_MODE0) && (cpu->lcd_count >= cpu->lcd_cycles2))
+		{
+			cpu->lcd_mode = X80_LCD_MODE2;
+			cpu->lcdoam(); // start OAM-RAM access
+		}
+		else if ((cpu->lcd_mode == X80_LCD_MODE2) && (cpu->lcd_count >= cpu->lcd_cycles3))
+		{
+			cpu->lcd_mode = X80_LCD_MODE3;
+			cpu->lcdtrans(); // start transfer
+		}
+
+		// update timer
+		divshift = cpu->divshift; // shift of mask
+		if (divshift != 255)	// is TIMA counting?
+		{
+			olddiv &= BIT(divshift) - 1;	// mask lower bits of divider
+			newdiv += olddiv;	// new divider
+			newdiv >>= divshift; // get TIMA increment
+			for (; newdiv > 0; newdiv--)
+			{
+				cpu->tima++;
+				if (cpu->tima == 0)
+				{
+					cpu->tima = cpu->tma; // setup new modulo timer
+					X80_RaiseIRQ(cpu, X80_IRQ_TIMER); // raise interrupt
+				}
+			}
 		}
 
 		// time synchronization

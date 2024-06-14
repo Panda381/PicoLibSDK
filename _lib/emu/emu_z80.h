@@ -80,13 +80,13 @@ typedef struct {
 	volatile u8	stop;		// 0x13: 1=request to stop (pause) program execution
 	union {
 		struct {
-			union { u16 fa; struct { u8 a, f; }; };	// 0x14: registers F (high) and A (low)
+			union { u16 fa; struct { u8 a, f; }; };	// 0x14: registers F (high) and A (low) ... registers FA are in reverse order than hardware!
 			union { u16 hl; struct { u8 l, h; }; };	// 0x16: registers H (high) and L (low)
 			union { u16 de; struct { u8 e, d; }; };	// 0x18: registers D (high) and E (low)
 			union { u16 bc; struct { u8 c, b; }; };	// 0x1A: registers B (high) and C (low)
 		};
 		u8	reg[8];		// registers accessible via index (0:A, 1:F, 2:L, 3:H, 4:E, 5:D, 6:C, 7:B)
-		u16	dreg[4];	// double registers (0:FA, 1:HL, 2:DE, 3:BC)
+		u16	dreg[4];	// double registers (0:FA, 1:HL, 2:DE, 3:BC) ... registers FA are in reverse order than hardware!
 	};
 	volatile u8	intreq;		// 0x1C: 1=maskable interrupt INT request, execute instruction RST n or jump to address
 	volatile u8	nmi;		// 0x1D: 1=nonmaskable interrupt NMI request, jump to address 0x66

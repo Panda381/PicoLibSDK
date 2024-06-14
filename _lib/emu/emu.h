@@ -179,6 +179,12 @@ INLINE void EmuInterFlipBit(sEmuSync* s, int bit) { RegXor(&s->timer[1], BIT(bit
 //                          Callback functions
 // ----------------------------------------------------------------------------
 
+// --- no parameters, return Bool
+typedef Bool (*pEmuBool)();
+
+// --- no parameters, no return
+typedef void (*pEmuVoid)();
+
 // --- without address
 
 // function to read byte from memory or port (without address)
@@ -295,6 +301,10 @@ typedef void (*pEmu32Write32)(u32 addr, u32 data);
 
 #if USE_EMU_PC			// use PC emulator
 #include "pc/emu_pc.h"		// PC emulator
+#endif
+
+#if USE_EMU_GB			// use Game Boy emulator
+#include "gb/emu_gb.h"		// Game Boy emulator
 #endif
 
 #ifdef __cplusplus

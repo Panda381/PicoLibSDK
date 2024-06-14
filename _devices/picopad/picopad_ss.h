@@ -59,7 +59,7 @@ typedef struct {
 #pragma pack(pop)
 
 extern Bool ScreenShotDiskWasMount; // disk was mounted
-extern Bool ScreenShotIsOpen; // screen shot was open
+extern volatile Bool ScreenShotIsOpen; // screen shot was open
 extern sFile ScreenShotFile; // screen shot file
 
 // BMP file header, 16 bits per pixel

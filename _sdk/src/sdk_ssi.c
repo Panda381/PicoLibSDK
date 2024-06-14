@@ -187,7 +187,7 @@ void NOFLASH(SSI_InitFlash)(int clkdiv)
 	// flush flash cache (and remove CSn IO force)
 	FlashFlush();
 
-	// enter XIP mode from bootwom
+	// enter XIP mode from bootrom
 	FlashEnterXip();
 
 	// set flash to fast QSPI mode

@@ -26,7 +26,7 @@
 #if USE_SCREENSHOT || USE_EMUSCREENSHOT		// use screen shots
 
 Bool ScreenShotDiskWasMount = False; // disk was mounted
-Bool ScreenShotIsOpen = False; // screen shot was open
+volatile Bool ScreenShotIsOpen = False; // screen shot was open
 sFile ScreenShotFile; // screen shot file
 
 // BMP file header, 16 bits per pixel
@@ -92,11 +92,20 @@ Bool OpenScreenShot()
 	char fn[] = "/SCR00001.BMP";
 
 	if (ScreenShotIsOpen) return False; // already open
+	ScreenShotIsOpen = True;
+	dmb();
 
 	// mounted flag
 	ScreenShotDiskWasMount = DiskMounted();
 
+	Bool try = True;
+	Bool res;
+
+ScreenShotReset:
+
 	// auto-mount disk
+	res = DiskAutoMount();
+	if (!res) DiskUnmount();
 	if (DiskAutoMount())
 	{
 		// prepare file name
@@ -112,13 +121,20 @@ Bool OpenScreenShot()
 			}
 		}
 
-		if (FileCreate(&ScreenShotFile, fn))
+		res = FileCreate(&ScreenShotFile, fn);
+		if (!res && try)
+		{
+			DiskUnmount();
+			try = False;
+			goto ScreenShotReset;
+		}
+
+		if (res)
 		{
 			// write BMP file header
 			FileWrite(&ScreenShotFile, &BmpHeader, sizeof(sBmp));
 
 			// was open
-			ScreenShotIsOpen = True;
 			return True;
 		}
 	}
@@ -152,6 +168,7 @@ void CloseScreenShot()
 
 		// unmount
 		if (!ScreenShotDiskWasMount) DiskUnmount();
+		dmb();
 		ScreenShotIsOpen = False;
 	}
 }

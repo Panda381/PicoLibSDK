@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//               Sharp X80 (LR35902) CPU Emulator, CB instructions
+//             Sharp X80 (SM83 LR35902) CPU Emulator, CB instructions
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
@@ -115,6 +115,7 @@
 				u16 nn = cpu->hl;
 				u8 n = cpu->readmem(nn);
 				X80_BIT(op, n);
+				cpu->sync.clock -= X80_CLOCKMUL*4; // 12 cycles total
 			}
 			break;
 

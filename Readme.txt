@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
 ==================================================================
-SDK Programmer's Guide, Version 1.12, May 2024
+SDK Programmer's Guide, Version 1.13, June 2024
 
 Copyright (c) 2023-2024 Miroslav Nemecek
 
@@ -807,6 +807,8 @@ History of versions
 	I8088, I80186, I80188, M6502, M65C02, X80, Z80.
 05/01/2024 version 1.12: Screen saver in loader to turn off when charging.
 	Simple PC DOS emulator.
+06/14/2024 version 1.13: Game Boy Emulator
+
 
 Missing and @TODO
 -----------------

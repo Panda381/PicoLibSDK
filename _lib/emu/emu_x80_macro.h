@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                     Sharp X80 (LR35902) CPU Emulator - macro
+//                   Sharp X80 (SM83 LR35902) CPU Emulator - macro
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
