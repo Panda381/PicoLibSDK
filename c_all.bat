@@ -5,6 +5,10 @@ rem First command-line parameter (%1) of this batch can contain device name (e.g
 rem If no device name is specified, default device will be used,
 rem marked with ":default" label in the _setup.bat file.
 
+rem ------------------------------------------------
+rem Edit this line to setup path to GCC-ARM compiler
+rem ------------------------------------------------
+rem set PATH=_tools;C:\ARM10\bin;%PATH%
 
 rem skip boot2 and boot3 loader, it should be already compiled
 goto start
