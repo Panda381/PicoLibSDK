@@ -22,11 +22,12 @@
 #include "../inc/sdk_irq.h"
 #include "../inc/sdk_cpu.h"
 
+#if !RISCV
 // set interrupt priority of NVIC of this CPU core (prio = priority IRQ_PRIO_*) (irq = 0..25)
 void NVIC_IRQPrio(int irq, u8 prio)
 {
-	volatile u32* reg = &NVIC_IPR0[irq >> 2]; // register (every register contains 4 entries)
-	irq = 8 * (irq & 3); // bit in the register
+	volatile u32* reg = &nvic_hw->ipr[irq >> 2]; // register (every register contains 4 entries)
+	irq = 8 * (irq & 3) + 6; // bit in the register
 	u32 val = (u32)prio << irq; // prepare priority
 	u32 mask = 0xffUL << irq; // prepare mask
 	*reg = (*reg & ~mask) | val;
@@ -44,6 +45,7 @@ void NVIC_IRQPrioDef(void)
 	NVIC_PendSVPrio(IRQ_PRIO_PENDSV); // PendSV
 	NVIC_SysTickPrio(IRQ_PRIO_SYSTICK); // SysTick
 }
+#endif
 
 /*
 // system reset (send reset signal)

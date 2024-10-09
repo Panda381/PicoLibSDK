@@ -71,18 +71,20 @@ INLINE fix FixMul2(fix a)
 }
 
 // multiply two unsigned fixed point integers
-extern "C" fix FixUMul(fix a, fix b);
+//extern "C" fix FixUMul(fix a, fix b);
 
 // multiply two signed fixed point integers
-extern "C" fix FixMul(fix a, fix b);
+//extern "C" fix FixMul(fix a, fix b);
+INLINE fix FixMul(fix a, fix b) { return (fix)(((s64)a*b) >> 25); }
 
 // square power of unsigned fixed point integer
-extern "C" fix FixUSqr(fix a);
+//extern "C" fix FixUSqr(fix a);
 
 // square power of signed fixed point integer
-extern "C" fix FixSqr(fix a);
+//extern "C" fix FixSqr(fix a);
+INLINE fix FixSqr(fix a) { return (fix)(((s64)a*a) >> 25); }
 
 // calculate Mandelbrot fixed integer
-extern "C" void MandelFix(u16* dst, fix ci);
+//extern "C" void MandelFix(u16* dst, fix ci);
 
 #endif // _FIXED_H

@@ -15,9 +15,12 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-// CPU has 8 PWM slices, each slice has 2 output channels (A or B).
+// MCU has 8 PWM slices, each slice has 2 output channels (A or B).
 // Same PWM output channel can be selected on two GPIO pins.
 // If two PWM B pins are used as input, multiply GPIO pins will be OR of those inputs.
+
+// RP2350: MCU has 12 PWM slices. RP2350A (QFN-60) has only 8 PWM slices connected to GPIOs,
+// remaining 6 slices can be used as repeating timer interrupts.
 
 #if USE_PWM	// use PWM (sdk_pwm.c, sdk_pwm.h)
 
@@ -30,18 +33,28 @@
 #include "sdk_irq.h"
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_pwm.h"		// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_pwm.h"		// constants of original SDK
+#else
+#include "orig_rp2350/orig_pwm.h"		// constants of original SDK
+#endif
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#if RP2040
 #define PWM_NUM			8		// number of PWM slices
+#define PWM_IRQ_NUM		1		// number of IRQs
+#else
+#define PWM_NUM			12		// number of PWM slices
+#define PWM_IRQ_NUM		2		// number of IRQs
+#endif
+
 #define NUM_PWM_SLICES		PWM_NUM
 
 // PWM hardware registers (pwm = 0 to 7)
-//#define PWM_BASE		0x40050000	// PWM Pulse Width Modulator
 #define PWM(pwm)	(PWM_BASE + (pwm)*20)	// PWM base (pwm = 0 to 7)
 
 #define PWM_CSR(pwm)	((volatile u32*)(PWM(pwm)+0)) // control and status register
@@ -50,11 +63,24 @@ extern "C" {
 #define PWM_CC(pwm)	((volatile u32*)(PWM(pwm)+12)) // counter compare
 #define PWM_TOP(pwm)	((volatile u32*)(PWM(pwm)+16)) // counter wrap
 
+#if RP2040
 #define PWM_EN		((volatile u32*)(PWM_BASE+0xa0)) // enables
 #define PWM_INTR	((volatile u32*)(PWM_BASE+0xa4)) // raw interrups
 #define PWM_INTE	((volatile u32*)(PWM_BASE+0xa8)) // interrupt enable
 #define PWM_INTF	((volatile u32*)(PWM_BASE+0xac)) // interrupt force
 #define PWM_INTS	((volatile u32*)(PWM_BASE+0xb0)) // interrupt status
+#else
+#define PWM_EN		((volatile u32*)(PWM_BASE+0xf0)) // enables
+#define PWM_INTR	((volatile u32*)(PWM_BASE+0xf4)) // raw interrups
+#define PWM_INTE	((volatile u32*)(PWM_BASE+0xf8)) // interrupt enable
+#define PWM_INTF	((volatile u32*)(PWM_BASE+0xfc)) // interrupt force
+#define PWM_INTS	((volatile u32*)(PWM_BASE+0x100)) // interrupt status
+#define PWM_INTE1	((volatile u32*)(PWM_BASE+0x104)) // interrupt enable
+#define PWM_INTF1	((volatile u32*)(PWM_BASE+0x108)) // interrupt force
+#define PWM_INTS1	((volatile u32*)(PWM_BASE+0x10C)) // interrupt status
+
+#define IRQ_PWM_WRAP	IRQ_PWM_WRAP_0
+#endif
 
 // PWM slice hardware interface
 typedef struct pwm_slice_hw {
@@ -67,19 +93,42 @@ typedef struct pwm_slice_hw {
 
 STATIC_ASSERT(sizeof(pwm_slice_hw_t) == 0x14, "Incorrect pwm_slice_hw_t!");
 
+// PWM interupt interface
+typedef struct {
+	io32	inte;	// 0x00: Interrupt Enable
+	io32	intf;	// 0x04: Interrupt Force
+	io32	ints;	// 0x08: Interrupt status after masking & forcing
+} pwm_irq_ctrl_hw_t;
+
+STATIC_ASSERT(sizeof(pwm_irq_ctrl_hw_t) == 0x0C, "Incorrect pwm_irq_ctrl_hw_t!");
+
 // PWM hardware interface
 typedef struct {
-	pwm_slice_hw_t slice[PWM_NUM]; // 0x00: (8*20=160=0xA0) slices
-	io32	en;	// 0xA0: This register aliases the CSR_EN bits for all channels
-	io32	intr;	// 0xA4: Raw Interrupts
-	io32	inte;	// 0xA8: Interrupt Enable
-	io32	intf;	// 0xAC: Interrupt Force
-	io32	ints;	// 0xB0: Interrupt status after masking & forcing
+	pwm_slice_hw_t slice[PWM_NUM]; // 0x00: (8*20=160=0xA0, 12*20=240=0xF0) slices
+	io32	en;	// 0xA0 (0xF0): This register aliases the CSR_EN bits for all channels
+	io32	intr;	// 0xA4 (0xF4): Raw Interrupts
+	union {
+		struct {
+			io32	inte;	// 0xA8 (0xF8): Interrupt Enable IRQ 0
+			io32	intf;	// 0xAC (0xFC): Interrupt Force IRQ 0
+			io32	ints;	// 0xB0 (0x100): Interrupt status after masking & forcing IRQ 0
+#if !RP2040
+			io32	inte1;	// 0xA8 (0x104): Interrupt Enable IRQ 1
+			io32	intf1;	// 0xAC (0x108): Interrupt Force IRQ 1
+			io32	ints1;	// 0xB0 (0x10C): Interrupt status after masking & forcing IRQ 1
+#endif
+		};
+		pwm_irq_ctrl_hw_t irq_ctrl[PWM_IRQ_NUM]; // 0xA8 (0xF8)
+	};
 } pwm_hw_t;
 
 #define pwm_hw ((pwm_hw_t*)PWM_BASE)
 
+#if RP2040
 STATIC_ASSERT(sizeof(pwm_hw_t) == 0xB4, "Incorrect pwm_hw_t!");
+#else
+STATIC_ASSERT(sizeof(pwm_hw_t) == 0x110, "Incorrect pwm_hw_t!");
+#endif
 
 // PWM slice configuration
 typedef struct {
@@ -103,11 +152,16 @@ void PWM_Reset(int pwm);
 
 // convert GPIO pin to PWM output channels PWM_CHAN_* (returns 0=A or 1=B)
 INLINE u8 PWM_GpioToChan(int gpio) { return (u8)(gpio & 1); }
-#define PWM_GPIOTOCHAN(gpio) ((gpio)&1)
+#define PWM_GPIOTOCHAN(gpio) ((gpio) & 1)
 
-// convert GPIO pin to PWM slice (returns 0 to 7)
+// convert GPIO pin to PWM slice (returns 0 to 7 or 0 to 11)
+#if RP2040
 INLINE u8 PWM_GpioToSlice(int gpio) { return (u8)((gpio >> 1) & 7); }
-#define PWM_GPIOTOSLICE(gpio) (((gpio)>>1)&7)
+#define PWM_GPIOTOSLICE(gpio) (((gpio) >> 1) & 7)
+#else
+INLINE u8 PWM_GpioToSlice(int gpio) { return (u8)((gpio < 32) ? ((gpio >> 1) & 7) : (8 + ((gpio >> 1) & 3))); }
+#define PWM_GPIOTOSLICE(gpio) ( ((gpio) < 32) ? (((gpio) >> 1) & 7) : (8 + (((gpio) >> 1) & 3)) )
+#endif
 
 // get PWM slice hardware interface from PWM slice index
 INLINE pwm_slice_hw_t* PWM_GetHw(int pwm) { return &pwm_hw->slice[pwm]; }
@@ -270,23 +324,43 @@ INLINE Bool PWM_IntRaw(int pwm) { return ((pwm_hw->intr >> pwm) & B0) != 0; }
 // clear interrupt flag
 INLINE void PWM_IntClear(int pwm) { pwm_hw->intr = BIT(pwm); }
 
-// enable interrupt
+// enable interrupt, IRQ_PWM_WRAP or IRQ_PWM_WRAP_0
 INLINE void PWM_IntEnable(int pwm) { RegSet(&pwm_hw->inte, BIT(pwm)); }
 
-// disable interrupt
+// disable interrupt, IRQ_PWM_WRAP or IRQ_PWM_WRAP_0
 INLINE void PWM_IntDisable(int pwm) { RegClr(&pwm_hw->inte, BIT(pwm)); }
 
-// force interrupt
+// force interrupt, IRQ_PWM_WRAP or IRQ_PWM_WRAP_0
 INLINE void PWM_IntForce(int pwm) { RegSet(&pwm_hw->intf, BIT(pwm)); }
 
-// unforce interrupt
+// unforce interrupt, IRQ_PWM_WRAP or IRQ_PWM_WRAP_0
 INLINE void PWM_IntUnforce(int pwm) { RegClr(&pwm_hw->intf, BIT(pwm)); }
 
-// check if interrupt is forced
+// check if interrupt is forced, IRQ_PWM_WRAP or IRQ_PWM_WRAP_0
 INLINE Bool PWM_IntIsForced(int pwm) { return ((pwm_hw->intf >> pwm) & B0) != 0; }
 
-// get interrupt status (masked by EN)
+// get interrupt status (masked by EN), IRQ_PWM_WRAP or IRQ_PWM_WRAP_0
 INLINE Bool PWM_IntState(int pwm) { return ((pwm_hw->ints >> pwm) & B0) != 0; }
+
+#if !RP2040
+// enable interrupt, IRQ_PWM_WRAP_1
+INLINE void PWM_Int1Enable(int pwm) { RegSet(&pwm_hw->inte1, BIT(pwm)); }
+
+// disable interrupt, IRQ_PWM_WRAP_1
+INLINE void PWM_Int1Disable(int pwm) { RegClr(&pwm_hw->inte1, BIT(pwm)); }
+
+// force interrupt, IRQ_PWM_WRAP_1
+INLINE void PWM_Int1Force(int pwm) { RegSet(&pwm_hw->intf1, BIT(pwm)); }
+
+// unforce interrupt, IRQ_PWM_WRAP_1
+INLINE void PWM_Int1Unforce(int pwm) { RegClr(&pwm_hw->intf1, BIT(pwm)); }
+
+// check if interrupt is forced, IRQ_PWM_WRAP_1
+INLINE Bool PWM_Int1IsForced(int pwm) { return ((pwm_hw->intf1 >> pwm) & B0) != 0; }
+
+// get interrupt status (masked by EN), IRQ_PWM_WRAP_1
+INLINE Bool PWM_Int1State(int pwm) { return ((pwm_hw->ints1 >> pwm) & B0) != 0; }
+#endif // !RP2040
 
 // ----------------------------------------------------------------------------
 //                          Original-SDK interface

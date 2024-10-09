@@ -26,6 +26,8 @@
 #include "../../_sdk/inc/sdk_dma.h"
 #include "../../_lib/inc/lib_config.h"
 #include "../../_devices/picopad/picopad_ss.h"
+#include "../../_lib/inc/lib_text.h"
+#include "../../_lib/inc/lib_draw.h"
 
 // ST7789 commands
 #define ST7789_NOP		0x00	// no operation
@@ -256,6 +258,12 @@ void DispStartImg(u16 x1, u16 x2, u16 y1, u16 y2)
 		OpenScreenShot();
 	}
 #endif
+
+	// synchronize external display (to start waiting for active CS)
+	u8 d = 0xff;
+	CS_OFF; 	// deactivate chip selection
+	DC_CMD;		// set command mode
+	SPI_Send8(DISP_SPI, &d, 1); // send data to SPI
 
 	// set draw window
 	DispWindow(x1, x2, y1, y2);
@@ -581,6 +589,96 @@ void DispTerm()
 	GPIO_Reset(DISP_MOSI_PIN);
 	GPIO_Reset(DISP_RES_PIN);
 	GPIO_Reset(DISP_CS_PIN);
+}
+
+// Direct draw text to display with current selected font
+//  text ... text to display (must not exceed display width)
+//  x ... start X position
+//  y ... start Y position
+//  w1 ... left margin (number of pixels with background color)
+//  w2 ... right margin (number of pixels with background color)
+//  col ... foreground color
+//  bgcol ... background color
+void DispDrawText(const char* text, int x, int y, int w1, int w2, u16 col, u16 bgcol)
+{
+	// text width
+	int len = StrLen(text);
+
+#if USE_EMUSCREENSHOT		// use emulator screen shots
+	// disable screenshot
+	DoEmuScreenShot = False;
+#endif
+	// limit text length
+	int w0 = DrawFontWidth;		// font width
+	int w = len*w0;			// text width
+	if (w > WIDTH) len = WIDTH/w0;	// limit text length
+	w = WIDTH - len*w0;		// remaining width
+
+	// limit left margin
+	if (w1 < 0) w1 = 0;		// left margin underflow
+	if (w1 > w) w1 = w;		// limit left margin
+	w -= w1;
+
+	// limit right margin
+	if (w2 < 0) w2 = 0;		// right margin underflow
+	if (w2 > w) w2 = w;		// limit right margin
+
+	// start sending image data to display window
+	w = w1 + len*w0 + w2;		// total width
+	int h = DrawFontHeight;
+	DispStartImg((u16)x, (u16)(x+w), (u16)y, (u16)(y+h));
+
+	// loop lines
+	int line = 0;
+	int i, j;
+	u8 ch;
+	const u8* fnt = pDrawFont;
+	const char* t;
+	for (; h > 0; h--)
+	{
+		// send left margin
+		for (i = w1; i > 0; i--) DispSendImg2(bgcol);
+
+		// text
+		t = text;
+
+		// loop characters
+		for (i = len; i > 0; i--)
+		{
+			// get font sample
+			ch = *t++;
+			ch = fnt[ch];
+
+			// loop through pixels of one character line
+			for (j = w0; j > 0; j--)
+			{
+				// draw pixel
+				DispSendImg2(((ch & 0x80) != 0) ? col : bgcol);
+				ch <<= 1;
+			}
+		}
+
+		// send right margin
+		for (i = w2; i > 0; i--) DispSendImg2(bgcol);
+
+		// next line
+		line++;
+		fnt += 256;
+	}
+
+	// stop sending image data
+	DispStopImg();
+}
+
+// Direct draw text row to display with current selected font
+//  text ... text to display (must not exceed display width)
+//  x ... start X position
+//  y ... start Y position
+//  col ... foreground color
+//  bgcol ... background color
+void DispDrawTextRow(const char* text, int x, int y, u16 col, u16 bgcol)
+{
+	DispDrawText(text, 0, y, x, WIDTH - x - StrLen(text)*DrawFontWidth, col, bgcol);
 }
 
 #endif // USE_ST7789		// use ST7789 TFT display (st7789.c, st7789.h)

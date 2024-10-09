@@ -1,7 +1,7 @@
 
-PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
-==================================================================
-SDK Programmer's Guide, Version 1.13, June 2024
+PicoLibSDK - Alternative SDK library for Raspberry Pico, RP2040 and RP2350
+==========================================================================
+SDK Programmer's Guide, Version 2.00, October 2024
 
 Copyright (c) 2023-2024 Miroslav Nemecek
 
@@ -16,19 +16,22 @@ https://picopad.eu/en/
 About
 -----
 PicoLibSDK is an alternative extended C/C++ SDK library for the Raspberry Pico
-module with the RP2040 processor, but it can also be used for other modules
-which use this processor. Compared to the original SDK library, officially
-provided with the Raspberry Pico, the PicoLibSDK library tries to extend the
-functionality of the original library and especially to make the SDK library
-easier to use. What you can find in the PicoLibSDK library:
+or Pico 2 module with the RP2040 or RP2350 processor (in the ARM or RISC-V
+mode), but it can also be used for other modules which use these processors.
+Compared to the original SDK library, officially provided with the Raspberry
+Pico, the PicoLibSDK library tries to extend the functionality of the original
+library and especially to make the SDK library easier to use. But most of
+functions of original SDK are provided here as well, for backwards
+compatibility. What you can find in the PicoLibSDK library:
 
 - Boot Loader: Boot loader allowing to select and run UF2 programs from SD card.
 
 - SDK hardware control: ADC, boot ROM, clocks control, CPU control, hardware
-  divider, DMA, double and float arithmetics, FIFO mailboxes, flash programming,
-  GPIO, I2C, hardware interpolator, IRQ, multicore, PIO, PLL, PWM, QSPI, reset
-  and power control, ROSC, RTC, SPI, spinlocks, SysTick, alarm timer, watchdog,
-  XOSC.
+  divider, DMA, doorbells, double and float arithmetics, FIFO mailboxes, flash
+  programming, GPIO, HSTX, I2C, hardware interpolator, IRQ, multicore, PIO, PLL,
+  PWM, QSPI, reset and power control, ROSC, RTC, SHA256, SPI, spinlocks,
+  SysTick, alarm timer, TMDS, TRNG, watchdog, XOSC. The RP2350 processor can be
+  used in ARM or RISC-V mode.
 
 - Tool library: alarm, 32-bit Unix calendar, long 64-bit astronomic calendar,
   canvas drawing, RGBA color vector, CRC check with DMA support, decode numbers,
@@ -62,10 +65,10 @@ License
 -------
 The library source code is, with a few exceptions, completely free to use for
 any purpose, including commercial use. It is possible to use and modify all or
-parts of the library source code without restriction. The only exceptions are
-the single- and double-floating-point mathematics libraries, which are mostly
-the copyrighted work of Raspberry Pi and Mark Owen and are therefore subject to
-the licensing terms of the original authors.
+parts of the library source code without restriction. Some libraries (mainly
+single- and double-floating-point mathematics) are mostly the copyrighted work
+of Raspberry Pi and are therefore subject to the licensing terms of the original
+authors.
 
 
 Building
@@ -76,10 +79,18 @@ and utilities, only the installation of the GCC ARM compiler.
 
 GCC ARM Installation in Windows
 
-Download the GCC ARM compiler from https://developer.arm.com/downloads/-/gnu-rm.
-Use Windows 32-bit Installer. PicoLibSDK compilation was prepared for GCC-ARM
-compiler version 10. I recommend installing it in C:\ARM10 folder.This will make
-it easier to change the compiler version later.
+Download the GCC ARM compiler from
+https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads. You can use
+Windows Installer. To compile RP2350 (Pico 2), you will need GCC-ARM compiler
+version 13.3 or more. To compile RP2350 in RISC-V mode, you will need Hazard3
+RISC-V compiler. You can use GCC-RISCV32 compiler version 13.2 or more:
+https://www.embecosm.com/resources/tool-chain-downloads/#corev. This version
+does not support compressed instructions, resulting code is a litle bigger. If
+you will use GCC version 14.2, you will need to build it yourself, but you can
+also use compressed RISC-V instructions, the resulting code will be smaller. In
+such case, edit Makefile.inc in base directory of PicoLibSDK, and change
+compilation switch to GCC 14 (search “CPU Architecture”). You can install both
+compilers in the same directory, e.g. C:\ARM.
 
 In the last stage of the installation, enable the "Add path to environment
 variable" option. This will ensure that the compiler files will be found.
@@ -105,7 +116,8 @@ default compilation is for the target device 'pico' (the Raspberry Pico module
 itself without any added hardware), in the DemoVGA folder the compilation is for
 'demovga', in the Picoino folder the compilation is for 'picoino10', in the
 Picotron folder the compilation is for 'picotron' and in the PicoPad folder
-the default compilation is for 'picopad10'.
+the default compilation is for 'picopad20' (or select 'picopad10' or
+'picopad20riscv' batch file).
 
 If the target device is not passed to the compilation files, it is compiled for
 the default device set in the _setup.bat file. This also applies if you compile
@@ -294,10 +306,10 @@ parameter, which is passed forward on the last row of the file as the parameter
 for the _c1.bat file. You can prepend another row before the last row, in which
 you set the name of the target device as a parameter, according to the list of
 names given in the _setup.bat file. For example, if you want to compile for
-picopad08 (you can leave the last row, the row added before it will take
+picopad10 (you can leave the last row, the row added before it will take
 precedence):
 
-..\..\_c1.bat picopad08
+..\..\_c1.bat picopad10
 ..\..\_c1.bat %1
 
 The following text refers only to the creation of a new device.
@@ -445,11 +457,14 @@ How PicoLibSDK library files and directories are organized:
 
 !PicoinoMini - SD card contents with sample programs and loader for PicoinoMini.
 
-!PicoPad08 - SD card contents with sample programs and loader for PicoPad
-	beta 0.8.
-
 !PicoPad10 - SD card contents with sample programs and loader for PicoPad
 	version 1.0.
+
+!PicoPad20 - SD card contents with sample programs and loader for PicoPad
+	version 2.0 in ARM mode.
+
+!PicoPad20riscv - SD card contents with sample programs and loader for PicoPad
+	version 2.0 in RISC-V mode.
 
 !PicoPadVGA - SD card contents with sample programs and loader for PicoPadVGA.
 
@@ -464,9 +479,10 @@ _devices - device definitions and drivers. Currently, the ready devices are
 	DemoVGA, Pico, Picoino 1.0, PicoinoMini, PicoPad 0.8, PicoPad 1.0,
 	PicoPadVGA, Picotron.  The target device is selected at compile time
 	with the c.bat file parameter ('demovga', 'pico', 'picoino10',
-	'picoinomini', 'picopad08', 'picopad10', 'picopadvga', 'picotron').
-	If the target device is not specified when compiling the application,
-	the default device is selected by the _setup.bat file.
+	'picoinomini', 'picopad08', 'picopad10', 'picopad20', 'picopad20riscv',
+        'picopadvga', 'picotron'). If the target device is not specified when
+        compiling the application, the default device is selected by the
+        _setup.bat file.
 
 _display - drivers for the displays. Currently, there is a mini-VGA display
 	driver for 4/8/15/16-bit output to a VGA monitor with 320x240 up to
@@ -539,22 +555,27 @@ memmap_*.ld - scripts for linker
 
 Boot3 loader
 ------------
-The PicoLibSDK boot3 loader is a 32 KB resident program that is permanently
-loaded at the beginning of the Flash memory. The boot3 loader can be loaded
-into the processor's memory only by programming via USB cable, just like the
-classic procedure for programming regular programs for the Raspberry Pico.
+The PicoLibSDK boot3 loader is a 32 KB (or 64 KB on RP2350 Pico 2) resident
+program that is permanently loaded at the beginning of the Flash memory. The
+boot3 loader can be loaded into the processor's memory only by programming via
+USB cable, just like the classic procedure for programming regular programs for
+the Raspberry Pico.
 
 The Boot3 loader contains a standard boot2 loader (256 bytes) at its start.
 During system boot, the boot2 loader is started first, which initializes the
 Flash memory and passes on control to the boot3 loader.
 
+The RP2350 Pico 2 can run in either ARM or RISC-V processor mode. The Boot3
+loader must be of the same type as the program being run. If you change the mode
+between ARM and RISC-V, you must load a new boot3 loader from the PC via USB.
+
 The boot3 loader first initializes the base devices. In the Picoino the output
 is to the QVGA display, implemented by the PIO, in the PicoPad the output is to
 the TFT display. The boot3 loader detects whether an SD card is inserted. If no
 SD card is inserted, it checks if there is a valid application loaded in the
-memory from the next address up to 32 KB (it must have a valid checksum) and if
-the application is OK, it runs it. If an SD card is inserted, it will not run
-the application, but will display the contents of the SD card and allows the
+memory from the next address up to 32 or 64 KB (it must have a valid checksum)
+and if the application is OK, it runs it. If an SD card is inserted, it will not
+run the application, but will display the contents of the SD card and allows the
 user to select a program to run.
 
 The applications on the SD card are in UF2 format. They differ from the standard
@@ -564,10 +585,10 @@ into the Pico in the classic way via USB cable, like other common applications,
 because the boot3 loader will be loaded into memory along with them.
 
 When the boot3 loader starts an application from the SD card, it skips the
-initial 32 KB that the boot3 loader contains and loads the rest of the file into
-Flash memory. It then checks the validity of the application - it must have a
-valid header and a valid checksum. If everything is OK, the boot3 loader will
-run the application.
+initial 32 KB (or 64 KB) that the boot3 loader contains and loads the rest of
+the file into Flash memory. It then checks the validity of the application - it
+must have a valid header and a valid checksum. If everything is OK, the boot3
+loader will run the application.
 
 It is also possible to immediately start an application that is already loaded
 in memory - this is possible with the 'Y' button (the 'Back' button in Picoino),
@@ -607,10 +628,10 @@ a screenshot by turning on the configuration option USE_SCREENSHOT = 1.
 Booting process
 ---------------
 After the power is turned on and the reset sequence is completed, the processor
-starts its operation in the BootROM (16 KB from address 0x00000000), which is a
-fixed part of the RP2040 and cannot be changed by the user. The start address
-("_start") is stored in the BootROM in the second entry of the interrupt vector.
-The first entry is the address of the stack pointer.
+starts its operation in the BootROM (16 KB or 32 KB from address 0x00000000),
+which is a fixed part of the RP2040/RP2350 and cannot be changed by the user.
+The start address ("_start") is stored in the BootROM in the second entry of
+the interrupt vector. The first entry is the address of the stack pointer.
 
 Both processor cores start in the BootROM in the same way. If it is core 1
 (detected via CpuID()), core 1 goes into sleep mode in a waiting loop, waiting
@@ -629,7 +650,9 @@ the beginning of each application for the RP2040.
 
 The processor checks the boot loader checksum - the calculated CRC32A for the
 first 252 bytes must match the checksum in the last 4 bytes. If the checksum
-matches, the program jumps to the beginning of the boot2 loader.
+matches, the program jumps to the beginning of the boot2 loader. The RP2350 does
+not run the boot2 module, but the beginning of the program. The program itself
+provides the boot2 call and initializes the Flash memory.
 
 The BootROM program initialized only the basic interface for the Flash memory -
 in order to be able to connect basically any Flash memory. Boot2 loader sets a
@@ -639,16 +662,18 @@ different Flash memories.
 Boot2 loader continues by jumping to the main application program. It reads the
 stack pointer settings and start address from the vector table at address
 0x10000100, and jumps into the application at the start address.
-Applications compiled for the PicoLibSDK library may contain another boot loader
-at the beginning, stage 3. It is 32 KB in size and is used to load programs from
-the SD card into Flash memory.
 
-Each program prepared in this way contains the entire 32 KB boot3 loader at the
-beginning. This allows the program to be loaded into the Flash memory using both
-the classic USB cable procedure and the boot3 loader from the SD card. When
-booting a program from an SD card, the boot3 loader does not load the first
-32 KB of the file, but only the following part, with the program itself. The
-program itself thus starts at address 0x10008000 with its vector table.
+Applications compiled for the PicoLibSDK library may contain another boot loader
+at the beginning, stage 3. It is 32 KB or 64 KB in size and is used to load
+programs from the SD card into Flash memory.
+
+Each program prepared in this way contains the entire 32 KB or 64 KB boot3
+loader at the beginning. This allows the program to be loaded into the Flash
+memory using both the classic USB cable procedure and the boot3 loader from the
+SD card. When booting a program from an SD card, the boot3 loader does not load
+the first 32 KB or 64 KB of the file, but only the following part, with the
+program itself. The program itself thus starts at address 0x10008000 with its
+vector table.
 
 Before starting the application, the Boot3 loader first checks the special
 application header, which is located after the vector table. It calculates the
@@ -808,6 +833,7 @@ History of versions
 05/01/2024 version 1.12: Screen saver in loader to turn off when charging.
 	Simple PC DOS emulator.
 06/14/2024 version 1.13: Game Boy Emulator
+10/08/2024 version 2.00: RP2350 Pico 2 support
 
 
 Missing and @TODO

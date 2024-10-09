@@ -1,0 +1,2 @@
+Manchester serial transmit/receive example. This transmits and receives at
+10 Mbps if sysclk is 120 MHz.

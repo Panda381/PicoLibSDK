@@ -224,7 +224,7 @@ int MscdProcScsi(u8 lun, const u8* cmd, u8* buffer, u32 bufsize)
 
 				// write data to buffer
 				res = sizeof(sScsiCap10);
-				memcpy(buffer, &cap, sizeof(sScsiCap10));
+				UsbMemcpy(buffer, &cap, sizeof(sScsiCap10));
 			}
 		}
 		break;
@@ -255,7 +255,7 @@ int MscdProcScsi(u8 lun, const u8* cmd, u8* buffer, u32 bufsize)
 
 				// write data to buffer
 				res = sizeof(sScsiFormCap);
-				memcpy(buffer, &cap, sizeof(sScsiFormCap));
+				UsbMemcpy(buffer, &cap, sizeof(sScsiFormCap));
 			}
 		}
 		break;
@@ -279,7 +279,7 @@ int MscdProcScsi(u8 lun, const u8* cmd, u8* buffer, u32 bufsize)
 
 			// write data to buffer
 			res = sizeof(sScsiInquiry);
-			memcpy(buffer, &inq, sizeof(sScsiInquiry));
+			UsbMemcpy(buffer, &inq, sizeof(sScsiInquiry));
 		}
 		break;
 
@@ -302,7 +302,7 @@ int MscdProcScsi(u8 lun, const u8* cmd, u8* buffer, u32 bufsize)
 
 			// write data to buffer
 			res = sizeof(sScsiMode6);
-			memcpy(buffer, &desc, sizeof(sScsiMode6));
+			UsbMemcpy(buffer, &desc, sizeof(sScsiMode6));
 		}
 		break;
 
@@ -320,7 +320,7 @@ int MscdProcScsi(u8 lun, const u8* cmd, u8* buffer, u32 bufsize)
 
 			// write data to buffer
 			res = sizeof(sScsiSense);
-			memcpy(buffer, &sens, sizeof(sScsiSense));
+			UsbMemcpy(buffer, &sens, sizeof(sScsiSense));
 
 			// clear sense data after copy
 			MscdSetSense(lun, 0, 0, 0);

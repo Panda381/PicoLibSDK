@@ -18,12 +18,20 @@ call d_all.bat
 call c_all.bat picoinomini
 
 rem Compilation... Compile all projects of device "PicoPad beta version 0.8"
-call d_all.bat
-call c_all.bat picopad08
+rem call d_all.bat
+rem call c_all.bat picopad08
 
 rem Compilation... Compile all projects of device "PicoPad version 1.0"
 call d_all.bat
 call c_all.bat picopad10
+
+rem Compilation... Compile all projects of device "PicoPad version 2.0 ARM"
+call d_all.bat
+call c_all.bat picopad20
+
+rem Compilation... Compile all projects of device "PicoPad version 2.0 RISC-V"
+call d_all.bat
+call c_all.bat picopad20riscv
 
 rem Compilation... Compile all projects of device "PicoPadVGA"
 call d_all.bat

@@ -1,0 +1,2 @@
+Set callbacks on the system timer, which repeat at regular intervals.
+Cancel the timer when we're done.

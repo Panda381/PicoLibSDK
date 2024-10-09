@@ -62,7 +62,7 @@ void ADC_Term(void)
 }
 
 // initialize GPIO to use as an ADC pin
-//  pin ... pin 26 to 29
+//  pin ... pin 26 to 29 (or 40 to 47)
 void ADC_PinInit(int pin)
 {
 	// disable all functions to make output driver high impedance
@@ -76,7 +76,7 @@ void ADC_PinInit(int pin)
 }
 
 // terminate pin as ADC input
-//  pin ... pin 26 to 29
+//  pin ... pin 26 to 29 (or 40 to 47)
 void ADC_PinTerm(int pin)
 {
 	GPIO_Reset(pin);

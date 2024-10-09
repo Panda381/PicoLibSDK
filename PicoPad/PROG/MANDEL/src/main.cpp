@@ -31,7 +31,12 @@ We will use 32-bit integer with highest 7 bits as integer part and 25 lower bits
 #include "../include.h"
 
 #define RENDER_2CORES	1	// 1 = use both cores to render
-#define RENDER_FIXASM	1	// 1 = use fixed int in assembler
+
+//#if RP2040
+//#define RENDER_FIXASM	1	// 1 = use fixed int in assembler
+//#else
+#define RENDER_FIXASM	0	// 1 = use fixed int in assembler
+//#endif
 
 #define USE_AUTO 0	// auto arithmetics
 #define USE_INT	1	// use integer arithmetics (max. SizeN = 17, baze repaint 480 ms or one core 717 ms, C variant 517 ms or one core 793 ms)

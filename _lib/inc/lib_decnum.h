@@ -14,6 +14,8 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#if USE_DECNUM		// use DecNum (decnum.c, decnum.h)
+
 #ifndef _LIB_DECNUM_H
 #define _LIB_DECNUM_H
 
@@ -50,3 +52,5 @@ void Dec2DigSpc(char* buf, u8 num);
 #endif
 
 #endif // _LIB_DECNUM_H
+
+#endif // USE_DECNUM		// use DecNum (decnum.c, decnum.h)

@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                         SSI synchronous serial interface
+//                  SSI synchronous serial interface (only RP2040)
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
@@ -17,13 +17,15 @@
 // SSI (synchronous serial interface) is used to communicate with external Flash
 // device using 6 pins: QSPI_SCLK, QSPI_SS, QSPI_SD0..QSP_SD3.
 
+#if RP2040
+
 #ifndef _SDK_SSI_H
 #define _SDK_SSI_H
 
 #include "../sdk_addressmap.h"		// Register address offsets
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_ssi.h"	// constants of original SDK
+#include "orig_rp2040/orig_ssi.h"	// constants of original SDK
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
@@ -99,7 +101,7 @@ typedef struct {
 STATIC_ASSERT(sizeof(ssi_hw_t) == 0xFC, "Incorrect ssi_hw_t!");
 
 // get flash speed
-INLINE int SSI_FlashClkDiv() { return *SSI_BAUDR; }
+INLINE int SSI_FlashClkDiv(void) { return *SSI_BAUDR & 0xffff; }
 
 // set flash speed
 void NOFLASH(SSI_SetFlashClkDiv)(int clkdiv);
@@ -120,3 +122,5 @@ void NOFLASH(SSI_InitFlash)(int clkdiv);
 #endif
 
 #endif // _SDK_SSI_H
+
+#endif // RP2040

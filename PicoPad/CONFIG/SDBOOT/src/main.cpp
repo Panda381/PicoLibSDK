@@ -544,7 +544,7 @@ void ClearApp(Bool full)
 
 	// find end of memory (last 4 KB are reserved for config)
 	u32 addr = XIP_BASE;
-	u32 count = 2*1024*1024;
+	u32 count = FLASHSIZE;
 	if (!full) count -= 4096; // without config
 	const u32* s = (const u32*)(addr + count);
 	while (count >= 4)
@@ -558,7 +558,7 @@ void ClearApp(Bool full)
 	count = (count + 0x10000-4) & ~0xffff;
 
 	// limit to protect config on last 4 KB page
-	if (!full && (count > 2*1024*1024 - 4096)) count = 2*1024*1024 - 4096;
+	if (!full && (count > FLASHSIZE - 4096)) count = FLASHSIZE - 4096;
 
 	// erase memory
 	int n = count;
@@ -612,7 +612,7 @@ void DispInfoScr()
 	else
 	{
 		MemPrint(TempBuf, TEMPBUF, "config: NO");
-		s = (const u8*)(XIP_BASE + 2*1024*1024);
+		s = (const u8*)(XIP_BASE + FLASHSIZE);
 	}
 	DrawText(TempBuf, WIDTH/2+8, y, COL_WHITE); y += FONTH;
 	y += FONTH/2;
@@ -679,7 +679,7 @@ void SaveFlash(Bool full)
 	char fn[20]; // filename
 
 	// program size to save
-	len = full ? (2*1024*1024) : ProgLen;
+	len = full ? FLASHSIZE : ProgLen;
 
 	// search not existing file
 	for (i = 1; i < 1000; i++)
@@ -783,10 +783,10 @@ void LoadFlash()
 
 	// number of pages
 	int n = fd->size/512;
-	if (n > 2*1024*1024/256) n = 2*1024*1024/256;
+	if (n > FLASHSIZE/256) n = FLASHSIZE/256;
 
 	// check if erase full memory
-	Bool full = n > ((2*1024*1024 - 4096)/256);
+	Bool full = n > ((FLASHSIZE - 4096)/256);
 
 	// read header of first sector and check address
 	FileRead(&f, TempBuf, 32);

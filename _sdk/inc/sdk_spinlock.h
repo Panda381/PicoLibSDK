@@ -30,7 +30,6 @@ extern "C" {
 #endif
 
 #define SPINLOCK_NUM	32	// number of spinlocks
-//#define SIO_BASE		0xd0000000	// SIO registers
 //   (SIO does not support aliases for atomic access!)
 #define SPINLOCK_STATE	((volatile u32*)(SIO_BASE+0x5c)) // spinlock states
 #define SPINLOCK(lock)	((volatile u32*)(SIO_BASE+(lock)*4+0x100)) // spinlock 0..31

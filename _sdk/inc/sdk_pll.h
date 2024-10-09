@@ -14,9 +14,6 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-// In config_def.h:
-// #define XOSC_MHZ	12	// crystal oscillator frequency in MHz (must be in range 1..15 MHz)
-
 #if USE_PLL	// use PLL phase-locked loop (sdk_pll.c, sdk_pll.h)
 
 #ifndef _SDK_PLL_H
@@ -26,7 +23,11 @@
 #include "../sdk_addressmap.h"		// Register address offsets
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_pll.h"		// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_pll.h"		// constants of original SDK
+#else
+#include "orig_rp2350/orig_pll.h"		// constants of original SDK
+#endif
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
@@ -36,9 +37,7 @@ extern "C" {
 #define PLL_SYS		0	// system PLL (generate system clock, default 125 MHz, max. 133 MHz)
 #define PLL_USB		1	// USB PLL (generate 48 MHz USB reference clock)
 
-//#define PLL_SYS_BASE		0x40028000
-//#define PLL_USB_BASE		0x4002c000
-#define PLL(pll)	(PLL_SYS_BASE + (pll)*0x4000)	// PLL base
+#define PLL(pll)	(PLL_SYS_BASE + (pll)*(PLL_USB_BASE - PLL_SYS_BASE))	// PLL base
 
 // PLL hardware registers
 #define PLL_CS(pll)	((volatile u32*)(PLL(pll)+0x00)) // control and status
@@ -52,6 +51,12 @@ typedef struct {
 	io32	pwr;		// 0x04: Controls the PLL power modes
 	io32	fbdiv_int;	// 0x08: Feedback divisor
 	io32	prim;		// 0x0C: Controls the PLL post dividers for the primary output
+#if !RP2040
+	io32	intr;		// 0x10: interrupt raw
+	io32	inte;		// 0x14: interrupt enable
+	io32	intf;		// 0x18: interrupt force
+	io32	ints;		// 0x1C: interrupt state
+#endif
 } pll_hw_t;
 
 #define pll_sys_hw ((pll_hw_t*)PLL_SYS_BASE)
@@ -60,7 +65,11 @@ typedef struct {
 #define pll_sys pll_sys_hw
 #define pll_usb pll_usb_hw
 
+#if RP2040
 STATIC_ASSERT(sizeof(pll_hw_t) == 0x10, "Incorrect pll_hw_t!");
+#else
+STATIC_ASSERT(sizeof(pll_hw_t) == 0x20, "Incorrect pll_hw_t!");
+#endif
 
 // ranges
 #define PLL_VCO_MIN	400		// VCO min. frequency in MHz

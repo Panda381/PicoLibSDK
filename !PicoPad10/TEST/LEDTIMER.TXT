@@ -1,0 +1,10 @@
+^YLed with Timer^0
+
+Test LED indicators
+with timer IRQ.
+
+^WY^0 ....... quit
+
+Support USB keyboard:
+A->Ctrl, B->Alt, X->Shift,
+Y->Esc

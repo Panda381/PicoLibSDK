@@ -16,7 +16,7 @@
 
 #include "../../global.h"	// globals
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 // round coefficients, used in SetFloat function
 const float SetFloatCoeff[11] = { 5e0f, 5e-1f, 5e-2f, 5e-3f, 5e-4f, 5e-5f, 5e-6f,
 	5e-7f, 5e-8f, 5e-9f, 5e-10f };
@@ -432,7 +432,7 @@ Bool TextSetAddHex64(pText* text, u64 num, s8 digits, char sep, Bool add)
 	return True;
 }
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 
 // ============================================================================
 //                           Set decimal number
@@ -1028,7 +1028,7 @@ s64 StrToInt64(const char* text)
 	return res;
 }
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 
 // convert ASCIIZ text to FLOAT number
 float StrToFloat(const char* text)

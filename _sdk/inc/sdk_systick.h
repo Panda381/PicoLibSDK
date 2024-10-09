@@ -26,7 +26,11 @@
 #include "../sdk_addressmap.h"		// Register address offsets
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_m0plus.h"		// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_m0plus.h"		// constants of original SDK
+#else
+#include "orig_rp2350/orig_m33.h"		// constants of original SDK
+#endif
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
@@ -50,6 +54,8 @@ extern volatile u32 UnixTime;		// current date and time in Unix format
 					// - number of seconds since 1/1/1970 (thursday) up to 12/31/2099
 extern volatile s16 CurTimeMs;		// current time in [ms] 0..999
 
+#if !RISCV
+
 // === System control block (RP2040 datasheet page 74)
 //#define PPB_BASE		0xe0000000	// Cortex-M0+ internal registers (system control block)
 
@@ -65,9 +71,15 @@ typedef struct {
 	io32	calib;	// 0x0C: Use the SysTick Calibration Value Register to enable software to scale to any required speed using divide and multiply
 } systick_hw_t;
 
+STATIC_ASSERT(sizeof(systick_hw_t) == 0x10, "Incorrect systick_hw_t!");
+
 #define systick_hw ((systick_hw_t*)(PPB_BASE + 0xE010))
 
-STATIC_ASSERT(sizeof(systick_hw_t) == 0x10, "Incorrect systick_hw_t!");
+#if !RP2040
+#define systick_ns_hw ((systick_hw_t *)(PPB_NONSEC_BASE + 0xE010))
+#endif
+
+#endif // !RISCV
 
 // initialize SysTick timer for this CPU core to interrupt every SYSTICK_MS ms
 // - AlarmInit() function must be called before initializing SysTick timers.

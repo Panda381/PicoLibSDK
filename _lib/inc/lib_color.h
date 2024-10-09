@@ -17,7 +17,7 @@
 
 #if USE_COLOR	// use color vector (lib_color.c, lib_color.h)
 
-#ifndef _LIB_COLOW_H
+#ifndef _LIB_COLOR_H
 #define _LIB_COLOR_H
 
 typedef float color_float;	// color element (use float or double)

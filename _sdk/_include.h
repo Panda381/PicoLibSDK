@@ -23,22 +23,30 @@
 #include "inc/sdk_flash.h"	// Flash memory
 #include "inc/sdk_float.h"	// single-floating-point
 #include "inc/sdk_gpio.h"	// GPIO pins
+#include "inc/sdk_hstx.h"	// HSTX High-speed serial transmit
 #include "inc/sdk_i2c.h"	// I2C interface
 #include "inc/sdk_interp.h"	// interpolator
 #include "inc/sdk_irq.h"	// IRQ interrupt request
 #include "inc/sdk_multicore.h"	// multicore
 #include "inc/sdk_pio.h"	// PIO
 #include "inc/sdk_pll.h"	// PLL phase-locked loop
+#include "inc/sdk_powman.h"	// Power Manager
 #include "inc/sdk_pwm.h"	// PWM
+#include "inc/sdk_qmi.h"	// QMI QSPI memory interface
 #include "inc/sdk_qspi.h"	// QSPI flash pins
 #include "inc/sdk_reset.h"	// reset and power-on
 #include "inc/sdk_rosc.h"	// ROSC ring oscillator
 #include "inc/sdk_rtc.h"	// RTC Real-time clock
+#include "inc/sdk_scb.h"	// ARM system control block
+#include "inc/sdk_sha256.h"	// SHA-256 accelerator
 #include "inc/sdk_spi.h"	// SPI interface
 #include "inc/sdk_spinlock.h"	// spin lock
 #include "inc/sdk_ssi.h"	// SSI synchronous serial interface
 #include "inc/sdk_systick.h"	// SysTick system timer
+#include "inc/sdk_ticks.h"	// Tick generators
 #include "inc/sdk_timer.h"	// Timer
+#include "inc/sdk_tmds.h"	// TMDS encoder
+#include "inc/sdk_trng.h"	// TRNG True Random Number Generator
 #include "inc/sdk_uart.h"	// UART serial port
 #include "inc/sdk_vreg.h"	// voltage regulator
 #include "inc/sdk_watchdog.h"	// Watchdog timer

@@ -31,7 +31,11 @@ Results can be written back to the accumulators.
 #include "sdk_sio.h"			// SIO registers
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_sio.h"		// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_sio.h"		// constants of original SDK
+#else
+#include "orig_rp2350/orig_sio.h"		// constants of original SDK
+#endif
 #endif
 
 #ifdef __cplusplus
@@ -43,7 +47,6 @@ extern "C" {
 
 // Interpolator hardware registers
 // interp = 0 or 1 (index of interpolator), lane = 0 or 1 (index of lane) or 2 for common value
-//#define SIO_BASE		0xd0000000	// SIO registers
 //    (SIO does not support aliases for atomic access!)
 #define INTERP_ACCUM(interp, lane)	((volatile u32*)(SIO_BASE+(interp)*0x40+(lane)*4+0x80)) // R/W accumulator (lane = 0 or 1)
 #define INTERP_BASE(interp, lane)	((volatile u32*)(SIO_BASE+(interp)*0x40+(lane)*4+0x88)) // R/W base (lane = 0 or 1, or 2 to common base)
@@ -53,9 +56,8 @@ extern "C" {
 #define INTERP_ADD(interp, lane)	((volatile u32*)(SIO_BASE+(interp)*0x40+(lane)*4+0xB4)) // R/W add to accumulator (lane = 0 or 1)
 #define INTERP_BASE01(interp)		((volatile u32*)(SIO_BASE+(interp)*0x40+0xBC)) // WO write LOW 16 bits to BASE0, HIGH 16 bits to BASE1
 
-/*
+/* ... this structure is defined in sdk_sio.h
 // Interpolator hardware interface
-// ... defined in sdk_sio.h
 typedef struct {
 	io32	accum[2];	// 0x00: Read/write access to accumulator 0
 	io32	base[3];	// 0x08: Read/write access to BASE0 register
@@ -66,11 +68,11 @@ typedef struct {
 	io32	base01;		// 0x3C: On write, the lower 16 bits go to BASE0, upper bits to BASE1 simultaneously
 } interp_hw_t;
 
+STATIC_ASSERT(sizeof(interp_hw_t) == 0x40, "Incorrect interp_hw_t!");
+
 #define interp_hw_array ((interp_hw_t*)(SIO_BASE + 0x80))
 #define interp0_hw (&interp_hw_array[0])
 #define interp1_hw (&interp_hw_array[1])
-
-STATIC_ASSERT(sizeof(interp_hw_t) == 0x40, "Incorrect interp_hw_t!");
 */
 
 #define interp0 interp0_hw

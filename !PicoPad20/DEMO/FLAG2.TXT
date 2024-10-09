@@ -1,0 +1,10 @@
+^YFlag 2^0
+
+Demo - fluttering flag
+       with custom image
+
+^WY^0 ....... quit
+
+Support USB keyboard:
+A->Ctrl, B->Alt, X->Shift,
+Y->Esc

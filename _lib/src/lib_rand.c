@@ -25,7 +25,7 @@
 #include "../inc/lib_rand.h"
 
 // Seed of random number generator (for both CPU cores)
-u64 RandSeed[CORE_NUM] = { 123456789, 987654321 };
+u64 RandSeed[CORE_NUM] = { 123456789123456789ULL, 198765432198765432ULL };
 
 // get seed of random number generator (for current CPU core)
 u64 RandGet()
@@ -114,7 +114,7 @@ u64 RandU64()
 	return RandShift() | ((u64)n << 32);
 }
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 // generate float random number in range 0 (including) to 1 (excluding)
 // (maximum number is 0.99999994, minimal step 0.00000006)
 float RandFloat()
@@ -253,7 +253,7 @@ s64 RandS64Max(s64 max)
 		return -(s64)RandU64Max((u64)-max);
 }
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 // generate float random number in range 0 (including) to MAX (excluding)
 float RandFloatMax(float max)
 {
@@ -325,7 +325,7 @@ s64 RandS64MinMax(s64 min, s64 max)
 	return (s64)RandU64Max(max - min) + min;
 }
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 // generate float random number in range MIN to MAX (excluding)
 // If MIN > MAX, then number is generated out of interval.
 float RandFloatMinMax(float min, float max)
@@ -343,7 +343,7 @@ double RandDoubleMinMax(double min, double max)
 }
 #endif // USE_DOUBLE		// use double support
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 // generate Gaussian float random number (mean = center, default use 0, sigma = width, default use 1)
 float RandFloatGauss(float mean, float sigma)
 {
@@ -434,7 +434,7 @@ s64 RandTestS64()
 	return num >> shift;
 }
 
-#if USE_FLOAT || USE_DOUBLE	// use float or double support
+#if USE_FLOAT || USE_DOUBLE	// use float or double support 1=in RAM, 2=in Flash
 // 1D coordinate Perlin noise generator (output -1..+1)
 float Noise1D(int x, int seed)
 {

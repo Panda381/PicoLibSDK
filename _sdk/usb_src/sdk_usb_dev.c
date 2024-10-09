@@ -829,7 +829,7 @@ void UsbDevSetupNext()
 		// IN: prepare data to send to host
 		epinx = USB_EPINX(0, USB_DIR_IN); // endpoint0, direction IN (send data to host)
 		if ((len != 0) && (UsbDevSetupBuff != UsbSetupDataBuff))
-			memcpy(UsbDevSetupBuff, UsbSetupDataBuff, len); // prepare data to send to host
+			UsbMemcpy(UsbDevSetupBuff, UsbSetupDataBuff, len); // prepare data to send to host
 	}
 
 	// start transfer
@@ -872,7 +872,7 @@ void UsbDevSetupComp(u8 epinx, u8 xres, u16 len)
 	// OUT data from host to device, load data to buffer
 	if ((type & B7) == 0)
 	{
-		if (UsbSetupDataBuff != NULL) memcpy(UsbSetupDataBuff, UsbDevSetupBuff, len);
+		if (UsbSetupDataBuff != NULL) UsbMemcpy(UsbSetupDataBuff, UsbDevSetupBuff, len);
 	}
 
 	// shift data
@@ -1070,7 +1070,7 @@ void UsbDevIrq()
 	if ((status & B16) != 0) // SETUP_REQ
 	{
 		// save setup packet
-		memcpy(&UsbSetupRequest, USB_SETUP_PKT, USB_SETUP_PKT_SIZE);
+		UsbMemcpy(&UsbSetupRequest, USB_SETUP_PKT, USB_SETUP_PKT_SIZE);
 		dmb(); // data memory barrier
 
 		// reset status flag (needs to be reset later after content of SETUP packet is copied)

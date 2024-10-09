@@ -1,6 +1,0 @@
-^YLines^0
-
-Demo - relaxation line
-       pattern generator
-
-^WY^0 ....... quit

@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                            Voltage regulator
+//                        Voltage regulator (only RP2040)
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
@@ -15,6 +15,9 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+
+#if RP2040
+
 #include "../inc/sdk_vreg.h"
 
 // set voltage VREG_VOLTAGE_*
@@ -24,8 +27,10 @@ void VregSetVoltage(int vreg)
 }
 
 // wait for regulated state
-void VregWait()
+void VregWait(void)
 {
 	while (!VregIsOk()) {}
 }
 
+
+#endif // RP2040

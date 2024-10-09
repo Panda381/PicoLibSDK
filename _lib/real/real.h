@@ -42,7 +42,9 @@
 #define REALREF			real48		// reference number type (do not use real32, insufficient for ChebCoefRefExt)
 #define REALREFNAME(x)	Real48 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL16
 
 #if USE_REAL32
@@ -65,7 +67,9 @@
 #define REALREF			real64		// reference number type (do not use real48, insufficient for ChebCoefRefExt)
 #define REALREFNAME(x)	Real64 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL32
 
 #if USE_REAL48
@@ -88,7 +92,9 @@
 #define REALREF			real96		// reference number type (do not use real80 or real64, insufficient for ChebCoefRefExt)
 #define REALREFNAME(x)	Real96 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL48
 
 #if USE_REAL64
@@ -111,7 +117,9 @@
 #define REALREF			real128		// reference number type (do not use real80 or real96, insufficient for ChebCoefRefExt)
 #define REALREFNAME(x)	Real128 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL64
 
 #if USE_REAL80
@@ -134,7 +142,9 @@
 #define REALREF			real160		// reference number type (do not use less than real160, insufficient exponent bits)
 #define REALREFNAME(x)	Real160 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL80
 
 #if USE_REAL96
@@ -157,7 +167,9 @@
 #define REALREF			real160		// reference number type (do not use real128, insufficient for ChebCoefRefExt)
 #define REALREFNAME(x)	Real160 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL96
 
 #if USE_REAL128
@@ -180,7 +192,9 @@
 #define REALREF			real192		// reference number type (do not use real60, insufficient for ChebCoefRefExt)
 #define REALREFNAME(x)	Real192 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL128
 
 #if USE_REAL160
@@ -203,7 +217,9 @@
 #define REALREF			real256		// reference number type (do not use real192, insufficient for ChebCoefRefExt)
 #define REALREFNAME(x)	Real256 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL160
 
 #if USE_REAL192
@@ -226,7 +242,9 @@
 #define REALREF			real256		// reference number type
 #define REALREFNAME(x)	Real256 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL192
 
 #if USE_REAL256
@@ -249,7 +267,9 @@
 #define REALREF			real384		// reference number type
 #define REALREFNAME(x)	Real384 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL256
 
 #if USE_REAL384
@@ -272,7 +292,9 @@
 #define REALREF			real512		// reference number type
 #define REALREFNAME(x)	Real512 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL384
 
 #if USE_REAL512
@@ -295,7 +317,9 @@
 #define REALREF			real768		// reference number type
 #define REALREFNAME(x)	Real768 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL512
 
 #if USE_REAL768
@@ -318,7 +342,9 @@
 #define REALREF			real1024	// reference number type
 #define REALREFNAME(x)	Real1024 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL768
 
 #if USE_REAL1024
@@ -341,7 +367,9 @@
 #define REALREF			real1536	// reference number type
 #define REALREFNAME(x)	Real1536 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL1024
 
 #if USE_REAL1536
@@ -364,7 +392,9 @@
 #define REALREF			real2048	// reference number type
 #define REALREFNAME(x)	Real2048 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL1536
 
 #if USE_REAL2048
@@ -387,7 +417,9 @@
 #define REALREF			real3072	// reference number type
 #define REALREFNAME(x)	Real3072 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL2048
 
 #if USE_REAL3072
@@ -404,7 +436,9 @@
 #define REALREF			real4096	// reference number type
 #define REALREFNAME(x)	Real4096 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL3072
 
 #if USE_REAL4096
@@ -421,7 +455,9 @@
 #define REALREF			real6144	// reference number type
 #define REALREFNAME(x)	Real6144 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL4096
 
 #if USE_REAL6144
@@ -438,7 +474,9 @@
 #define REALREF			real8192	// reference number type
 #define REALREFNAME(x)	Real8192 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL6144
 
 #if USE_REAL8192
@@ -455,7 +493,9 @@
 #define REALREF			real12288	// reference number type
 #define REALREFNAME(x)	Real12288 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL8192
 
 #if USE_REAL12288
@@ -472,7 +512,9 @@
 #define REALREF			real16384	// reference number type
 #define REALREFNAME(x)	Real16384 ## x		// name of reference functions
 #endif
+#ifdef REAL_PATH
 #include REAL_PATH				// "./real_h.h" or "./real_cpp.h"
+#endif
 #endif // USE_REAL12288
 
 #undef REAL_PATH	// "real_h.h" or "real_cpp.h"

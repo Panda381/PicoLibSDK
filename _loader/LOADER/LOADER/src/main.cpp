@@ -14,6 +14,8 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+// Flag: BOOT3_LOADER=1 ... we compile the boot3 loader, otherwise it's an application
+
 #include "../include.h"
 
 // custom frame buffer - used as buffer to load UF2 program into RAM
@@ -987,10 +989,10 @@ void Preview()
 // runtime terminate
 extern "C" void RuntimeTerm();
 
-// run application
-extern "C" void GoToApp();
+// run application from Flash
+extern "C" void __attribute__((noreturn)) GoToApp();
 
-// run application
+// run application in Flash
 void RunApp()
 {
 	// wait for no key pressed
@@ -999,7 +1001,7 @@ void RunApp()
 	// runtime terminate
 	RuntimeTerm();
 
-	// run application
+	// run application from Flash
 	GoToApp();
 }
 
@@ -1040,7 +1042,7 @@ void ClearApp()
 
 	// find end of memory (last 4 KB are reserver for config)
 	u32 addr = XIP_BASE + BOOTLOADER_SIZE;
-	u32 count = 2*1024*1024 - 4096 - BOOTLOADER_SIZE;
+	u32 count = FLASHSIZE - 4096 - BOOTLOADER_SIZE;
 	const u32* s = (const u32*)(addr + count);
 	while (count >= 4)
 	{
@@ -1053,7 +1055,7 @@ void ClearApp()
 	count = (count + 0x8000-4) & ~0x7fff;
 
 	// limit to protect config on last 4 KB page
-	if (count > 2*1024*1024 - 4096 - BOOTLOADER_SIZE) count = 2*1024*1024 - 4096 - BOOTLOADER_SIZE;
+	if (count > FLASHSIZE - 4096 - BOOTLOADER_SIZE) count = FLASHSIZE - 4096 - BOOTLOADER_SIZE;
 
 	// erase memory
 	int n = count;
@@ -1085,6 +1087,32 @@ void DispBigErr(const char* text)
 	int len = StrLen(text);
 	SelFont8x16();
 	DrawTextBg2(text, (WIDTH - len*16)/2, (HEIGHT-32)/2, COL_BIGERRFG, COL_BIGERRBG);
+	DispUpdate();
+
+	KeyFlush();
+	while (KeyGet() == NOKEY) {}
+
+	PreviewClr();
+	FrameFileList();
+	DispFileList();
+	DispUpdate();
+}
+
+// display multiline big error text
+void DispBigErrMulti(const char* text,  const char* text2, const char* text3, const char* text4, const char* text5)
+{
+	FileClose(&PrevFile);
+
+	DrawClear();
+	SelFont8x16();
+
+	int y = (HEIGHT-5*32)/2;
+	DrawTextBg2(text, (WIDTH - StrLen(text)*16)/2, y, COL_BIGERRFG, COL_BIGERRBG); y += 32;
+	DrawTextBg2(text2, (WIDTH - StrLen(text2)*16)/2, y, COL_BIGERRFG, COL_BIGERRBG); y += 32;
+	DrawTextBg2(text3, (WIDTH - StrLen(text3)*16)/2, y, COL_BIGERRFG, COL_BIGERRBG); y += 32;
+	DrawTextBg2(text4, (WIDTH - StrLen(text4)*16)/2, y, COL_BIGERRFG, COL_BIGERRBG); y += 32;
+	DrawTextBg2(text5, (WIDTH - StrLen(text5)*16)/2, y, COL_BIGERRFG, COL_BIGERRBG); y += 32;
+
 	DispUpdate();
 
 	KeyFlush();
@@ -1128,6 +1156,10 @@ void DispBattery(int y)
 #endif
 }
 
+char CpuRP2040Text[] = "RP2040-B0";		// 9 chars
+char CpuRP2350RISCVText[] = "RP2350-RISCV-A0";	// 15 chars
+char CpuRP2350ARMText[] = "RP2350-ARM-A0";	// 13 chars
+
 void Battery()
 {
 	DrawClear();
@@ -1136,7 +1168,21 @@ void Battery()
 	int y;
 	Bool cfg = False;
 
+	SelFont8x16();
+
 	do {
+		// display CPU
+#if RP2040
+		CpuRP2040Text[8] = '0' + RomGetVersion() - 1;
+		DrawText(CpuRP2040Text, (WIDTH-9*8)/2, 0, COL_WHITE);
+#elif RISCV
+		CpuRP2350RISCVText[14] = '0' + RomGetVersion();
+		DrawText(CpuRP2350RISCVText, (WIDTH-15*8)/2, 0, COL_WHITE);
+#else
+		CpuRP2350ARMText[12] = '0' + RomGetVersion();
+		DrawText(CpuRP2350ARMText, (WIDTH-13*8)/2, 0, COL_WHITE);
+#endif
+
 		y = 23;
 
 		// display battery voltage
@@ -1241,6 +1287,9 @@ void Battery()
 
 #endif // KEY_X
 
+// run application from RAM
+extern "C" void __attribute__((noreturn)) GoToAppRam();
+
 // run application in RAM
 void RunRAM(int num)
 {
@@ -1255,8 +1304,8 @@ void RunRAM(int num)
 	u8* d = (u8*)SRAM_BASE;
 	for (; num > 0; num--) *d++ = *s++;
 
-	// run application
-	((void(*)(void))(SRAM_BASE+1))();
+	// run application from RAM
+	GoToAppRam();
 }
 
 #if USE_ST7789		// use ST7789 TFT display (st7789.c, st7789.h)
@@ -1636,13 +1685,57 @@ int main()
 							}
 							else
 							{
+								// check architecture
+#if RP2040
+								if (uf->file_size != RP2040_FAMILY_ID)
+								{
+									DispBigErrMulti(	"",
+												"You are trying to",
+												"run Pico2 program",
+												 "on Pico1 device.",
+												"");
+									FileClose(&PrevFile);
+								}
+#else // RP2040
+								if (uf->file_size == RP2040_FAMILY_ID)
+								{
+									DispBigErrMulti(	"",
+												"You are trying to",
+												"run Pico1 program",
+												 "on Pico2 device.",
+												"");
+									FileClose(&PrevFile);
+								}
+#if RISCV
+								else if (uf->file_size != RP2350_RISCV_FAMILY_ID)
+								{
+									DispBigErrMulti(	 "You are trying to",
+												"run ARM program, but",
+												 "loader is RISC-V.",
+												"Update to ARM loader",
+												 "from PC using USB.");
+									FileClose(&PrevFile);
+								}
+#else // RISCV
+								else if (uf->file_size == RP2350_RISCV_FAMILY_ID)
+								{
+									DispBigErrMulti(	 "You are trying to",
+												"run RISC-V program,",
+												 "but loader is ARM.",
+												"Update RISC-V loader",
+												 "from PC using USB.");
+									FileClose(&PrevFile);
+								}
+#endif // RISCV
+#endif // RP2040
+
 								// loading into RAM
-								if (ram)
+								else if (ram)
 								{
 									DispBigInfo("Loading into RAM...");
 									j = 32;
 									m = 0;
-									while (m <= CUSTOM_FRAMEBUF_SIZE - 256)
+									while (m <= CUSTOM_FRAMEBUF_SIZE*sizeof(FRAMETYPE) - 256)
 									{
 										FileSeek(&PrevFile, j);
 										TempBufNum = FileRead(&PrevFile, ((u8*)FrameBuf) + m, 256);
@@ -1664,15 +1757,43 @@ int main()
 									DispBigInfo("Loading...");
 
 									// read and check application header
-									j = BOOTLOADER_SIZE*2+32;
+									j = BOOTLOADER_SIZE*2+32; // skip bootloader and UF2 header
 									FileSeek(&PrevFile, j);
 									TempBufNum = FileRead(&PrevFile, TempBuf, 256);
 									m = 256; // offset in TempBuf
-									u32* h = (u32*)&TempBuf[48*4]; // pointer to header
+#if RP2040
+									int off = 48*4;	// (192) RP2040: vector table offset
+#else
+									// RP2350: read 2nd sector
+									j += 512;
+									FileSeek(&PrevFile, j);
+									TempBufNum += FileRead(&PrevFile, &TempBuf[m], 256);
+									m += 256; // offset in TempBuf (= 512)
+									int off = 68*4;	// (272) RP2350-ARM: vector table offset
+
+#if RISCV
+									// RP2350-RISCV: read 3rd and 4th sector
+									j += 512;
+									FileSeek(&PrevFile, j);
+									TempBufNum += FileRead(&PrevFile, &TempBuf[m], 256);
+									m += 256; // offset in TempBuf (= 768)
+
+									j += 512;
+									FileSeek(&PrevFile, j);
+									TempBufNum += FileRead(&PrevFile, &TempBuf[m], 256);
+									m += 256; // offset in TempBuf (= 1024)
+
+									off = 192*4; // (0x300 = 768) vector table offset
+#endif // RISCV
+#endif // RP2040
+									u32* h = (u32*)&TempBuf[off];	// pointer to header
 									i = h[1]; 			// application length
-									if ((TempBufNum != 256) ||	// check segment length
+									if ((TempBufNum != m) ||	// check segment length
 										(h[0] != APPINFO_MAGIC) ||	// check magic (= text "PPAD")
-										(i < 10) || (i > 2*1024*1024 - 4096 - BOOTLOADER_SIZE - 51*4)) // check program length
+#if !RP2040
+										(h[5] != APPINFO_MAGIC2) ||	// check magic (= text "ppad")
+#endif
+										(i < 10) || (i > FLASHSIZE - 4096 - BOOTLOADER_SIZE - off - 3*4)) // check program length
 									{
 										// error - incompatible program
 										DispBigErr("Loading Error");
@@ -1680,10 +1801,10 @@ int main()
 									}
 									else
 									{
-										i += 51*4; // add application header (vector table) = total length of data to process
+										i += off + 3*4; // add application header (vector table) = total length of data to process
 										n = i; // save total data size for Progress purpose
 										k = BOOTLOADER_SIZE; // destinaton address in flash
-										i -= 256; // first page processed
+										i -= m; // start data processed
 
 										// loading program into memory
 										do {
@@ -1702,7 +1823,7 @@ int main()
 											Progress(k - BOOTLOADER_SIZE, n, 122, COL_GREEN);
 
 											// program four 256-byte pages
-											FlashProgram(k, (const u8*)TempBuf, m);
+											if (m > 0) FlashProgram(k, (const u8*)TempBuf, m);
 											k += m;
 											if (i <= 0) break;
 											m = 0;
@@ -1713,7 +1834,7 @@ int main()
 
 										// write application home path
 										i = PathLen;
-										if ((k <= 2*1024*1024 - 4096 - 256) && (i <= APPPATH_PATHMAX))
+										if ((k <= FLASHSIZE - 4096 - 256) && (i <= APPPATH_PATHMAX))
 										{
 											sAppPath* ap = (sAppPath*)TempBuf;
 											memset(ap, 0xff, 256);

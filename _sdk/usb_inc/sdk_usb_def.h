@@ -304,6 +304,38 @@ extern "C" {
 //  bit 18: any bit of abort done is set (cleared by clearing all bits in abort done)
 //  bit 19: any bit of stall NAK is set (cleared by clearing all bits in stall NAK)
 
+typedef struct {
+	io32	dev_addr_ctrl;		// 0x00: Device address and endpoint control
+	io32	int_ep_addr_ctrl[15];	// 0x04: Interrupt endpoint
+	io32	main_ctrl;		// 0x40: Main control register
+	io32	sof_wr;			// 0x44: Set the SOF (Start of Frame) frame number in the host controller
+	io32	sof_rd;			// 0x48: Read the last SOF (Start of Frame) frame number seen
+	io32	sie_ctrl;		// 0x4C: SIE control register
+	io32	sie_status;		// 0x50: SIE status register
+	io32	int_ep_ctrl;		// 0x54: interrupt endpoint control register
+	io32	buf_status;		// 0x58: Buffer status register
+	io32	buf_cpu_should_handle;	// 0x5C: Which of the double buffers should be handled
+	io32	abort;			// 0x60: Device only: Can be set to ignore the buffer control register for this endpoint in case you...
+	io32	abort_done;		// 0x64: Device only: Used in conjunction with `EP_ABORT`
+	io32	ep_stall_arm;		// 0x68: Device: this bit must be set in conjunction with the `STALL` bit in the buffer control register...
+	io32	nak_poll;		// 0x6C: Used by the host controller
+	io32	ep_nak_stall_status;	// 0x70: Device: bits are set when the `IRQ_ON_NAK` or `IRQ_ON_STALL` bits are set
+	io32	muxing;			// 0x74: Where to connect the USB controller
+	io32	pwr;			// 0x78: Overrides for the power signals in the event that the VBUS signals are not hooked up to GPIO
+	io32	phy_direct;		// 0x7C: Note that most functions are driven directly from usb_fsls controller
+	io32	phy_direct_override;	// 0x80: override
+	io32	phy_trim;		// 0x84: Value to drive to USB PHY
+	io32	_pad0;			// 0x88:
+	io32	intr;			// 0x8C: Raw Interrupts
+	io32	inte;			// 0x90: Interrupt Enable
+	io32	intf;			// 0x94: Interrupt Force
+	io32	ints;			// 0x98: Interrupt status after masking & forcing
+} usb_hw_t;
+
+#define usb_hw ((usb_hw_t*)USBCTRL_REGS_BASE)
+
+STATIC_ASSERT(sizeof(usb_hw_t) == 0x9C, "Incorrect usb_hw_t!");
+
 // ----------------------------------------------------------------------------
 //                             USB endpoint descriptor
 // ----------------------------------------------------------------------------

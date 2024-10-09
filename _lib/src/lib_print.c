@@ -360,8 +360,11 @@ u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 					else
 					{
 						// decode HEX byte
-						OUT('0');
-						OUT('x');
+						if ((flags & PRF_GROUP) == 0)
+						{
+							OUT('0');
+							OUT('x');
+						}
 						OUT(HexDigL[(n >> 4) & 0x0f]);
 						OUT(HexDigL[n & 0x0f]);
 					}
@@ -372,12 +375,22 @@ u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 					// print comma
 					if (prec > 1)
 					{
-						OUT(',');
+						if ((flags & PRF_GROUP) == 0)
+						{
+							OUT(',');
+						}
+						else
+						{
+							OUT('-');
+						}
 
 						// print space or new line + tab
 						if (ndig < width)
 						{
-							OUT(' ');
+							if ((flags & PRF_GROUP) == 0)
+							{
+								OUT(' ');
+							}
 						}
 						else
 						{
@@ -417,8 +430,11 @@ u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 					else
 					{
 						// decode HEX word
-						OUT('0');
-						OUT('x');
+						if ((flags & PRF_GROUP) == 0)
+						{
+							OUT('0');
+							OUT('x');
+						}
 						OUT(HexDigL[(n >> 12) & 0x0f]);
 						OUT(HexDigL[(n >> 8) & 0x0f]);
 						OUT(HexDigL[(n >> 4) & 0x0f]);
@@ -431,12 +447,22 @@ u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 					// print comma
 					if (prec > 1)
 					{
-						OUT(',');
+						if ((flags & PRF_GROUP) == 0)
+						{
+							OUT(',');
+						}
+						else
+						{
+							OUT('-');
+						}
 
 						// print space or new line + tab
 						if (ndig < width)
 						{
-							OUT(' ');
+							if ((flags & PRF_GROUP) == 0)
+							{
+								OUT(' ');
+							}
 						}
 						else
 						{
@@ -486,7 +512,7 @@ u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 				dbl = (double)dbl2;
 
 				// prepare sign
-				if (dbl < 0)
+				if ((dbl < 0) || CheckSNan(dbl))
 				{
 					sign = '-';
 					dbl = -dbl;
@@ -576,8 +602,8 @@ u32 StreamPrintArg(sStream* wstr, sStream* rstr, va_list args)
 PrintRestart:
 				// check if use exponent mode
 				useexp = (ch == 'E') || (ch == 'e') || (ch == 't') || // Eet exponent mode always
-					(((ch == 'F') || (ch == 'f')) && ((expI < -prec))) || // Ff exponent if exp < -precision
-					(((ch == 'G') || (ch == 'g')) && ((expI < -3) || (expI > prec))); // Gg exponent if too big or too small
+//					(((ch == 'F') || (ch == 'f')) && ((expI < -prec))) || // Ff exponent if exp < -precision ... not compatible with other libc
+					(((ch == 'G') || (ch == 'g')) && ((expI < -3) || ((expI > prec) && (expI > width)))); // Gg exponent if too big or too small
 
 				if (useexp && ((ch == 'G') || (ch == 'g'))) prec--; // without first digit
 

@@ -1,12 +1,22 @@
 #   make clean ... clean
 #   make all ... compile TARGET
 
+# Options:
+# TARGET ... source file name (without extension)
+# MCU ... mcu RP2040, RP2350A (60 pin), RP2350B (80 pin)
+# CPUTYPE ... cortex-m0plus, cortex-m33, risc-v
+
+ifeq (${MCU},RP2040)
+CPUCLASS=RP2040
+else
+CPUCLASS=RP2350
+endif
+
 ##############################################################################
 # Input files
 
 # ASM source files
-ASRC +=		\
-${TARGET}.S	\
+ASRC +=	${TARGET}.S
 
 ##############################################################################
 # Configuration
@@ -24,25 +34,22 @@ TEMP = ./build
 MAKEFILE = ./Makefile
 
 # linker script
-LDSCRIPT = ./boot_stage2.ld
+LDSCRIPT = ./boot_stage2_${CPUCLASS}.ld
 
 # CPU
-MCU=cortex-m0plus
-
 # CPU Architecture
-MARCH=armv6-m
-
-# FPU
-FPU=auto
+ifeq (${CPUCLASS},RP2040)
+ARCHCFG = -march=armv6-m -mcpu=cortex-m0plus -mthumb -mfpu=auto -mfloat-abi=soft
+else
+ifeq (${CPUTYPE},risc-v)
+ARCHCFG = -march=rv32imac_zicsr_zifencei_zba_zbb_zbkb_zbs  -D __riscv=1
+else
+ARCHCFG = -mcpu=cortex-m33 -march=armv8-m.main+fp+dsp -mthumb -mfloat-abi=softfp -mcmse
+endif
+endif
 
 ##############################################################################
 # Compilation flags
-
-# define MCU
-ARCHCFG = -mcpu=${MCU} -march=${MARCH} -mfpu=${FPU} -mfloat-abi=soft
-
-# use ARM instructions
-ARCHCFG += -mthumb
 
 # === ASM flags
 
@@ -107,6 +114,9 @@ LDFLAGS += -Wl,-script=$(LDSCRIPT)
 LDFLAGS += -Wl,-nostdlib
 # LDFLAGS += -Wl,-nostartfiles
 
+# libc without system functions
+LDFLAGS += --specs=nosys.specs 
+
 # do not use builtin functions (memset)
 LDLAGS += -Wl,--build-id=none
 
@@ -116,11 +126,18 @@ LDFLAGS += -Wl,-Map=./$(TARGET).map
 # eliminate unused sections
 LDFLAGS += -Wl,--gc-sections,--relax
 
+# no start files
+LDFLAGS += -nostartfiles
+
 ##############################################################################
 # Compiler
 
 # compiler base
+ifeq (${CPUTYPE},risc-v)
+COMP = riscv32-unknown-elf-
+else
 COMP = arm-none-eabi-
+endif
 
 # C compiler name
 CC = ${COMP}gcc

@@ -24,6 +24,8 @@
 
 #define WIDTH		320		// screen width
 
+#define USE_FATALERROR	0		// use fatal error message 0=no, 1=display LCD message (sdk_fatal.c, sdk_fatal.h)
+
 #define USE_ORIGSDK	0		// include interface of original-SDK
 
 #define USE_DISP_DMA	0		// use DMA output do LCD display
@@ -32,9 +34,9 @@
 
 #define USE_SCREENSHOT	0		// use screen shots
 
-#define USE_DOUBLE	0		// use Double-floating point (sdk_double.c, sdk_double_asm.S, sdk_double.h)
+#define USE_DOUBLE	0		// use Double-floating point 1=in RAM, 2=in Flash (sdk_double.c, sdk_double_asm.S, sdk_double.h)
 #define USE_FIFO	0		// use Inter-core FIFO (sdk_fifo.c, sdk_fifo.h)
-//#define USE_FLOAT	1		// use Single-floating point (sdk_float.c, sdk_float_asm.S, sdk_float.h)
+#define USE_FLOAT	2		// use Single-floating point 1=in RAM, 2=in Flash (sdk_float.c, sdk_float_asm.S, sdk_float.h)
 #define USE_I2C		0		// use I2C interface (sdk_i2c.c, sdk_i2c.h)
 #define USE_INTERP	0		// use interpolator (sdk_interp.c, sdk_interp.h)
 #define USE_MULTICORE	0		// use Multicore (sdk_multicore.c, sdk_multicore.h)

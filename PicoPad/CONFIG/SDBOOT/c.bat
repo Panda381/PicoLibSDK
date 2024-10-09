@@ -11,6 +11,8 @@ if "%1"=="" goto default
 :default
 rem call ..\..\..\_c1.bat picopad08
 rem call ..\..\..\_c1.bat picopadvga
-call ..\..\..\_c1.bat picopad10
+rem ..\..\..\_c1.bat picopad10
+..\..\..\_c1.bat picopad20
+rem ..\..\..\_c1.bat picopad20riscv
 
 set MEMMAP=

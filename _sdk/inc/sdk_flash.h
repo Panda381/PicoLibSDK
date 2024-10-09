@@ -19,12 +19,18 @@
 
 #if USE_FLASH	// use Flash memory programming (sdk_flash.c, sdk_flash.h)
 
+#include "sdk_qspi.h"
+#include "sdk_ssi.h"
+#include "sdk_qmi.h"
+
 #ifndef _SDK_FLASH_H
 #define _SDK_FLASH_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define FLASH_DEVINX	0		// index of flash QMI device
 
 #define FLASH_PAGE_SIZE (1u << 8)	// Flash page size 256 B (to program)
 #define FLASH_SECTOR_SIZE (1u << 12)	// Flash sector size 4 KB (to erase)
@@ -46,12 +52,66 @@ extern u32 FlashSize;			// flash size in bytes
 
 // boot 2 loader
 #define BOOT2_SIZE_BYTES	256	// boot 2 size in bytes (including CRC)
-extern const u32 __boot2_start__[BOOT2_SIZE_BYTES/4];
-#define Boot2	__boot2_start__
+#if RP2040
+#define Boot2 ((const u32*)XIP_BASE)
+#else // RP2350
+#define Boot2 ((const u32*)BOOTRAM_BASE)
+#endif
+//extern const u32 __boot2_start__[BOOT2_SIZE_BYTES/4];
+//#define Boot2	__boot2_start__
 
 #if !NO_FLASH
 // check boot2 crc code, if it is valid
-Bool NOINLINE Boot2Check();
+Bool NOINLINE Boot2Check(void);
+#endif
+
+// force Flash chip select CS0n level LOW (select Flash memory)
+#if RP2040
+INLINE void FlashCsLow(void) { QSPI_OutOverLow(QSPI_PIN_SS); }
+#else // RP2350
+INLINE void FlashCsLow(void) { QMI_CsLow(FLASH_DEVINX); }
+#endif
+
+// force Flash chip select CS0n level HIGH (deselect Flash memory)
+#if RP2040
+INLINE void FlashCsHigh(void) { QSPI_OutOverHigh(QSPI_PIN_SS); }
+#else // RP2350
+INLINE void FlashCsHigh(void) { QMI_CsHigh(FLASH_DEVINX); }
+#endif
+
+// get flash speed
+#if RP2040
+INLINE int FlashClkDiv(void) { return SSI_FlashClkDiv(); }
+#else // RP2350
+INLINE int FlashClkDiv(void) { return QMI_ClkDiv(FLASH_DEVINX); }
+INLINE int SSI_FlashClkDiv(void) { return FlashClkDiv(); }
+#endif
+
+// set flash speed
+#if RP2040
+INLINE void FlashSetClkDiv(int clkdiv) { SSI_SetFlashClkDiv(clkdiv); }
+#else // RP2350
+INLINE void FlashSetClkDiv(int clkdiv) { QMI_SetClkDiv(FLASH_DEVINX, clkdiv); }
+INLINE void SSI_SetFlashClkDiv(int clkdiv) { FlashSetClkDiv(clkdiv); }
+#endif
+
+// set flash to fast QSPI mode (clkdiv = clock divider, FLASHQSPI_CLKDIV_DEF=2 or 4 is default) (must be run from RAM)
+//   Supported devices: Winbond W25Q080, W25Q16JV, AT25SF081, S25FL132K0
+//   Raspberry Pico cointains W25Q16JVUXIQ, Raspberry Pico 2 cointains W25Q32RVXHJQ
+#if RP2040
+INLINE void FlashQspi(int clkdiv) { SSI_FlashQspi(clkdiv); }
+#else // RP2350
+INLINE void FlashQspi(int clkdiv) { QMI_FlashQspi(clkdiv); }
+#endif
+
+// initialize Flash interface (clkdiv = clock divider, must be even number, FLASHQSPI_CLKDIV_DEF=2 or 4 is default) (must be run from RAM)
+//   Supported devices: Winbond W25Q080, W25Q16JV, AT25SF081, S25FL132K0
+//   Raspberry Pico cointains W25Q16JVUXIQ, Raspberry Pico 2 cointains W25Q32RVXHJQ
+#if RP2040
+INLINE void FlashInit(int clkdiv) { SSI_InitFlash(clkdiv); }
+#else
+INLINE void FlashInit(int clkdiv) { QMI_InitFlash(clkdiv); }
+INLINE void SSI_InitFlash(int clkdiv) { FlashInit(clkdiv); }
 #endif
 
 // erase flash memory
@@ -76,7 +136,7 @@ void NOFLASH(FlashCmd)(const u8* txbuf, u8* rxbuf, u32 count);
 
 // load flash info (called during system startup)
 // If core 1 is running, lockout it or reset it!
-void FlashLoadInfo();
+void FlashLoadInfo(void);
 
 // ----------------------------------------------------------------------------
 //                          Original-SDK interface

@@ -19,9 +19,13 @@
 #if USE_ROSC	// use ROSC ring oscillator (sdk_rosc.c, sdk_rosc.h)
 
 #include "../inc/sdk_rosc.h"
+#include "../inc/sdk_cpu.h"
 
 // Current ROSC frequency level set by the RoscSetLevel function
 u8 RoscLevel = 0;
+
+// ROSC seed of random number generator
+u64 RoscRandSeed = 123456789123456789ULL;
 
 // ROSC frequency level table (bit 15: range bit 0, bit 31: range bit 1)
 #define RFT_LOW		0		// 0xFA4 = 0xFA4+0, low frequency, 8 stages (0..7)
@@ -199,36 +203,54 @@ void RoscSetLevel(int level)
 
 	// set ROSC registers
 	RegMask(ROSC_CTRL, range, 0xFFF); // set frequency range (number of delay stages)
-	*ROSC_FREQA = (k & 0xFFFF) | 0x96960000; // set drive strength of stages 0..3
+#if RP2040
+	*ROSC_FREQA = (k & 0x7777) | 0x96960000; // set drive strength of stages 0..3
+#else
+	*ROSC_FREQA = (k & 0x7777) | 0x96960000 | (*ROSC_FREQA & (B3+B7)); // set drive strength of stages 0..3
+#endif
 	*ROSC_FREQB = (k >> 16) | 0x96960000; // set drive strength of stages 4..7
 }
 
-// get ROSC divider 1..32
-u8 RoscGetDiv(void)
+// get ROSC divider 1..32 (RP2040) or 1..128 (RP2350)
+int RoscGetDiv(void)
 {
-	u8 div = *ROSC_DIV & 0x1F;
+#if RP2040
+	int div = *ROSC_DIV & 0x1F;
 	if (div == 0) div = 32;
+#else
+	int div = *ROSC_DIV & 0x7F;
+	if (div == 0) div = 128;
+#endif
 	return div;
 }
 
-// initialize ROSC ring oscillator to its default state (typical frequency 6 MHz)
+// initialize ROSC ring oscillator to its default state (typical frequency RP2040: 6 MHz, RP2350: 11 MHz)
 void RoscInit(void)
 {
 	// set frequency range to LOW
 	RegMask(ROSC_CTRL, 0xFA4, 0xFFF);
 
-	// set drive strength of stages to LOW
+	// set drive strength of stages to LOW, randomize frequency
+#if RP2040
 	*ROSC_FREQA = 0x96960000; // set drive strength of stages 0..3
+#else
+	*ROSC_FREQA = 0x96960000 | B3 | B7; // set drive strength of stages 0..3
+#endif
 	*ROSC_FREQB = 0x96960000; // set drive strength of stages 4..7
 
-	// set divider to 16
+	// set divider to 16 (or 8)
+#if RP2040
 	RoscSetDiv(16);
+#else
+	RoscSetDiv(8);
+	RoscSetSeed(0x3F04B16D);	// setup randomiser
+#endif
 
 	// Enable ring oscillator
 	RoscEnable();
 
 	// update current frequency
-	CurrentFreq[CLK_ROSC] = ROSC_MHZ*MHZ; // default ROSC ring oscillator is 6 MHz
+	CurrentFreq[CLK_ROSC] = ROSC_MHZ*MHZ; // default ROSC ring oscillator is 6 MHz (or 11 MHz)
 
 	// wait for stable state of the ring oscillator
 	RoscWait();
@@ -238,7 +260,6 @@ void RoscInit(void)
 //  Selected frequency is very approximate, it can vary from 50% to 200%. 
 //  The main usage of the function is in conjunction with the XOSC oscillator
 //    so that frequency can be continuously changed during calibration.
-//  Function takes 2 to 10 us.
 void RoscSetFreq(int freq10)
 {
 	// limit range
@@ -283,32 +304,41 @@ void RoscSetFreq(int freq10)
 	RoscWait();
 }
 
-// get random data from the ring oscillator
-//  Random data from the ring generator cannot be used as a random generator because
-//  generated randomness is very uneven. However, it is an excellent source for the
-//  initial seed of another random generator because its state is unpredictable.
-u8 RoscRand8(void)
+// get true random data from the ring oscillator combined with LCG generator
+//  Takes 20 us at 125 MHz, that means speed 1.6 Mbits/sec.
+//  The function is not protected against concurrency with IRQ interrupts and
+//  with the second processor core. But this is not problem - concurrency will
+//  overwrite the seed, but generated data will remain sufficiently randomised.
+u32 RoscRand(void)
 {
-	int i;
-	u8 k = 0;
-	for (i = 8; i > 0; i--) k = (k << 1) | RoscRandBit();
-	return k;
-}
+	// prepare delay base
+	u32 delay = CurrentFreq[CLK_SYS] / (CurrentFreq[CLK_ROSC]*RoscGetDiv()) + 1;
 
-u16 RoscRand16(void)
-{
-	int i;
-	u16 k = 0;
-	for (i = 16; i > 0; i--) k = (k << 1) | RoscRandBit();
-	return k;
-}
+	// load current seed
+	u64 k = RoscRandSeed;
 
-u32 RoscRand32(void)
-{
+	// load ROSC bits
 	int i;
-	u32 k = 0;
-	for (i = 32; i > 0; i--) k = (k << 1) | RoscRandBit();
-	return k;
+	for (i = 50; i > 0; i--)
+	{
+		// randomize lowest bit
+		k ^= (u32)RoscRandBit();
+
+		// random delay
+		BusyWaitCycles(delay * ((k & 0x0f)+3));
+
+		// rotate seed right
+		k = (k >> 1) | (k << 63);
+
+	}
+
+	// shift seed with LCG
+	k = k * 214013 + 2531011;
+
+	// save new seed
+	RoscRandSeed = k;
+
+	return (u32)(k >> 32);
 }
 
 #endif // USE_ROSC	// use ROSC ring oscillator (sdk_rosc.c, sdk_rosc.h)

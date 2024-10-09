@@ -51,8 +51,9 @@ X or x ... print unsigned integer in HEX format, upper or lower case
 flags
 -----
 ' ... grouping separator, integer part of the number is grouped by 3 (or 4) digits, with a separator character '
+	'Mm' - print in compressed form XX-XX-XX-...
 (space) ... number will be preceded by a space instead of a '+' (ignored when '+' flag is specified)
-# ... alternative form: 'Gg' without end-zero reduction, 'EeFft' with end-zero reduction,
+# ... alternative form: 'Gg' without end-zero reduction, 'EeFft' with end-zero reduction, 'Mm' decimal
 	'Pp' without prefix 0x, Xxbo with printing prefix 0x 0b 0, 'BT' with space
 - ... argument will be left-aligned in the 'width' field (otherwise the default is right-aligned)
 + ... the '+' sign is printed on a positive argument (otherwise only the '-' sign is displayed)

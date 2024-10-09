@@ -260,7 +260,11 @@ extern sFileInfo FileInfoTmp;	// file info
 
 // --- application info header
 #define APPINFO_MAGIC	0x44415050	// application info header magic (= text "PPAD")
+#define APPINFO_MAGIC2	0x64617070	// application info header magic (= text "ppad")
 
+#if RP2040
+
+// RP2040
 typedef struct {
 	u32	magic;		// app[48]: identification magic mark APPINFO_MAGIC (= text "PPAD")
 	u32	len;		// app[49]: application length without vector table and without this header
@@ -270,8 +274,35 @@ typedef struct {
 
 STATIC_ASSERT(sizeof(sAppInfo) == 12, "Incorrect sAppInfo!");
 
-// pointer to application info header (vector table contains 16+32=48 u32 vectors)
+// pointer to application info header (RP2040: vector table contains 16+32=48 u32 vectors)
 #define APPINFO  ((const sAppInfo*)(XIP_BASE + BOOTLOADER_SIZE + 48*4))
+
+#else
+
+// RP2350
+typedef struct {
+	u32	magic;		// app[68] or app[192]: identification magic mark APPINFO_MAGIC (= text "PPAD")
+	u32	len;		// app[69] or app[193]: application length without vector table and without this header
+	u32	crc;		// app[70] or app[194]: Crc32ADMA checmsum of the application (without vector table and without this header)
+	union	{
+		u8	data[0];	// start of application data, to calculate CRC
+		u32	stack;		// app[71] or app[195]: start stack ...start of program data
+	};
+	u32	reset;		// app[72] or app[196]: start address
+	u32	magic2;		// app[73] or app[197]: identification magic mark APPINFO_MAGIC2 (= text "ppad")
+} sAppInfo;
+
+STATIC_ASSERT(sizeof(sAppInfo) == 24, "Incorrect sAppInfo!");
+
+#if RISCV
+// pointer to application info header (RP2350 RISC-V: vector table contains 192 u32 words)
+#define APPINFO  ((const sAppInfo*)(XIP_BASE + BOOTLOADER_SIZE + 192*4))
+#else
+// pointer to application info header (RP2350 ARM: vector table contains 16+52=68 u32 vectors)
+#define APPINFO  ((const sAppInfo*)(XIP_BASE + BOOTLOADER_SIZE + 68*4))
+#endif
+
+#endif
 
 // pointer to start of application (pointer to start of vector table)
 #define APPSTART ((const u32*)(XIP_BASE + BOOTLOADER_SIZE))

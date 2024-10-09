@@ -28,16 +28,36 @@ u32 __attribute__((section(".stack1"))) Core1Stack[CORE1_STACK_SIZE/4];
 #include "../inc/sdk_irq.h"
 #include "../inc/sdk_bootrom.h"
 #include "../inc/sdk_reset.h"
+#include "../inc/sdk_timer.h"
 
-volatile Bool Core1IsRunning = False;	// flag that core 1 is running
+// flag that core 1 is running
+volatile Bool Core1IsRunning = False;
 
 // Core1 trampoline to jump to Core1Wrapper
 static void __attribute__ ((naked)) Core1Trampoline()
 {
+#if RISCV
+	//  a0 ... input parameter 1, pointer to user function
+	//  a1 ... jump to Core1Wrapper
+	//  gp ... initialize global pointer
+	__asm volatile (
+		" lw a0, 0(sp)\n"
+		" lw a1, 4(sp)\n"
+		" lw gp, 8(sp)\n"
+		" addi sp, sp, 12\n"
+		" jr a1\n"
+	);
+#else
 	//  r0 ... input parameter 1, pointer to user function
 	//  pc ... jump to Core1Wrapper
-	__asm(" pop {r0, pc}\n");
+	__asm volatile (" pop {r0, pc}\n");
+#endif
 }
+
+#if RISCV
+// initialize interrupts on RISC-V
+void RuntimeInitCoreIRQ();
+#endif
 
 // Core1 wrapper to call user function
 void Core1Wrapper(pCore1Fnc entry)
@@ -49,6 +69,22 @@ void Core1Wrapper(pCore1Fnc entry)
 	Core1IsRunning = True;
 	dmb(); // data memory barrier
 
+#if RISCV
+	// initialize interrupts on RISC-V
+	RuntimeInitCoreIRQ();
+#endif
+
+#if RP2350 && !RISCV
+	// enable GPIO coprocessor
+	GPIOC_Enable();
+
+	// enable single-precision coprocessor
+	FPU_Enable();
+
+	// enable double-precision coprocessor
+	DCP_Enable();
+#endif
+
 	// call user function
 	entry();
 
@@ -59,26 +95,37 @@ void Core1Wrapper(pCore1Fnc entry)
 	Core1IsRunning = False;
 	dmb(); // data memory barrier
 
-	// jump to bootrom
-	pWaitForVector fnc = (pWaitForVector)(u32)RomFunc(ROM_FUNC_WAIT_FOR_VECTOR);
-	fnc();
+	// return to bootrom
 }
 
 // reset CPU core 1 (core 1 will send '0' to the FIFO when done)
 void Core1Reset()
 {
-	// reset core 1
+	// start resetting core 1
 	RegSet(PSM_OFF, BIT(POWER_PROC1));
 
 	// wait for core 1 to be in correct reset state
 	while ((*PSM_OFF & BIT(POWER_PROC1)) == 0) {}
 
+	// temporary disable interrupt from SIO FIFO during handshake
+	Bool en = NVIC_IRQIsEnabled(SIO_FIFO_IRQ_NUM(0));
+	NVIC_IRQDisable(SIO_FIFO_IRQ_NUM(0));
+
 	// stop resetting core 1
 	RegClr(PSM_OFF, BIT(POWER_PROC1));
+
+	// wait some time for core 1 initialized (or it may lock in Core1Exec function)
+	WaitUs(20);
+
+	// flush mailbox
+	FifoReadFlush();
 
 	// core 1 not running
 	Core1IsRunning = False;
 	dmb(); // data memory barrier
+
+	// enable interrupt IRQ_SIO_PROC0
+	if (en) NVIC_IRQEnable(SIO_FIFO_IRQ_NUM(0));
 }
 
 // start core 1 function (must be called from core 0)
@@ -90,15 +137,22 @@ void Core1Exec(pCore1Fnc entry)
 	// core 1 reset
 	Core1Reset();
 
-	// temporary disable interrupt from SIO_IRQ_PROC0
-	Bool en = NVIC_IRQIsEnabled(IRQ_SIO_PROC0);
-	NVIC_IRQDisable(IRQ_SIO_PROC0);
+	// temporary disable interrupt from SIO FIFO
+	Bool en = NVIC_IRQIsEnabled(SIO_FIFO_IRQ_NUM(0));
+	NVIC_IRQDisable(SIO_FIFO_IRQ_NUM(0));
 
 	// save and lock interrupts
 	IRQ_LOCK;
 
 	// prepare stack pointer to reset core 1
-	u32* sp = &Core1Stack[CORE1_STACK_SIZE/4-2]; // last entry in the stack
+	u32* sp = &Core1Stack[CORE1_STACK_SIZE/4];
+#if RISCV
+	// prepare to initialize global pointer
+	sp -= 3;
+	__asm volatile (" mv %0, gp" : "=r" (sp[2]));
+#else
+	sp -= 2;
+#endif
 	sp[0] = (u32)entry;	// parameter 1 - address of user function
 	sp[1] = (u32)Core1Wrapper; // jump to Core1Wrapper
 
@@ -142,7 +196,7 @@ void Core1Exec(pCore1Fnc entry)
 	IRQ_UNLOCK;
 
 	// enable interrupt IRQ_SIO_PROC0
-	if (en) NVIC_IRQEnable(IRQ_SIO_PROC0);
+	if (en) NVIC_IRQEnable(SIO_FIFO_IRQ_NUM(0));
 }
 
 // Lockout handler (must be in RAM and must not use flash functions - to enable flash writting from other core)
@@ -182,12 +236,11 @@ void NOFLASH(LockoutHandler)()
 	IRQ_UNLOCK;
 }
 
-
 // initialize lockout handler for core 0 or 1
 void LockoutInit(int core)
 {
 	// prepare IRQ number
-	int irq = IRQ_SIO_PROC0 + core;
+	int irq = SIO_FIFO_IRQ_NUM(core);
 
 	// set handler
 	SetHandler(irq, LockoutHandler);
@@ -200,7 +253,7 @@ void LockoutInit(int core)
 void LockoutTerm(int core)
 {
 	// disable IRQ
-	NVIC_IRQDisable(IRQ_SIO_PROC0 + core);
+	NVIC_IRQDisable(SIO_FIFO_IRQ_NUM(core));
 }
 
 // start lockout other core

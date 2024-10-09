@@ -28,8 +28,8 @@ extern "C" {
 
 //#define FLASH_PAGE_SIZE (1u << 8)	// Flash page size 256 B (to program)
 //#define FLASH_SECTOR_SIZE (1u << 12)	// Flash sector size 4 KB (to erase)
+#define CONFIG_ADDR	((const sConfig*)(XIP_BASE+FLASHSIZE-4096)) // configuration base address Pico1: 0x101FF000, Pico2: 0x103FF000)
 
-#define CONFIG_ADDR	((const sConfig*)0x101FF000) // configuration base address
 #define CONFIG_FLASH_OFF ((u32)CONFIG_ADDR - XIP_BASE) // configuration offset in flash memory
 #define CONFIG_TOTAL_SIZE FLASH_SECTOR_SIZE	// total size of configuration array (= 4096)
 #define CONFIG_SIZE	32		// size of configuration structure 32 B (must be power of 2!)

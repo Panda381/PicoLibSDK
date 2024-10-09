@@ -21,7 +21,7 @@
 #ifndef _SDK_SF_TABLE_H
 #define _SDK_SF_TABLE_H
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 
 // offsets of ROM v1 floating-point functions
 #define SF_TABLE_FADD		0x00	// a+b

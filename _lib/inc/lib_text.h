@@ -31,7 +31,7 @@ int StrLen(const char* text);
 // compare ASCIIZ text strings (returns 0=equal or returns character difference)
 int StrComp(const char* text1, const char* text2);
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash 
 // check special float numbers
 INLINE Bool CheckInfF(float num) { return ((u16*)&num)[1] == 0x7f80; } // 1#INF
 INLINE Bool CheckSInfF(float num) { return ((u16*)&num)[1] == 0xff80; } // -1#INF
@@ -48,7 +48,7 @@ INLINE Bool CheckSNanD(double num) { return ((u16*)&num)[3] == 0xfff8; } // -1#N
 #endif // USE_DOUBLE		// use double support
 
 // check special numbers
-#if USE_FLOAT || USE_DOUBLE	// use float or double support
+#if USE_FLOAT || USE_DOUBLE	// use float or double support 1=in RAM, 2=in Flash 
 #if USE_DOUBLE		// use double support
 INLINE Bool CheckInf(double num) { return CheckInfD(num); } // 1#INF
 INLINE Bool CheckSInf(double num) { return CheckSInfD(num); } // -1#INF
@@ -62,7 +62,7 @@ INLINE Bool CheckSNan(float num) { return CheckSNanF(num); } // -1#NAN
 #endif
 #endif // USE_FLOAT || USE_DOUBLE	// use float or double support
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 // round coefficients, used in SetFloat function
 extern const float SetFloatCoeff[11];
 #endif // USE_FLOAT		// use float support
@@ -84,7 +84,7 @@ extern const double SetDoubleCoeff[19];
 extern "C" {
 #endif
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 // convert ASCIIZ text to FLOAT number
 float StrToFloat(const char* text);
 #endif // USE_FLOAT		// use float support
@@ -425,7 +425,7 @@ INLINE Bool TextAddHex64(pText* text, u64 num, s8 digits, char sep)
 //                           Set decimal number
 // ============================================================================
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 
 // convert FLOAT number to text (returns False on error; recommended digits=6)
 Bool TextSetAddFloat(pText* text, float num, s8 digits, Bool add);

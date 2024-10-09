@@ -52,12 +52,14 @@ int main()
 			f_clk_adc, (f_clk_adc+50)/100, f_in);
 		sleep_ms(5000);
 
+#if RP2040
 		uint f_clk_rtc = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
 		clock_gpio_init(21, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_RTC, 10);
 		f_in = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLKSRC_GPIN0);
 		printf("clk_rtc = %dkHz, output on GPIO21 = %dHz, check on GPIO20 = %dkHz\n",
 			f_clk_rtc, (f_clk_rtc*1000+50)/10, f_in);
 		sleep_ms(5000);
+#endif
 	}
 
 	return 0;

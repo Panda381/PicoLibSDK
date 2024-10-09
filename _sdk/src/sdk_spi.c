@@ -81,6 +81,10 @@ void SPI_Baudrate_hw(spi_hw_t* hw, u32 baudrate)
 	u32 freq, prescale, postdiv;
 	int k1, k2;
 
+	// disable SPI
+	u32 en = hw->cr1 & B1;
+	SPI_Disable_hw(hw);
+
 	// get current peripheral clock
 	freq = CurrentFreq[CLK_PERI];
 	if (baudrate > (freq+1)/2) baudrate = (freq+1)/2; // baudrate is too high
@@ -116,6 +120,9 @@ void SPI_Baudrate_hw(spi_hw_t* hw, u32 baudrate)
 
 	// set post-divider
 	RegMask(&hw->cr0, (postdiv - 1) << 8, 0xff00);
+
+	// re-enable SPI
+	RegSet(&hw->cr1, en);
 }
 
 // get current SPI baudrate

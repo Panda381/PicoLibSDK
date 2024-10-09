@@ -40,14 +40,14 @@ pUsbDevHidSetRepCB UsbDevHidSetRepCB = NULL; // called from IRQ
 // === default descriptors
 
 // buffer to load unique board string ID from flash memory
-char BoardIdStr[9] = "12345";
+char BoardIdStr_hid[9] = "12345";
 
 // Strings
 const char* UsbDevHidDescStr[10] = {
 				// 0: language code (not included here)
 	"Raspberry Pi",		// 1: manufacturer
 	"PicoPad",		// 2: product
-	BoardIdStr,		// 3: board serial number
+	BoardIdStr_hid,		// 3: board serial number
 	"USB HID Keyboard",	// 4: configuration descriptor keyboard
 	"USB HID Mouse",	// 5: configuration descriptor mouse
 	"USB HID Joystick",	// 6: configuration descriptor joystick
@@ -803,7 +803,7 @@ u8 UsbDevHidTxSave(u8 itf_num, const void* buf, u8 len, u8 rep_id)
 	}
 
 	// copy report to buffer
-	memcpy(d, buf, len2);
+	UsbMemcpy(d, buf, len2);
 
 	return len;
 }

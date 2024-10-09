@@ -1,2 +1,2 @@
 @echo off
-c.bat picopad08
+c.bat picopad08 0

@@ -176,7 +176,7 @@
 #else // USE_PICOPADVGA
 
 // ============================================================================
-//                            PicoPad08, PicoPad10
+//                       PicoPad08, PicoPad10, PicoPad20
 // ============================================================================
 
 // === Display
@@ -303,6 +303,10 @@
 #define BAT_ADC		ADC_MUX_GPIO29	// ADC input
 #define BAT_MUL		3		// voltage multiplier
 
+#ifndef USE_FATALERROR
+#define USE_FATALERROR	1		// use fatal error message 0=no, 1=display LCD message (sdk_fatal.c, sdk_fatal.h)
+#endif
+
 // ============================================================================
 //                            PicoPad08
 // ============================================================================
@@ -360,11 +364,11 @@
 #endif // USE_PICOPAD08
 
 // ============================================================================
-//                            PicoPad10
+//                          PicoPad10 and PicoPad20
 // ============================================================================
 
-// ======== PicoPad version 1.0
-#if USE_PICOPAD10
+// ======== PicoPad version 1.0 and 2.0
+#if USE_PICOPAD10 || USE_PICOPAD20
 
 // SD card
 #ifndef SD_RX
@@ -413,6 +417,6 @@
 #endif
 
 
-#endif // USE_PICOPAD10
+#endif // USE_PICOPAD10 || USE_PICOPAD20
 
 #endif // USE_PICOPADVGA

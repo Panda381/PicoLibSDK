@@ -1,0 +1,2 @@
+Sample GPIOs in a timer callback, and push the samples into a concurrency-safe
+queue. Pop data from the queue in code running in the foreground.

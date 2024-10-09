@@ -15,6 +15,7 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+// CRC-64
 // CRC-32 Normal and Reversed
 // CRC-16 CCITT Normal, Reversed and Normal Alternative
 // CRC-8 Dallas
@@ -40,6 +41,204 @@ extern const u8 ALIGNED CrcPat2[CRCPAT2LEN+1];
 
 #define CRCPAT3LEN 1024	// length of CRC pattern 3
 #define CrcPat3 Crc32BTable
+
+// check all CRC functions (returns False on error)
+Bool CrcCheck();
+
+// ============================================================================
+//                         SHA256 hash (256-bit checksum)
+// ============================================================================
+
+//  Sample "123456789" -> 0x15,0xe2,0xb0,0xd3,0xc3,0x38,0x91,0xeb,0xb0,0xf1,0xef,0x60,0x9e,0xc4,0x19,0x42,0x0c,0x20,0xe3,0x20,0xce,0x94,0xc6,0x5f,0xbc,0x8c,0x33,0x12,0x44,0x8e,0xb2,0x25
+//  Sample 0xFC 0x05 0x4A -> 0xc5,0x52,0x39,0xc3,0xfd,0xc5,0x22,0xad,0x47,0x45,0xba,0x78,0x0c,0x35,0xcf,0xed,0xc5,0xe2,0x50,0x9d,0xfc,0x28,0xe5,0x08,0x7b,0x5a,0x20,0xfa,0x37,0xae,0xac,0xf9
+//  Sample CRC32BTable 1KB -> 0x12,0xf3,0xe0,0x57,0x6d,0x44,0x7e,0xb3,0x7b,0x36,0xd8,0x2b,0xa0,0xc1,0xc5,0x48,0x1b,0x8f,0x0d,0x12,0xfd,0xc7,0x03,0x47,0xce,0x4a,0x07,0x6b,0x22,0x9d,0x4c,0x86
+
+#define SHA256_HASH_SIZE	32	// SHA256 hash size in number of bytes
+
+// SHA256 context
+typedef struct {
+	u64	datalen;	// size of input in bytes
+	union {
+		u32	state[8];	// current accumulation of the hash
+		u8	result[32];	// hash result
+	};
+	u8	data[64];	// input buffer
+} SHA256_Context;
+
+// initialize SHA256 context
+void SHA256_Init(SHA256_Context* ctx);
+
+// add buffer to SHA256 accumulator
+void SHA256_AddBuf(SHA256_Context* ctx, const void* buf, int len);
+
+// add byte to SHA256 accumulator
+void SHA256_AddByte(SHA256_Context* ctx, u8 data);
+
+// finalize (ctx->buffer = hash result)
+// - input data will be aligned to 512-bit boundary, with end header
+void SHA256_Final(SHA256_Context* ctx);
+
+// calculace SHA256 hash (dst = pointer to destination 32-byte buffer)
+// - input data will be aligned to 512-bit boundary, with end header
+//   Calculation speed: 1580 us per 1 KB
+void SHA256_Calc(u8* dst, const void* src, int len);
+
+// check SHA256 hash calculations (returns False on error)
+Bool SHA256_Check(void);
+
+// ============================================================================
+//                         MD5 hash (128-bit checksum)
+// ============================================================================
+//  Sample "123456789" -> 0x25,0xf9,0xe7,0x94,0x32,0x3b,0x45,0x38,0x85,0xf5,0x18,0x1f,0x1b,0x62,0x4d,0x0b
+//  Sample 0xFC 0x05 0x4A -> 0x4f,0x58,0xb5,0x2f,0xf8,0x00,0x09,0x60,0xfd,0xce,0x70,0x63,0x2a,0xb7,0x04,0x53
+//  Sample CRC32BTable 1KB -> 0x11,0x3b,0x12,0xab,0xbc,0x21,0x2d,0xae,0x31,0xc2,0xa6,0xc7,0xb4,0x07,0x6c,0x19
+
+#define MD5_HASH_SIZE	16	// MD5 hash size in number of bytes
+
+// MD5 context
+typedef struct {
+	u64	size;		// size of input in bytes
+	u32	buffer[4];	// current accumulation of the hash, hash result
+	union {
+		u8	input[64];	// input buffer
+		u32	input32[16];
+	};
+} MD5_Context;
+
+// initialize MD5 context
+void MD5_Init(MD5_Context* ctx);
+
+// add buffer to MD5 accumulator
+void MD5_AddBuf(MD5_Context* ctx, const void* buf, int len);
+
+// add byte to MD5 accumulator
+void MD5_AddByte(MD5_Context* ctx, u8 data);
+
+// finalize (ctx->buffer = hash result)
+// - input data will be aligned to 512-bit boundary, with end header
+void MD5_Final(MD5_Context* ctx);
+
+// calculace MD5 hash (dst = pointer to destination 16-byte buffer)
+// - input data will be aligned to 512-bit boundary, with end header
+//   Calculation speed: 864 us per 1 KB
+void MD5_Calc(u8* dst, const void* src, int len);
+
+// check MD5 hash calculations (returns False on error)
+Bool MD5_Check(void);
+
+// ============================================================================
+//                           CRC-64 Normal (CRC64A)
+// ============================================================================
+// Polynom: x64 + x62 + x57 + x55 + x54 + x53 + x52 + x47 + x46 + x45 + x40 +
+//          x39 + x38 + x37 + x35 + x33 + x32 + x31 + x29 + x27 + x24 + x23 +
+//          x22 + x21 + x19 + x17 + x13 + x12 + x10 + x9 + x7 + x4 + x + 1 
+//
+// CRC-64-ECMA, ECMA-182
+// CRC-64 Normal (CRC64A, polynomial 0x42F0E1EBA9EA3693), init word 0xFFFFFFFFFFFFFFFF:
+//  Sample "123456789" -> 0x9D13A61C0E5B0FF5ull
+//  Sample 0xFC 0x05 0x4A -> 0x21E4F88DB2978548ull
+//  Sample CRC32BTable 1KB -> 0x378302BE2C61CF9Eull
+
+// CRC-64 Normal (CRC64A) table (2 KB)
+extern const u64 Crc64ATable[256];
+
+// CRC-64 Normal (CRC64A) polynomial
+#define CRC64A_POLY 0x42F0E1EBA9EA3693ULL
+
+// CRC-64 Normal (CRC64A) init word (not reversed, not inverted)
+#define CRC64A_INIT 0xFFFFFFFFFFFFFFFFULL
+
+// Check CRC-64 Normal (CRC64A) table (returns False on error; can be used to generate table)
+Bool Crc64ATableCheck();
+
+// Calculate CRC-64 Normal (CRC64A), 1 byte - tabled version (requires 2 KB of flash memory)
+u64 Crc64AByteTab(u64 crc, u8 data);
+
+// Calculate CRC-64 Normal (CRC64A), 1 byte - slow version
+u64 Crc64AByteSlow(u64 crc, u8 data);
+
+// Calculate CRC-64 Normal (CRC64A), buffer - tabled version (requires 2 KB of flash memory)
+u64 Crc64ABufTab(u64 crc, const void* buf, int len);
+
+// Calculate CRC-64 Normal (CRC64A), buffer - slow version
+u64 Crc64ABufSlow(u64 crc, const void* buf, int len);
+
+// Calculate CRC-64 Normal (CRC64A) - tabled version (requires 2 KB of flash memory)
+//   Calculation speed: 200 us per 1 KB
+u64 Crc64ATab(const void* buf, int len);
+
+// Calculate CRC-64 Normal (CRC64A) - slow version
+//   Calculation speed: 1000 us per 1 KB
+u64 Crc64ASlow(const void* buf, int len);
+
+// Check CRC-64 Normal (CRC64A) calculations (returns False on error)
+Bool Crc64ACheck(void);
+
+// ============================================================================
+//                           CRC-64 Reversed (CRC64B)
+// ============================================================================
+// CRC-64-ECMA, ECMA-182
+// CRC-64 Reversed (CRC64B, polynomial 0xC96C5795D7870F42), init word 0:
+//  Sample "123456789" -> 0x995DC9BBDF1939FAull
+//  Sample 0xFC 0x05 0x4A -> 0xF10B3B2CDEF45CFAull
+//  Sample CRC32BTable 1KB -> 0xACB732293EDC5DC8ull
+// ... this is preferred CRC-64 method
+
+// CRC-64 Reversed (CRC64B) table (2 KB)
+extern const u64 Crc64BTable[256];
+
+// CRC-64 Reversed (CRC64B) polynomial
+#define CRC64B_POLY 0xC96C5795D7870F42ULL
+
+// CRC-64 Reversed (CRC64B) init word (not reversed, not inverted)
+#define CRC64B_INIT 0
+
+// Check CRC-64 Reversed (CRC64B) table (returns False on error; can be used to generate table)
+Bool Crc64BTableCheck();
+
+// Calculate CRC-64 Reversed (CRC64B), 1 byte - tabled version (requires 2 KB of flash memory)
+u64 Crc64BByteTab(u64 crc, u8 data);
+
+// Calculate CRC-64 Reversed (CRC64B), 1 byte - slow version
+u64 Crc64BByteSlow(u64 crc, u8 data);
+
+// Calculate CRC-64 Reversed (CRC64B), buffer - tabled version (requires 2 KB of flash memory)
+u64 Crc64BBufTab(u64 crc, const void* buf, int len);
+
+// Calculate CRC-64 Reversed (CRC64B), buffer - slow version
+u64 Crc64BBufSlow(u64 crc, const void* buf, int len);
+
+// Calculate CRC-64 Reversed (CRC64B) - tabled version (requires 2 KB of flash memory)
+//   Calculation speed: 220 us per 1 KB
+u64 Crc64BTab(const void* buf, int len);
+
+// Calculate CRC-64 Reversed (CRC64B) - slow version
+//   Calculation speed: 2200 us per 1 KB
+u64 Crc64BSlow(const void* buf, int len);
+
+// Check CRC-64 Reversed (CRC64B) calculations (returns False on error)
+Bool Crc64BCheck(void);
+
+// ============================================================================
+//                            CRC-64 Common
+// ============================================================================
+// Default CRC-64 functions: CRC-64 Reversed CRC64B
+//  Sample "123456789" -> 0x995DC9BBDF1939FAull
+//  Sample 0xFC 0x05 0x4A -> 0xF10B3B2CDEF45CFAull
+//  Sample CRC32BTable 1KB -> 0xACB732293EDC5DC8ull
+
+// CRC-64 init word
+#define CRC64_INIT CRC64B_INIT
+
+// Calculate CRC-64, 1 byte
+INLINE u64 Crc64Byte(u64 crc, u8 data) { return Crc64BByteSlow(crc, data); }
+
+// Calculate CRC-64, buffer
+INLINE u64 Crc64Buf(u32 crc, const void* buf, int len) { return Crc64BBufTab(crc, buf, len); }
+ 
+// Calculate CRC-64
+//   Calculation speed: 220 us per 1 KB
+INLINE u64 Crc64(const void* buf, int len) { return Crc64BTab(buf, len); }
 
 // ============================================================================
 //                           CRC-32 Normal (CRC32A)
@@ -71,7 +270,7 @@ extern const u32 Crc32ATable[256];
 #define CRC32A_INIT 0xFFFFFFFF
 
 // Check CRC-32 Normal (CRC32A) table (returns False on error; can be used to generate table)
-Bool Crc32ATableCheck();
+Bool Crc32ATableCheck(void);
 
 // Calculate CRC-32 Normal (CRC32A), 1 byte - tabled version (requires 1 KB of flash memory)
 u32 Crc32AByteTab(u32 crc, u8 data);
@@ -113,7 +312,7 @@ u32 Crc32ADMA(const void* buf, int len);
 #endif // USE_DMA
 
 // Check CRC-32 Normal (CRC32A) calculations (returns False on error)
-Bool Crc32ACheck();
+Bool Crc32ACheck(void);
 
 // ============================================================================
 //                          CRC-32 Reversed (CRC32B)
@@ -134,7 +333,7 @@ extern const u32 Crc32BTable[256];
 #define CRC32B_INIT 0
 
 // Check CRC-32 Reversed (CRC32B) table (returns False on error; can be used to generate table)
-Bool Crc32BTableCheck();
+Bool Crc32BTableCheck(void);
 
 // Calculate CRC-32 Reversed (CRC32B), 1 byte - tabled version (requires 1 KB of flash memory)
 u32 Crc32BByteTab(u32 crc, u8 data);
@@ -176,7 +375,7 @@ u32 Crc32BDMA(const void* buf, int len);
 #endif // USE_DMA
 
 // Check CRC-32 Reversed (CRC32B) calculations (returns False on error)
-Bool Crc32BCheck();
+Bool Crc32BCheck(void);
 
 // ============================================================================
 //                            CRC-32 Common
@@ -198,18 +397,15 @@ INLINE u32 Crc32Byte(u32 crc, u8 data) { return Crc32BByteSlow(crc, data); }
 INLINE u32 Crc32Buf(u32 crc, const void* buf, int len) { return Crc32BBufDMA(crc, buf, len); }
  
 // Calculate CRC-32 (uses DMA_TEMP_CHAN() temporary channel)
-//   Calculation speed: 2 us per 1 KB
 // Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
 INLINE u32 Crc32(const void* buf, int len) { return Crc32BDMA(buf, len); }
 
 #else // USE_DMA
-// Calculate CRC-32, buffer (uses DMA_TEMP_CHAN() temporary channel)
-// Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
+// Calculate CRC-32, buffer
 INLINE u32 Crc32Buf(u32 crc, const void* buf, int len) { return Crc32BBufTab(crc, buf, len); }
  
-// Calculate CRC-32 (uses DMA_TEMP_CHAN() temporary channel)
-//   Calculation speed: 2 us per 1 KB
-// Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
+// Calculate CRC-32
+//   Calculation speed: 160 us per 1 KB
 INLINE u32 Crc32(const void* buf, int len) { return Crc32BTab(buf, len); }
 #endif // USE_DMA
 
@@ -239,7 +435,7 @@ extern const u16 Crc16ATable[256];
 #define CRC16A_INIT 0xFFFF
 
 // Check CRC-16 CCITT Normal (CRC16A) table (returns False on error; can be used to generate table)
-Bool Crc16ATableCheck();
+Bool Crc16ATableCheck(void);
 
 // Calculate CRC-16 CCITT Normal (CRC16A), 1 byte - tabled version (requires 512 B of flash memory)
 u16 Crc16AByteTab(u16 crc, u8 data);
@@ -291,7 +487,7 @@ u16 Crc16ADMA(const void* buf, int len);
 #endif // USE_DMA
 
 // Check CRC-16 CCITT Normal (CRC16A) calculations (returns False on error)
-Bool Crc16ACheck();
+Bool Crc16ACheck(void);
 
 // ============================================================================
 //                       CRC-16 CCITT Reversed (CRC16B)
@@ -312,7 +508,7 @@ extern const u16 Crc16BTable[256];
 #define CRC16B_INIT 0
 
 // Check CRC-16 CCITT Reversed (CRC16B) table (returns False on error; can be used to generate table)
-Bool Crc16BTableCheck();
+Bool Crc16BTableCheck(void);
 
 // Calculate CRC-16 CCITT Reversed (CRC16B), 1 byte - tabled version (requires 512 B of flash memory)
 u16 Crc16BByteTab(u16 crc, u8 data);
@@ -354,7 +550,7 @@ u16 Crc16BDMA(const void* buf, int len);
 #endif // USE_DMA
 
 // Check CRC-16 CCITT Reversed (CRC16B) calculations (returns False on error)
-Bool Crc16BCheck();
+Bool Crc16BCheck(void);
 
 // ============================================================================
 //                 CRC-16 CCITT Normal Alternative (CRC16C)
@@ -417,7 +613,7 @@ u16 Crc16CDMA(const void* buf, int len);
 #endif // USE_DMA
 
 // Check CRC-16 CCITT Normal Alternative (CRC16C) calculations (returns False on error)
-Bool Crc16CCheck();
+Bool Crc16CCheck(void);
 
 // ============================================================================
 //                            CRC-16 Common
@@ -444,14 +640,12 @@ INLINE u32 Crc16Buf(u32 crc, const void* buf, int len) { return Crc16CBufDMA(crc
 INLINE u32 Crc16(const void* buf, int len) { return Crc16CDMA(buf, len); }
 #else // USE_DMA
 
-// Calculate CRC-16, buffer (uses DMA_TEMP_CHAN() temporary channel)
-// Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
+// Calculate CRC-16, buffer
 INLINE u32 Crc16Buf(u32 crc, const void* buf, int len) { return Crc16CBufTab(crc, buf, len); }
- 
-// Calculate CRC-16 (uses DMA_TEMP_CHAN() temporary channel)
-//   Calculation speed: 2 us per 1 KB
-// Can be used simultaneously in both CPUs, but not simultaneously in an interrupt.
-INLINE u32 Crc16(const void* buf, int len) { return Crc16CTab(buf, len); }
+
+// Calculate CRC-16 (does not need table)
+//   Calculation speed: 200 us per 1 KB
+INLINE u32 Crc16(const void* buf, int len) { return Crc16CFast(buf, len); }
 #endif // USE_DMA
 
 // ============================================================================
@@ -479,7 +673,7 @@ extern const u8 Crc8Table[256];
 #define CRC8_INIT 0
 
 // Check CRC-8 table (returns False on error; can be used to generate table)
-Bool Crc8TableCheck();
+Bool Crc8TableCheck(void);
 
 // Calculate CRC-8, 1 byte - tabled version (requires 256 B of flash memory)
 u8 Crc8ByteTab(u8 crc, u8 data);
@@ -502,7 +696,7 @@ u8 Crc8Tab(const void* buf, int len);
 u8 Crc8Slow(const void* buf, int len);
 
 // Check CRC-8 calculations (returns False on error)
-Bool Crc8Check();
+Bool Crc8Check(void);
 
 // === Common functions (used tabled versions)
 
@@ -523,6 +717,9 @@ INLINE u8 Crc8(const void* buf, int len) { return Crc8Tab(buf, len); }
 // Sample "123456789" -> 0x01
 // Sample: 0xFC 0x05 0x4A -> 0x01
 // Sample CRC32 1KB -> 0x00
+
+// parity init value
+#define PARITY_INIT	0
 
 // Calculate parity, 1 byte - software version
 u8 ParityByteSoft(u8 par, u8 data);
@@ -552,6 +749,9 @@ u8 ParitySoft(const void* buf, int len);
 //   Calculation speed: 2 us per 1 KB
 u8 ParityDMA(const void* buf, int len);
 #endif // USE_DMA
+
+// check parity calculation (returns False on error)
+Bool ParityCheck(void);
 
 // ============================================================================
 //            Simple checksum on 8-bit data with 32-bit result
@@ -591,6 +791,9 @@ u32 Sum8Soft(const void* buf, int len);
 //   Calculation speed: 8 us per 1 KB
 u32 Sum8DMA(const void* buf, int len);
 #endif // USE_DMA
+
+// check 8-bit checksum calculation (returns False on error)
+Bool Sum8Check(void);
 
 // ============================================================================
 //            Simple checksum on 16-bit data with 32-bit result
@@ -639,6 +842,9 @@ u32 Sum16Soft(const u16* buf, int num);
 u32 Sum16DMA(const u16* buf, int num);
 #endif // USE_DMA
 
+// check 16-bit checksum calculation (returns False on error)
+Bool Sum16Check(void);
+
 // ============================================================================
 //            Simple checksum on 32-bit data with 32-bit result
 // ============================================================================
@@ -686,6 +892,9 @@ u32 Sum32Soft(const u32* buf, int num);
 u32 Sum32DMA(const u32* buf, int num);
 #endif // USE_DMA
 
+// check 32-bit checksum calculation (returns False on error)
+Bool Sum32Check(void);
+
 // ============================================================================
 //                                  CRC-XOR
 // ============================================================================
@@ -706,6 +915,9 @@ u16 CrcXorBuf(u16 crc, const void* buf, int len);
 // Calculate CRC-XOR
 //   Calculation speed: 160 us per 1 KB
 u16 CrcXor(const void* buf, int len);
+
+// check Xor checksum calculation (returns False on error)
+Bool CrcXorCheck(void);
 
 #ifdef __cplusplus
 }

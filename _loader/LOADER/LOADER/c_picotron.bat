@@ -1,2 +1,2 @@
 @echo off
-c.bat picotron
+c.bat picotron 0

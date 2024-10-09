@@ -1,5 +1,10 @@
 #include "../../../_sdk/asm_include.inc"
-#include "../../../_sdk/inc/orig/orig_sio.h"
+
+#if RP2040
+#include "../../../_sdk/inc/orig_rp2040/orig_sio.h"
+#else
+#include "../../../_sdk/inc/orig_rp2350/orig_sio.h"
+#endif
 
 //#include "hardware/regs/addressmap.h"
 //#include "hardware/regs/sio.h"

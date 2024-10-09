@@ -59,7 +59,11 @@ speed FM+:
 #include "sdk_timer.h"
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_i2c.h"		// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_i2c.h"		// constants of original SDK
+#else
+#include "orig_rp2350/orig_i2c.h"		// constants of original SDK
+#endif
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
@@ -77,9 +81,7 @@ extern "C" {
 #define I2C_BAUDRATE_FP		1000000		// fast mode plus 1000 kb/s
 
 // I2C hardware registers (i2c = 0 or 1)
-//#define I2C0_BASE		0x40044000	// I2C0 interface
-//#define I2C1_BASE		0x40048000	// I2C1 interface
-#define I2C_BASE(i2c)		(I2C0_BASE+(i2c)*0x4000)	// I2C base address (i2c = 0 or 1)
+#define I2C_BASE(i2c)		(I2C0_BASE+(i2c)*(I2C1_BASE-I2C0_BASE))	// I2C base address (i2c = 0 or 1)
 
 #define I2C_CON(i2c)		((volatile u32*)(I2C_BASE(i2c)+0x00))	// control register ... DW_apb_i2c must be enabled
 #define I2C_TAR(i2c)		((volatile u32*)(I2C_BASE(i2c)+0x04))	// target address register

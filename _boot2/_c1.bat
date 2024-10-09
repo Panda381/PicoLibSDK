@@ -1,13 +1,10 @@
-@echo off
+rem @echo off
 rem Compilation...
 
 rem ------------------------------------------------
 rem Edit this line to setup path to GCC-ARM compiler
 rem ------------------------------------------------
 rem set PATH=..\_tools;C:\ARM10\bin;%PATH%
-
-rem Setup parameters DEVICE, DEVCLASS and DEVDIR (%1 = device name)
-call ..\_setup.bat %1
 
 rem Delete all target files
 if exist %TARGET%.bin del %TARGET%.bin
@@ -20,7 +17,7 @@ if errorlevel 1 goto err
 if not exist %TARGET%.bin goto err
 
 rem Export bin to assembler data file, including CRC.
-boot2crc\boot2crc.exe %TARGET%.bin > %TARGET%_bin.S
+boot2crc\boot2crc.exe %TARGET%.bin %1 > %TARGET%_bin.S
 if errorlevel 1 goto err
 
 rem Compilation OK, list memory size

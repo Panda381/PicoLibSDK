@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                            RTC Real-time clock
+//                         RTC Real-time clock (only RP2040)
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
@@ -17,6 +17,10 @@
 // Leap year does not work OK for years 1900 and 2100,
 //   so RTC with leap should be used in range 1901..2099.
 
+// Only RP2040. RP2350 uses for this purpose AON always-on timer of Power Manager.
+
+#if RP2040
+
 #if USE_RTC	// use RTC Real-time clock (sdk_rtc.c, sdk_rtc.h)
 
 #ifndef _SDK_RTC_H
@@ -26,7 +30,7 @@
 #include "../../_lib/inc/lib_calendar.h"		// datetime structure
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_rtc.h"	// constants of original SDK
+#include "orig_rp2040/orig_rtc.h"	// constants of original SDK
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
@@ -34,7 +38,6 @@ extern "C" {
 #endif
 
 // RTC hardware registers
-//#define RTC_BASE		0x4005c000	// RTC real-time clock
 #define RTC_CLKDIV	((volatile u32*)(RTC_BASE+0x00)) // divider minus 1 for 1-second counter
 #define RTC_SETUP0	((volatile u32*)(RTC_BASE+0x04)) // setup 0
 #define RTC_SETUP1	((volatile u32*)(RTC_BASE+0x08)) // setup 1
@@ -190,3 +193,5 @@ void datetime_to_str(char *buf, uint buf_size, const datetime_t *t);
 #endif // _SDK_RTC_H
 
 #endif // USE_RTC	// use RTC Real-time clock (sdk_rtc.c, sdk_rtc.h)
+
+#endif // RP2040

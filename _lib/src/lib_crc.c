@@ -28,6 +28,866 @@
 const char ALIGNED CrcPat1[] = "123456789";
 const u8 ALIGNED CrcPat2[CRCPAT2LEN+1] = { 0xFC, 0x05, 0x4A, 0x3E };
 
+// check all CRC functions (returns False on error)
+Bool CrcCheck()
+{
+	// Check CRC-64 Normal (CRC64A) calculations (returns False on error)
+	if (!Crc64ACheck()) return False;
+
+	// Check CRC-64 Reversed (CRC64B) calculations (returns False on error)
+	if (!Crc64BCheck()) return False;
+
+	// Check CRC-32 Normal (CRC32A) calculations (returns False on error)
+	if (!Crc32ACheck()) return False;
+
+	// Check CRC-32 Reversed (CRC32B) calculations (returns False on error)
+	if (!Crc32BCheck()) return False;
+
+	// Check CRC-16 CCITT Normal (CRC16A) calculations (returns False on error)
+	if (!Crc16ACheck()) return False;
+
+	// Check CRC-16 CCITT Reversed (CRC16B) calculations (returns False on error)
+	if (!Crc16BCheck()) return False;
+
+	// Check CRC-16 CCITT Normal Alternative (CRC16C) calculations (returns False on error)
+	if (!Crc16CCheck()) return False;
+
+	// Check CRC-8 calculations (returns False on error)
+	if (!Crc8Check()) return False;
+
+	// check parity calculation (returns False on error)
+	if (!ParityCheck()) return False;
+
+	// check 8-bit checksum calculation (returns False on error)
+	if (!Sum8Check()) return False;
+
+	// check 16-bit checksum calculation (returns False on error)
+	if (!Sum16Check()) return False;
+
+	// check 32-bit checksum calculation (returns False on error)
+	if (!Sum32Check()) return False;
+
+	// check Xor checksum calculation (returns False on error)
+	if (!CrcXorCheck()) return False;
+
+	// check MD5 hash calculations (returns False on error)
+	if (!MD5_Check()) return False;
+
+	// check SHA256 hash calculations (returns False on error)
+	if (!SHA256_Check()) return False;
+
+	return True;
+}
+
+// ============================================================================
+//                         SHA256 hash (256-bit checksum)
+// ============================================================================
+
+// Rotates a 32-bit word left by n bits
+INLINE static u32 SHA256_rotateRight(u32 x, u32 n)
+{
+	return Ror(x, (u8)n);
+//	return (x >> n) | (x << (32 - n));
+}
+
+#define SHA256_CH(x,y,z) (((x) & (y)) ^ (~(x) & (z)))
+#define SHA256_MAJ(x,y,z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+#define SHA256_EP0(x) (SHA256_rotateRight(x,2) ^ SHA256_rotateRight(x,13) ^ SHA256_rotateRight(x,22))
+#define SHA256_EP1(x) (SHA256_rotateRight(x,6) ^ SHA256_rotateRight(x,11) ^ SHA256_rotateRight(x,25))
+#define SHA256_SIG0(x) (SHA256_rotateRight(x,7) ^ SHA256_rotateRight(x,18) ^ ((x) >> 3))
+#define SHA256_SIG1(x) (SHA256_rotateRight(x,17) ^ SHA256_rotateRight(x,19) ^ ((x) >> 10))
+
+const u32 SHA256_k[64] = {
+	0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+	0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+	0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+	0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+	0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+	0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+	0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+	0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+};
+
+// initialize SHA256 context
+void SHA256_Init(SHA256_Context* ctx)
+{
+	ctx->datalen = 0;
+	ctx->state[0] = 0x6a09e667;
+	ctx->state[1] = 0xbb67ae85;
+	ctx->state[2] = 0x3c6ef372;
+	ctx->state[3] = 0xa54ff53a;
+	ctx->state[4] = 0x510e527f;
+	ctx->state[5] = 0x9b05688c;
+	ctx->state[6] = 0x1f83d9ab;
+	ctx->state[7] = 0x5be0cd19;
+}
+
+// step of SHA256, after filling out a block of 512 bits
+static void SHA256_Step(SHA256_Context* ctx, const u8* data)
+{
+	u32 a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
+
+	for (i = 0, j = 0; i < 16; i++, j += 4)
+	{
+		m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) | (data[j + 3]);
+	}
+
+	for ( ; i < 64; i++)
+	{
+		m[i] = SHA256_SIG1(m[i - 2]) + m[i - 7] + SHA256_SIG0(m[i - 15]) + m[i - 16];
+	}
+
+	a = ctx->state[0];
+	b = ctx->state[1];
+	c = ctx->state[2];
+	d = ctx->state[3];
+	e = ctx->state[4];
+	f = ctx->state[5];
+	g = ctx->state[6];
+	h = ctx->state[7];
+
+	for (i = 0; i < 64; ++i)
+	{
+		t1 = h + SHA256_EP1(e) + SHA256_CH(e,f,g) + SHA256_k[i] + m[i];
+		t2 = SHA256_EP0(a) + SHA256_MAJ(a,b,c);
+		h = g;
+		g = f;
+		f = e;
+		e = d + t1;
+		d = c;
+		c = b;
+		b = a;
+		a = t1 + t2;
+	}
+
+	ctx->state[0] += a;
+	ctx->state[1] += b;
+	ctx->state[2] += c;
+	ctx->state[3] += d;
+	ctx->state[4] += e;
+	ctx->state[5] += f;
+	ctx->state[6] += g;
+	ctx->state[7] += h;
+}
+
+// add buffer to SHA256 accumulator
+void SHA256_AddBuf(SHA256_Context* ctx, const void* buf, int len)
+{
+	// update length
+	uint offset = (uint)(ctx->datalen & 0x3f);
+	ctx->datalen += len;
+
+	// load input data
+	const u8* src = (const u8*)buf;
+	for (; len > 0; len--)
+	{
+		// load next byte
+		ctx->data[offset++] = *src++;
+
+		// check 64-byte (512-bit) boundary 
+		if (offset == 64)
+		{
+			// process this data block
+			SHA256_Step(ctx, ctx->data);
+			offset = 0;
+		}
+	}
+}
+
+// add byte to SHA256 accumulator
+void SHA256_AddByte(SHA256_Context* ctx, u8 data)
+{
+	SHA256_AddBuf(ctx, &data, 1);
+}
+
+// finalize (ctx->result = hash result)
+// - input data will be aligned to 512-bit boundary, with end header
+void SHA256_Final(SHA256_Context* ctx)
+{
+	// get message size in bits
+	u64 size = ctx->datalen * 8;
+
+	// add terminating bit '1'
+	SHA256_AddByte(ctx, 0x80);
+
+	// add padding zeroes (8 byte reserve for message size)
+	while ((ctx->datalen & 0x3f) != 0x40-8) SHA256_AddByte(ctx, 0);
+
+	// add message size in bits
+	SHA256_AddByte(ctx, (u8)(size >> 7*8));
+	SHA256_AddByte(ctx, (u8)(size >> 6*8));
+	SHA256_AddByte(ctx, (u8)(size >> 5*8));
+	SHA256_AddByte(ctx, (u8)(size >> 4*8));
+	SHA256_AddByte(ctx, (u8)(size >> 3*8));
+	SHA256_AddByte(ctx, (u8)(size >> 2*8));
+	SHA256_AddByte(ctx, (u8)(size >> 1*8));
+	SHA256_AddByte(ctx, (u8)(size >> 0*8));
+
+	// convert result to big endian
+	int i;
+	for (i = 0; i < 8; i++) ctx->state[i] = Endian(ctx->state[i]);
+}
+
+// calculace SHA256 hash (dst = pointer to destination 32-byte buffer)
+// - input data will be aligned to 512-bit boundary, with end header
+//   Calculation speed: 1580 us per 1 KB
+void SHA256_Calc(u8* dst, const void* src, int len)
+{
+	// prepare SHA256 context
+	SHA256_Context ctx;
+	SHA256_Init(&ctx);
+
+	// add data
+	SHA256_AddBuf(&ctx, src, len);
+
+	// finalize
+	SHA256_Final(&ctx);
+
+	// copy result hash
+	memcpy(dst, ctx.result, SHA256_HASH_SIZE);
+}
+
+const u8 SHA256_hash1[SHA256_HASH_SIZE] = { 0x15,0xe2,0xb0,0xd3,0xc3,0x38,0x91,0xeb,0xb0,0xf1,0xef,0x60,0x9e,0xc4,0x19,0x42,0x0c,0x20,0xe3,0x20,0xce,0x94,0xc6,0x5f,0xbc,0x8c,0x33,0x12,0x44,0x8e,0xb2,0x25 };
+const u8 SHA256_hash2[SHA256_HASH_SIZE] = { 0xc5,0x52,0x39,0xc3,0xfd,0xc5,0x22,0xad,0x47,0x45,0xba,0x78,0x0c,0x35,0xcf,0xed,0xc5,0xe2,0x50,0x9d,0xfc,0x28,0xe5,0x08,0x7b,0x5a,0x20,0xfa,0x37,0xae,0xac,0xf9 };
+const u8 SHA256_hash3[SHA256_HASH_SIZE] = { 0x12,0xf3,0xe0,0x57,0x6d,0x44,0x7e,0xb3,0x7b,0x36,0xd8,0x2b,0xa0,0xc1,0xc5,0x48,0x1b,0x8f,0x0d,0x12,0xfd,0xc7,0x03,0x47,0xce,0x4a,0x07,0x6b,0x22,0x9d,0x4c,0x86 };
+
+// check SHA256 hash calculations (returns False on error)
+Bool SHA256_Check(void)
+{
+	u8 hash[SHA256_HASH_SIZE];
+
+	// check pattern 1
+	SHA256_Calc(hash, CrcPat1, CRCPAT1LEN);
+	if (memcmp(hash, SHA256_hash1, SHA256_HASH_SIZE) != 0) return False;
+
+	// check pattern 2
+	SHA256_Calc(hash, CrcPat2, CRCPAT2LEN);
+	if (memcmp(hash, SHA256_hash2, SHA256_HASH_SIZE) != 0) return False;
+
+	// check pattern 3
+	SHA256_Calc(hash, CrcPat3, CRCPAT3LEN);
+	if (memcmp(hash, SHA256_hash3, SHA256_HASH_SIZE) != 0) return False;
+
+	return True;
+}
+
+// ============================================================================
+//                         MD5 hash (128-bit checksum)
+// ============================================================================
+
+// rorate amounts table
+const u8 MD5_S[] = {
+		7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+		5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
+		4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+		6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
+};
+
+const u32 MD5_K[] = {
+		0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
+		0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
+		0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
+		0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
+		0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa,
+		0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
+		0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed,
+		0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
+		0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c,
+		0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
+		0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05,
+		0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
+		0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039,
+		0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
+		0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
+		0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391,
+};
+
+// init values
+#define MD5_A 0x67452301
+#define MD5_B 0xefcdab89
+#define MD5_C 0x98badcfe
+#define MD5_D 0x10325476
+
+// functions
+#define MD5_F(X, Y, Z) (((X) & (Y)) | (~(X) & (Z)))
+#define MD5_G(X, Y, Z) (((X) & (Z)) | ((Y) & ~(Z)))
+#define MD5_H(X, Y, Z) ((X) ^ (Y) ^ (Z))
+#define MD5_I(X, Y, Z) ((Y) ^ ((X) | ~(Z)))
+
+// Rotates a 32-bit word left by n bits
+INLINE static u32 MD5_rotateLeft(u32 x, u32 n)
+{
+	return Rol(x, (u8)n);
+//	return (x << n) | (x >> (32 - n));
+}
+
+// initialize MD5 context
+void MD5_Init(MD5_Context* ctx)
+{
+	ctx->size = 0;
+	ctx->buffer[0] = MD5_A;
+	ctx->buffer[1] = MD5_B;
+	ctx->buffer[2] = MD5_C;
+	ctx->buffer[3] = MD5_D;
+}
+
+// step of MD5, after filling out a block of 512 bits
+static void MD5_Step(u32* buffer, u32* input)
+{
+	u32 aa = buffer[0];
+	u32 bb = buffer[1];
+	u32 cc = buffer[2];
+	u32 dd = buffer[3];
+	u32 e, tmp;
+	uint i, j;
+	for (i = 0; i < 64; i++)
+	{
+		switch(i >> 4)
+		{
+		case 0:
+			e = MD5_F(bb, cc, dd);
+			j = i;
+			break;
+
+		case 1:
+			e = MD5_G(bb, cc, dd);
+			j = (i*5 + 1) & 0x0f;
+			break;
+
+		case 2:
+			e = MD5_H(bb, cc, dd);
+			j = (i*3 + 5) & 0x0f;
+			break;
+
+		default:
+			e = MD5_I(bb, cc, dd);
+			j = (i*7) & 0x0f;
+			break;
+		}
+
+		tmp = dd;
+		dd = cc;
+		cc = bb;
+		bb = bb + MD5_rotateLeft(aa + e + MD5_K[i] + input[j], MD5_S[i]);
+		aa = tmp;
+	}
+
+	buffer[0] += aa;
+	buffer[1] += bb;
+	buffer[2] += cc;
+	buffer[3] += dd;
+}
+
+// add buffer to MD5 accumulator
+void MD5_AddBuf(MD5_Context* ctx, const void* buf, int len)
+{
+	// update length
+	uint offset = (uint)(ctx->size & 0x3f);
+	ctx->size += len;
+
+	// load input data
+	const u8* src = (const u8*)buf;
+	for (; len > 0; len--)
+	{
+		// load next byte
+		ctx->input[offset++] = *src++;
+
+		// check 64-byte (512-bit) boundary 
+		if (offset == 64)
+		{
+			// process this data block
+			MD5_Step(ctx->buffer, ctx->input32);
+			offset = 0;
+		}
+	}
+}
+
+// add byte to MD5 accumulator
+void MD5_AddByte(MD5_Context* ctx, u8 data)
+{
+	MD5_AddBuf(ctx, &data, 1);
+}
+
+// finalize (ctx->buffer = hash result)
+// - input data will be aligned to 512-bit boundary, with end header
+void MD5_Final(MD5_Context* ctx)
+{
+	// get message size in bits
+	u64 size = ctx->size * 8;
+
+	// add terminating bit '1'
+	MD5_AddByte(ctx, 0x80);
+
+	// add padding zeroes (8 byte reserve for message size)
+	while ((ctx->size & 0x3f) != 0x40-8) MD5_AddByte(ctx, 0);
+
+	// add message size in bits
+	MD5_AddBuf(ctx, &size, 8);
+}
+
+// calculace MD5 hash (dst = pointer to destination 16-byte buffer)
+// - input data will be aligned to 512-bit boundary, with end header
+//   Calculation speed: 864 us per 1 KB
+void MD5_Calc(u8* dst, const void* src, int len)
+{
+	// prepare MD5 context
+	MD5_Context ctx;
+	MD5_Init(&ctx);
+
+	// add data
+	MD5_AddBuf(&ctx, src, len);
+
+	// finalize
+	MD5_Final(&ctx);
+
+	// copy result hash
+	memcpy(dst, ctx.buffer, MD5_HASH_SIZE);
+}
+
+const u8 MD5_hash1[MD5_HASH_SIZE] = { 0x25,0xf9,0xe7,0x94,0x32,0x3b,0x45,0x38,0x85,0xf5,0x18,0x1f,0x1b,0x62,0x4d,0x0b };
+const u8 MD5_hash2[MD5_HASH_SIZE] = { 0x4f,0x58,0xb5,0x2f,0xf8,0x00,0x09,0x60,0xfd,0xce,0x70,0x63,0x2a,0xb7,0x04,0x53 };
+const u8 MD5_hash3[MD5_HASH_SIZE] = { 0x11,0x3b,0x12,0xab,0xbc,0x21,0x2d,0xae,0x31,0xc2,0xa6,0xc7,0xb4,0x07,0x6c,0x19 };
+
+// check MD5 hash calculations (returns False on error)
+Bool MD5_Check(void)
+{
+	u8 hash[MD5_HASH_SIZE];
+
+	// check pattern 1
+	MD5_Calc(hash, CrcPat1, CRCPAT1LEN);
+	if (memcmp(hash, MD5_hash1, MD5_HASH_SIZE) != 0) return False;
+
+	// check pattern 2
+	MD5_Calc(hash, CrcPat2, CRCPAT2LEN);
+	if (memcmp(hash, MD5_hash2, MD5_HASH_SIZE) != 0) return False;
+
+	// check pattern 3
+	MD5_Calc(hash, CrcPat3, CRCPAT3LEN);
+	if (memcmp(hash, MD5_hash3, MD5_HASH_SIZE) != 0) return False;
+
+	return True;
+}
+
+// ============================================================================
+//                           CRC-64 Normal (CRC64A)
+// ============================================================================
+
+// CRC-64 Normal (CRC64A) table (2 KB)
+const u64 Crc64ATable[256] = {
+	0x0000000000000000ull, 0x42F0E1EBA9EA3693ull, 0x85E1C3D753D46D26ull, 0xC711223CFA3E5BB5ull,
+	0x493366450E42ECDFull, 0x0BC387AEA7A8DA4Cull, 0xCCD2A5925D9681F9ull, 0x8E224479F47CB76Aull,
+	0x9266CC8A1C85D9BEull, 0xD0962D61B56FEF2Dull, 0x17870F5D4F51B498ull, 0x5577EEB6E6BB820Bull,
+	0xDB55AACF12C73561ull, 0x99A54B24BB2D03F2ull, 0x5EB4691841135847ull, 0x1C4488F3E8F96ED4ull,
+	0x663D78FF90E185EFull, 0x24CD9914390BB37Cull, 0xE3DCBB28C335E8C9ull, 0xA12C5AC36ADFDE5Aull,
+	0x2F0E1EBA9EA36930ull, 0x6DFEFF5137495FA3ull, 0xAAEFDD6DCD770416ull, 0xE81F3C86649D3285ull,
+	0xF45BB4758C645C51ull, 0xB6AB559E258E6AC2ull, 0x71BA77A2DFB03177ull, 0x334A9649765A07E4ull,
+	0xBD68D2308226B08Eull, 0xFF9833DB2BCC861Dull, 0x388911E7D1F2DDA8ull, 0x7A79F00C7818EB3Bull,
+	0xCC7AF1FF21C30BDEull, 0x8E8A101488293D4Dull, 0x499B3228721766F8ull, 0x0B6BD3C3DBFD506Bull,
+	0x854997BA2F81E701ull, 0xC7B97651866BD192ull, 0x00A8546D7C558A27ull, 0x4258B586D5BFBCB4ull,
+	0x5E1C3D753D46D260ull, 0x1CECDC9E94ACE4F3ull, 0xDBFDFEA26E92BF46ull, 0x990D1F49C77889D5ull,
+	0x172F5B3033043EBFull, 0x55DFBADB9AEE082Cull, 0x92CE98E760D05399ull, 0xD03E790CC93A650Aull,
+	0xAA478900B1228E31ull, 0xE8B768EB18C8B8A2ull, 0x2FA64AD7E2F6E317ull, 0x6D56AB3C4B1CD584ull,
+	0xE374EF45BF6062EEull, 0xA1840EAE168A547Dull, 0x66952C92ECB40FC8ull, 0x2465CD79455E395Bull,
+	0x3821458AADA7578Full, 0x7AD1A461044D611Cull, 0xBDC0865DFE733AA9ull, 0xFF3067B657990C3Aull,
+	0x711223CFA3E5BB50ull, 0x33E2C2240A0F8DC3ull, 0xF4F3E018F031D676ull, 0xB60301F359DBE0E5ull,
+	0xDA050215EA6C212Full, 0x98F5E3FE438617BCull, 0x5FE4C1C2B9B84C09ull, 0x1D14202910527A9Aull,
+	0x93366450E42ECDF0ull, 0xD1C685BB4DC4FB63ull, 0x16D7A787B7FAA0D6ull, 0x5427466C1E109645ull,
+	0x4863CE9FF6E9F891ull, 0x0A932F745F03CE02ull, 0xCD820D48A53D95B7ull, 0x8F72ECA30CD7A324ull,
+	0x0150A8DAF8AB144Eull, 0x43A04931514122DDull, 0x84B16B0DAB7F7968ull, 0xC6418AE602954FFBull,
+	0xBC387AEA7A8DA4C0ull, 0xFEC89B01D3679253ull, 0x39D9B93D2959C9E6ull, 0x7B2958D680B3FF75ull,
+	0xF50B1CAF74CF481Full, 0xB7FBFD44DD257E8Cull, 0x70EADF78271B2539ull, 0x321A3E938EF113AAull,
+	0x2E5EB66066087D7Eull, 0x6CAE578BCFE24BEDull, 0xABBF75B735DC1058ull, 0xE94F945C9C3626CBull,
+	0x676DD025684A91A1ull, 0x259D31CEC1A0A732ull, 0xE28C13F23B9EFC87ull, 0xA07CF2199274CA14ull,
+	0x167FF3EACBAF2AF1ull, 0x548F120162451C62ull, 0x939E303D987B47D7ull, 0xD16ED1D631917144ull,
+	0x5F4C95AFC5EDC62Eull, 0x1DBC74446C07F0BDull, 0xDAAD56789639AB08ull, 0x985DB7933FD39D9Bull,
+	0x84193F60D72AF34Full, 0xC6E9DE8B7EC0C5DCull, 0x01F8FCB784FE9E69ull, 0x43081D5C2D14A8FAull,
+	0xCD2A5925D9681F90ull, 0x8FDAB8CE70822903ull, 0x48CB9AF28ABC72B6ull, 0x0A3B7B1923564425ull,
+	0x70428B155B4EAF1Eull, 0x32B26AFEF2A4998Dull, 0xF5A348C2089AC238ull, 0xB753A929A170F4ABull,
+	0x3971ED50550C43C1ull, 0x7B810CBBFCE67552ull, 0xBC902E8706D82EE7ull, 0xFE60CF6CAF321874ull,
+	0xE224479F47CB76A0ull, 0xA0D4A674EE214033ull, 0x67C58448141F1B86ull, 0x253565A3BDF52D15ull,
+	0xAB1721DA49899A7Full, 0xE9E7C031E063ACECull, 0x2EF6E20D1A5DF759ull, 0x6C0603E6B3B7C1CAull,
+	0xF6FAE5C07D3274CDull, 0xB40A042BD4D8425Eull, 0x731B26172EE619EBull, 0x31EBC7FC870C2F78ull,
+	0xBFC9838573709812ull, 0xFD39626EDA9AAE81ull, 0x3A28405220A4F534ull, 0x78D8A1B9894EC3A7ull,
+	0x649C294A61B7AD73ull, 0x266CC8A1C85D9BE0ull, 0xE17DEA9D3263C055ull, 0xA38D0B769B89F6C6ull,
+	0x2DAF4F0F6FF541ACull, 0x6F5FAEE4C61F773Full, 0xA84E8CD83C212C8Aull, 0xEABE6D3395CB1A19ull,
+	0x90C79D3FEDD3F122ull, 0xD2377CD44439C7B1ull, 0x15265EE8BE079C04ull, 0x57D6BF0317EDAA97ull,
+	0xD9F4FB7AE3911DFDull, 0x9B041A914A7B2B6Eull, 0x5C1538ADB04570DBull, 0x1EE5D94619AF4648ull,
+	0x02A151B5F156289Cull, 0x4051B05E58BC1E0Full, 0x87409262A28245BAull, 0xC5B073890B687329ull,
+	0x4B9237F0FF14C443ull, 0x0962D61B56FEF2D0ull, 0xCE73F427ACC0A965ull, 0x8C8315CC052A9FF6ull,
+	0x3A80143F5CF17F13ull, 0x7870F5D4F51B4980ull, 0xBF61D7E80F251235ull, 0xFD913603A6CF24A6ull,
+	0x73B3727A52B393CCull, 0x31439391FB59A55Full, 0xF652B1AD0167FEEAull, 0xB4A25046A88DC879ull,
+	0xA8E6D8B54074A6ADull, 0xEA16395EE99E903Eull, 0x2D071B6213A0CB8Bull, 0x6FF7FA89BA4AFD18ull,
+	0xE1D5BEF04E364A72ull, 0xA3255F1BE7DC7CE1ull, 0x64347D271DE22754ull, 0x26C49CCCB40811C7ull,
+	0x5CBD6CC0CC10FAFCull, 0x1E4D8D2B65FACC6Full, 0xD95CAF179FC497DAull, 0x9BAC4EFC362EA149ull,
+	0x158E0A85C2521623ull, 0x577EEB6E6BB820B0ull, 0x906FC95291867B05ull, 0xD29F28B9386C4D96ull,
+	0xCEDBA04AD0952342ull, 0x8C2B41A1797F15D1ull, 0x4B3A639D83414E64ull, 0x09CA82762AAB78F7ull,
+	0x87E8C60FDED7CF9Dull, 0xC51827E4773DF90Eull, 0x020905D88D03A2BBull, 0x40F9E43324E99428ull,
+	0x2CFFE7D5975E55E2ull, 0x6E0F063E3EB46371ull, 0xA91E2402C48A38C4ull, 0xEBEEC5E96D600E57ull,
+	0x65CC8190991CB93Dull, 0x273C607B30F68FAEull, 0xE02D4247CAC8D41Bull, 0xA2DDA3AC6322E288ull,
+	0xBE992B5F8BDB8C5Cull, 0xFC69CAB42231BACFull, 0x3B78E888D80FE17Aull, 0x7988096371E5D7E9ull,
+	0xF7AA4D1A85996083ull, 0xB55AACF12C735610ull, 0x724B8ECDD64D0DA5ull, 0x30BB6F267FA73B36ull,
+	0x4AC29F2A07BFD00Dull, 0x08327EC1AE55E69Eull, 0xCF235CFD546BBD2Bull, 0x8DD3BD16FD818BB8ull,
+	0x03F1F96F09FD3CD2ull, 0x41011884A0170A41ull, 0x86103AB85A2951F4ull, 0xC4E0DB53F3C36767ull,
+	0xD8A453A01B3A09B3ull, 0x9A54B24BB2D03F20ull, 0x5D45907748EE6495ull, 0x1FB5719CE1045206ull,
+	0x919735E51578E56Cull, 0xD367D40EBC92D3FFull, 0x1476F63246AC884Aull, 0x568617D9EF46BED9ull,
+	0xE085162AB69D5E3Cull, 0xA275F7C11F7768AFull, 0x6564D5FDE549331Aull, 0x279434164CA30589ull,
+	0xA9B6706FB8DFB2E3ull, 0xEB46918411358470ull, 0x2C57B3B8EB0BDFC5ull, 0x6EA7525342E1E956ull,
+	0x72E3DAA0AA188782ull, 0x30133B4B03F2B111ull, 0xF7021977F9CCEAA4ull, 0xB5F2F89C5026DC37ull,
+	0x3BD0BCE5A45A6B5Dull, 0x79205D0E0DB05DCEull, 0xBE317F32F78E067Bull, 0xFCC19ED95E6430E8ull,
+	0x86B86ED5267CDBD3ull, 0xC4488F3E8F96ED40ull, 0x0359AD0275A8B6F5ull, 0x41A94CE9DC428066ull,
+	0xCF8B0890283E370Cull, 0x8D7BE97B81D4019Full, 0x4A6ACB477BEA5A2Aull, 0x089A2AACD2006CB9ull,
+	0x14DEA25F3AF9026Dull, 0x562E43B4931334FEull, 0x913F6188692D6F4Bull, 0xD3CF8063C0C759D8ull,
+	0x5DEDC41A34BBEEB2ull, 0x1F1D25F19D51D821ull, 0xD80C07CD676F8394ull, 0x9AFCE626CE85B507ull,
+};
+
+// Check CRC-64 Normal (CRC64A) table (returns False on error; can be used to generate table)
+Bool Crc64ATableCheck()
+{
+	int i, j;
+	u64 k;
+
+	for(i = 0; i < 256; i++)
+	{
+		k = (u64)i << 56;
+		for (j = 8; j > 0; j--)
+		{
+			if ((k & 0x8000000000000000ULL) == 0)
+				k <<= 1;
+			else
+				k = (k << 1) ^ CRC64A_POLY;
+		}
+		//Crc64ATable[i] = k; // generate table
+		if (Crc64ATable[i] != k) return False; // check table
+	}
+	return True;
+}
+
+// Calculate CRC-64 Normal (CRC64A), 1 byte - tabled version (requires 2 KB of flash memory)
+u64 Crc64AByteTab(u64 crc, u8 data)
+{
+	return Crc64ATable[(crc >> 56) ^ data] ^ (crc << 8);
+}
+
+// Calculate CRC-64 Normal (CRC64A), 1 byte - slow version
+u64 Crc64AByteSlow(u64 crc, u8 data)
+{
+	int i;
+	crc ^= (u64)data << 56;
+	for (i = 8; i > 0; i--)
+	{
+		if ((crc & 0x8000000000000000ull) == 0)
+			crc <<= 1;
+		else
+			crc = (crc << 1) ^ CRC64A_POLY;
+	}
+	return crc;
+}
+
+// Calculate CRC-64 Normal (CRC64A), buffer - tabled version (requires 2 KB of flash memory)
+u64 Crc64ABufTab(u64 crc, const void* buf, int len)
+{
+	const u8* s = (const u8*)buf;
+
+	for (; len > 0; len--)
+	{
+		// Normal formula
+		crc = Crc64ATable[(crc >> 56) ^ *s++] ^ (crc << 8);
+	}
+	return crc;
+}
+
+// Calculate CRC-64 Normal (CRC64A), buffer - slow version
+u64 Crc64ABufSlow(u64 crc, const void* buf, int len)
+{
+	const u8* s = (const u8*)buf;
+	int i;
+
+	for (; len > 0; len--)
+	{
+		crc ^= (u64)*s++ << 56;
+		for (i = 8; i > 0; i--)
+		{
+			if ((crc & 0x8000000000000000ull) == 0)
+				crc <<= 1;
+			else
+				crc = (crc << 1) ^ CRC64A_POLY;
+		}
+	}
+	return crc;
+}
+
+// Calculate CRC-64 Normal (CRC64A) - tabled version (requires 2 KB of flash memory)
+//   Calculation speed: 200 us per 1 KB
+u64 Crc64ATab(const void* buf, int len)
+{
+	return Crc64ABufTab(CRC64A_INIT, buf, len);
+}
+
+// Calculate CRC-64 Normal (CRC64A) - slow version
+//   Calculation speed: 1000 us per 1 KB
+u64 Crc64ASlow(const void* buf, int len)
+{
+	return Crc64ABufSlow(CRC64A_INIT, buf, len);
+}
+
+// Check CRC-64 Normal (CRC64A) calculations (returns False on error)
+Bool Crc64ACheck()
+{
+	u64 crc;
+	int i;
+	const u8* src;
+
+	// Check CRC-64 table
+	if (!Crc64ATableCheck()) return False;
+
+	// Check CRC-64 pattern
+#define CRC64A_RES1 0x9D13A61C0E5B0FF5ull
+#define CRC64A_RES2 0x21E4F88DB2978548ull
+#define CRC64A_RES3 0x378302BE2C61CF9Eull
+	if (Crc64ATab(CrcPat1, CRCPAT1LEN) != CRC64A_RES1) return False;
+	if (Crc64ATab(CrcPat2, CRCPAT2LEN) != CRC64A_RES2) return False;
+	if (Crc64ATab(CrcPat3, CRCPAT3LEN) != CRC64A_RES3) return False;
+
+	if (Crc64ASlow(CrcPat1, CRCPAT1LEN) != CRC64A_RES1) return False;
+	if (Crc64ASlow(CrcPat2, CRCPAT2LEN) != CRC64A_RES2) return False;
+	if (Crc64ASlow(CrcPat3, CRCPAT3LEN) != CRC64A_RES3) return False;
+
+	// CRC-64 buffer version
+#define CRC64A_SPLIT 503
+	crc = Crc64ABufTab(CRC64A_INIT, CrcPat3, CRC64A_SPLIT);
+	crc = Crc64ABufTab(crc, (const u8*)CrcPat3+CRC64A_SPLIT, CRCPAT3LEN-CRC64A_SPLIT);
+	if (crc != CRC64A_RES3) return False;
+
+	crc = Crc64ABufSlow(CRC64A_INIT, CrcPat3, CRC64A_SPLIT);
+	crc = Crc64ABufSlow(crc, (const u8*)CrcPat3+CRC64A_SPLIT, CRCPAT3LEN-CRC64A_SPLIT);
+	if (crc != CRC64A_RES3) return False;
+	
+	// CRC-64 byte version
+	crc = CRC64A_INIT;
+	src = (const u8*)CrcPat3;
+	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc64AByteTab(crc, *src++);
+	if (crc != CRC64A_RES3) return False;
+
+	crc = CRC64A_INIT;
+	src = (const u8*)CrcPat3;
+	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc64AByteSlow(crc, *src++);
+	if (crc != CRC64A_RES3) return False;
+
+	return True;
+}
+
+// ============================================================================
+//                           CRC-64 Reversed (CRC64B)
+// ============================================================================
+
+// CRC-64 Reversed (CRC64B) table (2 KB)
+const u64 Crc64BTable[256] = {
+	0x0000000000000000ull, 0xB32E4CBE03A75F6Full, 0xF4843657A840A05Bull, 0x47AA7AE9ABE7FF34ull,
+	0x7BD0C384FF8F5E33ull, 0xC8FE8F3AFC28015Cull, 0x8F54F5D357CFFE68ull, 0x3C7AB96D5468A107ull,
+	0xF7A18709FF1EBC66ull, 0x448FCBB7FCB9E309ull, 0x0325B15E575E1C3Dull, 0xB00BFDE054F94352ull,
+	0x8C71448D0091E255ull, 0x3F5F08330336BD3Aull, 0x78F572DAA8D1420Eull, 0xCBDB3E64AB761D61ull,
+	0x7D9BA13851336649ull, 0xCEB5ED8652943926ull, 0x891F976FF973C612ull, 0x3A31DBD1FAD4997Dull,
+	0x064B62BCAEBC387Aull, 0xB5652E02AD1B6715ull, 0xF2CF54EB06FC9821ull, 0x41E11855055BC74Eull,
+	0x8A3A2631AE2DDA2Full, 0x39146A8FAD8A8540ull, 0x7EBE1066066D7A74ull, 0xCD905CD805CA251Bull,
+	0xF1EAE5B551A2841Cull, 0x42C4A90B5205DB73ull, 0x056ED3E2F9E22447ull, 0xB6409F5CFA457B28ull,
+	0xFB374270A266CC92ull, 0x48190ECEA1C193FDull, 0x0FB374270A266CC9ull, 0xBC9D3899098133A6ull,
+	0x80E781F45DE992A1ull, 0x33C9CD4A5E4ECDCEull, 0x7463B7A3F5A932FAull, 0xC74DFB1DF60E6D95ull,
+	0x0C96C5795D7870F4ull, 0xBFB889C75EDF2F9Bull, 0xF812F32EF538D0AFull, 0x4B3CBF90F69F8FC0ull,
+	0x774606FDA2F72EC7ull, 0xC4684A43A15071A8ull, 0x83C230AA0AB78E9Cull, 0x30EC7C140910D1F3ull,
+	0x86ACE348F355AADBull, 0x3582AFF6F0F2F5B4ull, 0x7228D51F5B150A80ull, 0xC10699A158B255EFull,
+	0xFD7C20CC0CDAF4E8ull, 0x4E526C720F7DAB87ull, 0x09F8169BA49A54B3ull, 0xBAD65A25A73D0BDCull,
+	0x710D64410C4B16BDull, 0xC22328FF0FEC49D2ull, 0x85895216A40BB6E6ull, 0x36A71EA8A7ACE989ull,
+	0x0ADDA7C5F3C4488Eull, 0xB9F3EB7BF06317E1ull, 0xFE5991925B84E8D5ull, 0x4D77DD2C5823B7BAull,
+	0x64B62BCAEBC387A1ull, 0xD7986774E864D8CEull, 0x90321D9D438327FAull, 0x231C512340247895ull,
+	0x1F66E84E144CD992ull, 0xAC48A4F017EB86FDull, 0xEBE2DE19BC0C79C9ull, 0x58CC92A7BFAB26A6ull,
+	0x9317ACC314DD3BC7ull, 0x2039E07D177A64A8ull, 0x67939A94BC9D9B9Cull, 0xD4BDD62ABF3AC4F3ull,
+	0xE8C76F47EB5265F4ull, 0x5BE923F9E8F53A9Bull, 0x1C4359104312C5AFull, 0xAF6D15AE40B59AC0ull,
+	0x192D8AF2BAF0E1E8ull, 0xAA03C64CB957BE87ull, 0xEDA9BCA512B041B3ull, 0x5E87F01B11171EDCull,
+	0x62FD4976457FBFDBull, 0xD1D305C846D8E0B4ull, 0x96797F21ED3F1F80ull, 0x2557339FEE9840EFull,
+	0xEE8C0DFB45EE5D8Eull, 0x5DA24145464902E1ull, 0x1A083BACEDAEFDD5ull, 0xA9267712EE09A2BAull,
+	0x955CCE7FBA6103BDull, 0x267282C1B9C65CD2ull, 0x61D8F8281221A3E6ull, 0xD2F6B4961186FC89ull,
+	0x9F8169BA49A54B33ull, 0x2CAF25044A02145Cull, 0x6B055FEDE1E5EB68ull, 0xD82B1353E242B407ull,
+	0xE451AA3EB62A1500ull, 0x577FE680B58D4A6Full, 0x10D59C691E6AB55Bull, 0xA3FBD0D71DCDEA34ull,
+	0x6820EEB3B6BBF755ull, 0xDB0EA20DB51CA83Aull, 0x9CA4D8E41EFB570Eull, 0x2F8A945A1D5C0861ull,
+	0x13F02D374934A966ull, 0xA0DE61894A93F609ull, 0xE7741B60E174093Dull, 0x545A57DEE2D35652ull,
+	0xE21AC88218962D7Aull, 0x5134843C1B317215ull, 0x169EFED5B0D68D21ull, 0xA5B0B26BB371D24Eull,
+	0x99CA0B06E7197349ull, 0x2AE447B8E4BE2C26ull, 0x6D4E3D514F59D312ull, 0xDE6071EF4CFE8C7Dull,
+	0x15BB4F8BE788911Cull, 0xA6950335E42FCE73ull, 0xE13F79DC4FC83147ull, 0x521135624C6F6E28ull,
+	0x6E6B8C0F1807CF2Full, 0xDD45C0B11BA09040ull, 0x9AEFBA58B0476F74ull, 0x29C1F6E6B3E0301Bull,
+	0xC96C5795D7870F42ull, 0x7A421B2BD420502Dull, 0x3DE861C27FC7AF19ull, 0x8EC62D7C7C60F076ull,
+	0xB2BC941128085171ull, 0x0192D8AF2BAF0E1Eull, 0x4638A2468048F12Aull, 0xF516EEF883EFAE45ull,
+	0x3ECDD09C2899B324ull, 0x8DE39C222B3EEC4Bull, 0xCA49E6CB80D9137Full, 0x7967AA75837E4C10ull,
+	0x451D1318D716ED17ull, 0xF6335FA6D4B1B278ull, 0xB199254F7F564D4Cull, 0x02B769F17CF11223ull,
+	0xB4F7F6AD86B4690Bull, 0x07D9BA1385133664ull, 0x4073C0FA2EF4C950ull, 0xF35D8C442D53963Full,
+	0xCF273529793B3738ull, 0x7C0979977A9C6857ull, 0x3BA3037ED17B9763ull, 0x888D4FC0D2DCC80Cull,
+	0x435671A479AAD56Dull, 0xF0783D1A7A0D8A02ull, 0xB7D247F3D1EA7536ull, 0x04FC0B4DD24D2A59ull,
+	0x3886B22086258B5Eull, 0x8BA8FE9E8582D431ull, 0xCC0284772E652B05ull, 0x7F2CC8C92DC2746Aull,
+	0x325B15E575E1C3D0ull, 0x8175595B76469CBFull, 0xC6DF23B2DDA1638Bull, 0x75F16F0CDE063CE4ull,
+	0x498BD6618A6E9DE3ull, 0xFAA59ADF89C9C28Cull, 0xBD0FE036222E3DB8ull, 0x0E21AC88218962D7ull,
+	0xC5FA92EC8AFF7FB6ull, 0x76D4DE52895820D9ull, 0x317EA4BB22BFDFEDull, 0x8250E80521188082ull,
+	0xBE2A516875702185ull, 0x0D041DD676D77EEAull, 0x4AAE673FDD3081DEull, 0xF9802B81DE97DEB1ull,
+	0x4FC0B4DD24D2A599ull, 0xFCEEF8632775FAF6ull, 0xBB44828A8C9205C2ull, 0x086ACE348F355AADull,
+	0x34107759DB5DFBAAull, 0x873E3BE7D8FAA4C5ull, 0xC094410E731D5BF1ull, 0x73BA0DB070BA049Eull,
+	0xB86133D4DBCC19FFull, 0x0B4F7F6AD86B4690ull, 0x4CE50583738CB9A4ull, 0xFFCB493D702BE6CBull,
+	0xC3B1F050244347CCull, 0x709FBCEE27E418A3ull, 0x3735C6078C03E797ull, 0x841B8AB98FA4B8F8ull,
+	0xADDA7C5F3C4488E3ull, 0x1EF430E13FE3D78Cull, 0x595E4A08940428B8ull, 0xEA7006B697A377D7ull,
+	0xD60ABFDBC3CBD6D0ull, 0x6524F365C06C89BFull, 0x228E898C6B8B768Bull, 0x91A0C532682C29E4ull,
+	0x5A7BFB56C35A3485ull, 0xE955B7E8C0FD6BEAull, 0xAEFFCD016B1A94DEull, 0x1DD181BF68BDCBB1ull,
+	0x21AB38D23CD56AB6ull, 0x9285746C3F7235D9ull, 0xD52F0E859495CAEDull, 0x6601423B97329582ull,
+	0xD041DD676D77EEAAull, 0x636F91D96ED0B1C5ull, 0x24C5EB30C5374EF1ull, 0x97EBA78EC690119Eull,
+	0xAB911EE392F8B099ull, 0x18BF525D915FEFF6ull, 0x5F1528B43AB810C2ull, 0xEC3B640A391F4FADull,
+	0x27E05A6E926952CCull, 0x94CE16D091CE0DA3ull, 0xD3646C393A29F297ull, 0x604A2087398EADF8ull,
+	0x5C3099EA6DE60CFFull, 0xEF1ED5546E415390ull, 0xA8B4AFBDC5A6ACA4ull, 0x1B9AE303C601F3CBull,
+	0x56ED3E2F9E224471ull, 0xE5C372919D851B1Eull, 0xA26908783662E42Aull, 0x114744C635C5BB45ull,
+	0x2D3DFDAB61AD1A42ull, 0x9E13B115620A452Dull, 0xD9B9CBFCC9EDBA19ull, 0x6A978742CA4AE576ull,
+	0xA14CB926613CF817ull, 0x1262F598629BA778ull, 0x55C88F71C97C584Cull, 0xE6E6C3CFCADB0723ull,
+	0xDA9C7AA29EB3A624ull, 0x69B2361C9D14F94Bull, 0x2E184CF536F3067Full, 0x9D36004B35545910ull,
+	0x2B769F17CF112238ull, 0x9858D3A9CCB67D57ull, 0xDFF2A94067518263ull, 0x6CDCE5FE64F6DD0Cull,
+	0x50A65C93309E7C0Bull, 0xE388102D33392364ull, 0xA4226AC498DEDC50ull, 0x170C267A9B79833Full,
+	0xDCD7181E300F9E5Eull, 0x6FF954A033A8C131ull, 0x28532E49984F3E05ull, 0x9B7D62F79BE8616Aull,
+	0xA707DB9ACF80C06Dull, 0x14299724CC279F02ull, 0x5383EDCD67C06036ull, 0xE0ADA17364673F59ull,
+};
+
+// Check CRC-64 Reversed (CRC64B) table (returns False on error; can be used to generate table)
+Bool Crc64BTableCheck()
+{
+	int i, j;
+	u64 k;
+
+	for(i = 0; i < 256; i++)
+	{
+		k = i;
+		for (j = 8; j > 0; j--)
+		{
+			if ((k & 1) == 0)
+				k >>= 1;
+			else
+				k = (k >> 1) ^ CRC64B_POLY;
+		}
+		// Crc64BTable[i] = k; // generate table
+		if (Crc64BTable[i] != k) return False; // check table
+	}
+	return True;
+}
+
+// Calculate CRC-64 Reversed (CRC64B), 1 byte - tabled version (requires 1 KB of flash memory)
+u64 Crc64BByteTab(u64 crc, u8 data)
+{
+	crc = ~crc;
+	return ~Crc64BTable[(crc ^ data) & 0xff] ^ (crc >> 8);
+}
+
+// Calculate CRC-64 Reversed (CRC64B), 1 byte - slow version
+u64 Crc64BByteSlow(u64 crc, u8 data)
+{
+	int i;
+	crc = ~crc;
+	crc ^= data;
+	for (i = 8; i > 0; i--)
+	{
+		if ((crc & 1) == 0)
+			crc >>= 1;
+		else
+			crc = (crc >> 1) ^ CRC64B_POLY;
+	}
+	return ~crc;
+}
+
+// Calculate CRC-64 Reversed (CRC64B), buffer - tabled version (requires 2 KB of flash memory)
+u64 Crc64BBufTab(u64 crc, const void* buf, int len)
+{
+	const u8* s = (const u8*)buf;
+	crc = ~crc;
+
+	for (; len > 0; len--)
+	{
+		// Reflect formula
+		crc = Crc64BTable[(crc ^ *s++) & 0xff] ^ (crc >> 8);
+	}
+	return ~crc;
+}
+
+// Calculate CRC-64 Reversed (CRC64B), buffer - slow version
+u64 Crc64BBufSlow(u64 crc, const void* buf, int len)
+{
+	const u8* s = (const u8*)buf;
+	crc = ~crc;
+	int i;
+
+	for (; len > 0; len--)
+	{
+		crc ^= *s++;
+		for (i = 8; i > 0; i--)
+		{
+			if ((crc & 1) == 0)
+				crc >>= 1;
+			else
+				crc = (crc >> 1) ^ CRC64B_POLY;
+		}
+	}
+	return ~crc;
+}
+
+// Calculate CRC-64 Reversed (CRC64B) - tabled version (requires 2 KB of flash memory)
+//   Calculation speed: 220 us per 1 KB
+u64 Crc64BTab(const void* buf, int len)
+{
+	return Crc64BBufTab(CRC64B_INIT, buf, len);
+}
+
+// Calculate CRC-64 Reversed (CRC64B) - slow version
+//   Calculation speed: 2200 us per 1 KB
+u64 Crc64BSlow(const void* buf, int len)
+{
+	return Crc64BBufSlow(CRC64B_INIT, buf, len);
+}
+
+// Check CRC-64 Reversed (CRC64B) calculations (returns False on error)
+Bool Crc64BCheck()
+{
+	u64 crc;
+	int i;
+	const u8* src;
+
+	// Check CRC-64 table
+	if (!Crc64BTableCheck()) return False;
+
+	// Check CRC-64 pattern
+#define CRC64B_RES1 0x995DC9BBDF1939FAull
+#define CRC64B_RES2 0xF10B3B2CDEF45CFAull
+#define CRC64B_RES3 0xACB732293EDC5DC8ull
+	if (Crc64BTab(CrcPat1, CRCPAT1LEN) != CRC64B_RES1) return False;
+	if (Crc64BTab(CrcPat2, CRCPAT2LEN) != CRC64B_RES2) return False;
+	if (Crc64BTab(CrcPat3, CRCPAT3LEN) != CRC64B_RES3) return False;
+
+	if (Crc64BSlow(CrcPat1, CRCPAT1LEN) != CRC64B_RES1) return False;
+	if (Crc64BSlow(CrcPat2, CRCPAT2LEN) != CRC64B_RES2) return False;
+	if (Crc64BSlow(CrcPat3, CRCPAT3LEN) != CRC64B_RES3) return False;
+
+	// CRC-64 buffer version
+#define CRC64B_SPLIT 503
+	crc = Crc64BBufTab(CRC64B_INIT, CrcPat3, CRC64B_SPLIT);
+	crc = Crc64BBufTab(crc, (const u8*)CrcPat3+CRC64B_SPLIT, CRCPAT3LEN-CRC64B_SPLIT);
+	if (crc != CRC64B_RES3) return False;
+
+	crc = Crc64BBufSlow(CRC64B_INIT, CrcPat3, CRC64B_SPLIT);
+	crc = Crc64BBufSlow(crc, (const u8*)CrcPat3+CRC64B_SPLIT, CRCPAT3LEN-CRC64B_SPLIT);
+	if (crc != CRC64B_RES3) return False;
+
+	// CRC-64 byte version
+	crc = CRC64B_INIT;
+	src = (const u8*)CrcPat3;
+	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc64BByteTab(crc, *src++);
+	if (crc != CRC64B_RES3) return False;
+
+	crc = CRC64B_INIT;
+	src = (const u8*)CrcPat3;
+	for (i = 0; i < CRCPAT3LEN; i++) crc = Crc64BByteSlow(crc, *src++);
+	if (crc != CRC64B_RES3) return False;
+
+	return True;
+}
+
 // ============================================================================
 //                           CRC-32 Normal (CRC32A)
 // ============================================================================
@@ -1343,7 +2203,7 @@ u8 ParityBufDMA(u8 par, const void* buf, int len)
 //   Calculation speed: 90 us per 1 KB
 u8 ParitySoft(const void* buf, int len)
 {
-	return ParityBufSoft(0, buf, len);
+	return ParityBufSoft(PARITY_INIT, buf, len);
 }
 
 #if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
@@ -1352,9 +2212,78 @@ u8 ParitySoft(const void* buf, int len)
 //   Calculation speed: 2 us per 1 KB
 u8 ParityDMA(const void* buf, int len)
 {
-	return ParityBufDMA(0, buf, len);
+	return ParityBufDMA(PARITY_INIT, buf, len);
 }
 #endif // USE_DMA
+
+// check parity calculation (returns False on error)
+Bool ParityCheck()
+{
+	u8 crc;
+	int i;
+	const u8* src;
+
+	// Check parity pattern
+#define CRCPAR_RES1 1
+#define CRCPAR_RES2 1
+#define CRCPAR_RES3 0
+	if (ParitySoft(CrcPat1, CRCPAT1LEN) != CRCPAR_RES1) return False;
+	if (ParitySoft(CrcPat2, CRCPAT2LEN) != CRCPAR_RES2) return False;
+	if (ParitySoft(CrcPat3, CRCPAT3LEN) != CRCPAR_RES3) return False;
+
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
+	if (ParityDMA(CrcPat1, CRCPAT1LEN) != CRCPAR_RES1) return False;
+	if (ParityDMA(CrcPat2, CRCPAT2LEN) != CRCPAR_RES2) return False;
+	if (ParityDMA(CrcPat3, CRCPAT3LEN) != CRCPAR_RES3) return False;
+#endif // USE_DMA
+
+	// Parity buffer version
+#define CRCPAR_SPLIT 503
+	crc = ParityBufSoft(PARITY_INIT, CrcPat3, CRCPAR_SPLIT);
+	crc = ParityBufSoft(crc, (const u8*)CrcPat3+CRCPAR_SPLIT, CRCPAT3LEN-CRCPAR_SPLIT);
+	if (crc != CRCPAR_RES3) return False;
+
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
+	crc = ParityBufDMA(PARITY_INIT, CrcPat3, CRCPAR_SPLIT);
+	crc = ParityBufDMA(crc, (const u8*)CrcPat3+CRCPAR_SPLIT, CRCPAT3LEN-CRCPAR_SPLIT);
+	if (crc != CRCPAR_RES3) return False;
+#endif // USE_DMA
+
+	// Parity byte version
+	crc = PARITY_INIT;
+	src = (const u8*)CrcPat1;
+	for (i = 0; i < CRCPAT1LEN; i++) crc = ParityByteSoft(crc, *src++);
+	if (crc != CRCPAR_RES1) return False;
+
+	crc = PARITY_INIT;
+	src = (const u8*)CrcPat2;
+	for (i = 0; i < CRCPAT2LEN; i++) crc = ParityByteSoft(crc, *src++);
+	if (crc != CRCPAR_RES2) return False;
+
+	crc = PARITY_INIT;
+	src = (const u8*)CrcPat3;
+	for (i = 0; i < CRCPAT3LEN; i++) crc = ParityByteSoft(crc, *src++);
+	if (crc != CRCPAR_RES3) return False;
+
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
+	crc = PARITY_INIT;
+	src = (const u8*)CrcPat1;
+	for (i = 0; i < CRCPAT1LEN; i++) crc = ParityByteDMA(crc, *src++);
+	if (crc != CRCPAR_RES1) return False;
+
+	crc = PARITY_INIT;
+	src = (const u8*)CrcPat2;
+	for (i = 0; i < CRCPAT2LEN; i++) crc = ParityByteDMA(crc, *src++);
+	if (crc != CRCPAR_RES2) return False;
+
+	crc = PARITY_INIT;
+	src = (const u8*)CrcPat3;
+	for (i = 0; i < CRCPAT3LEN; i++) crc = ParityByteDMA(crc, *src++);
+	if (crc != CRCPAR_RES3) return False;
+#endif // USE_DMA
+
+	return True;
+}
 
 // ============================================================================
 //            Simple checksum on 8-bit data with 32-bit result
@@ -1411,6 +2340,75 @@ u32 Sum8DMA(const void* buf, int len)
 	return Sum8BufDMA(SUM8_INIT, buf, len);
 }
 #endif // USE_DMA
+
+// check 8-bit checksum calculation (returns False on error)
+Bool Sum8Check()
+{
+	u32 crc;
+	int i;
+	const u8* src;
+
+	// Check sum8 pattern
+#define SUM8_RES1 0x000001DD
+#define SUM8_RES2 0x0000014B
+#define SUM8_RES3 0x0001FE00
+	if (Sum8Soft(CrcPat1, CRCPAT1LEN) != SUM8_RES1) return False;
+	if (Sum8Soft(CrcPat2, CRCPAT2LEN) != SUM8_RES2) return False;
+	if (Sum8Soft(CrcPat3, CRCPAT3LEN) != SUM8_RES3) return False;
+
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
+	if (Sum8DMA(CrcPat1, CRCPAT1LEN) != SUM8_RES1) return False;
+	if (Sum8DMA(CrcPat2, CRCPAT2LEN) != SUM8_RES2) return False;
+	if (Sum8DMA(CrcPat3, CRCPAT3LEN) != SUM8_RES3) return False;
+#endif // USE_DMA
+
+	// Sum8 buffer version
+#define SUM8_SPLIT 503
+	crc = Sum8BufSoft(SUM8_INIT, CrcPat3, SUM8_SPLIT);
+	crc = Sum8BufSoft(crc, (const u8*)CrcPat3+SUM8_SPLIT, CRCPAT3LEN-SUM8_SPLIT);
+	if (crc != SUM8_RES3) return False;
+
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
+	crc = Sum8BufDMA(SUM8_INIT, CrcPat3, SUM8_SPLIT);
+	crc = Sum8BufDMA(crc, (const u8*)CrcPat3+SUM8_SPLIT, CRCPAT3LEN-SUM8_SPLIT);
+	if (crc != SUM8_RES3) return False;
+#endif // USE_DMA
+
+	// Sum8 byte version
+	crc = SUM8_INIT;
+	src = (const u8*)CrcPat1;
+	for (i = 0; i < CRCPAT1LEN; i++) crc = Sum8ByteSoft(crc, *src++);
+	if (crc != SUM8_RES1) return False;
+
+	crc = SUM8_INIT;
+	src = (const u8*)CrcPat2;
+	for (i = 0; i < CRCPAT2LEN; i++) crc = Sum8ByteSoft(crc, *src++);
+	if (crc != SUM8_RES2) return False;
+
+	crc = SUM8_INIT;
+	src = (const u8*)CrcPat3;
+	for (i = 0; i < CRCPAT3LEN; i++) crc = Sum8ByteSoft(crc, *src++);
+	if (crc != SUM8_RES3) return False;
+
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
+	crc = SUM8_INIT;
+	src = (const u8*)CrcPat1;
+	for (i = 0; i < CRCPAT1LEN; i++) crc = Sum8ByteDMA(crc, *src++);
+	if (crc != SUM8_RES1) return False;
+
+	crc = SUM8_INIT;
+	src = (const u8*)CrcPat2;
+	for (i = 0; i < CRCPAT2LEN; i++) crc = Sum8ByteDMA(crc, *src++);
+	if (crc != SUM8_RES2) return False;
+
+	crc = SUM8_INIT;
+	src = (const u8*)CrcPat3;
+	for (i = 0; i < CRCPAT3LEN; i++) crc = Sum8ByteDMA(crc, *src++);
+	if (crc != SUM8_RES3) return False;
+#endif // USE_DMA
+
+	return True;
+}
 
 // ============================================================================
 //            Simple checksum on 16-bit data with 32-bit result
@@ -1474,6 +2472,75 @@ u32 Sum16DMA(const u16* buf, int num)
 }
 #endif // USE_DMA
 
+// check 16-bit checksum calculation (returns False on error)
+Bool Sum16Check()
+{
+	u32 crc;
+	int i;
+	const u16* src;
+
+	// Check sum16 pattern
+#define SUM16_RES1 0x0000D4D0
+#define SUM16_RES2 0x00004446
+#define SUM16_RES3 0x00FFFF00
+	if (Sum16Soft((const u16*)CrcPat1, CRCPAT1LEN/2) != SUM16_RES1) return False;
+	if (Sum16Soft((const u16*)CrcPat2, (CRCPAT2LEN+1)/2) != SUM16_RES2) return False;
+	if (Sum16Soft((const u16*)CrcPat3, (CRCPAT3LEN+1)/2) != SUM16_RES3) return False;
+
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
+	if (Sum16DMA((const u16*)CrcPat1, CRCPAT1LEN/2) != SUM16_RES1) return False;
+	if (Sum16DMA((const u16*)CrcPat2, (CRCPAT2LEN+1)/2) != SUM16_RES2) return False;
+	if (Sum16DMA((const u16*)CrcPat3, (CRCPAT3LEN+1)/2) != SUM16_RES3) return False;
+#endif // USE_DMA
+
+	// Sum16 buffer version
+#define SUM16_SPLIT ((503+1)/2)
+	crc = Sum16BufSoft(SUM16_INIT, (const u16*)CrcPat3, SUM16_SPLIT);
+	crc = Sum16BufSoft(crc, (const u16*)CrcPat3+SUM16_SPLIT, (CRCPAT3LEN+1)/2-SUM16_SPLIT);
+	if (crc != SUM16_RES3) return False;
+
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
+	crc = Sum16BufDMA(SUM16_INIT, (const u16*)CrcPat3, SUM16_SPLIT);
+	crc = Sum16BufDMA(crc, (const u16*)CrcPat3+SUM16_SPLIT, (CRCPAT3LEN+1)/2-SUM16_SPLIT);
+	if (crc != SUM16_RES3) return False;
+#endif // USE_DMA
+
+	// Sum16 word version
+	crc = SUM16_INIT;
+	src = (const u16*)CrcPat1;
+	for (i = 0; i < CRCPAT1LEN/2; i++) crc = Sum16WordSoft(crc, *src++);
+	if (crc != SUM16_RES1) return False;
+
+	crc = SUM16_INIT;
+	src = (const u16*)CrcPat2;
+	for (i = 0; i < (CRCPAT2LEN+1)/2; i++) crc = Sum16WordSoft(crc, *src++);
+	if (crc != SUM16_RES2) return False;
+
+	crc = SUM16_INIT;
+	src = (const u16*)CrcPat3;
+	for (i = 0; i < (CRCPAT3LEN+1)/2; i++) crc = Sum16WordSoft(crc, *src++);
+	if (crc != SUM16_RES3) return False;
+
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
+	crc = SUM16_INIT;
+	src = (const u16*)CrcPat1;
+	for (i = 0; i < CRCPAT1LEN/2; i++) crc = Sum16WordDMA(crc, *src++);
+	if (crc != SUM16_RES1) return False;
+
+	crc = SUM16_INIT;
+	src = (const u16*)CrcPat2;
+	for (i = 0; i < (CRCPAT2LEN+1)/2; i++) crc = Sum16WordDMA(crc, *src++);
+	if (crc != SUM16_RES2) return False;
+
+	crc = SUM16_INIT;
+	src = (const u16*)CrcPat3;
+	for (i = 0; i < (CRCPAT3LEN+1)/2; i++) crc = Sum16WordDMA(crc, *src++);
+	if (crc != SUM16_RES3) return False;
+#endif // USE_DMA
+
+	return True;
+}
+
 // ============================================================================
 //            Simple checksum on 32-bit data with 32-bit result
 // ============================================================================
@@ -1536,6 +2603,75 @@ u32 Sum32DMA(const u32* buf, int num)
 }
 #endif // USE_DMA
 
+// check 32-bit checksum calculation (returns False on error)
+Bool Sum32Check()
+{
+	u32 crc;
+	int i;
+	const u32* src;
+
+	// Check sum32 pattern
+#define SUM32_RES1 0x6C6A6866
+#define SUM32_RES2 0x3E4A05FC
+#define SUM32_RES3 0xFFFFFF80
+	if (Sum32Soft((const u32*)CrcPat1, CRCPAT1LEN/4) != SUM32_RES1) return False;
+	if (Sum32Soft((const u32*)CrcPat2, (CRCPAT2LEN+3)/4) != SUM32_RES2) return False;
+	if (Sum32Soft((const u32*)CrcPat3, (CRCPAT3LEN+3)/4) != SUM32_RES3) return False;
+
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
+	if (Sum32DMA((const u32*)CrcPat1, CRCPAT1LEN/4) != SUM32_RES1) return False;
+	if (Sum32DMA((const u32*)CrcPat2, (CRCPAT2LEN+3)/4) != SUM32_RES2) return False;
+	if (Sum32DMA((const u32*)CrcPat3, (CRCPAT3LEN+3)/4) != SUM32_RES3) return False;
+#endif // USE_DMA
+
+	// Sum32 buffer version
+#define SUM32_SPLIT ((503+3)/4)
+	crc = Sum32BufSoft(SUM32_INIT, (const u32*)CrcPat3, SUM32_SPLIT);
+	crc = Sum32BufSoft(crc, (const u32*)CrcPat3+SUM32_SPLIT, (CRCPAT3LEN+3)/4-SUM32_SPLIT);
+	if (crc != SUM32_RES3) return False;
+
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
+	crc = Sum32BufDMA(SUM32_INIT, (const u32*)CrcPat3, SUM32_SPLIT);
+	crc = Sum32BufDMA(crc, (const u32*)CrcPat3+SUM32_SPLIT, (CRCPAT3LEN+3)/4-SUM32_SPLIT);
+	if (crc != SUM32_RES3) return False;
+#endif // USE_DMA
+
+	// Sum32 dword version
+	crc = SUM32_INIT;
+	src = (const u32*)CrcPat1;
+	for (i = 0; i < CRCPAT1LEN/4; i++) crc = Sum32DWordSoft(crc, *src++);
+	if (crc != SUM32_RES1) return False;
+
+	crc = SUM32_INIT;
+	src = (const u32*)CrcPat2;
+	for (i = 0; i < (CRCPAT2LEN+3)/4; i++) crc = Sum32DWordSoft(crc, *src++);
+	if (crc != SUM32_RES2) return False;
+
+	crc = SUM32_INIT;
+	src = (const u32*)CrcPat3;
+	for (i = 0; i < (CRCPAT3LEN+3)/4; i++) crc = Sum32DWordSoft(crc, *src++);
+	if (crc != SUM32_RES3) return False;
+
+#if USE_DMA	// use DMA controller (sdk_dma.c, sdk_dma.h)
+	crc = SUM32_INIT;
+	src = (const u32*)CrcPat1;
+	for (i = 0; i < CRCPAT1LEN/4; i++) crc = Sum32DWordDMA(crc, *src++);
+	if (crc != SUM32_RES1) return False;
+
+	crc = SUM32_INIT;
+	src = (const u32*)CrcPat2;
+	for (i = 0; i < (CRCPAT2LEN+3)/4; i++) crc = Sum32DWordDMA(crc, *src++);
+	if (crc != SUM32_RES2) return False;
+
+	crc = SUM32_INIT;
+	src = (const u32*)CrcPat3;
+	for (i = 0; i < (CRCPAT3LEN+3)/4; i++) crc = Sum32DWordDMA(crc, *src++);
+	if (crc != SUM32_RES3) return False;
+#endif // USE_DMA
+
+	return True;
+}
+
 // ============================================================================
 //                                  CRC-XOR
 // ============================================================================
@@ -1565,6 +2701,46 @@ u16 CrcXorBuf(u16 crc, const void* buf, int len)
 u16 CrcXor(const void* buf, int len)
 {
 	return CrcXorBuf(CRCXOR_INIT, buf, len);
+}
+
+// check Xor checksum calculation (returns False on error)
+Bool CrcXorCheck()
+{
+	u16 crc;
+	int i;
+	const u8* src;
+
+	// Check sum8 pattern
+#define CRCXOR_RES1 0x2035
+#define CRCXOR_RES2 0x03B0
+#define CRCXOR_RES3 0x0000
+	if (CrcXor(CrcPat1, CRCPAT1LEN) != CRCXOR_RES1) return False;
+	if (CrcXor(CrcPat2, CRCPAT2LEN) != CRCXOR_RES2) return False;
+	if (CrcXor(CrcPat3, CRCPAT3LEN) != CRCXOR_RES3) return False;
+
+	// CrcXor buffer version
+#define CRCXOR_SPLIT 503
+	crc = CrcXorBuf(CRCXOR_INIT, CrcPat3, CRCXOR_SPLIT);
+	crc = CrcXorBuf(crc, (const u8*)CrcPat3+CRCXOR_SPLIT, CRCPAT3LEN-CRCXOR_SPLIT);
+	if (crc != CRCXOR_RES3) return False;
+
+	// CrcXor byte version
+	crc = CRCXOR_INIT;
+	src = (const u8*)CrcPat1;
+	for (i = 0; i < CRCPAT1LEN; i++) crc = CrcXorByte(crc, *src++);
+	if (crc != CRCXOR_RES1) return False;
+
+	crc = CRCXOR_INIT;
+	src = (const u8*)CrcPat2;
+	for (i = 0; i < CRCPAT2LEN; i++) crc = CrcXorByte(crc, *src++);
+	if (crc != CRCXOR_RES2) return False;
+
+	crc = CRCXOR_INIT;
+	src = (const u8*)CrcPat3;
+	for (i = 0; i < CRCPAT3LEN; i++) crc = CrcXorByte(crc, *src++);
+	if (crc != CRCXOR_RES3) return False;
+
+	return True;
 }
 
 #endif // USE_CRC	// use CRC Check Sum (lib_crc.c, lib_crc.h)

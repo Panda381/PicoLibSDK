@@ -1,0 +1,1 @@
+Example of reading/writing an external serial flash using the PL022 SPI interface

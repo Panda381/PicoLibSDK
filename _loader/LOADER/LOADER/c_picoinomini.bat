@@ -1,2 +1,2 @@
 @echo off
-c.bat picoinomini
+c.bat picoinomini 0

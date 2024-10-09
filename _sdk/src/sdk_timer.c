@@ -23,8 +23,12 @@
 #include "../inc/sdk_cpu.h"
 #include "../inc/sdk_spinlock.h"
 
-// claimed alarms (0..3)
-u8 AlarmClaimed = 0;		// claimed alarms
+// ----------------------------------------------------------------------------
+//                     Microsecond timer (RP2350 uses TIMER0)
+// ----------------------------------------------------------------------------
+
+// claimed alarms
+Bool AlarmClaimed[ALARMS_NUM];	// claimed alarms
 
 #if USE_ORIGSDK		// include interface of original SDK
 static hardware_alarm_callback_t alarm_callbacks[NUM_TIMERS] = { NULL, NULL, NULL, NULL };
@@ -36,7 +40,7 @@ static void* timer_data[NUM_TIMERS] = { NULL, NULL, NULL, NULL };
 
 // get 64-bit absolute system time in [us] - fast method, but it is not atomic safe
 //   - do not use simultaneously from both processor cores and from interrupts
-u64 Time64Fast()
+u64 Time64Fast(void)
 {
 	u32 low = timer_hw->timelr; // get latched time LOW
 	cb(); // compiler barrier (or else the compiler could swap the order of operations)
@@ -45,7 +49,7 @@ u64 Time64Fast()
 }
 
 // get 64-bit absolute system time in [us] - atomic method (concurrently safe)
-u64 Time64()
+u64 Time64(void)
 {
 	u32 low, high;
 	u32 high2 = timer_hw->timerawh;  // get raw time HIGH
@@ -85,20 +89,16 @@ void WaitMs(int ms)
 // claim free alarm (returns -1 on error)
 s8 AlarmClaimFree(void)
 {
-	u8 inx, mask;
-	mask = 1;
+	int inx;
 	for (inx = 0; inx < ALARMS_NUM; inx++)
 	{
 		// check if alarm is already claimed
-		if ((AlarmClaimed & mask) == 0)
+		if (!AlarmClaimed[inx])
 		{
 			// claim this alarm
-			AlarmClaimed |= mask;
+			AlarmClaimed[inx] = True;
 			return inx;
 		}
-
-		// shift to next alarm
-		mask <<= 1;
 	}
 
 	// no free alarm
@@ -110,7 +110,7 @@ s8 AlarmClaimFree(void)
 // start alarm
 //   alarm = alarm number 0..3
 //   handler = interrupt handler
-//   time = time interval in [us] after which to activate first alarm (min 0 us, max 71 minutes)
+//   time = time interval in [us] after which to activate first alarm (min 3 us, max 71 minutes)
 // Vector table must be located in RAM
 // If vector table is not in RAM, use services with names isr_timer_0..isr_timer_3
 // Call AlarmAck on start of interrupt, then AlarmRestart to restart again, or AlarmStop to deactivate.
@@ -173,6 +173,258 @@ void AlarmStop(int alarm)
 
 	IRQ_UNLOCK;
 }
+
+#endif // USE_IRQ
+
+// ----------------------------------------------------------------------------
+//                  System clock timer (only RP2350; uses TIMER1)
+// ----------------------------------------------------------------------------
+
+#if RP2350		// 1=use MCU RP2350
+
+// claimed alarms
+Bool Alarm2Claimed[ALARMS_NUM];	// claimed alarms
+
+// get 64-bit absolute system time in sys_clk ticks - fast method, but it is not atomic safe
+//   - do not use simultaneously from both processor cores and from interrupts
+u64 TimeSysClk64Fast(void)
+{
+	u32 low = timer1_hw->timelr; // get latched time LOW
+	cb(); // compiler barrier (or else the compiler could swap the order of operations)
+	u32 high = timer1_hw->timehr; // get latched time HIGH
+	return ((u64)high << 32) | low;
+}
+
+// get 64-bit absolute system time in sys_clk ticks - atomic method (concurrently safe)
+u64 TimeSysClk64(void)
+{
+	u32 low, high;
+	u32 high2 = timer1_hw->timerawh;  // get raw time HIGH
+
+	do {
+		// accept new time HIGH
+		high = high2;
+
+		// get raw time LOW
+		cb(); // compiler barrier (or else the compiler could swap the order of operations)
+		low = timer1_hw->timerawl;
+
+		// get raw time HIGH again
+		cb(); // compiler barrier (or else the compiler could swap the order of operations)
+		high2 = timer1_hw->timerawh;
+
+	// check that HIGH has not changed, otherwise a re-read will be necessary
+	} while (high != high2);
+
+	// return result value
+	return ((u64)high << 32) | low;
+}
+
+// wait for delay in sys_clk ticks
+void WaitSysClk(u32 sysclk)
+{
+	u32 start = TimeSysClk();
+	while ((u32)(TimeSysClk() - start) < sysclk) {}
+}
+
+// claim free alarm (returns -1 on error)
+s8 Alarm2ClaimFree(void)
+{
+	int inx;
+	for (inx = 0; inx < ALARMS_NUM; inx++)
+	{
+		// check if alarm is already claimed
+		if (!Alarm2Claimed[inx])
+		{
+			// claim this alarm
+			Alarm2Claimed[inx] = True;
+			return inx;
+		}
+	}
+
+	// no free alarm
+	return -1;
+}
+
+#if USE_IRQ	// use IRQ interrupts (sdk_irq.c, sdk_irq.h)
+
+// start alarm
+//   alarm = alarm number 0..3
+//   handler = interrupt handler
+//   time = time interval in sys_clk after which to activate first alarm (min. 50)
+// Vector table must be located in RAM
+// If vector table is not in RAM, use services with names isr_timer_0..isr_timer_3
+// Call Alarm2Ack on start of interrupt, then Alarm2Restart to restart again, or Alarm2Stop to deactivate.
+// Alarm handler is shared between both processor cores. Only alarms of different numbers can be independent.
+void Alarm2Start(int alarm, irq_handler_t handler, u32 time)
+{
+	// stop previous alarm
+	Alarm2Stop(alarm);
+
+	// prepare interrupt IRQ
+	u8 irq = ALARM2_IRQ(alarm);
+
+	// set interrupt handler to VTOR interrupt table (VTOR should be in RAM)
+	SetHandler(irq, handler);
+
+	// enable interrupt on NVIC
+	NVIC_IRQEnable(irq);
+
+	// enable interrupt from the timer
+	RegSet(&timer1_hw->inte, BIT(alarm));
+
+	// arm timer
+	if (time < 50) time = 50;
+	IRQ_LOCK;
+	timer1_hw->alarm[alarm] = time + TimeSysClk();
+	IRQ_UNLOCK;
+}
+
+// restart alarm - can be called from an interrupt for a repeated alarm
+//   time = time interval in sys_clk after which to activate next alarm
+// The maximum achievable interrupt frequency is about 100 kHz.
+void Alarm2Restart(int alarm, u32 time)
+{
+	// re-arm timer
+	IRQ_LOCK;
+	time += timer1_hw->alarm[alarm]; // next absolute time
+	u32 t = TimeSysClk(); // current time
+	s32 dt = (s32)(time - t); // remaining time
+	if ((dt < 50) && (dt > -200)) time = t + 50;
+	timer1_hw->alarm[alarm] = time;
+	IRQ_UNLOCK;
+}
+
+// stop alarm - can be called from an interrupt if no next interrupt is required
+void Alarm2Stop(int alarm)
+{
+	IRQ_LOCK;
+
+	// disable interrupt from the timer
+	RegClr(&timer1_hw->inte, BIT(alarm));
+
+	// disarm alarm
+	timer1_hw->armed = BIT(alarm);
+
+	// acknowledge alarm request
+	Alarm2Ack(alarm);
+
+	// disable interrupt on NVIC
+	NVIC_IRQDisable(ALARM2_IRQ(alarm));
+
+	IRQ_UNLOCK;
+}
+
+#endif // USE_IRQ
+
+#endif // RP2350		// 1=use MCU RP2350
+
+// ----------------------------------------------------------------------------
+//                RISC-V platform machine-mode timer (only RP2350)
+// ----------------------------------------------------------------------------
+
+#if RP2350		// 1=use MCU RP2350
+
+// get 64-bit time from RISC-V machine-mode timer - fast method, but it is not atomic safe
+//   - do not use simultaneously from both processor cores and from interrupts
+u64 MTime64Fast(void)
+{
+	u32 low = sio_hw->mtime; // get time LOW
+	cb(); // compiler barrier (or else the compiler could swap the order of operations)
+	u32 high = sio_hw->mtimeh; // get time HIGH
+	return ((u64)high << 32) | low;
+}
+
+// get 64-bit time from RISC-V machine-mode timer - atomic method (concurrently safe)
+u64 MTime64(void)
+{
+	u32 low, high;
+	u32 high2 = sio_hw->mtimeh;  // get time HIGH
+
+	do {
+		// accept new time HIGH
+		high = high2;
+
+		// get time LOW
+		cb(); // compiler barrier (or else the compiler could swap the order of operations)
+		low = sio_hw->mtime;
+
+		// get raw time HIGH again
+		cb(); // compiler barrier (or else the compiler could swap the order of operations)
+		high2 = sio_hw->mtimeh;
+
+	// check that HIGH has not changed, otherwise a re-read will be necessary
+	} while (high != high2);
+
+	// return result value
+	return ((u64)high << 32) | low;
+}
+
+// set time to RISC-V machine-mode timer
+void MTimeSet(u64 time)
+{
+	// disable interrupts (so that the operation does not take too long and the LOW timer does not overflow)
+	IRQ_LOCK;
+
+	// reset timer LOW, to avoid the possibility of overflow into the HIGH
+	sio_hw->mtime  = 0;
+
+	// set timer HIGH
+	cb(); // compiler barrier (or else the compiler could swap the order of operations)
+	sio_hw->mtimeh = (u32)(time >> 32);
+
+	// set timer LOW
+	cb(); // compiler barrier (or else the compiler could swap the order of operations)
+	sio_hw->mtime = (u32)time;
+
+	// restore interrupts
+	IRQ_UNLOCK;
+}
+
+// get current compare value of RISC-V machine-mode timer
+u64 MTimeGetCmp(void)
+{
+	// disable interrupts (for case the interrupt would change the value of the register)
+	IRQ_LOCK;
+
+	// get value
+	u32 low = sio_hw->mtimecmp; // get timecmp LOW
+	u32 high = sio_hw->mtimecmph; // get timecmp HIGH
+
+	// restore interrupts
+	IRQ_UNLOCK;
+
+	return ((u64)high << 32) | low;
+}
+
+// set compare value of RISC-V machine-mode timer (each core has its own copy of compare registers)
+//  Interrupt is asserted whenever the 64-bit mtime value is greater than or equal to compare value.
+//  Raises IRQ_SIO_MTIMECMP interrupt on ARM, and mip.mtip interrupt on RISC-V.
+void MTimeCmp(u64 timecmp)
+{
+	// disable interrupts (for case the interrupt would change the value of the register)
+	IRQ_LOCK;
+
+	// disable compare value
+	sio_hw->mtimecmph = (u32)-1;
+
+	// set new value LOW
+	cb(); // compiler barrier (or else the compiler could swap the order of operations)
+	sio_hw->mtimecmp = (u32)timecmp;
+
+	// set new value HIGH
+	cb(); // compiler barrier (or else the compiler could swap the order of operations)
+	sio_hw->mtimecmph = (u32)(timecmp >> 32);
+	
+	// restore interrupts
+	IRQ_UNLOCK;
+}
+
+#endif // RP2350
+
+// ----------------------------------------------------------------------------
+//                          Original-SDK interface
+// ----------------------------------------------------------------------------
 
 #if USE_ORIGSDK		// include interface of original SDK
 
@@ -530,7 +782,5 @@ bool cancel_repeating_timer(repeating_timer_t *timer)
 }
 
 #endif // USE_ORIGSDK
-
-#endif // USE_IRQ
 
 #endif // USE_TIMER	// use Timer with alarm (sdk_timer.c, sdk_timer.h)

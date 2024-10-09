@@ -65,14 +65,14 @@ INLINE s32 RandS32() { return (s32)RandShift(); }
 //  Takes 2 us
 INLINE s64 RandS64() { return (s64)RandU64(); }
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 // generate float random number in range 0 (including) to 1 (excluding)
 // (maximum number is 0.99999994, minimal step 0.00000006)
 //  Takes 2 us
 float RandFloat();
 #endif // USE_FLOAT		// use float support
 
-#if USE_DOUBLE		// use double support
+#if USE_DOUBLE		// use double support 1=in RAM, 2=in Flash
 // generate double random number in range 0 (including) to 1 (excluding)
 // (maximum number is 0.999999999999996, step 0.0000000000000035, 14 valid digits)
 //  Takes 4 us
@@ -111,7 +111,7 @@ s32 RandS32Max(s32 max);
 //  Takes 3 us
 s64 RandS64Max(s64 max);
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 // generate float random number in range 0 (including) to MAX (excluding)
 //  Takes 2 us
 float RandFloatMax(float max);
@@ -163,7 +163,7 @@ s32 RandS32MinMax(s32 min, s32 max);
 //  Takes 3 us
 s64 RandS64MinMax(s64 min, s64 max);
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 // generate float random number in range MIN (including) to MAX (excluding)
 //  The order of MIN and MAX does not matter.
 //  Takes 2 us
@@ -177,7 +177,7 @@ float RandFloatMinMax(float min, float max);
 double RandDoubleMinMax(double min, double max);
 #endif // USE_DOUBLE		// use double support
 
-#if USE_FLOAT		// use float support
+#if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 // generate Gaussian float random number (mean = center, default use 0, sigma = width, default use 1)
 //  Takes 23 us
 float RandFloatGauss(float mean, float sigma);
@@ -199,7 +199,7 @@ s16 RandTestS16();
 s32 RandTestS32();
 s64 RandTestS64();
 
-#if USE_FLOAT || USE_DOUBLE	// use float or double support
+#if USE_FLOAT || USE_DOUBLE	// use float or double support 1=in RAM, 2=in Flash
 // 1D coordinate Perlin noise generator (output -1..+1)
 //  Takes 2 us
 float Noise1D(int x, int seed);

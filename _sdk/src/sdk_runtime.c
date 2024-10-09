@@ -37,12 +37,18 @@
 #include "../usb_inc/sdk_usb_dev_cdc.h"
 #include "../inc/sdk_rosc.h"
 #include "../inc/sdk_uart.h"
+#include "../inc/sdk_powman.h"
 
 #if !NO_FLASH	// In the RAM version, the vector table is already in RAM
 #if USE_IRQ	// use IRQ interrupts (sdk_irq.c, sdk_irq.h)
 // copy of vector table in RAM ... must be aligned to 256 bytes
-u32 __attribute__((section(".ram_vector_table"))) __attribute__((aligned(256))) RamVectorTable[48];
+u32 __attribute__((section(".ram_vector_table"))) __attribute__((aligned(256))) RamVectorTable[VECTOR_TABLE_SIZE];
 #endif
+#endif
+
+#if RISCV
+// initialize interrupts on RISC-V
+void RuntimeInitCoreIRQ();
 #endif
 
 // Device init
@@ -53,11 +59,16 @@ void RuntimeInit()
 {
 	// reset all peripherals to put system into a known state, except QSPI and PLLs
 	ResetPeripheryOnMask(RESET_ALLBITS & ~(BIT(RESET_IO_QSPI) | BIT(RESET_PADS_QSPI) |
-					BIT(RESET_PLL_USB) | BIT(RESET_PLL_SYS)));
+		BIT(RESET_PLL_USB) | BIT(RESET_PLL_SYS) | BIT(RESET_USBCTRL) | BIT(RESET_SYSCFG)));
 
 	// restart peripherals which are clocked only by clk_sys and clk_ref, and wait to complete
+#if RP2040
 	ResetPeripheryOffWaitMask(RESET_ALLBITS & ~(BIT(RESET_ADC) | BIT(RESET_RTC) | BIT(RESET_SPI0) |
 			BIT(RESET_SPI1) | BIT(RESET_UART0) | BIT(RESET_UART1) | BIT(RESET_USBCTRL)));
+#else
+	ResetPeripheryOffWaitMask(RESET_ALLBITS & ~(BIT(RESET_ADC) | BIT(RESET_HSTX) | BIT(RESET_SPI0) |
+			BIT(RESET_SPI1) | BIT(RESET_UART0) | BIT(RESET_UART1) | BIT(RESET_USBCTRL)));
+#endif
 
 	// pre-initialize constructors
 	extern void (*__preinit_array_start)();
@@ -68,14 +79,30 @@ void RuntimeInit()
 	// initialize ROM functions (memset etc.)
 	RomFncInit();
 
-#if USE_FLOAT		// use float support
+#if RP2350 && !RISCV
+	// enable GPIO coprocessor
+	GPIOC_Enable();
+
+	// enable single-precision coprocessor
+	FPU_Enable();
+
+	// enable double-precision coprocessor
+	DCP_Enable();
+#endif
+
+#if RP2040 && USE_FLOAT && !USE_FLOATLIBC // use float support 1=in RAM, 2=in Flash
 	// initialize floating-point service
 	FloatInit();
-#endif // USE_FLOAT		// use float support
+#endif
 
 #if USE_IRQ	// use IRQ interrupts (sdk_irq.c, sdk_irq.h)
 	// set all interrupt priorities of NVIC of this CPU core to default value
 	NVIC_IRQPrioDef();
+#endif
+
+#if RISCV
+	// initialize interrupts on RISC-V
+	RuntimeInitCoreIRQ();
 #endif
 
 #ifdef PRESET_VREG_VOLTAGE	// preset VREG voltage
@@ -83,7 +110,7 @@ void RuntimeInit()
 #endif
 
 #ifdef PRESET_FLASH_CLKDIV	// preset flash CLK divider
-	SSI_SetFlashClkDiv(PRESET_FLASH_CLKDIV); // preset flash divider
+	FlashSetClkDiv(PRESET_FLASH_CLKDIV); // preset flash divider
 #endif
 
 	// initialize clocks
@@ -126,7 +153,7 @@ void RuntimeInit()
 	RandInit();
 	RandSeed[1] += RandSeed[0];
 #if USE_ROSC	// use ROSC ring oscillator (sdk_rosc.c, sdk_rosc.h)
-	RandSeed[0] += RoscRand32();
+	RandSeed[0] += RoscRand();
 #endif
 #endif
 
@@ -140,7 +167,7 @@ void RuntimeInit()
 	SysTickInit();
 #endif
 
-#if USE_RTC	// use RTC Real-time clock (sdk_rtc.c, sdk_rtc.h)
+#if USE_RTC && RP2040	// use RTC Real-time clock (sdk_rtc.c, sdk_rtc.h)
 	// initialize RTC timer
 	RtcInit();
 #endif

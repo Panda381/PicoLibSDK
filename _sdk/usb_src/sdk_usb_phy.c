@@ -57,6 +57,14 @@ u64 UsbRamMap;
 //                               Utilities
 // ----------------------------------------------------------------------------
 
+// unaligned memcpy (libc memcpy on RP2350 does unaligned access, but DPRAM does not support it)
+void UsbMemcpy(void* dst, const void* src, u32 n)
+{
+	u8* d = (u8*)dst;
+	const u8* s = (const u8*)src;
+	while (n--) *d++ = *s++;
+}
+
 // interrupt enable
 void UsbIntEnable()
 {
@@ -163,7 +171,7 @@ u32 UsbNextPrep(u8 epinx, u8 bufid)
 				RingReadData((sRing*)user_buf, data_buf, val);
 			else
 				// use fixed buffer
-				memcpy(data_buf, (u8*)user_buf + sep->xfer_len, val);
+				UsbMemcpy(data_buf, (u8*)user_buf + sep->xfer_len, val);
 		}
 
 		// mark buffer as full
@@ -294,7 +302,7 @@ u16 UsbXferSync(u8 epinx, u8 bufid)
 				RingWriteData((sRing*)user_buf, data_buf, len);
 			else
 				// use fixed buffer
-				memcpy((u8*)user_buf + sep->xfer_len, data_buf, len);
+				UsbMemcpy((u8*)user_buf + sep->xfer_len, data_buf, len);
 		}
 	}
 

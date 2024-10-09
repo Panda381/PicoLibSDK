@@ -24,7 +24,11 @@
 #include "../sdk_dreq.h"
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_spi.h"	// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_spi.h"	// constants of original SDK
+#else
+#include "orig_rp2350/orig_spi.h"	// constants of original SDK
+#endif
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
@@ -34,9 +38,7 @@ extern "C" {
 #define SPI_NUM			2		// number of SPI controllers
 
 // SPI hardware registers
-//#define SPI0_BASE		0x4003c000	// SPI0 interface
-//#define SPI1_BASE		0x40040000	// SPI1 interface
-#define SPI_BASE(spi) (SPI0_BASE+(spi)*0x4000)		// SPI base address (spi = 0 or 1)
+#define SPI_BASE(spi) (SPI0_BASE+(spi)*(SPI1_BASE - SPI0_BASE))		// SPI base address (spi = 0 or 1)
 
 #define SPI_CR0(spi) ((volatile u32*)(SPI_BASE(spi)+0x00))	// control register 0 (spi = 0 or 1)
 #define SPI_CR1(spi) ((volatile u32*)(SPI_BASE(spi)+0x04))	// control register 1 (spi = 0 or 1)

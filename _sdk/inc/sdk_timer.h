@@ -19,6 +19,8 @@
 // Time source is shared with watchdog counter.
 // Alarm handler is shared between both processor cores. Only alarms of different numbers can be independent.
 
+// RP2350 has one more timer. In this SDK, 1st timer is configured as [us] timer, 2nd timer is sys_clk timer.
+
 #if USE_TIMER	// use Timer with alarm (sdk_timer.c, sdk_timer.h)
 
 #ifndef _SDK_TIMER_H
@@ -26,41 +28,26 @@
 
 #include "../sdk_addressmap.h"		// Register address offsets
 #include "sdk_irq.h"		// Register address offsets
+#include "sdk_sio.h"			// SIO registers
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_timer.h"	// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_timer.h"	// constants of original SDK
+#else
+#include "orig_rp2350/orig_timer.h"	// constants of original SDK
+#endif
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define ALARMS_NUM	4		// number of timer alarms
+#if RP2350		// 1=use MCU RP2350
+#define TIMER_BASE	TIMER0_BASE	// use TIMER0 as default us timer
+#endif
+
+#define ALARMS_NUM	4		// number of alarms per timer
 #define NUM_TIMERS	ALARMS_NUM	// number of timer alarms
-
-// === Timer (RP2040 datasheet page 553)
-
-// timer hardware registers
-//#define TIMER_BASE		0x40054000	// us timer
-#define TIMER_TIMEHW ((volatile u32*)(TIMER_BASE + 0x00)) // latched write HIGH (write completely first LOW and then HIGH)
-#define TIMER_TIMELW ((volatile u32*)(TIMER_BASE + 0x04)) // latched write LOW (write completely first LOW and then HIGH)
-#define TIMER_TIMEHR ((volatile u32*)(TIMER_BASE + 0x08)) // latched read HIGH (read first LOW and then HIGH)
-#define TIMER_TIMELR ((volatile u32*)(TIMER_BASE + 0x0C)) // latched read LOW (read first LOW and then HIGH)
-#define TIMER_ALARM0 ((volatile u32*)(TIMER_BASE + 0x10)) // arm alarm 0 (fires if == TIMELR)
-#define TIMER_ALARM1 ((volatile u32*)(TIMER_BASE + 0x14)) // arm alarm 1 (fires if == TIMELR)
-#define TIMER_ALARM2 ((volatile u32*)(TIMER_BASE + 0x18)) // arm alarm 2 (fires if == TIMELR)
-#define TIMER_ALARM3 ((volatile u32*)(TIMER_BASE + 0x1C)) // arm alarm 3 (fires if == TIMELR)
-#define TIMER_ARMED ((volatile u32*)(TIMER_BASE + 0x20)) // bit 0..3: 1=alarm is armed, write 1 to disarm, write to alarm to arm
-#define TIMER_TIMERAWH ((volatile u32*)(TIMER_BASE + 0x24)) // raw read HIGH
-#define TIMER_TIMERAWL ((volatile u32*)(TIMER_BASE + 0x28)) // raw read LOW
-#define TIMER_DBGPAUSE ((volatile u32*)(TIMER_BASE + 0x2C)) // bit 1: 1=pause timer during debug of CPU0, bit 2: ...of CPU1
-#define TIMER_PAUSE ((volatile u32*)(TIMER_BASE + 0x30)) // bit 0: 1=pause timer
-#define TIMER_INTR ((volatile u32*)(TIMER_BASE + 0x34)) // bit 0..3: raw interrupts
-#define TIMER_INTE ((volatile u32*)(TIMER_BASE + 0x38)) // bit 0..3: interrupt enable
-#define TIMER_INTF ((volatile u32*)(TIMER_BASE + 0x3C)) // bit 0..3: interrupt force
-#define TIMER_INTS ((volatile u32*)(TIMER_BASE + 0x40)) // bit 0..3: interrupt status
-
-#define TIMER_ALARM(alarm) ((volatile u32*)(TIMER_BASE + 0x10 + (alarm)*4)) // arm alarm 0..3 (fires if == TIMELR)
 
 // timer hardware interface
 typedef struct {
@@ -74,21 +61,72 @@ typedef struct {
 	io32	timerawl;		// 0x28: Raw read from bits 31:0 of time (no side effects)
 	io32	dbgpause;		// 0x2C: Set bits high to enable pause when the corresponding debug ports are active
 	io32	pause;			// 0x30: Set high to pause the timer
-	io32	intr;			// 0x34: Raw Interrupts
-	io32	inte;			// 0x38: Interrupt Enable
-	io32	intf;			// 0x3C: Interrupt Force
-	io32	ints;			// 0x40: Interrupt status after masking & forcing
+#if RP2350		// 1=use MCU RP2350
+	io32	locked;			// 0x34: lock write access to timer
+	io32	source;			// 0x38: select source of the timer
+#endif
+	io32	intr;			// 0x34 or 0x3C: Raw Interrupts
+	io32	inte;			// 0x38 or 0x40: Interrupt Enable
+	io32	intf;			// 0x3C or 0x44: Interrupt Force
+	io32	ints;			// 0x40 or 0x48: Interrupt status after masking & forcing
 } timer_hw_t;
 
-#define timer_hw ((timer_hw_t*)TIMER_BASE)
-
+#if RP2040		// 1=use MCU RP2040
 STATIC_ASSERT(sizeof(timer_hw_t) == 0x44, "Incorrect timer_hw_t!");
+#else			// use MCU RP2350
+STATIC_ASSERT(sizeof(timer_hw_t) == 0x4C, "Incorrect timer_hw_t!");
+#endif
+
+// ----------------------------------------------------------------------------
+//                     Microsecond timer (RP2350 uses TIMER0)
+// ----------------------------------------------------------------------------
+
+#define timer_hw ((timer_hw_t*)TIMER_BASE)
+#define timer0_hw ((timer_hw_t *)TIMER_BASE)
 
 // get IRQ number IRQ_TIMER_0..IRQ_TIMER_3 for alarm 0..3
 #define ALARM_IRQ(alarm) (IRQ_TIMER_0 + (alarm))
 
-// claimed alarms (0..3)
-extern u8 AlarmClaimed;		// claimed alarms
+// === Timer
+
+// timer hardware registers
+#define TIMER_TIMEHW ((volatile u32*)(TIMER_BASE + 0x00)) // latched write HIGH (write completely first LOW and then HIGH)
+#define TIMER_TIMELW ((volatile u32*)(TIMER_BASE + 0x04)) // latched write LOW (write completely first LOW and then HIGH)
+#define TIMER_TIMEHR ((volatile u32*)(TIMER_BASE + 0x08)) // latched read HIGH (read first LOW and then HIGH)
+#define TIMER_TIMELR ((volatile u32*)(TIMER_BASE + 0x0C)) // latched read LOW (read first LOW and then HIGH)
+#define TIMER_ALARM0 ((volatile u32*)(TIMER_BASE + 0x10)) // arm alarm 0 (fires if == TIMELR)
+#define TIMER_ALARM1 ((volatile u32*)(TIMER_BASE + 0x14)) // arm alarm 1 (fires if == TIMELR)
+#define TIMER_ALARM2 ((volatile u32*)(TIMER_BASE + 0x18)) // arm alarm 2 (fires if == TIMELR)
+#define TIMER_ALARM3 ((volatile u32*)(TIMER_BASE + 0x1C)) // arm alarm 3 (fires if == TIMELR)
+#define TIMER_ARMED ((volatile u32*)(TIMER_BASE + 0x20)) // bit 0..3: 1=alarm is armed, write 1 to disarm, write to alarm to arm
+#define TIMER_TIMERAWH ((volatile u32*)(TIMER_BASE + 0x24)) // raw read HIGH
+#define TIMER_TIMERAWL ((volatile u32*)(TIMER_BASE + 0x28)) // raw read LOW
+#define TIMER_DBGPAUSE ((volatile u32*)(TIMER_BASE + 0x2C)) // bit 1: 1=pause timer during debug of CPU0, bit 2: ...of CPU1
+#define TIMER_PAUSE ((volatile u32*)(TIMER_BASE + 0x30)) // bit 0: 1=pause timer
+
+#if RP2040		// 1=use MCU RP2040
+#define TIMER_INTR ((volatile u32*)(TIMER_BASE + 0x34)) // bit 0..3: raw interrupts
+#define TIMER_INTE ((volatile u32*)(TIMER_BASE + 0x38)) // bit 0..3: interrupt enable
+#define TIMER_INTF ((volatile u32*)(TIMER_BASE + 0x3C)) // bit 0..3: interrupt force
+#define TIMER_INTS ((volatile u32*)(TIMER_BASE + 0x40)) // bit 0..3: interrupt status
+#endif
+
+#if RP2350		// 1=use MCU RP2350
+#define TIMER_LOCKED ((volatile u32*)(TIMER_BASE + 0x34)) // bit 0: 1=lock write access to timer (cannot be cleared, clear by reset)
+#define TIMER_SOURCE ((volatile u32*)(TIMER_BASE + 0x38)) // bit 0: select source of the timer: 0=ticks block, 1=clk_sys
+#define TIMER_INTR ((volatile u32*)(TIMER_BASE + 0x3C)) // bit 0..3: raw interrupts
+#define TIMER_INTE ((volatile u32*)(TIMER_BASE + 0x40)) // bit 0..3: interrupt enable
+#define TIMER_INTF ((volatile u32*)(TIMER_BASE + 0x44)) // bit 0..3: interrupt force
+#define TIMER_INTS ((volatile u32*)(TIMER_BASE + 0x48)) // bit 0..3: interrupt status
+#endif
+
+#define TIMER_ALARM(alarm) ((volatile u32*)(TIMER_BASE + 0x10 + (alarm)*4)) // arm alarm 0..3 (fires if == TIMELR)
+
+// get IRQ number IRQ_TIMER_0..IRQ_TIMER_3 for alarm 0..3
+#define ALARM_IRQ(alarm) (IRQ_TIMER_0 + (alarm))
+
+// claimed alarms
+extern Bool AlarmClaimed[ALARMS_NUM];	// claimed alarms
 
 // === get time
 
@@ -112,16 +150,15 @@ void WaitUs(u32 us);
 void WaitMs(int ms);
 
 // === claim alarm
-// Functions are not atomic safe! (not recommended to be used in both cores or in IRQ at the same time)
 
 // claim alarm (mark it as used)
-INLINE void AlarmClaim(int alarm) { AlarmClaimed |= (u8)BIT(alarm); }
+INLINE void AlarmClaim(int alarm) { AlarmClaimed[alarm] = True; }
 
 // unclaim alarm (mark it as not used)
-INLINE void AlarmUnclaim(int alarm) { AlarmClaimed &= (u8)~BIT(alarm); }
+INLINE void AlarmUnclaim(int alarm) { AlarmClaimed[alarm] = False; }
 
 // check if alarm is claimed
-INLINE Bool AlarmIsClaimed(int alarm) { return (AlarmClaimed & (u8)BIT(alarm)) != 0; }
+INLINE Bool AlarmIsClaimed(int alarm) { return AlarmClaimed[alarm]; }
 
 // claim free alarm (returns -1 on error)
 s8 AlarmClaimFree(void);
@@ -133,7 +170,7 @@ s8 AlarmClaimFree(void);
 // start alarm
 //   alarm = alarm number 0..3
 //   handler = interrupt handler
-//   time = time interval in [us] after which to activate first alarm (min 0 us, max 71 minutes)
+//   time = time interval in [us] after which to activate first alarm (min 3 us, max 71 minutes)
 // Vector table must be located in RAM.
 // If vector table is not in RAM, use services with names isr_timer_0..isr_timer_3
 // Call AlarmAck on start of interrupt, then AlarmRestart to restart again, or AlarmStop to deactivate.
@@ -165,6 +202,172 @@ void AlarmRestart(int alarm, u32 time);
 void AlarmStop(int alarm);
 
 #endif // USE_IRQ
+
+// ----------------------------------------------------------------------------
+//                  System clock timer (only RP2350; uses TIMER1)
+// ----------------------------------------------------------------------------
+
+#if RP2350		// 1=use MCU RP2350
+
+#define timer1_hw ((timer_hw_t *)TIMER1_BASE)
+
+// === System Clock Timer
+
+// timer hardware registers
+#define TIMER2_TIMEHW ((volatile u32*)(TIMER1_BASE + 0x00)) // latched write HIGH (write completely first LOW and then HIGH)
+#define TIMER2_TIMELW ((volatile u32*)(TIMER1_BASE + 0x04)) // latched write LOW (write completely first LOW and then HIGH)
+#define TIMER2_TIMEHR ((volatile u32*)(TIMER1_BASE + 0x08)) // latched read HIGH (read first LOW and then HIGH)
+#define TIMER2_TIMELR ((volatile u32*)(TIMER1_BASE + 0x0C)) // latched read LOW (read first LOW and then HIGH)
+#define TIMER2_ALARM0 ((volatile u32*)(TIMER1_BASE + 0x10)) // arm alarm 0 (fires if == TIMELR)
+#define TIMER2_ALARM1 ((volatile u32*)(TIMER1_BASE + 0x14)) // arm alarm 1 (fires if == TIMELR)
+#define TIMER2_ALARM2 ((volatile u32*)(TIMER1_BASE + 0x18)) // arm alarm 2 (fires if == TIMELR)
+#define TIMER2_ALARM3 ((volatile u32*)(TIMER1_BASE + 0x1C)) // arm alarm 3 (fires if == TIMELR)
+#define TIMER2_ARMED ((volatile u32*)(TIMER1_BASE + 0x20)) // bit 0..3: 1=alarm is armed, write 1 to disarm, write to alarm to arm
+#define TIMER2_TIMERAWH ((volatile u32*)(TIMER1_BASE + 0x24)) // raw read HIGH
+#define TIMER2_TIMERAWL ((volatile u32*)(TIMER1_BASE + 0x28)) // raw read LOW
+#define TIMER2_DBGPAUSE ((volatile u32*)(TIMER1_BASE + 0x2C)) // bit 1: 1=pause timer during debug of CPU0, bit 2: ...of CPU1
+#define TIMER2_PAUSE ((volatile u32*)(TIMER1_BASE + 0x30)) // bit 0: 1=pause timer
+#define TIMER2_LOCKED ((volatile u32*)(TIMER1_BASE + 0x34)) // bit 0: 1=lock write access to timer (cannot be cleared, clear by reset)
+#define TIMER2_SOURCE ((volatile u32*)(TIMER1_BASE + 0x38)) // bit 0: select source of the timer: 0=ticks block, 1=clk_sys
+#define TIMER2_INTR ((volatile u32*)(TIMER1_BASE + 0x3C)) // bit 0..3: raw interrupts
+#define TIMER2_INTE ((volatile u32*)(TIMER1_BASE + 0x40)) // bit 0..3: interrupt enable
+#define TIMER2_INTF ((volatile u32*)(TIMER1_BASE + 0x44)) // bit 0..3: interrupt force
+#define TIMER2_INTS ((volatile u32*)(TIMER1_BASE + 0x48)) // bit 0..3: interrupt status
+
+#define TIMER2_ALARM(alarm) ((volatile u32*)(TIMER1_BASE + 0x10 + (alarm)*4)) // arm alarm 0..3 (fires if == TIMELR)
+
+// get IRQ number IRQ_TIMER1_0..IRQ_TIMER1_3 for alarm 0..3
+#define ALARM2_IRQ(alarm) (IRQ_TIMER1_0 + (alarm))
+
+// claimed alarms
+extern Bool Alarm2Claimed[ALARMS_NUM];	// claimed alarms
+
+// Initialize system clock timer
+INLINE void Timer2Init(void) { *TIMER2_SOURCE = 1; }
+
+// === get time in sys_clk ticks
+
+// get 32-bit absolute system time LOW in sys_clk ticks
+INLINE u32 TimeSysClk(void) { return timer1_hw->timerawl; }
+
+// get 64-bit absolute system time in sys_clk ticks - fast method, but it is not atomic safe
+//   - do not use simultaneously from both processor cores and from interrupts
+u64 TimeSysClk64Fast(void);
+
+// get 64-bit absolute system time in sys_clk ticks - atomic method (concurrently safe)
+u64 TimeSysClk64(void);
+
+// wait for delay in sys_clk ticks
+void WaitSysClk(u32 sysclk);
+
+// === claim alarm
+
+// claim alarm (mark it as used)
+INLINE void Alarm2Claim(int alarm) { Alarm2Claimed[alarm] = True; }
+
+// unclaim alarm (mark it as not used)
+INLINE void Alarm2Unclaim(int alarm) { Alarm2Claimed[alarm] = False; }
+
+// check if alarm is claimed
+INLINE Bool Alarm2IsClaimed(int alarm) { return Alarm2Claimed[alarm]; }
+
+// claim free alarm (returns -1 on error)
+s8 Alarm2ClaimFree(void);
+
+// === alarm interrupt
+
+#if USE_IRQ	// use IRQ interrupts (sdk_irq.c, sdk_irq.h)
+
+// start alarm
+//   alarm = alarm number 0..3
+//   handler = interrupt handler
+//   time = time interval in sys_clk after which to activate first alarm (min. 50)
+// Vector table must be located in RAM.
+// If vector table is not in RAM, use services with names isr_timer1_0..isr_timer1_3
+// Call Alarm2Ack on start of interrupt, then Alarm2Restart to restart again, or Alarm2Stop to deactivate.
+// Alarm handler is shared between both processor cores. Only alarms of different numbers can be independent.
+void Alarm2Start(int alarm, irq_handler_t handler, u32 time);
+
+// force alarm
+INLINE void Alarm2Force(int alarm) { RegSet(&timer1_hw->intf, BIT(alarm)); }
+
+// unforce alarm
+INLINE void Alarm2Unforce(int alarm) { RegClr(&timer1_hw->intf, BIT(alarm)); }
+
+// check if alarm is forced
+INLINE Bool Alarm2IsForced(int alarm) { return ((timer1_hw->intf & BIT(alarm)) != 0); }
+
+// acknowledge alarm 0..3 interrupt - should be called at start of interrupt handler
+//   Alarm will be disarmed automatically when it is triggered
+INLINE void Alarm2Ack(int alarm) { timer1_hw->intr = BIT(alarm); }
+
+// check alarm pending status
+INLINE Bool Alarm2IsPending(int alarm) { return ((timer1_hw->ints & BIT(alarm)) != 0); }
+
+// restart alarm - can be called from an interrupt for a repeated alarm
+//   time = time interval in sys_clk after which to activate next alarm
+// The maximum achievable interrupt frequency is about 100 kHz.
+void Alarm2Restart(int alarm, u32 time);
+
+// stop alarm - can be called from an interrupt if no next interrupt is required
+void Alarm2Stop(int alarm);
+
+#endif // USE_IRQ
+
+#endif // RP2350		// 1=use MCU RP2350
+
+// ----------------------------------------------------------------------------
+//                RISC-V platform machine-mode timer (only RP2350)
+// ----------------------------------------------------------------------------
+// Single 64-bit counter, shared between both cores,
+// Raises IRQ_SIO_MTIMECMP interrupt on ARM, and mip.mtip interrupt on RISC-V.
+// Registers:
+//	sio_hw->mtime_ctrl	// 0x1A4: secure SIO: control register for RISC-V 64-bit machine-mode timer
+//	sio_hw->mtime		// 0x1B0: read/write access to low half of RISC-V machine-mode timer (shared between cores)
+//	sio_hw->mtimeh		// 0x1B4: read/write access to high half of RISC-V machine-mode timer (shared between cores)
+//	sio_hw->mtimecmp	// 0x1B8: low half of RISC-V machine-mode timer comparator (core-local)
+//	sio_hw->mtimecmph	// 0x1BC: high half of RISC-V machine-mode timer comparator (core-local)
+// Each core gets its own copy of mtimecmp and mtimecmph registers.
+//  (SIO does not support aliases for atomic access!)
+
+// This timer is reserved on RISC-V instead of SysTick timer of ARM. Do not use it, if want use SysTick on RISC-V.
+
+#if RP2350		// 1=use MCU RP2350
+
+// disable RISC-V machine-mode timer
+INLINE void MTimerDisable(void) { sio_hw->mtime_ctrl &= ~B0; }
+
+// enable RISC-V machine-mode timer (default)
+INLINE void MTimerEnable(void) { sio_hw->mtime_ctrl |= B0; }
+
+// set slow mode of RISC-V machine-mode timer - run from 1-us tick (default)
+INLINE void MTimerSlow(void) { sio_hw->mtime_ctrl &= ~B1; }
+
+// set fast mode of RISC-V machine-mode timer - run directly from sys_clk
+INLINE void MTimerFast(void) { sio_hw->mtime_ctrl |= B1; }
+
+// get 32-bit absolute time LOW from RISC-V machine-mode timer
+INLINE u32 MTime(void) { return sio_hw->mtime; }
+
+// get 64-bit time from RISC-V machine-mode timer - fast method, but it is not atomic safe
+//   - do not use simultaneously from both processor cores and from interrupts
+u64 MTime64Fast(void);
+
+// get 64-bit time from RISC-V machine-mode timer - atomic method (concurrently safe)
+u64 MTime64(void);
+
+// set time to RISC-V machine-mode timer
+void MTimeSet(u64 time);
+
+// get current compare value of RISC-V machine-mode timer
+u64 MTimeGetCmp(void);
+
+// set compare value of RISC-V machine-mode timer (each core has its own copy of compare registers)
+//  Interrupt is asserted whenever the 64-bit mtime value is greater than or equal to compare value.
+//  Raises IRQ_SIO_MTIMECMP interrupt on ARM, and mip.mtip interrupt on RISC-V.
+void MTimeCmp(u64 timecmp);
+
+#endif // RP2350
 
 // ----------------------------------------------------------------------------
 //                          Original-SDK interface

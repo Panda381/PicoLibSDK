@@ -1,2 +1,2 @@
 @echo off
-c.bat picopadvga
+c.bat picopadvga 0

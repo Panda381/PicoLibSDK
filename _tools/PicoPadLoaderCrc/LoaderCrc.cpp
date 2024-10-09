@@ -1,4 +1,4 @@
-// PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
+// PicoLibSDK - Alternative SDK library for Raspberry Pico, RP2040 and RP2350
 // Copyright (c) 2023 Miroslav Nemecek, Panda38@seznam.cz, hardyplotter2@gmail.com
 // 	https://github.com/Panda381/PicoLibSDK
 //	https://www.breatharian.eu/hw/picolibsdk/index_en.html
@@ -17,7 +17,8 @@
 typedef unsigned char       u8;
 typedef unsigned int        u32;
 
-#define LOADER_SIZE	0x8000
+#define LOADER_SIZE		0x8000		// RP2040 loader
+#define LOADER2_SIZE	0x10000		// RP2350 loader
 u8* Buf = NULL;
 int BufNum;
 
@@ -104,20 +105,43 @@ int main(int argc, char* argv[])
 	}
 	fclose(f);
 
-	// check header
+	// check header of RP2040 (new modification)
 	u32* h = (u32*)&Buf[LOADER_SIZE + 48*4]; // end of vector table
+	int loadersize = LOADER_SIZE;
+	int off = 51*4;
 	if ((h[0] != 0x44415050) // magic "PPAD"
 		|| (h[1] != 0x01234567) // application length
-		|| (h[2] != 0x89ABCDEF)) // application CRC
+		|| (h[2] != 0x89ABCDEF) // application CRC
+		|| (h[5] != 0x64617070)) // magic "ppad"
 	{
-		printf("Incorrect format of %s\n", argv[1]);
-		return 1;
+		// check header of RP2350-ARM
+		h = (u32*)&Buf[LOADER2_SIZE + 68*4]; // end of vector table
+		loadersize = LOADER2_SIZE;
+		off = 71*4;
+		if ((h[0] != 0x44415050) // magic "PPAD"
+			|| (h[1] != 0x01234567) // application length
+			|| (h[2] != 0x89ABCDEF) // application CRC
+			|| (h[5] != 0x64617070)) // magic "ppad"
+		{
+			// check header of RP2350-RISCV
+			h = (u32*)&Buf[LOADER2_SIZE + 192*4]; // end of vector table
+			loadersize = LOADER2_SIZE;
+			off = 195*4;
+			if ((h[0] != 0x44415050) // magic "PPAD"
+				|| (h[1] != 0x01234567) // application length
+				|| (h[2] != 0x89ABCDEF) // application CRC
+				|| (h[5] != 0x64617070)) // magic "ppad"
+			{
+				printf("Incorrect format of %s\n", argv[1]);
+				return 1;
+			}
+		}
 	}
 
 	// calculate CRC
-	size -= LOADER_SIZE + 51*4; // rest of application
+	size -= loadersize + off; // rest of application
 	h[1] = size;	// set size of rest of application
-	u32 crc = crc32(&Buf[LOADER_SIZE + 51*4], size); // calculate CRC of rest of application
+	u32 crc = crc32(&Buf[loadersize + off], size); // calculate CRC of rest of application
 	h[2] = crc;
 
 	// open for write
@@ -129,8 +153,8 @@ int main(int argc, char* argv[])
 	}
 
 	// write new header
-	fseek(f, LOADER_SIZE + 49*4, SEEK_SET);
-	n = (u32)fwrite(&Buf[LOADER_SIZE + 49*4], 1, 2*4, f);
+	fseek(f, loadersize + off - 2*4, SEEK_SET);
+	n = (u32)fwrite(&Buf[loadersize + off - 2*4], 1, 2*4, f);
 	if (n != 2*4)
 	{
 		printf("Cannot write to %s\n", argv[1]);
@@ -146,11 +170,26 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	// prepare file offset
+	// - For now, it is assumed that the header will
+	//   not lie on the 256 byte sector boundary
+	//		RP2040: 0xC0, offset 192-215, OK
+	//		RP235ARM: 0x110 - 0x100, offset 16-39, OK
+	//		RP2350RISCV: 0x300 - 0x300, offset 0-23, OK
+	off = off - 3*4;
+	n = 2*loadersize + 32;
+	while (off >= 256)
+	{
+		off -= 256;
+		n += 512;
+	}
+	off += n;
+
 	// load header
-	fseek(f, 2*LOADER_SIZE + 32 + 48*4, SEEK_SET);
-	u32 h2[3];
-	n = (u32)fread(h2, 1, 3*4, f);
-	if (n != 3*4)
+	fseek(f, off, SEEK_SET);
+	u32 h2[6];
+	n = (u32)fread(h2, 1, 6*4, f);
+	if (n != 6*4)
 	{
 		printf("Cannot read from %s\n", argv[2]);
 		return 1;
@@ -159,15 +198,16 @@ int main(int argc, char* argv[])
 	// check header
 	if ((h2[0] != 0x44415050) // magic "PPAD"
 		|| (h2[1] != 0x01234567) // application length
-		|| (h2[2] != 0x89ABCDEF)) // application CRC
+		|| (h2[2] != 0x89ABCDEF) // application CRC
+		|| (h2[5] != 0x64617070)) // magic "ppad"
 	{
 		printf("Incorrect format of %s\n", argv[2]);
 		return 1;
 	}
 
 	// write new header
-	fseek(f, 2*LOADER_SIZE + 32 + 49*4, SEEK_SET);
-	n = (u32)fwrite(&Buf[LOADER_SIZE + 49*4], 1, 2*4, f);
+	fseek(f, off + 4, SEEK_SET);
+	n = (u32)fwrite(&h[1], 1, 2*4, f);
 	if (n != 2*4)
 	{
 		printf("Cannot write to %s\n", argv[2]);

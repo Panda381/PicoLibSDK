@@ -28,6 +28,8 @@ Bool CRamModi;		// CRAM modified
 u32 CRamLastWrite;	// last time of write CRAM
 u32 CRamBatch;		// batch counter of writes
 
+u8 GPState = 0;		// game pad state
+
 #if DEB_WRITECRAM	// 1=debug display write bytes into CRAM (in game menu)
 u32 CRamWriteNum = 0;	// number of writes to CRAM
 #endif
@@ -1195,7 +1197,7 @@ int main()
 		press_a		= KeyPressed(KEY_A)	|| UsbKeyIsPressed(HID_KEY_CONTROL_LEFT) || UsbKeyIsPressed(HID_KEY_CONTROL_RIGHT);
 		press_b		= KeyPressed(KEY_B)	|| UsbKeyIsPressed(HID_KEY_SHIFT_LEFT) || UsbKeyIsPressed(HID_KEY_SHIFT_RIGHT);
 		press_x		= KeyPressed(KEY_X)	|| UsbKeyIsPressed(HID_KEY_ENTER) || UsbKeyIsPressed(HID_KEY_KEYPAD_ENTER);
-		press_y		= (KeyPressed(KEY_Y)	|| UsbKeyIsPressed(HID_KEY_BACKSPACE));
+		press_y		= KeyPressed(KEY_Y)	|| UsbKeyIsPressed(HID_KEY_BACKSPACE);
 #else
 		press_up	= KeyPressed(KEY_UP);
 		press_down	= KeyPressed(KEY_DOWN);
@@ -1204,7 +1206,7 @@ int main()
 		press_a		= KeyPressed(KEY_A);
 		press_b		= KeyPressed(KEY_B);
 		press_x		= KeyPressed(KEY_X);
-		press_y		= (KeyPressed(KEY_Y);
+		press_y		= KeyPressed(KEY_Y);
 #endif
 
 		// Prevent passing simultaneous arrow presses with Y/X to enable game menu recall.

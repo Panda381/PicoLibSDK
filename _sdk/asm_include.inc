@@ -31,13 +31,26 @@
 // macro - .text.* section
 .macro section_text x
 .section .text.\x	// located in separate section .text.NAME
-.align 1		// align address to 2-byte boundary (required by instructions)
+.align 1,,		// align address to 2-byte boundary (required by instructions)
+.endm
+
+// macro - .time_critical.* section
+.macro section_noflash x
+.section .time_critical.\x // located in separate section .time_critical.NAME
+.align 1,,		// align address to 2-byte boundary (required by instructions)
 .endm
 
 // macro - .text.* data section
 .macro regular_data_text x
 section_text \x		// located in separate section .text.NAME
-.align 2		// align address to 4-byte boundary (required by 32-bit numbers)
+.align 2,,		// align address to 4-byte boundary (required by 32-bit numbers)
+\x:			// label
+.endm
+
+// macro - .time_critical.* data section
+.macro regular_data_noflash x
+section_noflash \x	// located in separate section .time_critical.NAME
+.align 2,,		// align address to 4-byte boundary (required by 32-bit numbers)
 \x:			// label
 .endm
 
@@ -45,13 +58,21 @@ section_text \x		// located in separate section .text.NAME
 .macro regular_func x
 .global \x		// global publishing function
 .type \x,%function	// declare label as a function object
+#if !RISCV
 .thumb_func		// following label is a thumb-mode label
+#endif
 \x:			// label of the function
 .endm
 
 // macro - header of regular function 'x' in .text.* section
 .macro regular_func_text x
 section_text \x		// located in separate section .text.NAME
+regular_func \x
+.endm
+
+// macro - header of regular function 'x' in .time_critical.* section
+.macro regular_func_noflash x
+section_noflash \x		// located in separate section .time_critical.NAME
 regular_func \x
 .endm
 
@@ -63,6 +84,11 @@ regular_func WRAPPER_FUNC_NAME(\x) // wrapper function __wrap_NAME
 // macro - header of wrapper function 'x' in .text.* section
 .macro wrapper_func_text x
 regular_func_text WRAPPER_FUNC_NAME(\x) // wrapper function __wrap_NAME
+.endm
+
+// macro - header of wrapper function 'x' in .time_critical.* section
+.macro wrapper_func_noflash x
+regular_func_noflash WRAPPER_FUNC_NAME(\x) // wrapper function __wrap_NAME
 .endm
 
 // macro - delay 2 clock cycles (= 2*NOP)
@@ -115,7 +141,7 @@ dneg_\@:
 // macro - pre-initialize function (called on program start)
 //.macro __pre_init func, priority	// function name and priority string
 //.section .preinit_array.\priority	// priority (array will be sorted alphabetically)
-//.align 2				// align function address to u32
+//.align 2,,				// align function address to u32
 //.word \func				// pointer to pre-initialize function
 //.endm
 
@@ -284,3 +310,122 @@ l\@_1:
 	adds	\rzl,\rt0	// sum middle member low and low member
 	adcs	\rzh,\rt1	// sum middle member high and high member
 .endm
+
+// macro - unsigned multiply u32 * u32 -> (u64>>32), simplified, without carry from LOW
+//  input: RX = u32 x
+//         RY = u32 y
+// output: RZ = u32 zH (result high)
+// trashes: RT1, RT2
+// - can have RZ=RX, in which case RX trashed.
+.macro mul32_32_32_highsimple rx,ry,rz,rt1,rt2
+
+	// multiply XL*YH
+	uxth	\rt2,\rx	// RT2 <- XL
+	lsrs	\rt1,\ry,#16	// RT1 <- YH
+	muls	\rt2,\rt1	// RT2 <- XL*YH
+	lsrs	\rt2,\rt2,#16	// RT2 >> 16
+
+	// multiply XH*YH
+	lsrs	\rz,\rx,#16	// RZ <- XH, can be the same register
+	muls	\rt1,\rz	// RT1 <- YH*XH
+	adds	\rt2,\rt1	// add XH*YH to result
+
+	// multiply XH*YL
+	uxth	\ry,\ry		// RY <- YL
+	muls	\rz,\ry		// RZ <- XH*YL
+	lsrs	\rz,\rz,#16	// RZ >> 16
+	adds	\rz,\rt2	// add XH*YL to result
+.endm
+
+
+#if RISCV
+
+// Feature detection macros for Hazard3 custom extensions
+// Version 1.0 of these four extensions
+// (encoded as major * 100 + minor)
+#define __hazard3_extension_xh3power 100
+#define __hazard3_extension_xh3bextm 100
+#define __hazard3_extension_xh3irq 100
+#define __hazard3_extension_xh3pmpm 100
+
+// Assembly language instruction macros for Hazard3 custom instructions
+
+// h3.bextm: Extract up to 8 consecutive bits from register rs1, with the
+// first bit indexed by rs2, and bit count configured by an immediate value.
+// R-format instruction. Pseudocode:
+//
+//     rd = (rs1 >> rs2[4:0]) & ~(-1 << nbits)
+//
+// rd ... destination register
+// rs1 ... source register
+// rs2 ... register with start bit position
+// nbits ... number of bits to extract
+
+.macro h3.bextm rd rs1 rs2 nbits
+.if (\nbits < 1) || (\nbits > 8)
+.err
+.endif
+#ifdef __hazard3_extension_xh3bextm
+	.insn	r 0x0b, 0x4, (((\nbits - 1) & 0x7 ) << 1), \rd, \rs1, \rs2
+#else
+	srl	\rd,\rs1,\rs2			// RD <- RS1 >> RS2 ... get bits from RS1, starting with bit RS2
+	andi	\rd,\rd,((1 << \nbits) - 1)	// mask required number of bits
+#endif
+.endm
+
+// h3.bextmi: Extract up to 8 consecutive bits from register rs1, with the
+// first bit index and the number of bits both configured by immediate
+// values. I-format instruction. Pseudocode:
+//
+//     rd = (rs1 >> shamt) & ~(-1 << nbits)
+//
+// rd ... destination register
+// rs1 ... source register
+// shamt ... start bit position
+// nbits ... number of bits to extract
+
+.macro h3.bextmi rd rs1 shamt nbits
+.if (\nbits < 1) || (\nbits > 8)
+.err
+.endif
+.if (\shamt < 0) || (\shamt > 31)
+.err
+.endif
+#ifdef __hazard3_extension_xh3bextm
+	.insn	i 0x0b, 0x4, \rd, \rs1, (\shamt & 0x1f) | (((\nbits - 1) & 0x7 ) << 6)
+#else
+	srli	\rd,\rs1,\shamt			// RD <- RS1 >> shamt ... get bits from RS1, starting with bit shamt
+	andi	\rd,\rd,((1 << \nbits) - 1)	// mask required number of bits
+#endif
+.endm
+
+// h3.block: enter an idle state until another processor in the same
+// multiprocessor complex executes an h3.unblock instruction, or the
+// processor is interrupted. Fall through immediately if an h3.unblock has
+// been received since the last execution of an h3.block on this processor.
+// On RP2350, processors also have their own h3.unblock signals reflected
+// back to them.
+
+.macro h3.block
+#ifdef __hazard3_extension_xh3power
+	slt	x0,x0,x0
+#else
+	nop
+#endif
+.endm
+
+// h3.unblock: signal other processors in the same multiprocessor complex to
+// exit the idle state entered by an h3.block instruction. On RP2350, this
+// signal is also reflected back to the processor that executed the
+// h3.unblock, which will cause that processor's next h3.block to fall
+// through immediately.
+
+.macro h3.unblock
+#ifdef __hazard3_extension_xh3power
+	slt	x0,x0,x1
+#else
+	nop
+#endif
+.endm
+
+#endif

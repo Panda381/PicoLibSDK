@@ -40,27 +40,34 @@
 #include "sdk_gpio.h"
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_pio.h"		// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_pio.h"		// constants of original SDK
+#else
+#include "orig_rp2350/orig_pio.h"		// constants of original SDK
+#endif
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#if RP2040
 #define PIO_NUM			2		// number of PIO controllers
+#else
+#define PIO_NUM			3		// number of PIO controllers
+#endif
+
 #define PIO_SM_NUM		4		// number of PIO state machines
 #define PIO_MEM_NUM		32		// number of PIO instructions in memory
 #define PIO_IRQ_NUM		2		// number of PIO interrupt requests
 #define PIO_FIFO_NUM		4		// number of PIO single FIFO entries
 #define PIO_FIFO2_NUM		8		// number of PIO double FIFO entries
 
-#define NUM_PIO_STATE_MACHINES	PIO_SM_NUM
-#define PIO_INSTRUCTION_COUNT	PIO_MEM_NUM
+//#define NUM_PIO_STATE_MACHINES	PIO_SM_NUM
+//#define PIO_INSTRUCTION_COUNT	PIO_MEM_NUM
 
 // PIO hardware registers
-// #define PIO0_BASE		0x50200000	// PIO 0
-// #define PIO1_BASE		0x50300000	// PIO 1
-#define PIO(pio)		(PIO0_BASE + (pio)*0x100000)	// PIO base (pio = 0 or 1)
+#define PIO(pio)		(PIO0_BASE + (pio)*(PIO1_BASE - PIO0_BASE)) // PIO base (pio = 0..2)
 
 #define PIO_CTRL(pio)		((volatile u32*)(PIO(pio)+0x00)) // control register
 #define PIO_FSTAT(pio)		((volatile u32*)(PIO(pio)+0x04)) // FIFO status register
@@ -98,6 +105,67 @@ typedef struct pio_sm_hw {
 
 STATIC_ASSERT(sizeof(pio_sm_hw_t) == 0x18, "Incorrect pio_sm_hw_t!");
 
+// PIO interrupt interface
+typedef struct {
+	io32	inte;		// 0x00: Interrupt Enable
+	io32	intf;		// 0x04: Interrupt Force
+	io32	ints;		// 0x08: Interrupt status after masking & forcing
+} pio_irq_ctrl_hw_t;
+
+STATIC_ASSERT(sizeof(pio_irq_ctrl_hw_t) == 0x0C, "Incorrect pio_irq_ctrl_hw_t!");
+
+// PIO hardware interface
+typedef struct {
+	io32	ctrl;			// 0x000: PIO control register
+	io32	fstat;			// 0x004: FIFO status register
+	io32	fdebug;			// 0x008: FIFO debug register
+	io32	flevel;			// 0x00C: FIFO levels
+	io32	txf[PIO_SM_NUM];	// 0x010: (4) Direct write access to the TX FIFO for this state machine
+	io32	rxf[PIO_SM_NUM];	// 0x020: (4) Direct read access to the RX FIFO for this state machine
+	io32	irq;			// 0x030: State machine IRQ flags register
+	io32	irq_force;		// 0x034: Writing a 1 to each of these bits will forcibly assert the corresponding IRQ
+	io32	input_sync_bypass;	// 0x038: There is a 2-flipflop synchronizer on each GPIO input, which protects PIO logic from metastabilities
+	io32	dbg_padout;		// 0x03C: Read to sample the pad output values PIO is currently driving to the GPIOs
+	io32	dbg_padoe;		// 0x040: Read to sample the pad output enables (direction) PIO is currently driving to the GPIOs
+	io32	dbg_cfginfo;		// 0x044: The PIO hardware has some free parameters that may vary between chip products
+	io32	instr_mem[PIO_MEM_NUM];	// 0x048: (32, 0x80 bytes) Write-only access to instruction memory location 0
+	pio_sm_hw_t sm[PIO_SM_NUM];	// 0x0C8: (0x18*4 = 0x60) state machines
+#if !RP2040
+	io32	rxf_putget[PIO_SM_NUM][PIO_FIFO_NUM]; // 0x128: (4*4*4 = 0x40) direct access to RX FIFO entry
+	io32	gpiobase;		// 0x168: relocate GPIO base to access more than 32 GPIOs
+#endif
+	io32	intr;			// 0x128 (0x16C): Raw Interrupts
+	union {
+		struct {
+			io32	inte0;	// 0x12C (0x170): Interrupt Enable for irq0
+			io32	intf0;	// 0x130 (0x174): Interrupt Force for irq0
+			io32	ints0;	// 0x134 (0x178): Interrupt status after masking & forcing for irq0
+
+			io32	inte1;	// 0x138: (0x17C) Interrupt Enable for irq1
+			io32	intf1;	// 0x13C: (0x180) Interrupt Force for irq1
+			io32	ints1;	// 0x140: (0x184) Interrupt status after masking & forcing for irq1
+		};
+		pio_irq_ctrl_hw_t irq_ctrl[PIO_IRQ_NUM]; // 0x12C (0x170)
+	};
+} pio_hw_t;
+
+#if RP2040
+STATIC_ASSERT(sizeof(pio_hw_t) == 0x144, "Incorrect pio_hw_t!");
+#else
+STATIC_ASSERT(sizeof(pio_hw_t) == 0x188, "Incorrect pio_hw_t!");
+#endif
+
+#define pio0_hw ((pio_hw_t*)PIO0_BASE)
+#define pio0 pio0_hw
+
+#define pio1_hw ((pio_hw_t*)PIO1_BASE)
+#define pio1 pio1_hw
+
+#if !RP2040
+#define pio2_hw ((pio_hw_t*)PIO2_BASE)
+#define pio2 pio1_hw
+#endif
+
 // State machine configuration structure
 typedef struct {
 	u32	clkdiv;
@@ -105,39 +173,6 @@ typedef struct {
 	u32	shiftctrl;
 	u32	pinctrl;
 } pio_sm_config;
-
-// PIO hardware interface
-typedef struct {
-	io32	ctrl;		// 0x000: PIO control register
-	io32	fstat;		// 0x004: FIFO status register
-	io32	fdebug;		// 0x008: FIFO debug register
-	io32	flevel;		// 0x00C: FIFO levels
-	io32	txf[NUM_PIO_STATE_MACHINES]; // 0x010: (4) Direct write access to the TX FIFO for this state machine
-	io32	rxf[NUM_PIO_STATE_MACHINES]; // 0x020: (4) Direct read access to the RX FIFO for this state machine
-	io32	irq;		// 0x030: State machine IRQ flags register
-	io32	irq_force;	// 0x034: Writing a 1 to each of these bits will forcibly assert the corresponding IRQ
-	io32	input_sync_bypass; // 0x038: There is a 2-flipflop synchronizer on each GPIO input, which protects PIO logic from metastabilities
-	io32	dbg_padout;	// 0x03C: Read to sample the pad output values PIO is currently driving to the GPIOs
-	io32	dbg_padoe;	// 0x040: Read to sample the pad output enables (direction) PIO is currently driving to the GPIOs
-	io32	dbg_cfginfo;	// 0x044: The PIO hardware has some free parameters that may vary between chip products
-	io32	instr_mem[PIO_INSTRUCTION_COUNT]; // 0x048: (32, 0x80 bytes) Write-only access to instruction memory location 0
-	pio_sm_hw_t sm[NUM_PIO_STATE_MACHINES]; // 0x0C8: (0x18 bytes * 4 = 0x60) state machines
-	io32	intr;		// 0x128: Raw Interrupts
-	io32	inte0;		// 0x12C: Interrupt Enable for irq0
-	io32	intf0;		// 0x130: Interrupt Force for irq0
-	io32	ints0;		// 0x134: Interrupt status after masking & forcing for irq0
-	io32	inte1;		// 0x138: Interrupt Enable for irq1
-	io32	intf1;		// 0x13C: Interrupt Force for irq1
-	io32	ints1;		// 0x140: Interrupt status after masking & forcing for irq1
-} pio_hw_t;
-
-#define pio0_hw ((pio_hw_t*)PIO0_BASE)
-#define pio1_hw ((pio_hw_t*)PIO1_BASE)
-
-#define pio0 pio0_hw
-#define pio1 pio1_hw
-
-STATIC_ASSERT(sizeof(pio_hw_t) == 0x144, "Incorrect pio_hw_t!");
 
 // instructions
 #define PIO_NOP		0xA042	// NOP pseudoinstruction = MOV Y,Y  side 0
@@ -222,19 +257,37 @@ STATIC_ASSERT(sizeof(pio_hw_t) == 0x144, "Incorrect pio_hw_t!");
 #define PIO_FIFO_JOIN_TX	1		// use only TX FIFO, 8-entries deep
 #define PIO_FIFO_JOIN_RX	2		// use only RX FIFO, 8-entries deep
 
+#if !RP2040
+#define PIO_FIFO_JOIN_RXGET	4		// RX FIFO will be disabled and used for read GET instruction, CPU can access RX FIFO
+#define PIO_FIFO_JOIN_RXPUT	8		// RX FIFO will be disabled and used for write PUT instruction, CPU can access RX FIFO
+#define PIO_FIFO_JOIN_RXGETPUT	12		// RX FIFO will be disabled and used for read/write GET/PUT instruction, CPU cannot access RX FIFO
+#endif
+
 #define PIO_FIFO_JOIN_NONE	PIO_FIFO_JOIN_RXTX
 
 // claimed PIO state machines
+#if RP2040
 extern u8 PioClaimed;
+#else
+extern u16 PioClaimed;
+#endif
 
 // map of used instruction memory
 extern u32 PioUsedMap[PIO_NUM];
 
+#if RP2040
 // get hardware interface from PIO index
 INLINE pio_hw_t* PioGetHw(int pio) { return (pio == 0) ? pio0_hw : pio1_hw; }
 
 // get PIO index from hardware interface
 INLINE u8 PioGetInx(const pio_hw_t* hw) { return (hw == pio0_hw) ? 0 : 1; }
+#else // RP2040
+// get hardware interface from PIO index
+INLINE pio_hw_t* PioGetHw(int pio) { return (pio == 0) ? pio0_hw : ((pio == 1) ? pio1_hw : pio2_hw); }
+
+// get PIO index from hardware interface
+INLINE u8 PioGetInx(const pio_hw_t* hw) { return (hw == pio0_hw) ? 0 : ((hw == pio1_hw) ? 1 : 2); }
+#endif // RP2040
 
 // === claim state machine
 
@@ -424,27 +477,27 @@ INLINE void PioCfgIn(pio_sm_config* cfg, int base)
 // === setup state machine using hardware registers
 
 // PIO set default setup of state machine
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 void PioSMDefault(int pio, int sm);
 void PioSMDefault_hw(pio_hw_t* hw, int sm);
 
 // PIO set state machine clock divider (frequency = sys_clk / clock_divider)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  clkdiv ... clock_divider * 256 (default 0x100, means clock_divider=1.00, 1 instruction per 1 system clock)
 INLINE void PioSetClkdiv(int pio, int sm, u32 clkdiv) { *PIO_CLKDIV(pio, sm) = clkdiv << 8; }
 INLINE void PioSetClkdiv_hw(pio_hw_t* hw, int sm, u32 clkdiv) { hw->sm[sm].clkdiv = clkdiv << 8; }
 
 // PIO set state machine clock divider as float (frequency = sys_clk / clock_divider)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  clkdiv ... clock_divider (default 1.00, 1 instruction per 1 system clock)
 void PioSetClkdivFloat(int pio, int sm, float clkdiv);
 void PioSetClkdivFloat_hw(pio_hw_t* hw, int sm, float clkdiv);
 
 // PIO setup sideset
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  base ... base GPIO pin asserted by sideset output, 0 to 31 (default 0)
 //  count ... number of bits used for side set (inclusive enable bit if present), 0 to 5 (default 0)
@@ -454,14 +507,14 @@ void PioSetupSideset(int pio, int sm, int base, int count, Bool optional, Bool p
 void PioSetupSideset_hw(pio_hw_t* hw, int sm, int base, int count, Bool optional, Bool pindirs);
 
 // PIO set GPIO pin for JMP PIN instruction
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  pin ... GPIO pin to use as condition for JMP PIN (0 to 29, default 0)
 INLINE void PioSetJmpPin(int pio, int sm, int pin) { RegMask(PIO_EXECCTRL(pio, sm), (u32)pin << 24, B24+B25+B26+B27+B28); }
 INLINE void PioSetJmpPin_hw(pio_hw_t* hw, int sm, int pin) { RegMask(&hw->sm[sm].execctrl, (u32)pin << 24, B24+B25+B26+B27+B28); }
 
 // PIO set special OUT
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  sticky ... enable 'sticky' output (continuously re-asserting most recent OUT/SET values to the pins; default False)
 //  has_enable_pin ... use auxiliary OUT enable pin (default False; If True, use a bit of OUT data as an auxiliary
@@ -482,7 +535,7 @@ INLINE void PioSetOutSpecial_hw(pio_hw_t* hw, int sm, Bool sticky, Bool has_enab
 }
 
 // PIO set wrap address
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  wrap_target ... wrap destination, after reaching wrap_top execution is wrapped to this address (0 to 31, default 0)
 //  wrap_top ... wrap source, after reaching this address execution is then wrapped to wrap_target (0 to 31, default 31)
@@ -499,24 +552,51 @@ INLINE void PioSetWrap_hw(pio_hw_t* hw, int sm, int wrap_target, int wrap_top)
 		((u32)(wrap_top & 0x1f) << 12), (0x1f << 7) | (0x1f << 12));
 }
 
+#if RP2040
 // PIO set "MOV x,STATUS"
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  status_rx ... True compare RX FIFO level, False compare TX FIFO level (default False)
 //  level ... comparison level N (default 0)
 // Instruction "MOV x,STATUS" fills all-ones if FIFO level < N, otherwise all-zeroes
 INLINE void PioSetMovStatus(int pio, int sm, Bool status_rx, int level) { RegMask(PIO_EXECCTRL(pio, sm), (status_rx ? B4 : 0) | (level & 0x0f), 0x1f); }
 INLINE void PioSetMovStatus_hw(pio_hw_t* hw, int sm, Bool status_rx, int level) { RegMask(&hw->sm[sm].execctrl, (status_rx ? B4 : 0) | (level & 0x0f), 0x1f); }
+#else // RP2040
+// PIO set "MOV x,STATUS"
+//  pio ... PIO number
+//  sm ... state machine 0 to 3
+//  status_rx ... 0 compare TX FIFO level (default), 1 compare RX FIFO level, 2 indexed IRQ flag raised
+//  level ... comparison level N (default 0); IRQ: 0..7 this PIO, 8..0xF lower PIO, 0x10..0x17 higher PIO
+// Instruction "MOV x,STATUS" fills all-ones if FIFO level < N, otherwise all-zeroes
+INLINE void PioSetMovStatus(int pio, int sm, int status_rx, int level) { RegMask(PIO_EXECCTRL(pio, sm), (status_rx << 5) | (level & 0x1f), 0x7f); }
+INLINE void PioSetMovStatus_hw(pio_hw_t* hw, int sm, int status_rx, int level) { RegMask(&hw->sm[sm].execctrl, (status_rx << 5) | (level & 0x1f), 0x7f); }
+#endif // RP2040
 
 // PIO set FIFO joining
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  join ... set FIFO joining PIO_FIFO_JOIN_* (default PIO_FIFO_JOIN_RXTX)
+#if RP2040
 INLINE void PioSetFifoJoin(int pio, int sm, int join) { RegMask(PIO_SHIFTCTRL(pio, sm), (u32)join << 30, B30+B31); }
 INLINE void PioSetFifoJoin_hw(pio_hw_t* hw, int sm, int join) { RegMask(&hw->sm[sm].shiftctrl, (u32)join << 30, B30+B31); }
+#else
+INLINE void PioSetFifoJoin(int pio, int sm, int join) { RegMask(PIO_SHIFTCTRL(pio, sm),
+	(((u32)(join & 3) << 30) | ((u32)(join & 0x0c) << (14-2))), B14+B15+B30+B31); }
+INLINE void PioSetFifoJoin_hw(pio_hw_t* hw, int sm, int join) { RegMask(&hw->sm[sm].shiftctrl,
+	(((u32)(join & 3) << 30) | ((u32)(join & 0x0c) << (14-2))), B14+B15+B30+B31); }
+#endif
+
+#if !RP2040
+// PIO set number of pins visible by IN PINS, WAIT PIN and MOV x,PINS instructions
+//  pio ... PIO number
+//  sm ... state machine 0 to 3
+//  count ... number of visible pins
+INLINE void PioSetInCount(int pio, int sm, int count) { RegMask(PIO_SHIFTCTRL(pio, sm), count, B0+B1+B2+B3+B4); }
+INLINE void PioSetInCount_hw(pio_hw_t* hw, int sm, int count) { RegMask(&hw->sm[sm].shiftctrl, count, B0+B1+B2+B3+B4); }
+#endif
 
 // PIO set OUT shifting
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  shift_right ... shift OSR right (default True)
 //  autopull ... autopull enable (pull when OSR is empty, default False)
@@ -534,7 +614,7 @@ INLINE void PioSetOutShift_hw(pio_hw_t* hw, int sm, Bool shift_right, Bool autop
 }
 
 // PIO set IN shifting
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  shift_right ... shift ISR right (data enters from left, default True)
 //  autopush ... autopush enable (push when ISR is filled, default False)
@@ -552,7 +632,7 @@ INLINE void PioSetInShift_hw(pio_hw_t* hw, int sm, Bool shift_right, Bool autopu
 }
 
 // PIO setup SET pins
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  base ... base GPIO pin asserted by SET instruction, 0 to 31 (default 0)
 //  count ... number of GPIO pins asserted by SET instruction, 0 to 5 (default 5)
@@ -567,7 +647,7 @@ INLINE void PioSetupSet_hw(pio_hw_t* hw, int sm, int base, int count)
 }
 
 // PIO setup OUT pins
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  base ... base GPIO pin asserted by OUT instruction, 0 to 31 (default 0)
 //  count ... number of GPIO pins asserted by OUT instruction, 1 to 32 (default 32)
@@ -582,7 +662,7 @@ INLINE void PioSetupOut_hw(pio_hw_t* hw, int sm, int base, int count)
 }
 
 // PIO setup IN pins
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  base ... base GPIO pin asserted by IN instruction, 0 to 31 (default 0)
 INLINE void PioSetupIn(int pio, int sm, int base)
@@ -598,7 +678,7 @@ INLINE void PioSetupIn_hw(pio_hw_t* hw, int sm, int base)
 // === setup PIO
 
 // get DREQ to use for pacing transfers to state machine
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  tx ... True for sending data from CPU to state machine, False for receiving data from state machine to CPU
 INLINE u8 PioGetDreq(int pio, int sm, Bool tx)
@@ -607,46 +687,46 @@ INLINE u8 PioGetDreq(int pio, int sm, Bool tx)
 }
 
 // setup GPIO pins to use output from PIO
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  pin ... pin base 0 to 29
 //  count ... number of pins 0 to 29
 INLINE void PioSetupGPIO(int pio, int pin, int count) { GPIO_FncMask(RangeMask(pin, pin+count-1), GPIO_FNC_PIO0 + pio); }
 
 // enable PIO state machine
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 INLINE void PioSMEnable(int pio, int sm) { RegSet(PIO_CTRL(pio), 1 << sm); }
 INLINE void PioSMEnable_hw(pio_hw_t* hw, int sm) { RegSet(&hw->ctrl, 1 << sm); }
 
 // disable PIO state machine
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 INLINE void PioSMDisable(int pio, int sm) { RegClr(PIO_CTRL(pio), 1 << sm); }
 INLINE void PioSMDisable_hw(pio_hw_t* hw, int sm) { RegClr(&hw->ctrl, 1 << sm); }
 
 // enable multiple PIO state machines
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm_mask ... state machines mask of bit B0 to B3
 // To use mask in range (first..last), use function RangeMask.
 INLINE void PioSMEnableMask(int pio, int sm_mask) { RegSet(PIO_CTRL(pio), sm_mask); }
 INLINE void PioSMEnableMask_hw(pio_hw_t* hw, int sm_mask) { RegSet(&hw->ctrl, sm_mask); }
 
 // enable multiple PIO state machines synchronized (resets their clock dividers)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm_mask ... state machines mask of bit B0 to B3
 // To use mask in range (first..last), use function RangeMask.
 INLINE void PioSMEnableMaskSync(int pio, int sm_mask) { RegSet(PIO_CTRL(pio), sm_mask | ((u32)sm_mask << 8)); }
 INLINE void PioSMEnableMaskSync_hw(pio_hw_t* hw, int sm_mask) { RegSet(&hw->ctrl, sm_mask | ((u32)sm_mask << 8)); }
 
 // disable multiple PIO state machines
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm_mask ... state machines mask of bits B0 to B3
 // To use mask in range (first..last), use function RangeMask.
 INLINE void PioSMDisableMask(int pio, int sm_mask) { RegClr(PIO_CTRL(pio), sm_mask); }
 INLINE void PioSMDisableMask_hw(pio_hw_t* hw, int sm_mask) { RegClr(&hw->ctrl, sm_mask); }
 
 // restart PIO state machine
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 // This method clears ISR, shift counters, clock divider counter,
 // pin write flags, delay counter, latched EXEC instruction, IRQ wait condition
@@ -654,7 +734,7 @@ INLINE void PioSMRestart(int pio, int sm) { RegSet(PIO_CTRL(pio), 1 << (sm+4)); 
 INLINE void PioSMRestart_hw(pio_hw_t* hw, int sm) { RegSet(&hw->ctrl, 1 << (sm+4)); }
 
 // restart multiple PIO state machines
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm_mask ... state machines mask of bits B0 to B3
 // This method clears ISR, shift counters, clock divider counter,
 // pin write flags, delay counter, latched EXEC instruction, IRQ wait condition
@@ -662,13 +742,13 @@ INLINE void PioSMRestartMask(int pio, int sm_mask) { RegSet(PIO_CTRL(pio), (u32)
 INLINE void PioSMRestartMask_hw(pio_hw_t* hw, int sm_mask) { RegSet(&hw->ctrl, (u32)sm_mask << 4); }
 
 // restart clock divider of PIO state machine (resets fractional counter)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 INLINE void PioClkdivRestart(int pio, int sm) { RegSet(PIO_CTRL(pio), 1 << (sm+8)); }
 INLINE void PioClkdivRestart_hw(pio_hw_t* hw, int sm) { RegSet(&hw->ctrl, 1 << (sm+8)); }
 
 // restart clock divider of multiple PIO state machines (resets fractional counter)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm_mask ... state machines mask of bits B0 to B3
 INLINE void PioClkdivRestartMask(int pio, int sm_mask) { RegSet(PIO_CTRL(pio), (u32)sm_mask << 8); }
 INLINE void PioClkdivRestartMask_hw(pio_hw_t* hw, int sm_mask) { RegSet(&hw->ctrl, (u32)sm_mask << 8); }
@@ -676,13 +756,13 @@ INLINE void PioClkdivRestartMask_hw(pio_hw_t* hw, int sm_mask) { RegSet(&hw->ctr
 // === PIO program control
 
 // get current program counter of PIO state machine (returns 0..31)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 INLINE u8 PioGetPC(int pio, int sm) { return (u8)(*PIO_ADDR(pio, sm) & 0x1f); }
 INLINE u8 PioGetPC_hw(const pio_hw_t* hw, int sm) { return (u8)(hw->sm[sm].addr & 0x1f); }
 
 // PIO execute one instruction and then resume execution of main program
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  instr ... instruction
 INLINE void PioExec(int pio, int sm, u16 instr) { *PIO_INSTR(pio, sm) = instr; }
@@ -693,7 +773,7 @@ INLINE Bool PioIsExec(int pio, int sm) { return (*PIO_EXECCTRL(pio, sm) & B31) !
 INLINE Bool PioIsExec_hw(const pio_hw_t* hw, int sm) { return (hw->sm[sm].execctrl & B31) != 0; }
 
 // PIO execute one instruction, wait to complete and then resume execution of main program
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  instr ... instruction
 // State machine must be enabled with valid clock divider.
@@ -701,7 +781,7 @@ void PioExecWait(int pio, int sm, u16 instr);
 void PioExecWait_hw(pio_hw_t* hw, int sm, u16 instr);
 
 // write data to TX FIFO of PIO state machine
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  data ... data value
 // If TX FIFO is full, the most recent value will be overwritten.
@@ -709,20 +789,20 @@ INLINE void PioWrite(int pio, int sm, u32 data) { *PIO_TXF(pio, sm) = data; }
 INLINE void PioWrite_hw(pio_hw_t* hw, int sm, u32 data) { hw->txf[sm] = data; }
 
 // read data from RX FIFO of PIO state machine
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 // If RX FIFO is empty, the return value is zero.
 INLINE u32 PioRead(int pio, int sm) { return *PIO_RXF(pio, sm); }
 INLINE u32 PioRead_hw(const pio_hw_t* hw, int sm) { return hw->rxf[sm]; }
 
 // check if RX FIFO of PIO state machine is full
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 INLINE Bool PioRxIsFull(int pio, int sm) { return (*PIO_FSTAT(pio) & BIT(sm)) != 0; }
 INLINE Bool PioRxIsFull_hw(const pio_hw_t* hw, int sm) { return (hw->fstat & BIT(sm)) != 0; }
 
 // check if RX FIFO of PIO state machine is empty
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 INLINE Bool PioRxIsEmpty(int pio, int sm) { return (*PIO_FSTAT(pio) & BIT(sm + 8)) != 0; }
 INLINE Bool PioRxIsEmpty_hw(const pio_hw_t* hw, int sm) { return (hw->fstat & BIT(sm + 8)) != 0; }
@@ -732,13 +812,13 @@ INLINE u8 PioRxLevel(int pio, int sm) { return (*PIO_FLEVEL(pio) >> (sm*8 + 4)) 
 INLINE u8 PioRxLevel_hw(const pio_hw_t* hw, int sm) { return (hw->flevel >> (sm*8 + 4)) & 0x0f; }
 
 // check if TX FIFO of PIO state machine is full
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 INLINE Bool PioTxIsFull(int pio, int sm) { return (*PIO_FSTAT(pio) & BIT(sm + 16)) != 0; }
 INLINE Bool PioTxIsFull_hw(const pio_hw_t* hw, int sm) { return (hw->fstat & BIT(sm + 16)) != 0; }
 
 // check if TX FIFO of PIO state machine is empty
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 INLINE Bool PioTxIsEmpty(int pio, int sm) { return (*PIO_FSTAT(pio) & BIT(sm + 24)) != 0; }
 INLINE Bool PioTxIsEmpty_hw(const pio_hw_t* hw, int sm) { return (hw->fstat & BIT(sm + 24)) != 0; }
@@ -748,14 +828,14 @@ INLINE u8 PioTxLevel(int pio, int sm) { return (*PIO_FLEVEL(pio) >> (sm*8)) & 0x
 INLINE u8 PioTxLevel_hw(const pio_hw_t* hw, int sm) { return (hw->flevel >> (sm*8)) & 0x0f; }
 
 // write data to TX FIFO of PIO state machine, wait if TX FIFO is full
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  data ... data value
 void PioWriteWait(int pio, int sm, u32 data);
 void PioWriteWait_hw(pio_hw_t* hw, int sm, u32 data);
 
 // read data from RX FIFO of PIO state machine, wait if RX FIFO is empty
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 u32 NOFLASH(PioReadWait)(int pio, int sm);
 u32 NOFLASH(PioReadWait_hw)(pio_hw_t* hw, int sm);
@@ -773,7 +853,7 @@ void PioTxFifoClear(int pio, int sm);
 void PioTxFifoClear_hw(pio_hw_t* hw, int sm);
 
 // Load program into PIO memory
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  program ... array of program instructions
 //  len ... length of program in number of instrucions
 //  off ... offset in PIO memory (program is wrapped to 32 instructions)
@@ -781,19 +861,19 @@ void PioTxFifoClear_hw(pio_hw_t* hw, int sm);
 void PioLoadProg(int pio, const u16* program, int len, int off);
 
 // fill PIO program by NOP instructions (= instruction MOV Y,Y)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  len ... length of program, number of instructions
 //  off ... offset in PIO memory (program is wrapped to 32 instructions)
 void PioNopProg(int pio, int len, int off);
 
 // clear PIO program by "JMP 0" instructions (= default reset value 0x0000)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  len ... length of program, number of instrucions
 //  off ... offset in PIO memory (program is wrapped to 32 instructions)
 void PioClearProg(int pio, int len, int off);
 
 // set output value of pin controlled by the PIO (after initialization with PioSetupGPIO, but before running state machine)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  pin ... first pin index 0..29
 //  count ... number of pins 1..30
@@ -803,7 +883,7 @@ void PioSetPin(int pio, int sm, int pin, int count, int val);
 void PioSetPin_hw(pio_hw_t* hw, int sm, int pin, int count, int val);
 
 // set direction of pin controlled by the PIO (after initialization with PioSetupGPIO, but before running state machine)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  pin ... first pin index 0..29
 //  count ... number of pins 1..30
@@ -813,7 +893,7 @@ void PioSetPinDir(int pio, int sm, int pin, int count, int dir);
 void PioSetPinDir_hw(pio_hw_t* hw, int sm, int pin, int count, int dir);
 
 // set current program address of PIO state machine
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  addr ... program address 0 to 31
 // This is done by executing JMP instruction on "victim" state machine (state machine should not be enabled).
@@ -821,61 +901,61 @@ void PioSetAddr(int pio, int sm, int addr);
 void PioSetAddr_hw(pio_hw_t* hw, int sm, int addr);
 
 // reset debug flags of PIO state machine
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 INLINE void PioDebugClear(int pio, int sm) { *PIO_FDEBUG(pio) = (B24+B16+B8+B0) << sm; }
 INLINE void PioDebugClear_hw(pio_hw_t* hw, int sm) { hw->fdebug = (B24+B16+B8+B0) << sm; }
 
 // check if IRQ is set
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  irq ... IRQ index 0 to 7
 INLINE Bool PioIrqIsSet(int pio, int irq) { return (*PIO_IRQ(pio) & BIT(irq)) != 0; }
 INLINE Bool PioIrqIsSet_hw(const pio_hw_t* hw, int irq) { return (hw->irq & BIT(irq)) != 0; }
 
 // clear IRQ request
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  irq ... IRQ index 0 to 7
 INLINE void PioIrqClear(int pio, int irq) { *PIO_IRQ(pio) = BIT(irq); }
 INLINE void PioIrqClear_hw(pio_hw_t* hw, int irq) { hw->irq = BIT(irq); }
 
 // clear IRQ requests by mask
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  irq_mask ... IRQ bits B0 to B7
 INLINE void PioIrqClearMask(int pio, int irq_mask) { *PIO_IRQ(pio) = irq_mask; }
 INLINE void PioIrqClearMask_hw(pio_hw_t* hw, int irq_mask) { hw->irq = irq_mask; }
 
 // force IRQ request
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  irq ... IRQ index 0 to 7
 INLINE void PioIrqForce(int pio, int irq) { *PIO_IRQFORCE(pio) = BIT(irq); }
 INLINE void PioIrqForce_hw(pio_hw_t* hw, int irq) { hw->irq_force = BIT(irq); }
 
 // force IRQ requests by mask
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  irq_mask ... IRQ bits B0 to B7
 INLINE void PioIrqForceMask(int pio, int irq_mask) { *PIO_IRQFORCE(pio) = irq_mask; }
 INLINE void PioIrqForceMask_hw(pio_hw_t* hw, int irq_mask) { hw->irq_force = irq_mask; }
 
 // switch GPIO synchronizer OFF, synchronizer will be bypassed (used for high speed inputs)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  pin ... GPIO pin 0 to 31
 INLINE void PioInBypass(int pio, int pin) { RegSet(PIO_INPUTSYNC(pio), BIT(pin)); }
 INLINE void PioInBypass_hw(pio_hw_t* hw, int pin) { RegSet(&hw->input_sync_bypass, BIT(pin)); }
 
 // switch GPIO synchronizer OFF by mask, synchronizer will be bypassed (used for high speed inputs)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  pin_mask ... GPIO pin mask of bits B0 to B31
 INLINE void PioInBypassMask(int pio, u32 pin_mask) { RegSet(PIO_INPUTSYNC(pio), pin_mask); }
 INLINE void PioInBypassMask_hw(pio_hw_t* hw, u32 pin_mask) { RegSet(&hw->input_sync_bypass, pin_mask); }
 
 // switch GPIO synchronizer ON, input will be synchronized (default state)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  pin ... GPIO pin 0 to 31
 INLINE void PioInSync(int pio, int pin) { RegClr(PIO_INPUTSYNC(pio), BIT(pin)); }
 INLINE void PioInSync_hw(pio_hw_t* hw, int pin) { RegClr(&hw->input_sync_bypass, BIT(pin)); }
 
 // switch GPIO synchronizer ON by mask, input will be synchronized (default state)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  pin_mask ... GPIO pin mask of bits B0 to B31
 INLINE void PioInSyncMask(int pio, u32 pin_mask) { RegClr(PIO_INPUTSYNC(pio), pin_mask); }
 INLINE void PioInSyncMask_hw(pio_hw_t* hw, u32 pin_mask) { RegClr(&hw->input_sync_bypass, pin_mask); }
@@ -901,14 +981,14 @@ INLINE u8 PioFifoDepth(int pio) { return (u8)(*PIO_DBG_CFGINFO(pio) & 0x3f); }
 INLINE u8 PioFifoDepth_hw(const pio_hw_t* hw) { return (u8)(hw->dbg_cfginfo & 0x3f); }
 
 // get raw unmasked interrupt state (returns 1 if raw interrupt is set)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  type ... interrupt type PIO_INT_*
 INLINE u8 PioIntRaw(int pio, int sm, int type) { return (u8)((*PIO_INTR(pio) >> (type*4 + sm)) & 1); }
 INLINE u8 PioIntRaw_hw(const pio_hw_t* hw, int sm, int type) { return (u8)((hw->intr >> (type*4 + sm)) & 1); }
 
 // enable PIO interrupt
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  irq ... IRQ 0 or 1
 //  type ... interrupt type PIO_INT_*
@@ -917,7 +997,7 @@ INLINE void PioIntEnable0_hw(pio_hw_t* hw, int sm, int type) { RegSet(&hw->inte0
 INLINE void PioIntEnable1_hw(pio_hw_t* hw, int sm, int type) { RegSet(&hw->inte1, BIT(type*4 + sm)); }
 
 // disable PIO interrupt (default state)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  irq ... IRQ 0 or 1
 //  type ... interrupt type PIO_INT_*
@@ -926,7 +1006,7 @@ INLINE void PioIntDisable0_hw(pio_hw_t* hw, int sm, int type) { RegClr(&hw->inte
 INLINE void PioIntDisable1_hw(pio_hw_t* hw, int sm, int type) { RegClr(&hw->inte1, BIT(type*4 + sm)); }
 
 // force PIO interrupt
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  irq ... IRQ 0 or 1
 //  type ... interrupt type PIO_INT_*
@@ -935,7 +1015,7 @@ INLINE void PioIntForce0_hw(pio_hw_t* hw, int sm, int type) { RegSet(&hw->intf0,
 INLINE void PioIntForce1_hw(pio_hw_t* hw, int sm, int type) { RegSet(&hw->intf1, BIT(type*4 + sm)); }
 
 // unforce PIO interrupt (default state)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  irq ... IRQ 0 or 1
 //  type ... interrupt type PIO_INT_*
@@ -944,7 +1024,7 @@ INLINE void PioIntUnforce0_hw(pio_hw_t* hw, int sm, int type) { RegClr(&hw->intf
 INLINE void PioIntUnforce1_hw(pio_hw_t* hw, int sm, int type) { RegClr(&hw->intf1, BIT(type*4 + sm)); }
 
 // get interrupt state (returns 1 if interrupt is set)
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  irq ... IRQ 0 or 1
 //  type ... interrupt type PIO_INT_*
@@ -953,19 +1033,19 @@ INLINE u8 PioIntStatus0_hw(const pio_hw_t* hw, int sm, int type) { return (u8)((
 INLINE u8 PioIntStatus1_hw(const pio_hw_t* hw, int sm, int type) { return (u8)((hw->ints1 >> (type*4 + sm)) & 1); }
 
 // initialize PIO state machine, prepare default state
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 void PioSMInit(int pio, int sm);
 
 // initialite PIO state machine using configuration
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 //  sm ... state machine 0 to 3
 //  addr ... initial PC address
 //  cfg ... configuration (NULL = use default configuration)
 void PioSMInitCfg(int pio, int sm, int addr, const pio_sm_config* cfg);
 
 // initialize PIO with all state machines
-//  pio ... PIO number 0 or 1
+//  pio ... PIO number
 void PioInit(int pio);
 
 // ----------------------------------------------------------------------------

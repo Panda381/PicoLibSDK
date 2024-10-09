@@ -82,7 +82,11 @@
 #include "../sdk_dreq.h"
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_uart.h"	// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_uart.h"	// constants of original SDK
+#else
+#include "orig_rp2350/orig_uart.h"	// constants of original SDK
+#endif
 #include "sdk_timer.h"
 #include "sdk_gpio.h"
 #endif // USE_ORIGSDK
@@ -97,9 +101,7 @@ extern "C" {
 #define PICO_DEFAULT_UART_BAUD_RATE	115200
 
 // UART hardware registers
-//#define UART0_BASE		0x40034000	// UART0 serial port
-//#define UART1_BASE		0x40038000	// UART1 serial port
-#define UART_BASE(uart) (UART0_BASE+(uart)*0x4000)	// UART base address (uart = 0 or 1)
+#define UART_BASE(uart) (UART0_BASE+(uart)*(UART1_BASE - UART0_BASE))	// UART base address (uart = 0 or 1)
 #define UART_DR(uart)	((volatile u32*)(UART_BASE(uart)+0))	// data register (uart = 0 or 1)
 #define UART_RSR(uart)	((volatile u32*)(UART_BASE(uart)+4))	// receive status register (uart = 0 or 1)
 #define UART_FR(uart)	((volatile u32*)(UART_BASE(uart)+0x18))	// flag register (uart = 0 or 1)

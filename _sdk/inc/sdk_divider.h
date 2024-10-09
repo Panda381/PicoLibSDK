@@ -30,14 +30,24 @@
 
 #include "../sdk_addressmap.h"		// Register address offsets
 #include "sdk_sio.h"			// SIO registers
+#include "sdk_cpu.h"			// CPU
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_sio.h"		// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_sio.h"		// constants of original SDK
+#else
+#include "orig_rp2350/orig_sio.h"		// constants of original SDK
+#endif
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// structure to save divider state
+typedef struct { u32 values[4]; } hw_divider_state_t;
+
+#if RP2040
 
 // Divider hardware registers
 //#define SIO_BASE		0xd0000000	// SIO registers
@@ -64,9 +74,6 @@ typedef struct {
 #define	divider_hw	((divider_hw_t*)(SIO_BASE+0x60))
 
 STATIC_ASSERT(sizeof(divider_hw_t) == 0x1C, "Incorrect divider_hw_t!");
-
-// structure to save divider state
-typedef struct { u32 values[4]; } hw_divider_state_t;
 
 // start signed division p/q
 // Interrupt should be disabled.
@@ -206,9 +213,12 @@ u64 UMul(u32 a, u32 b);
 // Takes 370 ns
 s64 SMul(s32 a, s32 b);
 
+// Unsigned multiply u32*u32 with result u32 high, simplified, without carry from LOW
+//u32 UMulHighSimple(u32 a, u32 b);
+
 // Square u32*u32 with result u64
 // Takes 240 ns
-u64 Sqr(u32);
+u64 Sqr(u32 a);
 
 // Signed/unsigned multiply u64*u64 with result u64 (= __aeabi_lmul)
 u64 UMul64(u64 a, u64 b);
@@ -216,6 +226,226 @@ s64 SMul64(s64 a, s64 b);
 
 // check if integer number is power of 2
 INLINE Bool IsPow2(u32 a) { return ((a & (a-1)) == 0); }
+
+#else // RP2040
+
+// ------------------------------------------------------------------------------
+//                              Divider emulation
+// ------------------------------------------------------------------------------
+
+// temporary saved result of divider emulation
+extern u32 DivModResult_Div[CORE_NUM];
+extern u32 DivModResult_Mod[CORE_NUM];
+
+// save divider state (for calling core)
+// Interrupt should be disabled.
+INLINE void DivSaveState(hw_divider_state_t* dst) {}
+
+// load divider state (for calling core)
+// Interrupt should be disabled.
+INLINE void DivLoadState(const hw_divider_state_t* src) {}
+
+// Divide signed S32
+//   a ... signed dividend s32
+//   b ... signed divisor s32
+//   result ... signed quotient s32 c=a/b
+INLINE s32 DivS32(s32 a, s32 b) { return (b == 0) ? (s32)0x80000000ULL : (a/b); }
+
+// Divide unsigned U32
+//   a ... unsigned dividend u32
+//   b ... unsigned divisor u32
+//   result ... unsigned quotient u32 c=a/b
+INLINE u32 DivU32(u32 a, u32 b) { return (b == 0) ? (u32)-1 : (a/b); }
+
+// Modulo signed S32
+//   a ... signed dividend s32
+//   b ... signed divisor s32
+//   result ... signed remainder s32 d=a%b
+INLINE s32 ModS32(s32 a, s32 b) { return (b == 0) ? a : (a%b); }
+
+// Modulo unsigned U32
+//   a ... unsigned dividend u32
+//   b ... unsigned divisor u32
+//   result ... unsigned remainder u32 d=a%b
+INLINE u32 ModU32(u32 a, u32 b) { return (b == 0) ? a : (a%b); }
+
+// Divide modulo signed S32
+//   a ... signed dividend s32
+//   b ... signed divisor s32
+//   rem ... pointer to store remainder s32 d=a%b
+//   result ... signed quotient s32 c=a/d
+INLINE s32 DivModS32(s32 a, s32 b, s32* rem)
+{
+	if (b == 0)
+	{
+		*rem = a;
+		return (s32)0x80000000;
+	}
+
+	s32 res = a/b;
+	*rem = a - res*b;
+	return res;
+}
+
+// Divide modulo unsigned U32
+//   a ... unsigned dividend u32
+//   b ... unsigned divisor u32
+//   rem ... pointer to store remainder u32 d=a%b
+//   result ... unsigned quotient u32 c=a/d
+INLINE u32 DivModU32(u32 a, u32 b, u32* rem)
+{
+	if (b == 0)
+	{
+		*rem = a;
+		return (u32)-1;
+	}
+
+	u32 res = a/b;
+	*rem = a - res*b;
+	return res;
+}
+
+// Divide signed S64
+//   a ... signed dividend s64
+//   b ... signed divisor s64
+//   result ... signed quotient s64 c=a/b
+INLINE s64 DivS64(s64 a, s64 b) { return (b == 0) ? (s64)0x8000000000000000ULL : (a/b); }
+
+// Divide unsigned U64
+//   a ... unsigned dividend u64
+//   b ... unsigned divisor u64
+//   result ... unsigned quotient u64 c=a/b
+INLINE u64 DivU64(u64 a, u64 b) { return (b == 0) ? (u64)-1LL : (a/b); }
+
+// Modulo signed S64
+//   a ... signed dividend s64
+//   b ... signed divisor s64
+//   result ... signed remainder s64 d=a%b
+INLINE s64 ModS64(s64 a, s64 b) { return (b == 0) ? a : (a%b); }
+
+// Modulo unsigned U64
+//   a ... unsigned dividend u64
+//   b ... unsigned divisor u64
+//   result ... unsigned remainder u64 d=a%b
+INLINE u64 ModU64(u64 a, u64 b) { return (b == 0) ? a : (a%b); }
+
+// Divide modulo signed S64
+//   a ... signed dividend s64
+//   b ... signed divisor s64
+//   rem ... pointer to store remainder s64 d=a%b
+//   result ... signed quotient s64 c=a/d
+INLINE s64 DivModS64(s64 a, s64 b, s64* rem)
+{
+	if (b == 0)
+	{
+		*rem = a;
+		return (s64)0x8000000000000000ULL;
+	}
+
+	s64 res = a/b;
+	*rem = a - res*b;
+	return res;
+}
+
+// Divide modulo unsigned U64
+//   a ... unsigned dividend u64
+//   b ... unsigned divisor u64
+//   rem ... pointer to store remainder u64 d=a%b
+//   result ... unsigned quotient u64 c=a/d
+INLINE u64 DivModU64(u64 a, u64 b, u64* rem)
+{
+	if (b == 0)
+	{
+		*rem = a;
+		return (u64)-1LL;
+	}
+
+	u32 res = a/b;
+	*rem = a - res*b;
+	return res;
+}
+
+// Unsigned multiply u32*u32 with result u64
+INLINE u64 UMul(u32 a, u32 b) { return (u64)a*b; }
+
+// Signed multiply s32*s32 with result s64
+INLINE s64 SMul(s32 a, s32 b) { return (s64)a*b; }
+
+/*
+// Unsigned multiply u32*u32 with result u32 high, simplified, without carry from LOW
+INLINE u32 UMulHighSimple(u32 a, u32 b)
+{
+	u32 aL = (a & 0xffff);
+	u32 aH = (a >> 16);
+	u32 bL = (b & 0xffff);
+	u32 bH = (b >> 16);
+
+	u32 res = aH * bH;
+	res += (aH * bL) >> 16;
+	res += (aL * bH) >> 16;
+	return res;
+}
+*/
+
+// Square u32*u32 with result u64
+INLINE u64 Sqr(u32 a) { return (u64)a*a; }
+
+// Signed/unsigned multiply u64*u64 with result u64 (= __aeabi_lmul)
+INLINE u64 UMul64(u64 a, u64 b) { return a*b; }
+INLINE s64 SMul64(s64 a, s64 b) { return a*b; }
+
+// check if integer number is power of 2
+INLINE Bool IsPow2(u32 a) { return ((a & (a-1)) == 0); }
+
+// start signed division p/q
+INLINE void DivStartS32(s32 p, s32 q)
+{
+	int core = CpuID();
+	if (q == 0)
+	{
+		DivModResult_Div[core] = (s32)0x80000000ULL;
+		DivModResult_Mod[core] = p;
+	}
+	else
+	{
+		DivModResult_Div[core] = p/q;
+		DivModResult_Mod[core] = p%q;
+	}
+}
+
+// start unsigned division p/q
+INLINE void DivStartU32(u32 p, u32 q)
+{
+	int core = CpuID();
+	if (q == 0)
+	{
+		DivModResult_Div[core] = (u32)-1;
+		DivModResult_Mod[core] = p;
+	}
+	else
+	{
+		DivModResult_Div[core] = p/q;
+		DivModResult_Mod[core] = p%q;
+	}
+}
+
+// wait for divide to complete calculation (takes 8 clock cycles)
+INLINE void DivWait(void) { }
+
+// get result remainder after complete calculation
+INLINE u32 DivRemainder(void) { return DivModResult_Mod[CpuID()]; }
+
+// get result quotient after complete calculation
+INLINE u32 DivQuotient(void) { return DivModResult_Div[CpuID()]; }
+
+// get result after complete calculation: quotient p/q in low 32 bits, remainder p%q in high 32 bits
+INLINE u64 DivResult(void)
+{
+	int core = CpuID();
+	return ((u64)DivModResult_Mod[core] << 32) | DivModResult_Div[core];
+}
+
+#endif // RP2040
 
 // ----------------------------------------------------------------------------
 //                          Original-SDK interface
@@ -249,7 +479,7 @@ INLINE divmod_result_t hw_divider_result_wait(void)
 INLINE u32 hw_divider_u32_quotient_wait(void)
 {
 	hw_divider_wait_ready();
-	return divider_hw->quotient;
+	return DivQuotient();
 }
 
 // Return result of last asynchronous HW divide, signed quotient only
@@ -259,7 +489,7 @@ INLINE s32 hw_divider_s32_quotient_wait(void) { return (s32)hw_divider_u32_quoti
 INLINE u32 hw_divider_u32_remainder_wait(void)
 {
 	hw_divider_wait_ready();
-	return divider_hw->remainder;
+	return DivRemainder();
 }
 
 // Return result of last asynchronous HW divide, signed remainder only

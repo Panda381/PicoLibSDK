@@ -1,2 +1,2 @@
 @echo off
-c.bat demovga
+c.bat demovga 0

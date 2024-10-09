@@ -1,0 +1,2 @@
+This is a regular old LED blinking example, however it is linked with double_tap_usb_boot
+so pressing reset quickly twice, will reset into USB bootloader

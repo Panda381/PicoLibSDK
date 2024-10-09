@@ -7,6 +7,9 @@
 
 #include "../include.h"
 
+#define DISP_FPS	0	// 1 = display FPS
+#define DISP_FAST	1	// 1 = use high speed
+
 /*
 Orginal source code (BBC BASIC):
 
@@ -28,11 +31,32 @@ Orginal source code (BBC BASIC):
 160 REPEAT:UNTIL FALSE
 */
 
+#if DISP_FAST		// 1 = use high speed
+int FASTCODE NOFLASH(main)()
+#else
 int main()
+#endif
 {
 	int x, y, m, n, s;
 	float i, p, q, r;
 	float a = 0;
+
+#if DISP_FAST		// 1 = use high speed
+	// setup high speed
+#if RP2350
+	FlashInit(3);
+#else
+	FlashInit(6);
+#endif
+	VregSetVoltage(VREG_VOLTAGE_1_30);
+	ClockPllSysFreq(300000);
+#endif
+
+#if DISP_FPS	// 1 = display FPS
+	// prepare to display FPS
+	u32 t1, t2;
+	t1 = Time();
+#endif
 
 #define XS 1	// step in X direction
 #define YS 1	// step in Y direction
@@ -67,11 +91,19 @@ int main()
 			}
 		}
 
+#if DISP_FPS		// 1 = display FPS
+		// display FPS and update display
+		t2 = Time();
+		DrawPrint("\r%.1f", 1000000.f/(t2-t1));
+		t1 = t2;
+#else // DISP_FPS
 		// display update
 		DispUpdate();
+#endif // DISP_FPS
 
 		// animation
 		a += 0.1f;
+		if (a >= (float)PI2) a -= (float)PI2;
 #if USE_PICOPADVGA
 		WaitMs(40);
 #endif

@@ -1,0 +1,6 @@
+This program
+- Uses UART1 (the spare UART, by default) to transmit some text
+- Uses a PIO state machine to receive that text
+- Prints out the received text to the default console (UART0)
+This might require some reconfiguration on boards where UART1 is the
+default UART.

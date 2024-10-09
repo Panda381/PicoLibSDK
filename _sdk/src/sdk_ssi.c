@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                         SSI synchronous serial interface
+//                  SSI synchronous serial interface (only RP2040)
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
@@ -15,6 +15,9 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+
+#if RP2040
+
 #include "../inc/sdk_ssi.h"
 #include "../inc/sdk_qspi.h"
 #include "../inc/sdk_cpu.h"
@@ -117,7 +120,7 @@ void NOFLASH(SSI_FlashQspi)(int clkdiv)
 		// send status write enable command followed by data bytes - enable QSPI mode
 		ssi->dr0 = CMD_WRITE_STATUS;
 		ssi->dr0 = 0;
-		ssi->dr0 = 0;
+		ssi->dr0 = SREG_DATA;
 		SSI_Wait(ssi);
 		res = ssi->dr0;
 		res = ssi->dr0;
@@ -196,3 +199,5 @@ void NOFLASH(SSI_InitFlash)(int clkdiv)
 	// enable interrupts
 	IRQ_UNLOCK;
 }
+
+#endif // RP2040

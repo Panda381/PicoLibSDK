@@ -22,8 +22,8 @@
 
 // === Use modules (set 1 = use module, 0 = do not use module)
 
-#define USE_FLOAT	1		// 1 = use float support
-#define USE_DOUBLE	1		// 1 = use double support
+#define USE_FLOAT	1		// use float support 1=in RAM, 2=in Flash 
+#define USE_DOUBLE	1		// use double support 1=in RAM, 2=in Flash
 
 // === setup REAL numbers (1 = use, 0 = do not use)
 // If generating constants with GenConst generator, enable all number types

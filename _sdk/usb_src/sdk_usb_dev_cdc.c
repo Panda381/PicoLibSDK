@@ -32,7 +32,7 @@ sUsbDevCdcInter UsbDevCdcInter[USE_USB_DEV_CDC];
 // === default descriptors
 
 // buffer to load unique board string ID from flash memory
-char BoardIdStr[9] = "12345";
+char BoardIdStr_cdc[9] = "12345";
 
 // Strings
 const char* UsbDevCdcDescStr[] =
@@ -40,7 +40,7 @@ const char* UsbDevCdcDescStr[] =
 				// 0: language code (not included here)
 	"Raspberry Pi",		// 1: manufacturer
 	"PicoPad",		// 2: product
-	BoardIdStr,		// 3: board serial number
+	BoardIdStr_cdc,		// 3: board serial number
 	"USB UART",		// 4: configuration descriptor
 	"USB UART2",		// 5: configuration descriptor
 	"USB UART3",		// 6: configuration descriptor

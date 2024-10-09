@@ -20,6 +20,8 @@ if "%1"=="" goto default
 
 :default
 rem ..\..\..\_c1.bat picopad08
-..\..\..\_c1.bat picopad10
+rem ..\..\..\_c1.bat picopad10
+..\..\..\_c1.bat picopad20
+rem ..\..\..\_c1.bat picopad20riscv
 
 :stop

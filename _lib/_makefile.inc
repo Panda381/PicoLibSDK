@@ -47,6 +47,8 @@ CSRC += ../../../_lib/bigint/bernoulli.c
 CSRC += ../../../_lib/real/real.c
 
 # ASM sdk
+ifeq (${CPUCLASS},RP2040)
 ASRC += ../../../_lib/src/vga_blitkey.S
+endif
 
 #ASRC += ../../../_lib/3d_src/lib_d3fixed_asm.S

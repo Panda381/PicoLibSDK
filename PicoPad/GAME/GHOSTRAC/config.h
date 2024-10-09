@@ -24,6 +24,9 @@
 //#define USE_ORIGSDK		1		// include interface of original-SDK
 //#define USE_SCREENSHOT	1		// use screen shots
 
+#define USE_FLOAT	2		// use Single-floating point 1=in RAM, 2=in Flash (sdk_float.c, sdk_float_asm.S, sdk_float.h)
+#define USE_DOUBLE	2		// use Double-floating point 1=in RAM, 2=in Flash (sdk_double.c, sdk_double_asm.S, sdk_double.h)
+
 #define USE_USBPAD		1		// simulate keypad with USB keyboard
 //#define USE_USBPORT		1		// use USB Mini-Port (sdk_usbport.c, sdk_usbport.h)
 //#define USE_USB_DEV_CDC	4		// use USB CDC Communication Device Class, value = number of interfaces (device)

@@ -8,7 +8,9 @@ rem marked with ":default" label in the _setup.bat file.
 rem Only PicoPad
 if "%1"=="picopad08" goto start
 if "%1"=="picopad10" goto start
-if "%1"=="picopadvga" goto stop
+if "%1"=="picopad20" goto start
+if "%1"=="picopad20riscv" goto start
+if "%1"=="picopadvga" goto start
 if not "%1"=="" goto stop
 
 :start

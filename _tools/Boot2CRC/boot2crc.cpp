@@ -1,5 +1,5 @@
-// PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
-// Copyright (c) 2023 Miroslav Nemecek, Panda38@seznam.cz, hardyplotter2@gmail.com
+// PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040/RP2350
+// Copyright (c) 2024 Miroslav Nemecek, Panda38@seznam.cz, hardyplotter2@gmail.com
 // 	https://github.com/Panda381/PicoLibSDK
 //	https://www.breatharian.eu/hw/picolibsdk/index_en.html
 //	https://github.com/pajenicko/picopad
@@ -56,9 +56,10 @@ u32 crc32(const u8* r0, u32 r1)
 
 int main(int argc, char* argv[])
 {
-	if (argc != 2)
+	if ((argc != 3) || ((*argv[2] != '1') && (*argv[2] != '2') && (*argv[2] != '3')))
 	{
-		printf("Syntax: boot2crc bootfile.bin\n");
+		printf("Syntax: boot2crc bootfile.bin cputype\n");
+		printf("   cputype: 1=cortex-m0plus, 2=cortex-m33 or 3=risc-v\n");
 		return 1;
 	}
 
@@ -104,10 +105,19 @@ int main(int argc, char* argv[])
 	printf("// ****************************************************************************\n");
 	printf("// Do not modify - auto generated\n");
 	printf("\n");
-	printf("\t.thumb\t\t\t// use 16-bit ARM instructions\n");
-	printf("\t.section .boot2,\"ax\"\t// boot2 code section\n");
-	printf("\t.syntax unified\n");
-	printf("\t.cpu cortex-m0plus\n");
+	printf("\t.section .boot2,\"ax\"\n");
+	if (*argv[2] == '1')
+	{
+		printf("\t.thumb\n");
+		printf("\t.syntax unified\n");
+		printf("\t.cpu cortex-m0plus\n");
+	}
+	else if (*argv[2] == '2')
+	{
+		printf("\t.thumb\n");
+		printf("\t.syntax unified\n");
+		printf("\t.cpu cortex-m33\n");
+	}
 	printf("\n");
 
 	int i;

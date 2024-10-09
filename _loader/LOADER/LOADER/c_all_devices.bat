@@ -1,16 +1,20 @@
 @echo off
 call d.bat
-call c.bat demovga
+call c.bat demovga 0
 call d.bat
-call c.bat picoino10
+call c.bat picoino10 0
 call d.bat
-call c.bat picoinomini
+call c.bat picoinomini 0
 call d.bat
-call c.bat picopad08
+call c.bat picopad08 0
 call d.bat
-call c.bat picopad10
+call c.bat picopad10 0
 call d.bat
-call c.bat picopadvga
+call c.bat picopad20 1
 call d.bat
-call c.bat picotron
+call c.bat picopad20riscv 2
+call d.bat
+call c.bat picopadvga 0
+call d.bat
+call c.bat picotron 0
 call d.bat

@@ -129,4 +129,8 @@ void EmuSyncTerm(int pwm)
 #include "gb/emu_gb.c"		// Game Boy emulator
 #endif
 
+#if USE_EMU_NES			// use NES emulator
+#include "nes/emu_nes.c"	// NES emulator
+#endif
+
 #endif // USE_EMU

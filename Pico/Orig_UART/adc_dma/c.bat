@@ -18,5 +18,7 @@ if "%1"=="" goto default
 
 :default
 ..\..\..\_c1.bat pico
+rem ..\..\..\_c1.bat pico2
+rem ..\..\..\_c1.bat pico2riscv
 
 :stop

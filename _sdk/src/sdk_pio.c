@@ -21,11 +21,19 @@
 
 #include "../inc/sdk_pio.h"
 
+#if RP2040
 // claimed PIO state machines
 u8 PioClaimed = 0;
 
 // map of used instruction memory
 u32 PioUsedMap[PIO_NUM] = { 0, 0 };
+#else // RP2040
+// claimed PIO state machines
+u16 PioClaimed = 0;
+
+// map of used instruction memory
+u32 PioUsedMap[PIO_NUM] = { 0, 0, 0 };
+#endif // RP2040
 
 // === claim state machine
 

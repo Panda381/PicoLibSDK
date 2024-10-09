@@ -1,0 +1,5 @@
+Use some other UART features like RX interrupts, hardware control flow,
+and data formats other than 8n1. Program will echo characters back, incremented.
+
+We are using pins 0 and 1, but see the GPIO function select table in the
+datasheet for information on which other pins can be used.

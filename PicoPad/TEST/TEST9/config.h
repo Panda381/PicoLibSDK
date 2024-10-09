@@ -13,11 +13,13 @@
 // to change from the default configuration in config_def.h.
 // *********
 
+#define USE_VFP		1		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
+
 //#define FONT			FontBold8x8	// default system font
 //#define FONTW			8		// width of system font
 //#define FONTH			8		// height of system font
 
-#define USE_DRAW_STDIO	1		// use DRAW stdio (DrawPrint function)
+#define USE_DRAW_STDIO		1		// use DRAW stdio (DrawPrint function)
 #define USE_USB_STDIO		1		// use USB stdio (UsbPrint function)
 //#define USE_UART_STDIO	1		// use UART stdio (UartPrint function)
 

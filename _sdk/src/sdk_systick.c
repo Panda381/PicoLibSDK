@@ -44,6 +44,11 @@ void KeyScan();
 // SysTick handler
 void SysTick_Handler()
 {
+#if RISCV
+	// set next time tick
+	MTimeCmp(MTimeGetCmp() + SYSTICK_TICKS);
+#endif // RISCV
+
 	// disable interrupts (to avoid interrupt by higher IRQ)
 	IRQ_LOCK;
 
@@ -119,24 +124,56 @@ void SysTickInit()
 #endif
 	}
 
+#if RISCV
+
+	// temporary disable machine-mode timer
+	MTimerDisable();
+
+	// register machine-mode timer handler
+	SetHandler(IRQ_MTIMER, SysTick_Handler);
+
+	// initialize machine-mode timer to 5 ms
+	MTimerSlow();			// set slow mode - run from 1-us tick
+	u64 time = MTime64();		// get current time
+	cb();
+	MTimeCmp(time + SYSTICK_TICKS);	// set time of next tick
+	MTimerEnable();			// enable machine-mode timer
+
+	// enable mtimer interrupt and external interrupts
+	u32 val = B7 | B11;
+	__asm volatile (" csrw mie,%0\n" :: "r" (val) : "memory");
+
+#else // RISCV
+
 	// temporary disable SysTick counter
 	systick_hw->csr = B1;	// disable SysTick handler
 
 	// register SysTick handler
-	SetHandler(IRQ_SYSTICK, SysTick_Handler);	
+	SetHandler(IRQ_SYSTICK, SysTick_Handler);
 
-	// initialize system tick timer to 1 ms
+	// initialize system tick timer to 5 ms
 	systick_hw->rvr = SYSTICK_TICKS - 1; // set reload register 
 	NVIC_SysTickPrio(IRQ_PRIO_SYSTICK); // set interrupt priority
 	systick_hw->cvr = 0;	// reset counter
 	systick_hw->csr = B0 | B1;	// set control register - counter enabled,
 				//   trigger SysTick exception, use external reference clock
+#endif // RISCV
 }
 
 // terminate SysTick timer
 void SysTickTerm()
 {
-	systick_hw->csr = B1;	// disable SysTick handler
+#if RISCV
+	// disable mtimer interrupt and external interrupts
+	u32 val = 0; //B11;
+	__asm volatile (" csrw mie,%0\n" :: "r" (val) : "memory");
+
+	// temporary disable machine-mode timer
+	MTimerDisable();
+#else
+	// disable SysTick handler
+	systick_hw->csr = B1;
+#endif
 }
 
 // get current date and time in Unix format with [ms] and [us], synchronized (NULL = entries not required)

@@ -682,6 +682,24 @@ regular_func_text UMul
 	bx	lr
 
 // ----------------------------------------------------------------------------
+// Unsigned multiply u32*u32 with result u32 high, simplified, without carry from LOW
+// ----------------------------------------------------------------------------
+// u32 UMulHighSimple(u32 a, u32 b);
+
+//regular_func_text UMulHighSimple
+
+// macro - unsigned multiply u32 * u32 -> (u64>>32), simplified, without carry from LOW
+//  input: RX = u32 x
+//         RY = u32 y
+// output: RZ = u32 zH (result high)
+// trashes: RT1, RT2
+// - can have RZ=RX, in which case RX trashed.
+//.macro mul32_32_32_highsimple rx,ry,rz,rt1,rt2
+
+//	mul32_32_32_highsimple	r0, r1, r0, r2, r3
+//	bx	lr
+
+// ----------------------------------------------------------------------------
 //                  Signed multiply s32*s32 with result s64
 // ----------------------------------------------------------------------------
 // s64 SMul(s32 a, s32 b);

@@ -65,7 +65,7 @@
 // swap bytes of command
 #define BYTESWAP(n) ((((n)&0xff)<<24)|(((n)&0xff00)<<8)|(((n)&0xff0000)>>8)|(((n)&0xff000000)>>24))
 
-// PIO command (jmp=program address, num=loop counter) ... 4-bit mode uses left shit
+// PIO command (jmp=program address, num=loop counter) ... 4-bit mode uses left shift
 #if COLBITS == 4
 #define VGACMD(jmp, num) BYTESWAP( (u32)((jmp)+VGA_PIO_OFF) | ((u32)(num)<<5) )
 #else

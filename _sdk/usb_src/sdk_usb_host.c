@@ -1425,7 +1425,7 @@ void UsbHostXferStart(u8 dev_addr, u8 dev_epinx, u8* buf, u16 len, Bool use_ring
 void UsbHostSetupSend(u8 dev_addr)
 {
 	// copy setup packet to packet buffer
-	memcpy(USB_SETUP_PKT, &UsbSetupRequest, USB_SETUP_PKT_SIZE);
+	UsbMemcpy(USB_SETUP_PKT, &UsbSetupRequest, USB_SETUP_PKT_SIZE);
 
 	// initialize endpoint 0, direction OUT
 	sEndpoint* sep = &UsbEndpoints[0];

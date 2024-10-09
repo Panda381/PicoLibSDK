@@ -307,6 +307,10 @@ typedef void (*pEmu32Write32)(u32 addr, u32 data);
 #include "gb/emu_gb.h"		// Game Boy emulator
 #endif
 
+#if USE_EMU_NES			// use NES emulator
+#include "nes/emu_nes.h"	// NES emulator
+#endif
+
 #ifdef __cplusplus
 }
 #endif

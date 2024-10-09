@@ -99,6 +99,9 @@ extern int DispMaxY;		// maximal Y + 1; end of back buffer strip
 //  3 Inverted Landscape
 void DispRotation(u8 rot);
 
+// set draw window
+void DispWindow(u16 x1, u16 x2, u16 y1, u16 y2);
+
 // set BGR color order instead of RGB
 void DispSetModeBGR(Bool bgr);
 
@@ -170,6 +173,24 @@ void DispTerm();
 
 // wait for VSync scanline
 INLINE void VgaWaitVSync() {}
+
+// Direct draw text to display with current selected font
+//  text ... text to display (must not exceed display width)
+//  x ... start X position
+//  y ... start Y position
+//  w1 ... left margin (number of pixels with background color)
+//  w2 ... right margin (number of pixels with background color)
+//  col ... foreground color
+//  bgcol ... background color
+void DispDrawText(const char* text, int x, int y, int w1, int w2, u16 col, u16 bgcol);
+
+// Direct draw text row to display with current selected font
+//  text ... text to display (must not exceed display width)
+//  x ... start X position
+//  y ... start Y position
+//  col ... foreground color
+//  bgcol ... background color
+void DispDrawTextRow(const char* text, int x, int y, u16 col, u16 bgcol);
 
 #ifdef __cplusplus
 }

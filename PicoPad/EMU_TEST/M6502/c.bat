@@ -11,5 +11,8 @@ if "%1"=="picopad08" goto stop
 ..\..\..\_c1.bat %1
 
 :default
-..\..\..\_c1.bat picopad10
+rem ..\..\..\_c1.bat picopad10
+..\..\..\_c1.bat picopad20
+rem ..\..\..\_c1.bat picopad20riscv
+
 :stop

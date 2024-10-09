@@ -110,7 +110,7 @@ void Battery()
 
 #define DISPX	128
 #define DISPW	(WIDTH-128)
-#define DY	25
+#define DY	20
 		int y = 30;
 
 		// title
@@ -123,7 +123,23 @@ void Battery()
 		y += DY;
 
 		// CPU
-		TextPrint(&txt, "CPU version RP2040-B%d", RomGetVersion() - 1);
+#if RP2040
+		TextPrint(&txt, "CPU: RP2040-B%d", RomGetVersion() - 1);
+#elif RISCV
+		TextPrint(&txt, "CPU: RP2350-RISCV-A%d", RomGetVersion());
+#else
+		TextPrint(&txt, "CPU: RP2350-ARM-A%d", RomGetVersion());
+#endif
+		DrawTextBg(TextPtr(&txt), DISPX + (DISPW - TextLen(&txt)*8)/2, y, COL_WHITE, COL_BLACK);
+		y += DY;
+
+		// flash size
+		TextPrint(&txt, "Flash size %d MB", FlashSize/(1024*1024));
+		DrawTextBg(TextPtr(&txt), DISPX + (DISPW - TextLen(&txt)*8)/2, y, COL_WHITE, COL_BLACK);
+		y += DY;
+
+		// flash ID
+		TextPrint(&txt, "ID %s", FlashIDText);
 		DrawTextBg(TextPtr(&txt), DISPX + (DISPW - TextLen(&txt)*8)/2, y, COL_WHITE, COL_BLACK);
 		y += DY;
 

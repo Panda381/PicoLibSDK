@@ -1,0 +1,2 @@
+Set up PIO for 62.5 Mbps serial output, and use this to display
+a spinning image on a ST7789 serial LCD.

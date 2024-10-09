@@ -21,6 +21,8 @@ Capturing a sample takes 96 clock cycles (91 x 1/48MHz) = 2 us per sample (500 k
 4 inpus on GPIO26 .. GPIO29, 1 input internal temperature sensor
 Temperature: T = 27 - (ADC_voltage - 0.706) / 0.001721
 
+Input voltage should not exceed IOVDD supply voltage (not ADC supply voltage ADC_AVDD).
+
 Hot to use:
 1) initialize ADC with ADC_Init()
 2) prepare GPIO inputs with ADC_PinInit()
@@ -37,7 +39,11 @@ Hot to use:
 #include "../sdk_addressmap.h"		// Register address offsets
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_adc.h"		// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_adc.h"		// constants of original SDK
+#else
+#include "orig_rp2350/orig_adc.h"		// constants of original SDK
+#endif
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
@@ -45,7 +51,6 @@ extern "C" {
 #endif
 
 // ADC hardware registers
-// #define ADC_BASE		0x4004c000	// ADC controller
 #define ADC_CS		((volatile u32*)(ADC_BASE+0x00)) // control and status
 #define ADC_RESULT	((volatile u32*)(ADC_BASE+0x04)) // result
 #define ADC_FCS		((volatile u32*)(ADC_BASE+0x08)) // FIFO control and status
@@ -74,11 +79,23 @@ typedef struct {
 STATIC_ASSERT(sizeof(adc_hw_t) == 0x24, "Incorrect adc_hw_t!");
 
 // ADC inputs
+#if RP2350B // QFN-80
+#define ADC_MUX_GPIO40	0	// pin GPIO 40
+#define ADC_MUX_GPIO41	1	// pin GPIO 41
+#define ADC_MUX_GPIO42	2	// pin GPIO 42
+#define ADC_MUX_GPIO43	3	// pin GPIO 43
+#define ADC_MUX_GPIO44	4	// pin GPIO 44
+#define ADC_MUX_GPIO45	5	// pin GPIO 45
+#define ADC_MUX_GPIO46	6	// pin GPIO 46
+#define ADC_MUX_GPIO47	7	// pin GPIO 47
+#define ADC_MUX_TEMP	8	// temperature sensor
+#else // QFN-60
 #define ADC_MUX_GPIO26	0	// pin GPIO 26
 #define ADC_MUX_GPIO27	1	// pin GPIO 27
 #define ADC_MUX_GPIO28	2	// pin GPIO 28
 #define ADC_MUX_GPIO29	3	// pin GPIO 29
 #define ADC_MUX_TEMP	4	// temperature sensor
+#endif
 
 // ADC init
 void ADC_Init(void);
@@ -93,24 +110,36 @@ INLINE void ADC_Disable() { RegClr(&adc_hw->cs, B0); }
 INLINE void ADC_Enable() { RegSet(&adc_hw->cs, B0); }
 
 // initialize GPIO to use as an ADC pin
-//  pin ... pin 26 to 29
+//  pin ... pin 26 to 29 (or 40 to 47)
 void ADC_PinInit(int pin);
 
 // terminate pin as ADC input
-//  pin ... pin 26 to 29
+//  pin ... pin 26 to 29 (or 40 to 47)
 void ADC_PinTerm(int pin);
 
 // select ADC input
-//  input ... input 0 to 4 (use ADC_MUX_*)
-INLINE void ADC_Mux(int input) { RegMask(&adc_hw->cs, input << 12, 7 << 12); }
+//  input ... input 0 to 4 or 0 to 8 (use ADC_MUX_*)
+#if RP2350B // QFN-80
+INLINE void ADC_Mux(int input) { RegMask(&adc_hw->cs, input << 12, 0x0f << 12); }
+#else
+INLINE void ADC_Mux(int input) { RegMask(&adc_hw->cs, input << 12, 0x07 << 12); }
+#endif
 
-// get currently selected ADC input (returns 0 to 4)
-INLINE u8 ADC_GetMux(void) { return (u8)((adc_hw->cs >> 12) & 7); }
+// get currently selected ADC input (returns 0 to 4 or 0 to 8)
+#if RP2350B // QFN-80
+INLINE u8 ADC_GetMux(void) { return (u8)((adc_hw->cs >> 12) & 0x0f); }
+#else
+INLINE u8 ADC_GetMux(void) { return (u8)((adc_hw->cs >> 12) & 0x07); }
+#endif
 
 // set round robin sampling selector
-//  mask ... mask of bits B0 to B4 of inputs (use BIT(ADC_MUX_*))
+//  mask ... mask of bits B0 to B4 (or B0 to B8) of inputs (use BIT(ADC_MUX_*))
 //           set 0 to disable round robin sampling
+#if RP2350B // QFN-80
+INLINE void ADC_RoundRobin(int mask) { RegMask(&adc_hw->cs, mask << 16, 0x1ff << 16); }
+#else
 INLINE void ADC_RoundRobin(int mask) { RegMask(&adc_hw->cs, mask << 16, 0x1f << 16); }
+#endif
 
 // enable temperature sensor
 void ADC_TempEnable(void);
@@ -248,18 +277,18 @@ float ADC_Temp();
 INLINE void adc_init(void) { ADC_Init(); }
 
 // initialize GPIO to use as an ADC pin
-//  pin ... pin 26 to 29
+//  pin ... pin 26 to 29 or 40 to 47
 INLINE void adc_gpio_init(uint pin) { ADC_PinInit(pin); }
 
 // select ADC input
-//  input ... input 0 to 4 (use ADC_MUX_*)
+//  input ... input 0 to 4 or 0 to 8 (use ADC_MUX_*)
 INLINE void adc_select_input(uint input) { ADC_Mux(input); }
 
-// get currently selected ADC input (returns 0 to 4)
+// get currently selected ADC input (returns 0 to 4 or 0 to 8)
 INLINE uint adc_get_selected_input(void) { return ADC_GetMux(); }
 
 // set round robin sampling selector
-//  mask ... mask of bits B0 to B4 of inputs (use BIT(ADC_MUX_*))
+//  mask ... mask of bits B0 to B4 or B0 to B8 of inputs (use BIT(ADC_MUX_*))
 //           set 0 to disable round robin sampling
 INLINE void adc_set_round_robin(uint mask) { ADC_RoundRobin(mask); }
 

@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                            RTC Real-time clock
+//                         RTC Real-time clock (only RP2040)
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
@@ -15,6 +15,8 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #include "../../global.h"	// globals
+
+#if RP2040
 
 #if USE_RTC	// use RTC Real-time clock (sdk_rtc.c, sdk_rtc.h)
 
@@ -355,3 +357,5 @@ void RtcAlarmStop()
 }
 
 #endif // USE_RTC	// use RTC Real-time clock (sdk_rtc.c, sdk_rtc.h)
+
+#endif // RP2040

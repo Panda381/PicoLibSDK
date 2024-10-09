@@ -326,6 +326,8 @@ void EmuDevInit()
 	// setup callback functions
 	m6502cpu.readmem = EmuGetMem;
 	m6502cpu.writemem = EmuSetMem;
+	m6502cpu.ramzp = &Memory[0x0000];
+	m6502cpu.stack = &Memory[M6502_STACKBASE];
 
 	// clear title
 	for (i = 0; i < TITLE_NUM; i++) TitleBuf[i] = ' ';

@@ -24,6 +24,7 @@
 
 // Declaration of empty tables for case they are not contained in files of constants.
 
+/*
 // Decimal exponents (index REAL_DECEXP = number '1') - used by ToText() and FromText()
 const REAL REALNAME(ConstExp)[REAL_DECEXP*2+1];
 
@@ -61,6 +62,7 @@ const REAL REALNAME(ConstAtanInit);	// init value of atan table (=1/expansion fa
 const REAL REALNAME(ConstAtan)[CORD_ATAN]; // Cordic atan table (denormalised mantises)
 										// Note: Second half of table is equal to angle.
 #endif
+*/
 
 // ===========================================================================
 //                          Get setup
@@ -5185,14 +5187,19 @@ EXP REALNAME(ModRoundExt)(REAL* num, const REAL* num1, EXP exp1, const REAL* num
 s8 REALNAME(Comp)(const REAL* num1, const REAL* num2)
 {
 	u8 sign1, sign2, res;
+	BASE exp1, exp2;
+
+	// load exponents
+	exp1 = REALNAME(GetExp)(num1);
+	exp2 = REALNAME(GetExp)(num2);
 
 	// load signs
 	sign1 = REALNAME(GetSign)(num1);
 	sign2 = REALNAME(GetSign)(num2);
 
 	// absolute value of -0.0
-	if (REALNAME(GetExp)(num1) == 0) sign1 = 0;
-	if (REALNAME(GetExp)(num2) == 0) sign2 = 0;
+	if (exp1 == 0) sign1 = 0;
+	if (exp2 == 0) sign2 = 0;
 
 	// compare signs
 	if (sign1 != sign2) // signs not equal
@@ -5201,8 +5208,17 @@ s8 REALNAME(Comp)(const REAL* num1, const REAL* num2)
 		return 1;
 	}
 
-	// signs are equal, compare exponents and mantissas
-	res = REALNAME(MantComp)(num1, num2);
+	// comparison in case of zero - if zero is negative, mantissa test would fail
+	if ((exp1 == 0) && (exp2 == 0))
+		return 0;
+	else if (exp1 == 0)
+		res = -1;
+	else if (exp2 == 0)
+		res = 1;
+	else
+		// signs are equal, compare exponents and mantissas
+		res = REALNAME(MantComp)(num1, num2);
+
 	if (sign1 == 0) return res;
 	return -res;
 }

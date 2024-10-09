@@ -34,6 +34,7 @@ int main()
 
 	printf("done\n");
 
+#if RP2040
 	printf("PWM and RTC reset...");
 
 	// Put the PWM and RTC block into reset
@@ -43,6 +44,7 @@ int main()
 	unreset_block_wait(RESETS_RESET_PWM_BITS | RESETS_RESET_RTC_BITS);
 
 	printf("done\n");
+#endif
 
 	return 0;
 }

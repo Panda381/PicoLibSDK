@@ -18,7 +18,11 @@
 #define _MAIN_H
 
 // custom frame buffer - used as buffer to load UF2 program into RAM
+#if RP2040
 #define CUSTOM_FRAMEBUF_SIZE (220000/sizeof(FRAMETYPE))
+#else
+#define CUSTOM_FRAMEBUF_SIZE (450000/sizeof(FRAMETYPE))
+#endif
 
 // text of file list
 //#define FONTW		8	// font width
@@ -115,6 +119,9 @@ typedef struct {
 #define UF2_FLAG_MD5_PRESENT		0x00004000
 
 #define RP2040_FAMILY_ID		0xe48bff56
+#define RP2350_ARM_S_FAMILY_ID		0xe48bff59
+#define RP2350_RISCV_FAMILY_ID		0xe48bff5a
+#define RP2350_ARM_NS_FAMILY_ID		0xe48bff5b
 
 typedef struct {
 	// header size 32 bytes
@@ -125,7 +132,7 @@ typedef struct {
 	u32	payload_size;		// 0x010: data size 0x00000100 (256)
 	u32	block_no;		// 0x014: block number 0, 1,...
 	u32	num_blocks;		// 0x018: total number of blocks
-	u32	file_size; // or familyID; // 0x01C: family ID RP2040_FAMILY_ID (0xe48bff56)
+	u32	file_size;		// 0x01C: familyID *FAMILY_ID
 
 	// sector data
 	u8	data[476];

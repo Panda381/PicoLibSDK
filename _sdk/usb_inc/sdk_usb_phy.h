@@ -89,6 +89,9 @@ extern u64 UsbRamMap;
 //                               Utilities
 // ----------------------------------------------------------------------------
 
+// unaligned memcpy (libc memcpy on RP2350 does unaligned access, but DPRAM does not support it)
+void UsbMemcpy(void* dst, const void* src, u32 n);
+
 // read SOF (start of frame number)
 INLINE u16 UsbGetSof() { return (u16)(*USB_SOF_RD & 0x7ff); }
 

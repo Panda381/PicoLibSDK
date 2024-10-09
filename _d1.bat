@@ -6,6 +6,7 @@ rem This command is located in d.bat file.
 rem    set TARGET=HELLOW
 
 if exist build\%TARGET%.elf del build\%TARGET%.elf
+if exist build\*.elf goto nobuild
 if not exist build\*.o goto nobuild
 del build\*.o
 rd /q build

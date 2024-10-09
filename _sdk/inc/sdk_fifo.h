@@ -24,7 +24,11 @@
 #include "sdk_sio.h"			// SIO registers
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_sio.h"		// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_sio.h"		// constants of original SDK
+#else
+#include "orig_rp2350/orig_sio.h"		// constants of original SDK
+#endif
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
@@ -34,7 +38,6 @@ extern "C" {
 // === Inter-core FIFO
 
 // FIFO hardware registers
-//#define SIO_BASE		0xd0000000	// SIO registers
 //  (SIO does not support aliases for atomic access!)
 #define FIFO_STATE	((volatile u32*)(SIO_BASE+0x50)) // inter-core FIFO status
 #define FIFO_WRITE	((volatile u32*)(SIO_BASE+0x54)) // inter-core TX FIFO, write access

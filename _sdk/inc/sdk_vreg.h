@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                            Voltage regulator
+//                        Voltage regulator (only RP2040)
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
@@ -14,13 +14,15 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#if RP2040
+
 #ifndef _SDK_VREG_H
 #define _SDK_VREG_H
 
 #include "../sdk_addressmap.h"		// Register address offsets
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_vreg.h"	// constants of original SDK
+#include "orig_rp2040/orig_vreg.h"	// constants of original SDK
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
@@ -41,7 +43,6 @@ typedef struct {
 STATIC_ASSERT(sizeof(vreg_and_chip_reset_hw_t) == 0x0C, "Incorrect vreg_and_chip_reset_hw_t!");
 
 // Possible voltage values
-#define VREG_VOLTAGE_0_80	5	// 0.80V
 #define VREG_VOLTAGE_0_85	6	// 0.85V
 #define VREG_VOLTAGE_0_90	7	// 0.90V
 #define VREG_VOLTAGE_0_95	8	// 0.95V
@@ -53,7 +54,7 @@ STATIC_ASSERT(sizeof(vreg_and_chip_reset_hw_t) == 0x0C, "Incorrect vreg_and_chip
 #define VREG_VOLTAGE_1_25	14	// 1.25V
 #define VREG_VOLTAGE_1_30	15	// 1.30V
 
-#define VREG_VOLTAGE_MIN	VREG_VOLTAGE_0_80	// minimum voltage
+#define VREG_VOLTAGE_MIN	VREG_VOLTAGE_0_85	// minimum voltage
 #define VREG_VOLTAGE_DEF	VREG_VOLTAGE_1_10	// default voltage after power up
 #define VREG_VOLTAGE_MAX	VREG_VOLTAGE_1_30	// maximum voltage
 
@@ -61,16 +62,16 @@ STATIC_ASSERT(sizeof(vreg_and_chip_reset_hw_t) == 0x0C, "Incorrect vreg_and_chip
 void VregSetVoltage(int vreg);
 
 // get voltage VREG_VOLTAGE_*
-INLINE u8 VregVoltage() { return (u8)((*VREG_CTRL >> 4) & 0x0f); }
+INLINE u8 VregVoltage(void) { return (u8)((*VREG_CTRL >> 4) & 0x0f); }
 
 // get voltage in volts
-INLINE float VregVoltageFloat() { return (VregVoltage() + 11) * 0.05f; }
+INLINE float VregVoltageFloat(void) { return (VregVoltage() + 11) * 0.05f; }
 
 // check if voltage is correctly regulated
-INLINE Bool VregIsOk() { return (*VREG_CTRL & B12) != 0; }
+INLINE Bool VregIsOk(void) { return (*VREG_CTRL & B12) != 0; }
 
 // wait for regulated state
-void VregWait();
+void VregWait(void);
 
 // ----------------------------------------------------------------------------
 //                          Original-SDK interface
@@ -90,3 +91,5 @@ INLINE void vreg_set_voltage(int voltage) { VregSetVoltage(voltage); }
 #endif
 
 #endif // _SDK_VREG_H
+
+#endif // RP2040

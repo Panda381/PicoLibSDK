@@ -10,17 +10,12 @@
 // main function
 int main()
 {
-	// set maximum voltage
-	// - enables overlocking up to 310 MHz
-	VregSetVoltage(VREG_VOLTAGE_1_30);
-	printf("Vreg Voltage = 1.30V\n");
+	int volt = -1;
+	int clk = -1;
+	int temp = 1;
 
-#if NO_FLASH
-	// initialize Flash interface (clkdiv = clock divider, must be even number, 4 is default)
-	// - enables overlocking up to 420 MHz
-	SSI_InitFlash(6);
-	printf("Flash clkdiv=6\n");
-#endif
+	// enable temperature sensor
+	ADC_TempEnable();
 
 	// initial system clock frequency 125 MHz
 	u32 f = PLL_KHZ;
@@ -37,6 +32,42 @@ int main()
 
 	while (True)
 	{
+		// max. frequency without increasing voltage: 270 MHz
+
+		// setup voltage (it increases frequency to 310 MHz)
+		int newvolt;
+		if (f >= 250000)
+			newvolt = VREG_VOLTAGE_1_30;
+		else if (f >= 220000)
+			newvolt = VREG_VOLTAGE_1_25;
+		else if (f >= 190000)
+			newvolt = VREG_VOLTAGE_1_20;
+		else if (f >= 150000)
+			newvolt = VREG_VOLTAGE_1_15;
+		else
+			newvolt = VREG_VOLTAGE_1_10;
+
+		if (newvolt != volt)
+		{
+			volt = newvolt;
+			VregSetVoltage(volt);
+		}
+
+		// setup flash clkdiv (it increases frequency to 400 MHz)
+		int newclk;
+		if (f >= 350000)
+			newclk = 8;
+		else if (f >= 280000)
+			newclk = 6;
+		else
+			newclk = 4;
+
+		if (newclk != clk)
+		{
+			clk = newclk;
+			SSI_InitFlash(clk);
+		}
+
 #if USE_PICOPADVGA
 		// retune VGA
 		VgaRetune(f*1000);
@@ -45,7 +76,15 @@ int main()
 
 		// set system clock frequency
 		ClockPllSysFreq(f);
-		printf("freq %'d Hz\n", ClockGetHz(CLK_PLL_SYS));
+		printf("freq %'d Hz vreg=%.2f clk=%d\n", ClockGetHz(CLK_PLL_SYS), VregVoltageFloat(), clk);
+
+		// temperature
+		temp--;
+		if (temp <= 0)
+		{
+			temp = 10;
+			printf("temp=%.1f C\n", ADC_Temp());
+		}
 
 		// check calculations
 		sincos(0.9, &s2, &c2);
@@ -66,7 +105,7 @@ int main()
 #if USE_PICOPADVGA
 		f += 1000;
 #else
-		f += 200;
+		f += 500;
 #endif
 
 		// quit program

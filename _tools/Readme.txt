@@ -7,6 +7,7 @@ and more. The programs are compiled in MS Visual Studio 2005.
 - BinS - export binary file into S assembler byte array
 - Boot2CRC - boot2 boot loader checksum calculation
 - DviTms - generator of DVI TMDS 16-bit 2-symbol table
+- elf2uf2 - convert ELF file to UF2 file
 - HidComp - compiler and decompiler of HID descriptors
 - PicoPadImg - converting BMP images to PicoPad format
 - PicoPadLoaderBin - export boot3 loader to C source code
@@ -19,5 +20,4 @@ and more. The programs are compiled in MS Visual Studio 2005.
 - RaspPicoSnd - export WAV audio files to C source code
 - test_6502 - test ADC and SBC 6502 instructions, comparing with real CPU.
 - test_8086 - test of some 8086 instructions, comparing with real CPU
-- elf2uf2 - convert ELF file to UF2 file
 - pioasm - PIO program assembler

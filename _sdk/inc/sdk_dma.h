@@ -26,18 +26,26 @@
 #include "sdk_cpu.h"
 
 #if USE_ORIGSDK		// include interface of original SDK
-#include "orig/orig_dma.h"		// constants of original SDK
+#if RP2040		// 1=use MCU RP2040
+#include "orig_rp2040/orig_dma.h"		// constants of original SDK
+#else
+#include "orig_rp2350/orig_dma.h"		// constants of original SDK
+#endif
 #endif // USE_ORIGSDK
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#if RP2040
 #define DMA_CHANNELS 		12		// number of DMA channels
-#define DMA_TIMERS		4		// number of DMA timers
+#define DMA_IRQ_NUM		2		// number of IRQs
+#else
+#define DMA_CHANNELS 		16		// number of DMA channels
+#define DMA_IRQ_NUM		4		// number of IRQs
+#endif
 
-#define NUM_DMA_CHANNELS	DMA_CHANNELS	// number of DMA channels
-#define NUM_DMA_TIMERS		DMA_TIMERS	// number of DMA timers
+#define DMA_TIMERS		4		// number of DMA timers
 
 // Trigger: write nonzero value to reload counter and start transfer
 // Read address - auto shifted during transfer, can be read to get next address
@@ -96,8 +104,7 @@ typedef struct {
 STATIC_ASSERT(sizeof(dma_channel_hw_t) == 0x40, "Incorrect dma_channel_hw_t!");
 
 // DMA hardware registers
-//#define DMA_BASE		0x50000000	// DMA controller
-#define DMA_CHAN(chan)	((volatile u32*)(DMA_BASE+(chan)*0x40)) // DMA channel base address (chan = 0..11)
+#define DMA_CHAN(chan)	((volatile u32*)(DMA_BASE+(chan)*0x40)) // DMA channel base address (chan = 0..11 or 0..15)
 
 #define DMA_READ(chan)		(DMA_CHAN(chan)+DMA_CH_READ)	// DMA channel read register
 #define DMA_READ_TRIG(chan)	(DMA_CHAN(chan)+DMA_CH_AL3_READ_TRIG) // DMA channel read register + trigger
@@ -115,6 +122,9 @@ STATIC_ASSERT(sizeof(dma_channel_hw_t) == 0x40, "Incorrect dma_channel_hw_t!");
 #define DMA_INTE1	((volatile u32*)(DMA_BASE+0x414))	// interrupt enables for IRQ 1 (1 on bit 0..15 = pass interrupt to IRQ_DMA_1)
 #define DMA_INTF1	((volatile u32*)(DMA_BASE+0x418))	// force interrupts for IRQ 1 (1 on bit 0..15 = force interrupt to IRQ_DMA_1, must be cleared)
 #define DMA_INTS1	((volatile u32*)(DMA_BASE+0x41c))	// interrupt status for IRQ 1 (1 on bit 0..15 if request is pending on IRQ_DMA_1, write 1 to clear)
+
+#if RP2040
+
 #define DMA_TIMER(inx)	((volatile u32*)(DMA_BASE+0x420+(inx)*4)) // base address of fractional timer 0..3, trigger on rate X/Y*sys_clk, bit 0..15=Y, bit 16..31=X, 0=off
 #define DMA_MULTRIG	((volatile u32*)(DMA_BASE+0x430))	// multiply trigger, bits 0..15
 #define DMA_SNIFF_CTRL	((volatile u32*)(DMA_BASE+0x434))	// sniffer control
@@ -122,47 +132,137 @@ STATIC_ASSERT(sizeof(dma_channel_hw_t) == 0x40, "Incorrect dma_channel_hw_t!");
 #define DMA_FIFO_LEVELS	((volatile u32*)(DMA_BASE+0x440))	// debug levels (bit 0..7 = transfer data FIFO, bit 8..15 = write address FIFO, bit 16..23 = read address FIFO)
 #define DMA_ABORT	((volatile u32*)(DMA_BASE+0x444))	// abort transfer (write 1 to bit 0..15 to abort transfer, read to wait until abort completed)
 
+#else // RP2040
+
+#define DMA_INTE2	((volatile u32*)(DMA_BASE+0x424))	// interrupt enables for IRQ 2 (1 on bit 0..15 = pass interrupt to IRQ_DMA_2)
+#define DMA_INTF2	((volatile u32*)(DMA_BASE+0x428))	// force interrupts for IRQ 2 (1 on bit 0..15 = force interrupt to IRQ_DMA_2, must be cleared)
+#define DMA_INTS2	((volatile u32*)(DMA_BASE+0x42c))	// interrupt status for IRQ 2 (1 on bit 0..15 if request is pending on IRQ_DMA_2, write 1 to clear)
+#define DMA_INTE3	((volatile u32*)(DMA_BASE+0x434))	// interrupt enables for IRQ 3 (1 on bit 0..15 = pass interrupt to IRQ_DMA_3)
+#define DMA_INTF3	((volatile u32*)(DMA_BASE+0x438))	// force interrupts for IRQ 3 (1 on bit 0..15 = force interrupt to IRQ_DMA_3, must be cleared)
+#define DMA_INTS3	((volatile u32*)(DMA_BASE+0x43c))	// interrupt status for IRQ 3 (1 on bit 0..15 if request is pending on IRQ_DMA_3, write 1 to clear)
+
+#define DMA_TIMER(inx)	((volatile u32*)(DMA_BASE+0x440+(inx)*4)) // base address of fractional timer 0..3, trigger on rate X/Y*sys_clk, bit 0..15=Y, bit 16..31=X, 0=off
+#define DMA_MULTRIG	((volatile u32*)(DMA_BASE+0x450))	// multiply trigger, bits 0..15
+#define DMA_SNIFF_CTRL	((volatile u32*)(DMA_BASE+0x454))	// sniffer control
+#define DMA_SNIFF_DATA	((volatile u32*)(DMA_BASE+0x458))	// sniffer data (write initial seed value, read result)
+#define DMA_FIFO_LEVELS	((volatile u32*)(DMA_BASE+0x460))	// debug levels (bit 0..7 = transfer data FIFO, bit 8..15 = write address FIFO, bit 16..23 = read address FIFO)
+#define DMA_ABORT	((volatile u32*)(DMA_BASE+0x464))	// abort transfer (write 1 to bit 0..15 to abort transfer, read to wait until abort completed)
+
+#endif // RP2040
+
 #define DMA_NEXT(chan)	((volatile u32*)(DMA_BASE+0x804+(chan)*0x40)) // next transfer count of channel 0..11 (auto loaded into count register on trigger)
+
+#if !RP2040
+// DMA MPU region
+typedef struct {
+	io32	bar;		// 0x00: base address
+	io32	lar;		// 0x04: limit address
+} dma_mpu_region_hw_t;
+
+STATIC_ASSERT(sizeof(dma_mpu_region_hw_t) == 0x08, "Incorrect dma_mpu_region_hw_t!");
+#endif
+
+// DMA IRQ interupt
+typedef struct {
+	io32	intr;			// 0x00: Raw Interrupt Status
+	io32	inte;			// 0x04: Interrupt Enable
+	io32	intf;			// 0x08: Force Interrupt
+	io32	ints;			// 0x0C: Interrupt Status
+} dma_irq_ctrl_hw_t;
+
+STATIC_ASSERT(sizeof(dma_irq_ctrl_hw_t) == 0x10, "Incorrect dma_irq_ctrl_hw_t!");
 
 // DMA hardware interface
 typedef struct {
-	dma_channel_hw_t ch[DMA_CHANNELS]; // 0x000: 12x DMA channels
+	dma_channel_hw_t ch[DMA_CHANNELS]; // 0x000: DMA channels
+#if RP2040
 	io32	_pad0[64];		// 0x300:
-	io32	intr;			// 0x400: Interrupt Status (raw)
-	io32	inte0;			// 0x404: Interrupt Enables for IRQ 0
-	io32	intf0;			// 0x408: Force Interrupts
-	io32	ints0;			// 0x40C: Interrupt Status for IRQ 0
-	io32	_pad1;			// 0x410:
-	io32	inte1;			// 0x414: Interrupt Enables for IRQ 1
-	io32	intf1;			// 0x418: Force Interrupts for IRQ 1
-	io32	ints1;			// 0x41C: Interrupt Status (masked) for IRQ 1
-	io32	timer[DMA_TIMERS];	// 0x420: 4x Pacing (X/Y) Fractional Timer
-	io32	multi_channel_trigger;	// 0x430: Trigger one or more channels simultaneously
-	io32	sniff_ctrl;		// 0x434: Sniffer Control
-	io32	sniff_data;		// 0x438: Data accumulator for sniff hardware
-	io32	_pad2;			// 0x43C:
-	io32	fifo_levels;		// 0x440: Debug RAF, WAF, TDF levels
-	io32	abort;			// 0x444: Abort an in-progress transfer sequence on one or more channels
+	union {
+		struct {
+			io32	intr;			// 0x400: Raw Interrupt Status
+			io32	inte0;			// 0x404: Interrupt Enables for IRQ 0
+			io32	intf0;			// 0x408: Force Interrupts for IRQ 0
+			io32	ints0;			// 0x40C: Interrupt Status for IRQ 0
+
+			io32	__pad0;			// 0x410:
+			io32	inte1;			// 0x414: Interrupt Enables for IRQ 1
+			io32	intf1;			// 0x418: Force Interrupts for IRQ 1
+			io32	ints1;			// 0x41C: Interrupt Status for IRQ 1
+		};
+		dma_irq_ctrl_hw_t	irq_ctrl[2];	// 0x400:
+	};
+#else // RP2040
+	union {
+		struct {
+			io32	intr;			// 0x400: Raw Interrupt Status
+			io32	inte0;			// 0x404: Interrupt Enables for IRQ 0
+			io32	intf0;			// 0x408: Force Interrupts for IRQ 0
+			io32	ints0;			// 0x40C: Interrupt Status for IRQ 0
+
+			io32	__pad0;			// 0x410:
+			io32	inte1;			// 0x414: Interrupt Enables for IRQ 1
+			io32	intf1;			// 0x418: Force Interrupts for IRQ 1
+			io32	ints1;			// 0x41C: Interrupt Status for IRQ 1
+
+			io32	__pad1;			// 0x420:
+			io32	inte2;			// 0x424: Interrupt Enables for IRQ 2
+			io32	intf2;			// 0x428: Force Interrupts for IRQ 2
+			io32	ints2;			// 0x42C: Interrupt Status for IRQ 2
+
+			io32	__pad2;			// 0x430:
+			io32	inte3;			// 0x434: Interrupt Enables for IRQ 3
+			io32	intf3;			// 0x438: Force Interrupts for IRQ 3
+			io32	ints3;			// 0x43C: Interrupt Status for IRQ 3
+		};
+		dma_irq_ctrl_hw_t	irq_ctrl[4];	// 0x400:
+	};
+#endif // RP2040
+
+	io32	timer[DMA_TIMERS];	// 0x420 (0x440): 4x Pacing (X/Y) Fractional Timer
+	io32	multi_channel_trigger;	// 0x430 (0x450): Trigger one or more channels simultaneously
+	io32	sniff_ctrl;		// 0x434 (0x454): Sniffer Control
+	io32	sniff_data;		// 0x438 (0x458): Data accumulator for sniff hardware
+	io32	_pad1;			// 0x43C (0x45C):
+	io32	fifo_levels;		// 0x440 (0x460): Debug RAF, WAF, TDF levels
+	io32	abort;			// 0x444 (0x464): Abort an in-progress transfer sequence on one or more channels
+#if !RP2040
+	io32	n_channels;		// 0x468: R/O Number of DMA channels (12 or 16)
+	io32	_pad2[5];		// 0x46C:
+	io32	seccfg_h[DMA_CHANNELS];	// 0x480: Security level configuration for channels
+	io32	seccfg_irq[4];		// 0x4C0: Security configuration for IRQs
+	io32	seccfg_misc;		// 0x4D0: Miscellaneous security configuration
+	io32	_pad3[11];		// 0x4D4:
+	io32	mpu_ctrl;		// 0x500:
+	dma_mpu_region_hw_t mpu_region[8]; // 0x504: Control register for DMA MPU
+#endif
 } dma_hw_t;
 
+#if RP2040
 STATIC_ASSERT(sizeof(dma_hw_t) == 0x448, "Incorrect dma_hw_t!");
+#else
+STATIC_ASSERT(sizeof(dma_hw_t) == 0x544, "Incorrect dma_hw_t!");
+#endif
 
 #define dma_hw ((dma_hw_t*)DMA_BASE)
 
 // DMA debug interface
-struct dma_debug_hw_channel {
-	io32	ctrdeq;
-	io32	tcr;
+typedef struct {
+	io32	ctrdeq;		// 0x00: get channel DREQ counter
+	io32	tcr;		// 0x04: get channel TRANS_COUNT reload value
 	io32	pad[14];
-};
+} dma_debug_channel_hw_t;
 
-STATIC_ASSERT(sizeof(struct dma_debug_hw_channel) == 0x40, "Incorrect struct dma_debug_hw_channel!");
+STATIC_ASSERT(sizeof(dma_debug_channel_hw_t) == 0x40, "Incorrect dma_debug_channel_hw_t!");
 
 typedef struct {
-	struct dma_debug_hw_channel ch[DMA_CHANNELS];
+	dma_debug_channel_hw_t ch[DMA_CHANNELS];
 } dma_debug_hw_t;
 
+#if RP2040
 STATIC_ASSERT(sizeof(dma_debug_hw_t) == 0x300, "Incorrect dma_debug_hw_t!");
+#else
+STATIC_ASSERT(sizeof(dma_debug_hw_t) == 0x400, "Incorrect dma_debug_hw_t!");
+#endif
 
 #define dma_debug_hw ((dma_debug_hw_t*)(DMA_BASE + 0x800))
 
@@ -175,6 +275,13 @@ STATIC_ASSERT(sizeof(dma_debug_hw_t) == 0x300, "Incorrect dma_debug_hw_t!");
 #define DMA_CTRL_ERROR		B31	// 1 = read or write error, channel halts on error and raises IRQ (read only)
 #define DMA_CTRL_READ_ERROR	B30	// 1 = read error (write 1 to clear)
 #define DMA_CTRL_WRITE_ERROR	B29	// 1 = write error (write 1 to clear)
+
+#if RP2040
+
+#define DMA_CTRL_TREQ_LSB	15
+#define DMA_CTRL_CHAIN_LSB	11
+#define DMA_CTRL_RING_LSB	6
+
 #define DMA_CTRL_BUSY		B24	// 1 = DMA transfer is busy, transfer was triggered but not finished yet (read only)
 #define DMA_CTRL_SNIFF		B23	// 1 = transfer is visible to sniff CRC hardware, 0 = normal DMA transfer
 #define DMA_CTRL_BSWAP		B22	// 1 = swap order of bytes
@@ -186,17 +293,40 @@ STATIC_ASSERT(sizeof(dma_debug_hw_t) == 0x300, "Incorrect dma_debug_hw_t!");
 #define DMA_CTRL_RING_SIZE(order) ((order)<<6) // size 1..15 of address wrap region in bytes '1 << order' (2..32768 bytes), 0 = don't wrap
 					//     Ring buffer must be aligned to wrap size (only lowest 'order' bits are changed)
 #define DMA_CTRL_INC_WRITE	B5	// 1 = increment write address with each transfer (memory), 0 = do not increment (port)
+
+#else // RP2040
+
+#define DMA_CTRL_TREQ_LSB	17
+#define DMA_CTRL_CHAIN_LSB	13
+#define DMA_CTRL_RING_LSB	8
+
+#define DMA_CTRL_BUSY		B26	// 1 = DMA transfer is busy, transfer was triggered but not finished yet (read only)
+#define DMA_CTRL_SNIFF		B25	// 1 = transfer is visible to sniff CRC hardware, 0 = normal DMA transfer
+#define DMA_CTRL_BSWAP		B24	// 1 = swap order of bytes
+#define DMA_CTRL_QUIET		B23	// 1 = generate IRQ when NULL is written to a trigger, 0 = generate IRQ at end of every transfer block
+#define DMA_CTRL_TREQ(dreq)	((u32)(dreq)<<17) // 0..0x3f select transfer request signal 0..0x3a = DREQ_*, 0x3b..0x3e = Timer0..Timer3, 0x3f = permanent request
+#define DMA_CTRL_TREQ_FORCE	DMA_CTRL_TREQ(DREQ_FORCE) // permanent request
+#define DMA_CTRL_CHAIN(chan)	((chan)<<13) // trigger channel 0..15 when completed, disable by setting to this channel (=default state)
+#define DMA_CTRL_RING_WRITE	B12	//  1 = write addresses are wrapped, 0 = read addresses are wrapped
+#define DMA_CTRL_RING_SIZE(order) ((order)<<8) // size 1..15 of address wrap region in bytes '1 << order' (2..32768 bytes), 0 = don't wrap
+					//     Ring buffer must be aligned to wrap size (only lowest 'order' bits are changed)
+#define DMA_CTRL_INC_WRITE_REV	B7	// write address is 1 = decremented, 0 = incremented
+#define DMA_CTRL_INC_WRITE	B6	// 1 = increment/decrement write address with each transfer (memory), 0 = do not change (port)
+#define DMA_CTRL_INC_READ_REV	B5	// read address is 1 = decremented, 0 = incremented
+
+#endif
+
 #define DMA_CTRL_INC_READ	B4	// 1 = increment read address with each transfer (memory), 0 = do not increment (port)
 #define DMA_CTRL_SIZE(size)	((size)<<2) // data transfer size DMA_SIZE_* (0=8 bits, 1=16 bits, 2=32 bits)
 #define DMA_CTRL_HIGH_PRIORITY	B1	// 1 = channel is preferred during DMA scheduling round, 0 = normal priority
 #define DMA_CTRL_EN		B0	// 1 = channel is enabled and responds to trigger, 0 = channel is paused (BUSY will remain unchanged)
 
 // DMA CRC method
-#define DMA_CRC_CRC32		0	// CRC-32
-#define DMA_CRC_CRC32REV	1	// CRC-32 bit reversed data
+#define DMA_CRC_CRC32		0	// CRC-32 (IEEE802.3)
+#define DMA_CRC_CRC32REV	1	// CRC-32 (IEEE802.3) bit reversed data
 #define DMA_CRC_CRC16		2	// CRC-16-CCITT
 #define DMA_CRC_CRC16REV	3	// CRC-16-CCITT bit reversed data
-#define DMA_CRC_XOR		14	// XOR reduction over all data
+#define DMA_CRC_XOR		14	// XOR reduction over all data (1 = population is odd)
 #define DMA_CRC_SUM		15	// simple 32-bit sum
 
 #define DMA_CRC_MASK		0x0f	// mask of base CRC method (used internally in DMA_CRC function)
@@ -208,8 +338,18 @@ STATIC_ASSERT(sizeof(dma_debug_hw_t) == 0x300, "Incorrect dma_debug_hw_t!");
 #define DMA_SNIFF_REV		B10	// 1 = bit-reverse result on read
 #define DMA_SNIFF_BSWAP		B9	// 1 = byte reverse sniffed data (cancel effect if BSWAP of DMA is set)
 #define DMA_SNIFF_CRC(crc)	((crc)<<5) // CRC method DMA_CRC_* (0=CRC32, 1=CRC32 reversed, 2=CRC16-CCITT, 3=CCR16_CCITT reversed, 14=XOR, 15=sum)
-#define DMA_SNIFF_CHAN(chan)	((chan)<<1) // used DMA channel for sniffer 0..11
+#define DMA_SNIFF_CHAN(chan)	((chan)<<1) // used DMA channel for sniffer 0..11 or 0..15
 #define DMA_SNIFF_EN		B0	// 1 = enable sniffer
+
+// address increment direction
+#define DMA_DIR_NONE		0	// direction none (address not changed)
+#define DMA_DIR_INC		1	// increment address
+#define DMA_DIR_DEC		3	// decrement address (only RP2350)
+
+// counter mode
+#define DMA_COUNT_NORMAL	0x00000000UL	// mode normal: decrement until 0, then trigger next chained channel
+#define DMA_COUNT_TRIGGER	0x10000000UL	// mode trigger self: decrement until 0, then trigger selft and next chained channel (only RP2350)
+#define DMA_COUNT_ENDLESS	0xf0000000UL	// mode endless: transfer counter does not decrement (counter should not be 0) (only RP2350)
 
 // claimed DMA channels
 extern u16 DmaClaimed;		// claimed DMA channels
@@ -242,7 +382,7 @@ INLINE void DMA_UnclaimMask(int mask) { DmaClaimed &= (u16)~mask; }
 // check if DMA channel is claimed
 INLINE Bool DMA_IsClaimed(int dma) { return (DmaClaimed & (u16)BIT(dma)) != 0; }
 
-// claim free unused DMA channel (returns -1 on error)
+// claim free unused DMA channel (returns index of channel. of -1 on error)
 s8 DMA_ClaimFree(void);
 
 // === claim DMA timer
@@ -257,7 +397,7 @@ INLINE void DMA_TimerUnclaim(int timer) { DmaTimerClaimed &= (u8)~BIT(timer); }
 // check if DMA timer is claimed
 INLINE Bool DMA_TimerIsClaimed(int timer) { return (DmaTimerClaimed & (u8)BIT(timer)) != 0; }
 
-// claim free unused DMA timer (returns -1 on error)
+// claim free unused DMA timer (returns index of timer, -1 on error)
 s8 DMA_TimerClaimFree(void);
 
 // === DMA configuration structure (u32 control word)
@@ -272,38 +412,53 @@ INLINE u32 DMA_CfgDef(int dma) { return
 			DMA_CTRL_CHAIN(dma) |	// chain disabled
 			// DMA_CTRL_RING_WRITE | // NOT wrap ring on write
 			DMA_CTRL_RING_SIZE(0) |	// NOT ring
+#if !RP2040
+			// DMA_CTRL_INC_WRITE_REV | // NOT decrement write
+#endif
 			// DMA_CTRL_INC_WRITE |	// NOT increment write
+#if !RP2040
+			// DMA_CTRL_INC_READ_REV | // NOT decrement read
+#endif
 			DMA_CTRL_INC_READ |	// increment read
 			DMA_CTRL_SIZE(DMA_SIZE_32) | // data size 32 bits
 			// DMA_CTRL_HIGH_PRIORITY | // NOT high priority
 			DMA_CTRL_EN;		// enable DMA
 }
 
-// config read increment (default True) (to setup, write configuration word to DMA control register)
-INLINE void DMA_CfgReadInc(u32* cfg, Bool read_inc)
-	{ if (read_inc) *cfg |= DMA_CTRL_INC_READ; else *cfg &= ~DMA_CTRL_INC_READ; }
+// config read increment - use DMA_DIR_* (default DMA_DIR_INC) (to setup, write configuration word to DMA control register)
+INLINE void DMA_CfgReadInc(u32* cfg, int read_inc)
+{
+	if (read_inc) *cfg |= DMA_CTRL_INC_READ; else *cfg &= ~DMA_CTRL_INC_READ;
+#if !RP2040
+	if (read_inc & B1) *cfg |= DMA_CTRL_INC_READ_REV; else *cfg &= ~DMA_CTRL_INC_READ_REV;
+#endif
+}
 
-// config write increment (default False) (to setup, write configuration word to DMA control register)
-INLINE void DMA_CfgWriteInc(u32* cfg, Bool write_inc)
-	{ if (write_inc) *cfg |= DMA_CTRL_INC_WRITE; else *cfg &= ~DMA_CTRL_INC_WRITE; }
+// config write increment - use DMA_DIR_* (default DMA_DIR_INC) (to setup, write configuration word to DMA control register)
+INLINE void DMA_CfgWriteInc(u32* cfg, int write_inc)
+{
+	if (write_inc) *cfg |= DMA_CTRL_INC_WRITE; else *cfg &= ~DMA_CTRL_INC_WRITE;
+#if !RP2040
+	if (write_inc & B1) *cfg |= DMA_CTRL_INC_WRITE_REV; else *cfg &= ~DMA_CTRL_INC_WRITE_REV;
+#endif
+}
 
 // config set data request DREQ_* (default DREQ_FORCE = permanent) (to setup, write configuration word to DMA control register)
 INLINE void DMA_CfgDreq(u32* cfg, int dreq)
-	{ *cfg = (*cfg & ~(B15|B16|B17|B18|B19|B20)) | (dreq << 15); }
+	{ *cfg = (*cfg & ~(0x3f << DMA_CTRL_TREQ_LSB)) | (dreq << DMA_CTRL_TREQ_LSB); }
 
 // config set chain (to disable, set to the same channel number = default) (to setup, write configuration word to DMA control register)
 INLINE void DMA_CfgChain(u32* cfg, int dma)
-	{ *cfg = (*cfg & ~(B11|B12|B13|B14)) | (dma << 11); }
+	{ *cfg = (*cfg & ~(0x0f << DMA_CTRL_CHAIN_LSB)) | (dma << DMA_CTRL_CHAIN_LSB); }
 
 // config set transfer size DMA_SIZE_* (default DMA_SIZE_32) (to setup, write configuration word to DMA control register)
-INLINE void DMA_CfgSize(u32* cfg, int size)
-	{ *cfg = (*cfg & ~(B2|B3)) | (size << 2); }
+INLINE void DMA_CfgSize(u32* cfg, int size) { *cfg = (*cfg & ~(B2|B3)) | (size << 2); }
 
 // config set ring (default 0 = disabled; apply on read) (to setup, write configuration word to DMA control register)
 //  write ... True to apply ring to write address, False to apply ring to read address
 //  size ... order of ring size 1..15 (0=disabled, 1=2 byte, 2=4 bytes, 3=8 bytes ... 15=32 KB)
 INLINE void DMA_CfgRing(u32* cfg, Bool write, int size)
-	{ *cfg = (*cfg & ~(B6|B7|B8|B9|B10)) | (size<<6) | (write ? DMA_CTRL_RING_WRITE : 0); }
+	{ *cfg = (*cfg & ~(0x1f << DMA_CTRL_RING_LSB)) | (size << DMA_CTRL_RING_LSB) | (write ? DMA_CTRL_RING_WRITE : 0); }
 
 // config set byte swap (default False) (to setup, write configuration word to DMA control register)
 INLINE void DMA_CfgBSwap(u32* cfg, Bool bswap)
@@ -373,15 +528,22 @@ INLINE void DMA_SetWrite_hw(dma_channel_hw_t* hw, volatile void* addr) { hw->wri
 INLINE void DMA_SetWriteTrig(int dma, volatile void* addr) { cb(); *DMA_WRITE_TRIG(dma) = (u32)addr; }
 INLINE void DMA_SetWriteTrig_hw(dma_channel_hw_t* hw, volatile void* addr) { cb(); hw->al2_write_addr_trig = (u32)addr; }
 
-// get DMA transfer count
-INLINE u32 DMA_GetCount(int dma) { return (u32)*DMA_COUNT(dma); }
-INLINE u32 DMA_GetCount_hw(const dma_channel_hw_t* hw) { return (u32)hw->transfer_count; }
+// get DMA transfer remaining count (returns 0..0x0fffffff)
+//  Count is number of transfers, not number of bytes.
+INLINE u32 DMA_GetCount(int dma) { return (u32)*DMA_COUNT(dma) & 0x0fffffff; }
+INLINE u32 DMA_GetCount_hw(const dma_channel_hw_t* hw) { return (u32)hw->transfer_count & 0x0fffffff; }
 
 // set DMA transfer count, without trigger
+//  Count can be max. 0x0fffffff (268'435'455).
+//  Count can be combined with flags DMA_COUNT_TRIGGER or DMA_COUNT_ENDLESS.
+//  Count is number of transfers, not number of bytes.
 INLINE void DMA_SetCount(int dma, u32 count) { *DMA_COUNT(dma) = count; }
 INLINE void DMA_SetCount_hw(dma_channel_hw_t* hw, u32 count) { hw->transfer_count = count; }
 
 // set DMA transfer count, with trigger
+//  Count can be max. 0x0fffffff (268'435'455).
+//  Count can be combined with flags DMA_COUNT_TRIGGER or DMA_COUNT_ENDLESS.
+//  Count is number of transfers, not number of bytes.
 INLINE void DMA_SetCountTrig(int dma, u32 count) { cb(); *DMA_COUNT_TRIG(dma) = count; }
 INLINE void DMA_SetCountTrig_hw(dma_channel_hw_t* hw, u32 count) { cb(); hw->al1_transfer_count_trig = count; }
 
@@ -403,20 +565,20 @@ INLINE void DMA_SetCtrlTrig_hw(dma_channel_hw_t* hw, u32 ctrl) { cb(); hw->ctrl_
 // === DMA setup
 
 // set DMA config, without trigger
-//  dma = channel 0..11
+//  dma = channel 0..11 (or 0..15)
 //  src = source address
 //  dst = destination address
-//  count = number of transfers
-//  ctrl = control word
+//  count = number of transfers (can be combined with flags DMA_COUNT_TRIGGER or DMA_COUNT_ENDLESS)
+//  ctrl = control word (can be prepared using DMA_Cfg* functions)
 void DMA_Config(int dma, const volatile void* src, volatile void* dst, u32 count, u32 ctrl);
 void DMA_Config_hw(dma_channel_hw_t* hw, const volatile void* src, volatile void* dst, u32 count, u32 ctrl);
 
 // set DMA config, with trigger
-//  dma = channel 0..11
+//  dma = channel 0..11 (or 0..15)
 //  src = source address
 //  dst = destination address
-//  count = number of transfers
-//  ctrl = control word
+//  count = number of transfers (can be combined with flags DMA_COUNT_TRIGGER or DMA_COUNT_ENDLESS)
+//  ctrl = control word (can be prepared using DMA_Cfg* functions)
 void DMA_ConfigTrig(int dma, const volatile void* src, volatile void* dst, u32 count, u32 ctrl);
 void DMA_ConfigTrig_hw(dma_channel_hw_t* hw, const volatile void* src, volatile void* dst, u32 count, u32 ctrl);
 
@@ -431,6 +593,14 @@ INLINE void DMA_Enable_hw(dma_channel_hw_t* hw) { RegSet(&hw->al1_ctrl, DMA_CTRL
 // check if DMA is enabled (not paused)
 INLINE Bool DMA_IsEnabled(int dma) { return (*DMA_CTRL(dma) & DMA_CTRL_EN) != 0; }
 INLINE Bool DMA_IsEnabled_hw(const dma_channel_hw_t* hw) { return (hw->al1_ctrl & DMA_CTRL_EN) != 0; }
+
+// set chain (set to itself to disable)
+INLINE void DMA_SetChain(int dma, int chain) { RegMask(DMA_CTRL(dma), chain << DMA_CTRL_CHAIN_LSB, 0x0f << DMA_CTRL_CHAIN_LSB); }
+INLINE void DMA_SetChain_hw(dma_channel_hw_t* hw, int chain) { RegMask(&hw->al1_ctrl, chain << DMA_CTRL_CHAIN_LSB, 0x0f << DMA_CTRL_CHAIN_LSB); }
+
+// get chain
+INLINE int DMA_Chain(int dma) { return (*DMA_CTRL(dma) >> DMA_CTRL_CHAIN_LSB) & 0x0f; }
+INLINE int DMA_Chain_hw(dma_channel_hw_t* hw) { return (hw->al1_ctrl >> DMA_CTRL_CHAIN_LSB) & 0x0f; }
 
 // get DMA sniff control register
 INLINE u32 DMA_SniffCtrl(void) { return *DMA_SNIFF_CTRL; }
@@ -457,10 +627,107 @@ INLINE void DMA_Wait_hw(const dma_channel_hw_t* hw) { cb(); while (DMA_IsBusy_hw
 // abort DMA transfer
 void DMA_Abort(int dma);
 
+// === DMA interrupt
+
+// enable interrupt from DMA channels for IRQ_DMA_0..IRQ_DMA_3 masked (set bits 0..15 to enable channel 0..15)
+// To use DMA mask in range (first..last), use function RangeMask.
+INLINE void DMA_IRQEnableMask(int irq, u32 mask) { RegSet(&dma_hw->irq_ctrl[irq].inte, mask); }
+INLINE void DMA_IRQ0EnableMask(u32 mask) { RegSet(&dma_hw->inte0, mask); }
+INLINE void DMA_IRQ1EnableMask(u32 mask) { RegSet(&dma_hw->inte1, mask); }
+#if !RP2040
+INLINE void DMA_IRQ2EnableMask(u32 mask) { RegSet(&dma_hw->inte2, mask); }
+INLINE void DMA_IRQ3EnableMask(u32 mask) { RegSet(&dma_hw->inte3, mask); }
+#endif
+
+// enable interrupt from DMA channel for IRQ_DMA_0..IRQ_DMA_3
+INLINE void DMA_IRQEnable(int irq, int dma) { DMA_IRQEnableMask(irq, BIT(dma)); }
+INLINE void DMA_IRQ0Enable(int dma) { DMA_IRQ0EnableMask(BIT(dma)); }
+INLINE void DMA_IRQ1Enable(int dma) { DMA_IRQ1EnableMask(BIT(dma)); }
+#if !RP2040
+INLINE void DMA_IRQ2Enable(int dma) { DMA_IRQ2EnableMask(BIT(dma)); }
+INLINE void DMA_IRQ3Enable(int dma) { DMA_IRQ3EnableMask(BIT(dma)); }
+#endif
+
+// disable interrupt from DMA channels for IRQ_DMA_0..IRQ_DMA_3 masked (set bits 0..15 to disable channel 0..15)
+// To use DMA mask in range (first..last), use function RangeMask.
+INLINE void DMA_IRQDisableMask(int irq, u32 mask) { RegClr(&dma_hw->irq_ctrl[irq].inte, mask); }
+INLINE void DMA_IRQ0DisableMask(u32 mask) { RegClr(&dma_hw->inte0, mask); }
+INLINE void DMA_IRQ1DisableMask(u32 mask) { RegClr(&dma_hw->inte1, mask); }
+#if !RP2040
+INLINE void DMA_IRQ2DisableMask(u32 mask) { RegClr(&dma_hw->inte2, mask); }
+INLINE void DMA_IRQ3DisableMask(u32 mask) { RegClr(&dma_hw->inte3, mask); }
+#endif
+
+// disable interrupt from DMA channel for IRQ_DMA_0..IRQ_DMA_3
+INLINE void DMA_IRQDisable(int irq, int dma) { DMA_IRQDisableMask(irq, BIT(dma)); }
+INLINE void DMA_IRQ0Disable(int dma) { DMA_IRQ0DisableMask(BIT(dma)); }
+INLINE void DMA_IRQ1Disable(int dma) { DMA_IRQ1DisableMask(BIT(dma)); }
+#if !RP2040
+INLINE void DMA_IRQ2Disable(int dma) { DMA_IRQ2DisableMask(BIT(dma)); }
+INLINE void DMA_IRQ3Disable(int dma) { DMA_IRQ3DisableMask(BIT(dma)); }
+#endif
+
+// check if DMA interrupt is enabled for IRQ_DMA_0..IRQ_DMA_3
+INLINE Bool DMA_IRQIsEnabled(int irq, int dma) { return (dma_hw->irq_ctrl[irq].inte & BIT(dma)) != 0; }
+INLINE Bool DMA_IRQ0IsEnabled(int dma) { return (dma_hw->inte0 & BIT(dma)) != 0; }
+INLINE Bool DMA_IRQ1IsEnabled(int dma) { return (dma_hw->inte1 & BIT(dma)) != 0; }
+#if !RP2040
+INLINE Bool DMA_IRQ2IsEnabled(int dma) { return (dma_hw->inte2 & BIT(dma)) != 0; }
+INLINE Bool DMA_IRQ3IsEnabled(int dma) { return (dma_hw->inte3 & BIT(dma)) != 0; }
+#endif
+
+// check if DMA RAW interrupt request is pending (without enable and force)
+INLINE Bool DMA_IRQRawIsPending(int dma) { return (dma_hw->intr & BIT(dma)) != 0; }
+
+// check if DMA interrupt request IRQ_DMA_0..IRQ_DMA_3 is pending (after enable and force)
+INLINE Bool DMA_IRQIsPending(int irq, int dma) { return (dma_hw->irq_ctrl[irq].ints & BIT(dma)) != 0; }
+INLINE Bool DMA_IRQ0IsPending(int dma) { return (dma_hw->ints0 & BIT(dma)) != 0; }
+INLINE Bool DMA_IRQ1IsPending(int dma) { return (dma_hw->ints1 & BIT(dma)) != 0; }
+#if !RP2040
+INLINE Bool DMA_IRQ2IsPending(int dma) { return (dma_hw->ints2 & BIT(dma)) != 0; }
+INLINE Bool DMA_IRQ3IsPending(int dma) { return (dma_hw->ints3 & BIT(dma)) != 0; }
+#endif
+
+// clear DMA interrupt request IRQ_DMA_0..IRQ_DMA_3
+INLINE void DMA_IRQClear(int irq, int dma) { dma_hw->irq_ctrl[irq].ints = BIT(dma); cb(); }
+INLINE void DMA_IRQ0Clear(int dma) { dma_hw->ints0 = BIT(dma); cb(); }
+INLINE void DMA_IRQ1Clear(int dma) { dma_hw->ints1 = BIT(dma); cb(); }
+#if !RP2040
+INLINE void DMA_IRQ2Clear(int dma) { dma_hw->ints2 = BIT(dma); cb(); }
+INLINE void DMA_IRQ3Clear(int dma) { dma_hw->ints3 = BIT(dma); cb(); }
+#endif
+
+// force interrupt from DMA channel for IRQ_DMA_0..IRQ_DMA_3
+INLINE void DMA_IRQForce(int irq, int dma) { RegSet(&dma_hw->irq_ctrl[irq].intf, BIT(dma)); }
+INLINE void DMA_IRQ0Force(int dma) { RegSet(&dma_hw->intf0, BIT(dma)); }
+INLINE void DMA_IRQ1Force(int dma) { RegSet(&dma_hw->intf1, BIT(dma)); }
+#if !RP2040
+INLINE void DMA_IRQ2Force(int dma) { RegSet(&dma_hw->intf2, BIT(dma)); }
+INLINE void DMA_IRQ3Force(int dma) { RegSet(&dma_hw->intf3, BIT(dma)); }
+#endif
+
+// unforce interrupt from DMA channel for IRQ_DMA_0..IRQ_DMA_3
+INLINE void DMA_IRQUnforce(int irq, int dma) { RegClr(&dma_hw->irq_ctrl[irq].intf, BIT(dma)); }
+INLINE void DMA_IRQ0Unforce(int dma) { RegClr(&dma_hw->intf0, BIT(dma)); }
+INLINE void DMA_IRQ1Unforce(int dma) { RegClr(&dma_hw->intf1, BIT(dma)); }
+#if !RP2040
+INLINE void DMA_IRQ2Unforce(int dma) { RegClr(&dma_hw->intf2, BIT(dma)); }
+INLINE void DMA_IRQ3Unforce(int dma) { RegClr(&dma_hw->intf3, BIT(dma)); }
+#endif
+
+// check if DMA interrupt is forced for IRQ_DMA_0..IRQ_DMA_3
+INLINE Bool DMA_IRQIsForced(int irq, int dma) { return (dma_hw->irq_ctrl[irq].intf & BIT(dma)) != 0; }
+INLINE Bool DMA_IRQ0IsForced(int dma) { return (dma_hw->intf0 & BIT(dma)) != 0; }
+INLINE Bool DMA_IRQ1IsForced(int dma) { return (dma_hw->intf1 & BIT(dma)) != 0; }
+#if !RP2040
+INLINE Bool DMA_IRQ2IsForced(int dma) { return (dma_hw->intf2 & BIT(dma)) != 0; }
+INLINE Bool DMA_IRQ3IsForced(int dma) { return (dma_hw->intf3 & BIT(dma)) != 0; }
+#endif
+
 // === DMA transfers
 
 // perform 32-bit DMA transfer from memory to memory, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u32
 //   src = pointer to first source u32
 //   count = number of u32 elements to transfer
@@ -468,7 +735,7 @@ void DMA_Abort(int dma);
 void DMA_MemCopy32(int dma, u32* dst, const u32* src, int count);
 
 // perform 16-bit DMA transfer from memory to memory, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u16
 //   src = pointer to first source u16
 //   count = number of u16 elements to transfer
@@ -476,7 +743,7 @@ void DMA_MemCopy32(int dma, u32* dst, const u32* src, int count);
 void DMA_MemCopy16(int dma, u16* dst, const u16* src, int count);
 
 // perform 8-bit DMA transfer from memory to memory, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u8
 //   src = pointer to first source u8
 //   count = number of u8 elements to transfer
@@ -493,7 +760,7 @@ void DMA_MemCopy8(int dma, u8* dst, const u8* src, int count);
 void DMA_MemCopy(volatile void* dst, const volatile void* src, int num);
 
 // fill memory with 32-bit sample using 32-bit DMA, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u32 (must be aligned to u32)
 //   data = pointer to 32-bit sample to fill (must be aligned to u32)
 //   count = number of u32 elements to fill
@@ -501,7 +768,7 @@ void DMA_MemCopy(volatile void* dst, const volatile void* src, int num);
 void DMA_MemFill32(int dma, u32* dst, const volatile u32* data, int count);
 
 // fill memory with 16-bit sample using 16-bit DMA, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u16 (must be aligned to u16)
 //   data = pointer to 16-bit sample to fill (must be aligned to u16)
 //   count = number of u16 elements to fill
@@ -509,7 +776,7 @@ void DMA_MemFill32(int dma, u32* dst, const volatile u32* data, int count);
 void DMA_MemFill16(int dma, u16* dst, const volatile u16* data, int count);
 
 // fill memory with 8-bit sample using 8-bit DMA, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u8
 //   data = pointer to 8-bit sample to fill
 //   count = number of u8 elements to fill
@@ -541,7 +808,7 @@ void DMA_MemFillW(volatile void* dst, u16 data, int num);
 void DMA_MemFill(volatile void* dst, u8 data, int num);
 
 // DMA send data from memory to port, not waiting for completion (wait with DMA_Wait function)
-//   chan = DMA channel 0..11
+//   chan = DMA channel 0..11 or 0..15
 //   port = pointer to u32 port
 //   src = pointer to first source u32
 //   count = number of u32 elements to transfer
@@ -549,53 +816,17 @@ void DMA_MemFill(volatile void* dst, u8 data, int num);
 void DMA_ToPort(int dma, volatile u32* port, const u32* src, int count, int dreq);
 
 // DMA receive data from port to memory, not waiting for completion (wait with DMA_Wait function)
-//   chan = DMA channel 0..11
+//   chan = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u32
 //   port = pointer to u32 port
 //   count = number of u32 elements to transfer
 //   dreq = data request channel of port DREQ_*
 void DMA_FromPort(int dma, u32* dst, const volatile u32* port, int count, int dreq);
 
-// enable interrupt from DMA channels for IRQ_DMA_0 masked (set bits 0..11 to enable channel 0..11)
-INLINE void DMA_IRQ0EnableMask(u32 mask) { RegSet(DMA_INTE0, mask); }
-
-// enable interrupt from DMA channels for IRQ_DMA_1 masked (set bits 0..11 to enable channel 0..11)
-INLINE void DMA_IRQ1EnableMask(u32 mask) { RegSet(DMA_INTE1, mask); }
-
-// enable interrupt from DMA channel for IRQ_DMA_0
-INLINE void DMA_IRQ0Enable(int dma) { DMA_IRQ0EnableMask(BIT(dma)); }
-
-// enable interrupt from DMA channel for IRQ_DMA_1
-INLINE void DMA_IRQ1Enable(int dma) { DMA_IRQ1EnableMask(BIT(dma)); }
-
-// disable interrupt from DMA channels for IRQ_DMA_0 masked (set bits 0..11 to disable channel 0..11)
-INLINE void DMA_IRQ0DisableMask(u32 mask) { RegClr(DMA_INTE0, mask); }
-
-// disable interrupt from DMA channels for IRQ_DMA_1 masked (set bits 0..11 to disable channel 0..11)
-INLINE void DMA_IRQ1DisableMask(u32 mask) { RegClr(DMA_INTE1, mask); }
-
-// disable interrupt from DMA channel for IRQ_DMA_0
-INLINE void DMA_IRQ0Disable(int dma) { DMA_IRQ0DisableMask(BIT(dma)); }
-
-// disable interrupt from DMA channel for IRQ_DMA_1
-INLINE void DMA_IRQ1Disable(int dma) { DMA_IRQ1DisableMask(BIT(dma)); }
-
-// check if DMA interrupt request IRQ_DMA_0 is pending
-INLINE Bool DMA_IRQ0IsPending(int dma) { return (*DMA_INTS0 & BIT(dma)) != 0; }
-
-// check if DMA interrupt request IRQ_DMA_1 is pending
-INLINE Bool DMA_IRQ1IsPending(int dma) { return (*DMA_INTS1 & BIT(dma)) != 0; }
-
-// clear DMA interrupt request IRQ_DMA_0
-INLINE void DMA_IRQ0Clear(int dma) { *DMA_INTS0 = BIT(dma); cb(); }
-
-// clear DMA interrupt request IRQ_DMA_1
-INLINE void DMA_IRQ1Clear(int dma) { *DMA_INTS1 = BIT(dma); cb(); }
-
 // calculate optimised CRC checksum using DMA (wait for completion)
 //   mode = CRC mode DMA_CRC_* (can include OR-ed flags DMA_CRC_INV and DMA_CRC_REV)
 //   init = init data
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11  or 0..15
 //   data = pointer to data
 //   num = number of bytes
 // Calculation speed: 2 us per 1 KB
@@ -604,7 +835,7 @@ u32 DMA_CRC(int mode, u32 init, int dma, const void* data, int num);
 // calculate checksum using DMA, on aligned data (wait for completion)
 //   mode = CRC mode DMA_CRC_SUM or other (can include OR-ed flags DMA_CRC_INV and DMA_CRC_REV)
 //   init = init data
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   data = pointer to data (must be aligned to the u8/u16/u32 entry)
 //   num = number of u8/u16/u32 entries
 //   size = size of one entry DMA_SIZE_* (u8/u16/u32)
@@ -622,6 +853,9 @@ INLINE void DMA_SetTimer(int timer, int x, int y) { *DMA_TIMER(timer) = ((u32)x 
 // ----------------------------------------------------------------------------
 
 #if USE_ORIGSDK		// include interface of original SDK
+
+#define NUM_DMA_CHANNELS	DMA_CHANNELS	// number of DMA channels
+#define NUM_DMA_TIMERS		DMA_TIMERS	// number of DMA timers
 
 #define DREQ_DMA_TIMER0 DMA_CH0_CTRL_TRIG_TREQ_SEL_VALUE_TIMER0
 #define DREQ_DMA_TIMER1 DMA_CH0_CTRL_TRIG_TREQ_SEL_VALUE_TIMER1

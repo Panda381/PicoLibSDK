@@ -50,10 +50,10 @@
 // SDK modules
 #define USE_ADC		0		// use ADC controller (sdk_adc.c, sdk_adc.h)
 #define USE_DMA		1		// use DMA controller (sdk_dma.c, sdk_dma.h)
-#define USE_DOUBLE	0		// use Double-floating point (sdk_double.c, sdk_double_asm.S, sdk_double.h)
+#define USE_DOUBLE	0		// use Double-floating point 1=in RAM, 2=in Flash (sdk_double.c, sdk_double_asm.S, sdk_double.h)
 #define USE_FIFO	1		// use Inter-core FIFO (sdk_fifo.c, sdk_fifo.h)
 #define USE_FLASH	1		// use Flash memory programming (sdk_flash.c, sdk_flash.h)
-#define USE_FLOAT	0		// use Single-floating point (sdk_float.c, sdk_float_asm.S, sdk_float.h)
+#define USE_FLOAT	0		// use Single-floating point 1=in RAM, 2=in Flash (sdk_float.c, sdk_float_asm.S, sdk_float.h)
 #define USE_I2C		0		// use I2C interface (sdk_i2c.c, sdk_i2c.h)
 #define USE_INTERP	1		// use interpolator (sdk_interp.c, sdk_interp.h)
 #define USE_IRQ		1		// use IRQ interrupts (sdk_irq.c, sdk_irq.h)

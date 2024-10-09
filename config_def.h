@@ -34,6 +34,18 @@ by VGA driver rendering service.
 #ifndef _CONFIG_DEF_H
 #define _CONFIG_DEF_H
 
+/* Options from command line:
+
+RP2040		// 1=use MCU RP2040
+RP2350		// 1=use MCU RP235xx
+RP2350A		// 1=use MCU RP235xA (60 pin)
+RP2350B		// 1=use MCU RP235xB (80 pin)
+
+FLASHSIZE	// Flash size in bytes (2 MB, 4 MB, 8 MB, 16 MB)
+RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
+
+*/
+
 // ----------------------------------------------------------------------------
 //                      Device custom configutation
 // ----------------------------------------------------------------------------
@@ -144,7 +156,11 @@ by VGA driver rendering service.
 #endif
 
 #ifndef USE_DOUBLE
-#define USE_DOUBLE	1		// use Double-floating point (sdk_double.c, sdk_double_asm.S, sdk_double.h)
+#define USE_DOUBLE	1		// use Double-floating point 1=in RAM, 2=in Flash (sdk_double.c, sdk_double_asm.S, sdk_double.h)
+#endif
+
+#ifndef USE_FATALERROR
+#define USE_FATALERROR	0		// use fatal error message 0=no, 1=display LCD message (sdk_fatal.c, sdk_fatal.h)
 #endif
 
 #ifndef USE_FIFO
@@ -156,7 +172,19 @@ by VGA driver rendering service.
 #endif
 
 #ifndef USE_FLOAT
-#define USE_FLOAT	1		// use Single-floating point (sdk_float.c, sdk_float_asm.S, sdk_float.h)
+#define USE_FLOAT	1		// use Single-floating point 1=in RAM, 2=in Flash (sdk_float.c, sdk_float_asm.S, sdk_float.h)
+#endif
+
+#ifndef USE_GPIOCOPROC
+#if RISCV || RP2040
+#define	USE_GPIOCOPROC	0		// use GPIO coprocessor (only RP2350 ARM; sdk_gpio_coproc.h)
+#else
+#define	USE_GPIOCOPROC	1		// use GPIO coprocessor (only RP2350 ARM; sdk_gpio_coproc.h)
+#endif
+#endif
+
+#ifndef USE_HSTX
+#define USE_HSTX	1		// use HSTX (sdk_hstx.c, sdk_hstx.h)
 #endif
 
 #ifndef USE_I2C
@@ -195,6 +223,10 @@ by VGA driver rendering service.
 #define USE_RTC		1		// use RTC Real-time clock (sdk_rtc.c, sdk_rtc.h)
 #endif
 
+#ifndef USE_SHA256
+#define USE_SHA256	1		// use SHA-256 accelerator (sdk_sha256.c, sdk_sha256.h)
+#endif
+
 #ifndef USE_SPI
 #define USE_SPI		1		// use SPI interface (sdk_spi.c, sdk_spi.h)
 #endif
@@ -209,6 +241,14 @@ by VGA driver rendering service.
 
 #ifndef USE_TIMER
 #define USE_TIMER	1		// use Timer with alarm (sdk_timer.c, sdk_timer.h)
+#endif
+
+#ifndef USE_TMDS
+#define USE_TMDS	1		// use TMDS encoder (sdk_tmds.h)
+#endif
+
+#ifndef USE_TRNG
+#define USE_TRNG	1		// use TRNG true random number generator (sdk_trng.h)
 #endif
 
 #ifndef USE_UART
@@ -236,7 +276,7 @@ by VGA driver rendering service.
 #endif
 
 #ifndef USE_USB
-#define USE_USB		0		// use USB (sdk_usb_*.c, sdk_usb_*.h)
+#define USE_USB		0		// use USB (sdk_usb_*.c, sdk_usb_*.h) (only if not using TinyUSB library)
 #endif
 
 #ifndef USE_USB_DEV
@@ -309,6 +349,10 @@ by VGA driver rendering service.
 
 #ifndef USE_USB_HOST_VENDOR
 #define USE_USB_HOST_VENDOR	0		// use USB VENDOR Vendor specific device (host)
+#endif
+
+#ifndef USE_VFP
+#define USE_VFP		1		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
 #endif
 
 #ifndef USE_WATCHDOG
@@ -644,7 +688,11 @@ by VGA driver rendering service.
 #define ASM64		0		// 1 = use assembler x64 optimization, if available
 #endif
 
-#define BOOTLOADER_SIZE	0x8000		// size of boot loader
+#if RP2040
+#define BOOTLOADER_SIZE	0x8000		// size of boot loader RP2040
+#else // RP2350
+#define BOOTLOADER_SIZE	0x10000		// size of boot loader RP2350
+#endif
 #define BOOTLOADER_DATA		32	// size of boot loader resident data
 
 #ifndef USB_DEV_CDC_RX_BUFSIZE
@@ -811,7 +859,11 @@ by VGA driver rendering service.
 #endif
 
 #ifndef ROSC_MHZ
-#define ROSC_MHZ	6		// ring oscillator frequency in MHz (default 6 MHz)
+#if RP2040
+#define ROSC_MHZ	6		// ring oscillator frequency in MHz (default RP2040: 6 MHz)
+#else // RP2350
+#define ROSC_MHZ	11		// ring oscillator frequency in MHz (default RP2350: 11 MHz)
+#endif
 #endif
 
 #ifndef XOSC_MHZ
@@ -819,7 +871,11 @@ by VGA driver rendering service.
 #endif
 
 #ifndef PLL_KHZ
+#if RP2040
 #define PLL_KHZ		125000		// PLL system frequency in kHz (default 125000 kHz)
+#else // RP2350
+#define PLL_KHZ		150000		// PLL system frequency in kHz (default 150000 kHz)
+#endif
 #endif
 
 #ifndef BATTERY_FULL
@@ -906,6 +962,26 @@ by VGA driver rendering service.
 #if USE_FAT
 #undef USE_SD
 #define USE_SD 1
+#endif
+
+#if LOAD_FLASH_INFO
+#undef USE_FLASH
+#define USE_FLASH 1
+#endif
+
+#if USE_FLASH && !NO_FLASH
+#undef USE_CRC
+#define USE_CRC 1
+#endif
+
+#if USE_FLASH
+#undef USE_DECNUM
+#define USE_DECNUM 1
+#endif
+
+#if USE_SPINLOCK
+#undef USE_TIMER
+#define USE_TIMER 1
 #endif
 
 /*

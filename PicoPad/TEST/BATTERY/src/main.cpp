@@ -78,7 +78,13 @@ int main()
 		y += DY;
 
 		// CPU
-		TextPrint(&txt, "CPU version RP2040-B%d", RomGetVersion() - 1);
+#if RP2040
+		TextPrint(&txt, "CPU: RP2040-B%d", RomGetVersion() - 1);
+#elif RISCV
+		TextPrint(&txt, "CPU: RP2350-RISCV-A%d", RomGetVersion());
+#else
+		TextPrint(&txt, "CPU: RP2350-ARM-A%d", RomGetVersion());
+#endif
 		DrawTextBg(TextPtr(&txt), DISPX + (DISPW - TextLen(&txt)*8)/2, y, COL_WHITE, COL_BLACK);
 		y += DY;
 

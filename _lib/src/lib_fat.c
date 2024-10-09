@@ -2972,9 +2972,13 @@ Bool CheckApp(u32* applen, u32* proglen, u32* appcrc)
 	// check header base
 	if (app->magic != APPINFO_MAGIC) return False; // check magic "PPAD"
 
+#if !RP2040
+	if (app->magic2 != APPINFO_MAGIC2) return False; // check magic "ppad"
+#endif
+
 	// get application size (without header)
 	int len = app->len;
-	if ((len < 4) || (len > 2*1024*1024)) return False;
+	if ((len < 4) || (len > 16*1024*1024 - 32768)) return False;
 	if (applen != NULL) *applen = len;
 
 	// program length (with boot loader and with header)

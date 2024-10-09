@@ -17,26 +17,29 @@
 #include "../../global.h"	// globals
 #include "../inc/sdk_watchdog.h"
 
+#if RP2040
 #if USE_WATCHDOG || USE_TIMER // use Watchdog or Timer
 // Start watchdog tick generator (generated ticks are shared with main timer counter!)
-void WatchdogStart(u32 xosc_mhz)
+//  ref_mhz ... frequency of CLK_REF in MHz
+void WatchdogStart(u32 ref_mhz)
 {
-	watchdog_hw->tick = xosc_mhz | B9; // setup ticks and run tick generator
+	watchdog_hw->tick = ref_mhz | B9; // setup ticks and run tick generator
 }
 #endif // USE_WATCHDOG || USE_TIMER // use Watchdog or Timer
+#endif // RP2040
 
 #if USE_WATCHDOG	// use Watchdog timer (sdk_watchdog.c, sdk_watchdog.h)
 
-// watchdog update value (to restart time counting) = time in [us] * 2
+// watchdog update value (to restart time counting) = RP2040: time in [us] * 2, RP2350: time in [us]
 u32 WatchdogUpdateValue;
 
 // Setup watchdog generator (does not set reason into scratch registers)
-//  us = delay before reset in [us], max. 0x7fffff us (8388607 us = 8.4 seconds)
+//  us = delay before reset in [us], 0=trigger now, max. RP2040: 0x7fffff us = 8.4 sec, RP2350: 0xffffff us = 16.8 sec
 //  pause_debug = pause watchdog on debugging
 void WatchdogSetup(u32 us, Bool pause_debug)
 {
 	// pause watchdog
-	RegClr(&watchdog_hw->ctrl, B30);
+	WatchdogDisable();
 
 	// select which peripherals to reset (reset everything apart from ROSC and XOSC)
 	RegSet(&psm_hw->wdsel, PSM_WDSEL_RESETBITS);
@@ -47,19 +50,31 @@ void WatchdogSetup(u32 us, Bool pause_debug)
 	else
 		RegClr(&watchdog_hw->ctrl, B24|B25|B26);
 
-	// limit max. value
-	if (us > WATCHDOG_CTRL_TIMEMASK/2) us = WATCHDOG_CTRL_TIMEMASK/2;
+	// trigger now
+	if (us == 0)
+	{
+		WatchdogTrigger();
+	}
+	else
+	{
+#if RP2040
+		us *= 2;
+#endif
 
-	// update time counter
-	WatchdogUpdateValue = us*2;
-	WatchdogUpdate();
+		// limit max. value
+		if (us > WATCHDOG_CTRL_TIMEMASK) us = WATCHDOG_CTRL_TIMEMASK;
 
-	// run watchdog
-	RegSet(&watchdog_hw->ctrl, B30);
+		// update time counter
+		WatchdogUpdateValue = us;
+		WatchdogUpdate();
+
+		// run watchdog
+		RegSet(&watchdog_hw->ctrl, B30);
+	}
 }
 
 // watchdog enable (set reason WATCHDOG_NON_REBOOT_MAGIC)
-//  us = delay before reset in [us], max. 0x7fffff us (8388607 us = 8.4 seconds)
+//  us = delay before reset in [us], 0=trigger now, max. RP2040: 0x7fffff us = 8.4 sec, RP2350: 0xffffff us = 16.8 sec
 //  pause_debug = pause watchdog on debugging
 void WatchdogEnable(u32 us, Bool pause_debug)
 {
@@ -73,12 +88,12 @@ void WatchdogEnable(u32 us, Bool pause_debug)
 // Check reset reason WatchdogEnable()
 Bool WatchdogReasonEnable(void)
 {
-	return (WatchdogReason() != 0) &&
+	return (WatchdogReason() != RESET_REASON_HW) &&
 		(watchdog_hw->scratch[4] == WATCHDOG_NON_REBOOT_MAGIC);
 }
 
 // Setup watchdog generator to do hard reset (set reason 0)
-//  us = delay before reset in [us], max. 0x7fffff us (8388607 us = 8.4 seconds)
+//  us = delay before reset in [us], 0=trigger now, max. RP2040: 0x7fffff us = 8.4 sec, RP2350: 0xffffff us = 16.8 sec
 //  pause_debug = pause watchdog on debugging
 void WatchdogSetupReset(u32 us, Bool pause_debug)
 {
@@ -90,7 +105,7 @@ void WatchdogSetupReset(u32 us, Bool pause_debug)
 }
 
 // Setup watchdog genererator to do soft reset
-//  us = delay before reset in [us], max. 0x7fffff us (8388607 us = 8.4 seconds)
+//  us = delay before reset in [us], 0=trigger now, max. RP2040: 0x7fffff us = 8.4 sec, RP2350: 0xffffff us = 16.8 sec
 //  pc = pointer to code to restart in soft reset (0 = do hard reset)
 //  sp = stack pointer
 void WatchdogSetupReboot(u32 us, u32 pc, u32 sp)
@@ -130,11 +145,8 @@ void ResetToBootLoader()
 	// set loader magic
 	watchdog_hw->scratch[4] = WATCHDOG_LOADER_MAGIC;
 
-	// enable watchdog generator
-	WatchdogSetup(1000, False);
-
-	// trigger watchdog
-	WatchdogTrigger();
+	// enable watchdog generator, trigger now
+	WatchdogSetup(0, False);
 }
 
 #endif // USE_WATCHDOG	// use Watchdog timer (sdk_watchdog.c, sdk_watchdog.h)

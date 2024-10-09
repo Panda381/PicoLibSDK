@@ -5,6 +5,8 @@ rem First command-line parameter (%1) of this batch can contain device name (e.g
 
 rem Only Pico
 if "%1"=="pico" goto start
+if "%1"=="pico2" goto start
+if "%1"=="pico2riscv" goto stop
 if not "%1"=="" goto stop
 
 :start

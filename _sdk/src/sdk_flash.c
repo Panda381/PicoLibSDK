@@ -22,6 +22,7 @@
 #include "../inc/sdk_cpu.h"
 #include "../inc/sdk_qspi.h"
 #include "../inc/sdk_ssi.h"
+#include "../inc/sdk_qmi.h"
 #include "../inc/sdk_bootrom.h"
 #include "../../_lib/inc/lib_crc.h"
 #include "../../_lib/inc/lib_decnum.h"
@@ -78,7 +79,7 @@ void NOFLASH(FlashErase)(u32 addr, u32 count)
 
 	// copy boot 2 loader into temporary buffer - it is located in the stack, but it will fit OK
 	u32 boot2[BOOT2_SIZE_BYTES/4-1];
-	memcpy(boot2, Boot2, BOOT2_SIZE_BYTES-4);
+	if (ok) memcpy(boot2, Boot2, BOOT2_SIZE_BYTES-4);
 
 
 #endif // !NO_FLASH
@@ -110,7 +111,7 @@ void NOFLASH(FlashErase)(u32 addr, u32 count)
 #if NO_FLASH
 
 	// set flash to fast QSPI mode
-	SSI_FlashQspi(FLASHQSPI_CLKDIV_DEF);
+	FlashQspi(FLASHQSPI_CLKDIV_DEF);
 
 #else // NO_FLASH
 
@@ -145,7 +146,7 @@ void NOFLASH(FlashProgram)(u32 addr, const u8* data, u32 count)
 
 	// copy boot 2 loader into temporary buffer - it is located in the stack, but it will fit OK
 	u32 boot2[BOOT2_SIZE_BYTES/4-1];
-	memcpy(boot2, Boot2, BOOT2_SIZE_BYTES-4);
+	if (ok) memcpy(boot2, Boot2, BOOT2_SIZE_BYTES-4);
 
 #endif // !NO_FLASH
 
@@ -170,7 +171,7 @@ void NOFLASH(FlashProgram)(u32 addr, const u8* data, u32 count)
 #if NO_FLASH
 
 	// set flash to fast QSPI mode
-	SSI_FlashQspi(FLASHQSPI_CLKDIV_DEF);
+	FlashQspi(FLASHQSPI_CLKDIV_DEF);
 
 #else // NO_FLASH
 
@@ -205,7 +206,7 @@ void NOFLASH(FlashCmd)(const u8* txbuf, u8* rxbuf, u32 count)
 
 	// copy boot 2 loader into temporary buffer - it is located in the stack, but it will fit OK
 	u32 boot2[BOOT2_SIZE_BYTES/4-1];
-	memcpy(boot2, Boot2, BOOT2_SIZE_BYTES-4);
+	if (ok) memcpy(boot2, Boot2, BOOT2_SIZE_BYTES-4);
 
 #endif // !NO_FLASH
 
@@ -222,12 +223,13 @@ void NOFLASH(FlashCmd)(const u8* txbuf, u8* rxbuf, u32 count)
 	FlashExitXip();
 
 	// set CS to LOW (using IO overrides, like bootrom does)
-	QSPI_OutOverLow(QSPI_PIN_SS);
+	FlashCsLow();
 
 	// prepare counters of remaining data
 	u32 tx_count = count;
 	u32 rx_count = count;
 
+#if RP2040
 	// process data
 	while ((tx_count > 0) || (rx_count > 0)) // while there are some data to send or receive
 	{
@@ -250,9 +252,44 @@ void NOFLASH(FlashCmd)(const u8* txbuf, u8* rxbuf, u32 count)
 			rx_count--;
 		}
   	}
+#else // RP2350
+
+	// QMI
+	qmi_hw_t* qmi = qmi_hw;
+
+	// enable QMI direct mode
+	QMI_DirectEnable();
+
+	// process data
+	while ((tx_count > 0) || (rx_count > 0)) // while there are some data to send or receive
+	{
+		// get QMI status register
+		u32 flags = qmi->direct_csr;
+		Bool can_tx = ((flags & B10) == 0); // check if transmit FIFO is not full (can transmit)
+		Bool can_rx = ((flags & B16) == 0); // check if receive FIFO is not empty (can receive)
+
+		// send data (leave a small reserve to avoid overflowing the FIFO)
+		if (can_tx && (tx_count > 0))
+		{
+			qmi->direct_tx = *txbuf++;	// send byte
+			tx_count--;
+		}
+
+		// receive data
+		if (can_rx && (rx_count > 0))
+		{
+			*rxbuf++ = (u8)qmi->direct_rx; // receive byte
+			rx_count--;
+		}
+	}
+
+	// disable QMI direct mode
+	QMI_DirectDisable();
+
+#endif
 
 	// set CS to HIGH (using IO overrides, like bootom does)
-	QSPI_OutOverHigh(QSPI_PIN_SS);
+	FlashCsHigh();
 
 	// flush flash cache (and remove CSn IO force)
 	FlashFlush();
@@ -260,7 +297,7 @@ void NOFLASH(FlashCmd)(const u8* txbuf, u8* rxbuf, u32 count)
 #if NO_FLASH
 
 	// set flash to fast QSPI mode
-	SSI_FlashQspi(FLASHQSPI_CLKDIV_DEF);
+	FlashQspi(FLASHQSPI_CLKDIV_DEF);
 
 #else // NO_FLASH
 

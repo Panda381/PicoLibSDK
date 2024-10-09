@@ -16,8 +16,13 @@
 
 // https://rylev.github.io/DMG-01/public/book/introduction.html
 
-// MOS-6502 CPU speed: 1 MHz to 3 MHz (Atari PAL: 1.77 MHz, Atari NTSC: 1.79 MHz)
-// Memory mapping (Atari):
+// MOS-6502 CPU speed: 1 MHz to 3 MHz
+//	Atari PAL: 1.77 MHz
+//	Atari NTSC: 1.79 MHz
+//	NES PAL: 1.662607 MHz
+//	NES NTSC: 1.7897725 MHz
+
+// Atari memory mapping:
 //  0x0000..0x00FF: page zero
 //	0x0000..0x007F: system page zero
 //	0x0080..0x00FF: BASIC and user page zero
@@ -29,11 +34,32 @@
 //  0xE000..0xEFFF: hardware I/O
 //  0xF000..0xFFFF: system ROM
 
+// NES memory mapping:
+//  0x0000-0x07FF ... internal 2K work WRAM
+//	0x0000-0x00FF ... RAM, zero-page
+//	0x0100-0x01FF ... RAM, CPU-stack
+//	0x0200-0x07FF ... work RAM
+//  0x0800-0x1FFF ... (mirror of 0x0000-0x07FF)
+//  0x2000-0x2007 ... PPU registers (display controller with 2 KB VRAM)
+//  0x2008-0x3FFF ... (mirror of 0x2000-0x2007)
+//  0x4000-0x400F ... APU registers (sound controller)
+//  0x4010-0x4017 ... DMC, joystick, APU registers
+//  0x4020-0x5FFF ... cartridge 8K expansion area ROM (maybe mapper registers)
+//  0x6000-0x7FFF ... cartridge 8K SRAM (maybe battery-packed)
+//  0x8000-0xFFFF ... program 32K PRG-ROM (maybe bank switched)
+//  0xFFFA-0xFFFB ... NMI vector
+//  0xFFFC-0xFFFD ... Reset vector
+//  0xFFFE-0xFFFF ... BRK vector
+
 #if USE_EMU_M6502			// use M6502 CPU emulator
 
 // code modifications
 #ifndef M6502_CPU_65C02
-#define M6502_CPU_65C02		1	// 1=use modifications of 65C02 and later
+#define M6502_CPU_65C02		0	// 1=use modifications of 65C02 and later
+#endif
+
+#ifndef M6502_CPU_2A03
+#define M6502_CPU_2A03		0	// 1=use NES CPU Ricoh 2A93 modification (does not contain support for decimal)
 #endif
 
 // constants
@@ -75,11 +101,13 @@ typedef struct {
 	volatile u8	nmireq;		// 0x11: 1=NMI request
 	volatile u8	resreq;		// 0x12: 1=RESET request
 	u8		res;		// 0x13: ... reserved (align)
-	pEmu16Read8	readmem;	// 0x14: read byte from memory
-	pEmu16Write8	writemem;	// 0x18: write byte to memory
+	u8*		ramzp;		// 0x14: pointer to RAM zero page (RAM address 0x0000-0x00FF)
+	u8*		stack;		// 0x18: pointer to RAM stack (RAM address 0x0100-0x01FF)
+	pEmu16Read8	readmem;	// 0x1C: read byte from memory
+	pEmu16Write8	writemem;	// 0x20: write byte to memory
 } sM6502;
 
-STATIC_ASSERT(sizeof(sM6502) == 0x1C, "Incorrect sM6502!");
+STATIC_ASSERT(sizeof(sM6502) == 0x24, "Incorrect sM6502!");
 
 // current CPU descriptor (NULL = not running)
 extern volatile sM6502* M6502_Cpu;

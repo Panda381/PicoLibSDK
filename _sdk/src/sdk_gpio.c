@@ -21,16 +21,28 @@
 // generic callback for GPIO types (NULL = not used)
 gpio_irq_callback_t GPIO_Callbacks[CORE_NUM] = { NULL, NULL };
 
-// set GPIO function GPIO_FNC_*, reset overrides to normal mode, reset pad setup (pin = 0..29)
+// set GPIO function GPIO_FNC_* (pin = 0..29 or 0..47)
+// Resets pad overrides, enables input and output.
+// To setup GPIO:
+//  - reset GPIO to default state with GPIO_Reset()
+//  - setup output level, output enable, pull-up/pull-down, schmitt, slew, drive strength
+//  - set GPIO function
+//  - if needed, disable input (needed for ADC) and setup overrides
 void GPIO_Fnc(int pin, int fnc)
 {
-	*GPIO_PAD(pin) = B1|B2|B4|B6; // reset pad setup
-	*GPIO_CTRL(pin) = fnc; // set function, reset all overrides
+	// enable input and output
+	io32* pad = GPIO_PadHw(pin);	// get pad control interface
+	GPIO_OutEnable_hw(pad);		// output enable
+	GPIO_InEnable_hw(pad);		// input enable
+	*GPIO_CTRL(pin) = fnc;		// set function, reset all overrides
+#if !RP2040
+	GPIO_IsolationDisable_hw(pad);	// pad isolation disable
+#endif
 }
 
 // set GPIO function GPIO_FNC_* with mask (bit '1' to set function of this pin)
 // To use pin mask in range (first..last), use function RangeMask.
-void GPIO_FncMask(u32 mask, int fnc)
+void GPIO_FncMask(gpio_mask_t mask, int fnc)
 {
 	int i;
 	for (i = 0; i < GPIO_PIN_NUM; i++)
@@ -41,7 +53,7 @@ void GPIO_FncMask(u32 mask, int fnc)
 }
 
 // acknowledge IRQ interrupt for both CPU
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   events = bit mask with IRQ_EVENT_EDGE* of events to acknowledge
 //  Interrupts LEVEL are not latched, they become inactive on end condition.
 void GPIO_IRQAck(int pin, int events)
@@ -53,7 +65,7 @@ void GPIO_IRQAck(int pin, int events)
 
 // enable IRQ interrupt for selected/current CPU
 //   cpu = CPU core 0 or 1, use CpuID() to get current core
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   events = bit mask with IRQ_EVENT_* of events to enable
 
 // After enabling interrupt from pin, following steps are necessary:
@@ -70,7 +82,7 @@ void GPIO_IRQEnableCpu(int cpu, int pin, int events)
 }
 
 // enable IRQ interrupt for dormant wake
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   events = bit mask with IRQ_EVENT_* of events to enable
 void GPIO_IRQEnableDorm(int pin, int events)
 {
@@ -81,7 +93,7 @@ void GPIO_IRQEnableDorm(int pin, int events)
 
 // disable IRQ interrupt for selected/current CPU
 //   cpu = CPU core 0 or 1, use CpuID() to get current core
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   events = bit mask with IRQ_EVENT_* of events to disable
 void GPIO_IRQDisableCpu(int cpu, int pin, int events)
 {
@@ -91,7 +103,7 @@ void GPIO_IRQDisableCpu(int cpu, int pin, int events)
 }
 
 // disable IRQ interrupt for dormant wake
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   events = bit mask with IRQ_EVENT_* of events to disable
 void GPIO_IRQDisableDorm(int pin, int events)
 {
@@ -102,7 +114,7 @@ void GPIO_IRQDisableDorm(int pin, int events)
 
 // force IRQ interrupt for selected/current CPU
 //   cpu = CPU core 0 or 1, use CpuID() to get current core
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   events = bit mask with IRQ_EVENT_* of events to force
 void GPIO_IRQForceCpu(int cpu, int pin, int events)
 {
@@ -112,7 +124,7 @@ void GPIO_IRQForceCpu(int cpu, int pin, int events)
 }
 
 // force IRQ interrupt for dormant wake
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   events = bit mask with IRQ_EVENT_* of events to force
 void GPIO_IRQForceDorm(int pin, int events)
 {
@@ -123,7 +135,7 @@ void GPIO_IRQForceDorm(int pin, int events)
 
 // clear force IRQ interrupt for selected/current CPU
 //   cpu = CPU core 0 or 1, use CpuID() to get current core
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   events = bit mask with IRQ_EVENT_* of events to unforce
 void GPIO_IRQUnforceCpu(int cpu, int pin, int events)
 {
@@ -133,7 +145,7 @@ void GPIO_IRQUnforceCpu(int cpu, int pin, int events)
 }
 
 // clear force IRQ interrupt for dormant wake
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   events = bit mask with IRQ_EVENT_* of events to unforce
 void GPIO_IRQUnforceDorm(int pin, int events)
 {
@@ -144,7 +156,7 @@ void GPIO_IRQUnforceDorm(int pin, int events)
 
 // check IRQ interrupt status for selected/current CPU (returns 1 if IRQ is pending)
 //   core = CPU core 0 or 1, use CpuID() to get current core
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   returns events = bit mask with IRQ_EVENT_* of incoming events
 u8 GPIO_IRQIsPendingCpu(int cpu, int pin)
 {
@@ -153,7 +165,7 @@ u8 GPIO_IRQIsPendingCpu(int cpu, int pin)
 }
 
 // check IRQ interrupt status for dormant wake (returns 1 if IRQ is pending)
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   returns events = bit mask with IRQ_EVENT_* of incoming events
 u8 GPIO_IRQIsPendingDorm(int pin)
 {
@@ -163,7 +175,7 @@ u8 GPIO_IRQIsPendingDorm(int pin)
 
 // check if IRQ is forced for selected/current CPU (returns 1 if IRQ is pending)
 //   cpu = CPU core 0 or 1, use CpuID() to get current core, or 2 = dormant wake
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   returns events = bit mask with IRQ_EVENT_* of forced events
 u8 GPIO_IRQIsForcedCpu(int cpu, int pin)
 {
@@ -172,7 +184,7 @@ u8 GPIO_IRQIsForcedCpu(int cpu, int pin)
 }
 
 // check if IRQ is forced for dormant wake (returns 1 if IRQ is pending)
-//   pin = 0..29
+//   pin = 0..29 or 0..47
 //   returns events = bit mask with IRQ_EVENT_* of forced events
 u8 GPIO_IRQIsForcedDorm(int pin)
 {
@@ -188,9 +200,6 @@ void GPIO_DefIRQHandler(void)
 
 	// get callback handler
 	gpio_irq_callback_t cb = GPIO_Callbacks[core];
-
-	// get control register
-	//io_irq_ctrl_hw_t* base = core ? &iobank0_hw->proc1_irq_ctrl : &iobank0_hw->proc0_irq_ctrl;
 
 	// check pins
 	int pin, events;
@@ -227,9 +236,10 @@ void GPIO_IRQSetCallback(gpio_irq_callback_t cb)
 	if (cb != NULL) GPIO_SetHandler(GPIO_DefIRQHandler);
 }
 
-// initialize GPIO pin base function, reset pad setup, set input mode, LOW output value (pin = 0..29)
+// initialize GPIO pin base function, reset pin, set input mode, LOW output value (pin = 0..29 or 0..47)
 void GPIO_Init(int pin)
 {
+	GPIO_Reset(pin);	// reset pin
 	GPIO_DirIn(pin);	// disable output
 	GPIO_Out0(pin);		// set output to LOW
 	GPIO_Fnc(pin, GPIO_FNC_SIO); // set function, reset overrides, reset pad setup
@@ -237,14 +247,15 @@ void GPIO_Init(int pin)
 
 // initialize GPIO pin base function masked (bit '1' to initialize this pin)
 // To use pin mask in range (first..last), use function RangeMask.
-void GPIO_InitMask(u32 mask)
+void GPIO_InitMask(gpio_mask_t mask)
 {
+	GPIO_ResetMask(mask);		// reset pins
 	GPIO_DirInMask(mask);		// disable output
 	GPIO_ClrMask(mask);		// set output to LOW
 	GPIO_FncMask(mask, GPIO_FNC_SIO); // set function, reset overrides, reset pad setup
 }
 
-// reset GPIO pin (return to reset state)
+// reset GPIO pin (return to reset state) (pin = 0..29 or 0..47,56..63)
 void GPIO_Reset(int pin)
 {
 	GPIO_IRQDisableCpu(0, pin, IRQ_EVENT_ALL); // disable IRQ
@@ -252,15 +263,20 @@ void GPIO_Reset(int pin)
 	GPIO_IRQUnforceCpu(0, pin, IRQ_EVENT_ALL); // clear force IRQ
 	GPIO_IRQUnforceCpu(1, pin, IRQ_EVENT_ALL);
 	GPIO_IRQAck(pin, IRQ_EVENT_ALL); // acknowledge IRQ
-	GPIO_DirIn(pin); // disable output
-	GPIO_Out0(pin); // set output to 0
-	GPIO_Fnc(pin, GPIO_FNC_NULL); // reset function, reset overrides, reset pad setup
+	GPIO_DirIn(pin);		// disable output
+	GPIO_Out0(pin);			// set output to 0
+	GPIO_PadInit(pin);		// reset pad setup
+	*GPIO_CTRL(pin) = GPIO_FNC_NULL; // reset function, reset overrides
 }
 
 // reset GPIO pins masked (return to reset state)
 // To use pin mask in range (first..last), use function RangeMask.
-void GPIO_ResetMask(u32 mask)
+void GPIO_ResetMask(gpio_mask_t mask)
 {
 	int i;
-	for (i = 0; i < GPIO_PIN_NUM; i++) GPIO_Reset(i);
+	for (i = 0; i < GPIO_PIN_NUM; i++)
+	{
+		if ((mask & 1) != 0) GPIO_Reset(i);
+		mask >>= 1;
+	}
 }

@@ -17,7 +17,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-#define SDK_VER		112	// SDK library version in hundredths
+#define SDK_VER		200	// SDK library version in hundredths
 
 // ----------------------------------------------------------------------------
 //                               Attributes
@@ -269,6 +269,7 @@ extern const u8* __data_end__; // end of initialize .data section
 #define B31 (1UL<<31)
 
 #define BIT(pos) (1UL<<(pos))
+#define BIT64(pos) (1ULL<<(pos))
 
 #define	BIGINT	0x40000000 // big int value
 

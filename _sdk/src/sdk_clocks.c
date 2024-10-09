@@ -22,6 +22,8 @@
 #include "../inc/sdk_watchdog.h"
 #include "../inc/sdk_irq.h"
 #include "../inc/sdk_gpio.h"
+#include "../inc/sdk_ticks.h"
+#include "../inc/sdk_timer.h"
 
 // current clock frequency in Hz (clock lines and clock generators)
 u32 CurrentFreq[CLK_SRC_NUM];
@@ -33,10 +35,11 @@ u8 CurrentClkSrc[CLK_SRC_NUM];
 resus_callback_t ResusCallback = NULL;
 
 // convert clock source index to internal source index (-1 unsupported, B6=glitchless)
+#if RP2040
 const s8 ClockSourceTab[5*12] = {
 // src:	REF	SYS	PERI	USB	ADC	RTC	ROSC	XOSC	PLLSYS	PLLUSB	GPIN0	GPIN1
 
-// CLK_GPOUT0..CLK_GPOUT1 clock line
+// CLK_GPOUT0..CLK_GPOUT3 clock line
 	10,	6,	-1,	7,	8,	9,	4,	5,	0,	3,	1,	2,
 
 // CLK_REF clock line
@@ -51,24 +54,65 @@ const s8 ClockSourceTab[5*12] = {
 // CLK_USB, CLK_ADC, CLK_RTC clock line
 	-1,	-1,	-1,	-1,	-1,	-1,	2,	3,	1,	0,	4,	5,
 };
+#else
+const s8 ClockSourceTab[6*15] = {
+// src:	REF	SYS	PERI	HSTX	USB	ADC	ROSC	XOSC	PLLSYS	PLLUSB	GPIN0	GPIN1	LPOSC	OTP2FC	PLLOPCG
+
+// CLK_GPOUT0..CLK_GPOUT3 clock line
+	11,	8,	12,	13,	9,	10,	5,	6,	0,	3,	1,	2,	7,	14,	4,
+
+// CLK_REF clock line
+	-1,	-1,	-1,	-1,	-1,	-1,	0+B6,	2+B6,	-1,	0,	1,	2,	3+B6,	-1,	3,
+
+// CLK_SYS clock line
+	0+B6,	-1,	-1,	-1,	-1,	-1,	2,	3,	0,	1,	4,	5,	-1,	-1,	-1,
+
+// CLK_PERI clock line
+	-1,	0,	-1,	-1,	-1,	-1,	3,	4,	1,	2,	5,	6,	-1,	-1,	-1,
+
+// CLK_HSTX clock line
+	-1,	0,	-1,	-1,	-1,	-1,	-1,	-1,	1,	2,	3,	4,	-1,	-1,	-1,
+
+// CLK_USB, CLK_ADC clock line
+	-1,	-1,	-1,	-1,	-1,	-1,	2,	3,	1,	0,	4,	5,	-1,	-1,	-1,
+};
+#endif
 
 // convert clock line to frequency counter internal index
 const u8 ClockFreqTab[] = {
-	8,	// CLK_REF
-	9,	// CLK_SYS
-	10,	// CLK_PERI
-	11,	// CLK_USB
-	12,	// CLK_ADC
-	13,	// CLK_RTC
-	3,	// CLK_ROSC
-	5,	// CLK_XOSC
-	1,	// CLK_PLL_SYS
-	2,	// CLK_PLL_USB
-	6,	// CLK_GPIN0
-	7,	// CLK_GPIN1
+#if RP2040
+	8,	// 4: CLK_REF
+	9,	// 5: CLK_SYS
+	10,	// 6: CLK_PERI
+	11,	// 7: CLK_USB
+	12,	// 8: CLK_ADC
+	13,	// 9: CLK_RTC
+	3,	// 10: CLK_ROSC
+	5,	// 11: CLK_XOSC
+	1,	// 12: CLK_PLL_SYS
+	2,	// 13: CLK_PLL_USB
+	6,	// 14: CLK_GPIN0
+	7,	// 15: CLK_GPIN1
+#else
+	8,	// 4: CLK_REF
+	9,	// 5: CLK_SYS
+	10,	// 6: CLK_PERI
+	13,	// 7: CLK_HSTX
+	11,	// 8: CLK_USB
+	12,	// 9: CLK_ADC
+	3,	// 10: CLK_ROSC
+	5,	// 11: CLK_XOSC
+	1,	// 12: CLK_PLL_SYS
+	2,	// 13: CLK_PLL_USB
+	6,	// 14: CLK_GPIN0
+	7,	// 15: CLK_GPIN1
+	14,	// 16: CLK_LPOSC
+	15,	// 17: CLK_OTP_2FC
+	16,	// 18: CLK_PLL_OPCG
+#endif
 };
 
-// convert frequency counter internal index to clock line (CLK_SRC_NUM not valid index)
+// convert frequency counter internal index to clock line (CLK_SRC_NUM = not valid index)
 const u8 ClockFC0Tab[] = {
 	CLK_SRC_NUM,	// 0 NULL
 	CLK_PLL_SYS,	// 1
@@ -83,13 +127,25 @@ const u8 ClockFC0Tab[] = {
 	CLK_PERI,	// 10
 	CLK_USB,	// 11
 	CLK_ADC,	// 12
+#if RP2040
 	CLK_RTC,	// 13
+#else
+	CLK_HSTX,	// 13
+	CLK_LPOSC,	// 14
+	CLK_OTP_2FC,	// 15
+	CLK_PLL_OPCG,	// 16
+#endif
 };
 
 // clock source names
-const char* ClockName[CLK_SRC_NUM] = {
-	"GPOUT0", "GPOUT1", "GPOUT2", "GPOUT3", "REF", "SYS", "PERI", "USB",
+const char* ClockName[CLK_SRC_NUM] =
+#if RP2040
+	{"GPOUT0", "GPOUT1", "GPOUT2", "GPOUT3", "REF", "SYS", "PERI", "USB",
 	"ADC", "RTC", "ROSC", "XOSC", "PLL_SYS", "PLL_USB", "GPIN0", "GPIN1" };
+#else
+	{"GPOUT0", "GPOUT1", "GPOUT2", "GPOUT3", "REF", "SYS", "PERI", "HSTX", "USB", "ADC",
+	"ROSC", "XOSC", "PLL_SYS", "PLL_USB", "GPIN0", "GPIN1", "LPOSC", "OTP_2FC", "PLL_OPCG" };
+#endif
 
 // stop clock CLK_* (cannot stop SYS and REF clocks)
 void ClockStop(int clk)
@@ -105,8 +161,8 @@ void ClockStop(int clk)
 }
 
 // setup clock line (returns new frequency in Hz or 0 on error)
-//  clk ... clock line index CLK_GPOUT0..CLK_RTC
-//  clksrc ... clock source CLK_REF..CLK_GPIN1 (see table which sources are supported)
+//  clk ... clock line index CLK_GPOUT0..CLK_RTC (CLK_ADC)
+//  clksrc ... clock source CLK_REF..CLK_GPIN1 (CLK_PLL_OPCG) (see table which sources are supported)
 //  freq ... required frequency in Hz, 0=use source frequency
 //  freqsrc ... frequency in Hz of source, 0=get from table (must be freqsrc >= freq)
 u32 ClockSetup(int clk, int clksrc, u32 freq, u32 freqsrc)
@@ -124,7 +180,7 @@ u32 ClockSetup(int clk, int clksrc, u32 freq, u32 freqsrc)
 
 	int i = clk - 3; // CLK_GPOUT3 as base of table
 	if (i < 0) i = 0; // CLK_GPOUT0..CLK_GPOUT3 as index 0
-	if (i > CLK_USB-3) i = CLK_USB-3; // combine CLK_USB, CLK_ADC and CLK_RTC
+	if (i > CLK_USB-3) i = CLK_USB-3; // combine CLK_USB, CLK_ADC and CLK_RTC (RP2350: without CLK_RTC)
 	i = ClockSourceTab[i*(CLK_SRC_NUM-4) + clksrc]; // get internal source index
 	if (i < 0) return 0; // invalid clock source
 
@@ -132,12 +188,12 @@ u32 ClockSetup(int clk, int clksrc, u32 freq, u32 freqsrc)
 	CurrentClkSrc[clk] = (u8)(clksrc + 4);
 
 	// prepare source indices
-	int aux = (i & 0x0f); // auxiliary mux index
+	int aux = (i & 0x1f); // auxiliary mux index
 	int src = 1; // glitchless mux source is auxiliary mux
 	if ((i & B6) != 0) // clock source is glitchless mux
 	{
+		src = aux; // glitchless mux source
 		aux = 0; // not using auxiliary mux
-		src = i & 3; // glitcless mux source
 	}
 
 	// prepare registers
@@ -146,8 +202,8 @@ u32 ClockSetup(int clk, int clksrc, u32 freq, u32 freqsrc)
 	volatile u32* div = &hw->div; // divisor
 	volatile u32* sel = &hw->selected; // selected
 
-	// divider, including 8-bit fraction (so multiply result by 2^8)
-	u32 d = (u32)((((u64)freqsrc << 8) + freq/2) / freq);
+	// divider, including 8-bit (or 16-bit) fraction (so multiply result by 2^8 or 2^16)
+	u32 d = (u32)((((u64)freqsrc << CLK_DIV_FRAC_BITS) + freq/2) / freq);
 
 	// increasing divisor, so set divisor before source (to avoid overspeed)
 	if (d > *div) *div = d;
@@ -169,19 +225,14 @@ u32 ClockSetup(int clk, int clksrc, u32 freq, u32 freqsrc)
 		{
 			// wait 3 cycles of target clock to stop
 			//  required number of loops = system_clock / current_clock + 1
-			u32 delay = CurrentFreq[CLK_SYS] / CurrentFreq[clk] + 1;
+			u32 delay = CurrentFreq[CLK_SYS] * 3 / CurrentFreq[clk] + 1;
 
 			// delay in assembler
-			__asm volatile (
-				".syntax unified\n"
-				"1:\n"
-				"subs %0, #1\n"		// [1 clock]
-				"bne 1b\n"		// [2 clocks]
-				: "+r" (delay));
+			BusyWaitCycles(delay);
 		}
 	}
 
-	// set aux mux
+	// set aux mux first
 	RegMask(ctrl, (u32)aux << 5, 0xf << 5);
 
 	// set glitchless mux
@@ -198,7 +249,7 @@ u32 ClockSetup(int clk, int clksrc, u32 freq, u32 freqsrc)
 	RegSet(ctrl, B11);
 
 	// store new current frequency in Hz
-	freq = (u32)(((u64)freqsrc << 8) / d);
+	freq = (u32)(((u64)freqsrc << CLK_DIV_FRAC_BITS) / d);
 	CurrentFreq[clk] = freq;
 
 	return freq;
@@ -222,7 +273,7 @@ void ClockInit()
 #if USE_ROSC	// use ROSC ring oscillator (sdk_rosc.c, sdk_rosc.h)
 	RoscInit();
 #else
-	CurrentFreq[CLK_ROSC] = ROSC_MHZ*MHZ; // default ROSC ring oscillator is 6 MHz
+	CurrentFreq[CLK_ROSC] = ROSC_MHZ*MHZ; // default ROSC ring oscillator is 6 MHz (or 11 MHz)
 #endif
 
 	// enable XOSC crystal oscillator
@@ -232,13 +283,30 @@ void ClockInit()
 	CurrentFreq[CLK_XOSC] = XOSC_MHZ*MHZ; // default XOR crystal oscillator is 12 MHz
 #endif
 
-	// start tick in watchdog
+	// start system ticks
+#if RP2040
+
 #if USE_WATCHDOG || USE_TIMER // use Watchdog or Timer
 #if USE_XOSC	// use XOSC crystal oscillator (sdk_xosc.c, sdk_xosc.h)
 	WatchdogStart(XOSC_MHZ);
-#else
+#else // USE_XOSC
 	WatchdogStart(ROSC_MHZ);
-#endif
+#endif // USE_XOSC
+#endif // USE_WATCHDOG || USE_TIMER
+
+#else // RP2350
+
+#if USE_XOSC	// use XOSC crystal oscillator (sdk_xosc.c, sdk_xosc.h)
+	TickStartAll(XOSC_MHZ);
+#else // USE_XOSC
+	TickStartAll(ROSC_MHZ);
+#endif // USE_XOSC
+
+#endif // RP2040
+
+#if RP2350 && USE_TIMER		// 1=use MCU RP2350
+	// Initialize system clock timer
+	Timer2Init();
 #endif
 
 	// disable aux sources of SYS and REF, to enable changes of PLLs
@@ -249,7 +317,7 @@ void ClockInit()
 
 #if USE_PLL	// use PLL phase-locked loop (sdk_pll.c, sdk_pll.h)
 
-	// set PLL_SYS to default 125 MHz
+	// set PLL_SYS to default 125 MHz (or 150 MHz)
 	PllSetFreq(PLL_SYS, PLL_KHZ);
 
 	// set PLL_USB to default 48 MHz
@@ -267,18 +335,25 @@ void ClockInit()
 	// setup CLK_ADC to PLL_USB
 	ClockSetup(CLK_ADC, CLK_PLL_USB, 0, 0);
 
+#if RP2040
 	// setup CLK_RTC to PLL_USB, 48MHz/1024 = 46875 Hz
 	ClockSetup(CLK_RTC, CLK_PLL_USB, CurrentFreq[CLK_PLL_USB]/1024, 0);
+#endif // RP2040
 
 #if USE_FAST_PERI		// use fast perifery - use system clock instead of USB clock
 	// setup CLK_PERI to PLL_SYS
 	ClockSetup(CLK_PERI, CLK_PLL_SYS, 0, 0);
-#else
+#else // USE_FAST_PERI // use USB clock - this will be independent on system clock change
 	// setup CLK_PERI to PLL_USB
 	ClockSetup(CLK_PERI, CLK_PLL_USB, 0, 0);
+#endif // USE_FAST_PERI
+
+#if !RP2040
+	// setup CLK_HSTX to PLL_SYS
+	ClockSetup(CLK_HSTX, CLK_PLL_SYS, 0, 0);
 #endif
 
-#elif USE_XOSC	// use XOSC crystal oscillator (sdk_xosc.c, sdk_xosc.h)
+#elif USE_XOSC	// USE_PLL ... use XOSC crystal oscillator
 
 	// setup CLK_REF to XOSC
 	ClockSetup(CLK_REF, CLK_XOSC, 0, 0);
@@ -292,14 +367,20 @@ void ClockInit()
 	// setup CLK_ADC to XOSC
 	ClockSetup(CLK_ADC, CLK_XOSC, 0, 0);
 
+#if RP2040
 	// setup CLK_RTC to XOSC, 12MHz/256 = 46875 Hz
 	ClockSetup(CLK_RTC, CLK_XOSC, CurrentFreq[CLK_XOSC]/256, 0);
+#endif
 
 	// setup CLK_PERI to XOSC
 	ClockSetup(CLK_PERI, CLK_XOSC, 0, 0);
 
+#if !RP2040
+	// setup CLK_HSTX to XOSC
+	ClockSetup(CLK_HSTX, CLK_XOSC, 0, 0);
+#endif
 
-#else 	// else use ROSC ring oscillator
+#else 	// USE_PLL ... else use ROSC ring oscillator
 
 	// setup CLK_REF to ROSC
 	ClockSetup(CLK_REF, CLK_ROSC, 0, 0);
@@ -313,11 +394,18 @@ void ClockInit()
 	// setup CLK_ADC to ROSC
 	ClockSetup(CLK_ADC, CLK_ROSC, 0, 0);
 
+#if RP2040
 	// setup CLK_RTC to ROSC, 6MHz/128 = 46875 Hz
 	ClockSetup(CLK_RTC, CLK_ROSC, CurrentFreq[CLK_ROSC]/128, 0);
+#endif
 
 	// setup CLK_PERI to ROSC
 	ClockSetup(CLK_PERI, CLK_ROSC, 0, 0);
+
+#if !RP2040
+	// setup CLK_HSTX to ROSC
+	ClockSetup(CLK_HSTX, CLK_ROSC, 0, 0);
+#endif
 
 #endif
 
@@ -488,7 +576,7 @@ void ClockResusDisable()
 }
 
 // enable divided clock to GPIO pin, set divider (returns new frequency in Hz or 0 on error)
-//  gpio ... GPIO pin 21, 23, 24 or 25 (only GPIO21 is available on the Pico board)
+//  gpio ... GPIO pin 21, 23, 24 or 25 (only GPIO21 is available on the Pico board) (RP2350: 13, 15, 21, 23, 24 or 25)
 //  clksrc ... clock source CLK_REF..CLK_GPIN1 (see table which sources are supported)
 //  clkdiv ... clock_divider * 256 (default 0x100, means clock_divider=1.00)
 u32 ClockGpoutDiv(int gpio, int clksrc, u32 clkdiv)
@@ -499,6 +587,10 @@ u32 ClockGpoutDiv(int gpio, int clksrc, u32 clkdiv)
 	else if (gpio == 23) clk = CLK_GPOUT1;
 	else if (gpio == 24) clk = CLK_GPOUT2;
 	else if (gpio == 25) clk = CLK_GPOUT3;
+#if !PICO_RP2040
+	else if (gpio == 13) clk = CLK_GPOUT0;
+	else if (gpio == 15) clk = CLK_GPOUT1;
+#endif
 	else return 0;
 
 	// convert clock source to internal source index
@@ -512,7 +604,7 @@ u32 ClockGpoutDiv(int gpio, int clksrc, u32 clkdiv)
 	CurrentClkSrc[clk] = (u8)(clksrc);
 
 	// increasing divisor, so set divisor before source (to avoid overspeed)
-	if (clkdiv < 0x100) clkdiv = 0x100; // minimal divider is 1.00
+	if (clkdiv < BIT(CLK_DIV_FRAC_BITS)) clkdiv = BIT(CLK_DIV_FRAC_BITS); // minimal divider is 1.00
 	if (clkdiv > clocks_hw->clk[clk].div) clocks_hw->clk[clk].div = clkdiv;
 
 	// Setup clock generator
@@ -526,7 +618,7 @@ u32 ClockGpoutDiv(int gpio, int clksrc, u32 clkdiv)
 
 	// save new frequency
 	u32 freqsrc = CurrentFreq[clksrc]; // source frequency
-	u32 freq = (u32)(((u64)freqsrc << 8) / clkdiv);
+	u32 freq = (u32)(((u64)freqsrc << CLK_DIV_FRAC_BITS) / clkdiv);
 	CurrentFreq[clk] = freq;
 
 	return freq;
@@ -539,7 +631,7 @@ u32 ClockGpoutDiv(int gpio, int clksrc, u32 clkdiv)
 u32 ClockGpoutFreq(int gpio, int clksrc, u32 freq)
 {
 	u32 freqsrc = CurrentFreq[clksrc]; // source frequency
-	u32 clkdiv = (u32)((((u64)freqsrc << 8) + freq/2) / freq); // divider, including 8-bit fraction (so multiply result by 2^8)
+	u32 clkdiv = (u32)((((u64)freqsrc << CLK_DIV_FRAC_BITS) + freq/2) / freq); // divider, including 8-bit fraction (so multiply result by 2^8)
 	return ClockGpoutDiv(gpio, clksrc, clkdiv);
 }
 
@@ -553,6 +645,10 @@ void ClockGpoutDisable(int gpio)
 	else if (gpio == 23) clk = CLK_GPOUT1;
 	else if (gpio == 24) clk = CLK_GPOUT2;
 	else if (gpio == 25) clk = CLK_GPOUT3;
+#if !PICO_RP2040
+	else if (gpio == 13) clk = CLK_GPOUT0;
+	else if (gpio == 15) clk = CLK_GPOUT1;
+#endif
 	else return;
 
 	// stop clock generator
@@ -563,8 +659,8 @@ void ClockGpoutDisable(int gpio)
 }
 
 // Configure a clock to come from a gpio input (returns new frequency in Hz or 0 on error)
-//  clk ... clock line index CLK_GPOUT0..CLK_RTC
-//  gpio ... GPIO pin 20 or 22
+//  clk ... clock line index CLK_GPOUT0..CLK_RTC (CLK_ADC)
+//  gpio ... GPIO pin 20 or 22 (RP2350: 12, 14, 20 or 22)
 //  freq ... required frequency in Hz
 //  freqsrc ... frequency in Hz of source (must be freqsrc >= freq)
 u32 ClockGpinSetup(int clk, int gpio, u32 freq, u32 freqsrc)
@@ -573,6 +669,10 @@ u32 ClockGpinSetup(int clk, int gpio, u32 freq, u32 freqsrc)
 	int clksrc;
 	if      (gpio == 20) clksrc = CLK_GPIN0;
 	else if (gpio == 22) clksrc = CLK_GPIN1;
+#if PICO_RP2350
+	else if (gpio == 12) clksrc = CLK_GPIN0;
+	else if (gpio == 14) clksrc = CLK_GPIN1;
+#endif
 	else return 0;
 
 	// set the GPIO function
@@ -592,8 +692,8 @@ bool clock_configure(enum clock_index clk_index, u32 src, u32 auxsrc, u32 src_fr
 	// destination frequency must not be greater than source frequency
 	if (freq > src_freq) return false;
 
-	// Div register is 24.8 int.frac divider so multiply by 2^8 (left shift by 8)
-	div = (u32)(((u64)src_freq << 8) / freq);
+	// Div register is 24.8 (or 16.16) int.frac divider so multiply by 2^8 or 2^16 (left shift by 8 or 16)
+	div = (u32)(((u64)src_freq << CLK_DIV_FRAC_BITS) / freq);
 
 	// pointer to clock interface
 	clock_hw_t *clock = ClockGetHw(clk_index);
@@ -620,15 +720,10 @@ bool clock_configure(enum clock_index clk_index, u32 src, u32 auxsrc, u32 src_fr
 		{
 			// wait 3 cycles of target clock to stop
 			//  required number of loops = system_clock / current_clock + 1
-			uint delay_cyc = CurrentFreq[clk_sys] / CurrentFreq[clk_index] + 1;
+			uint delay_cyc = CurrentFreq[clk_sys] * 3 / CurrentFreq[clk_index] + 1;
 
 			// delay in assembler
-			asm volatile (
-				".syntax unified \n\t"
-				"1: \n\t"
-				"subs %0, #1 \n\t"
-				"bne 1b"
-				: "+r" (delay_cyc));
+			BusyWaitCycles(delay_cyc);
 		}
 	}
 
@@ -649,7 +744,7 @@ bool clock_configure(enum clock_index clk_index, u32 src, u32 auxsrc, u32 src_fr
 	clock->div = div;
 
 	// Store the configured frequency
-	CurrentFreq[clk_index] = (u32)(((u64)src_freq << 8) / div);
+	CurrentFreq[clk_index] = (u32)(((u64)src_freq << CLK_DIV_FRAC_BITS) / div);
 
 	return true;
 }
@@ -663,11 +758,15 @@ void clock_gpio_init_int_frac(uint gpio, uint src, u32 div_int, u8 div_frac)
 	else if (gpio == 23) gpclk = clk_gpout1;
 	else if (gpio == 24) gpclk = clk_gpout2;
 	else if (gpio == 25) gpclk = clk_gpout3;
+#if !PICO_RP2040
+	else if (gpio == 13) gpclk = clk_gpout0;
+	else if (gpio == 15) gpclk = clk_gpout1;
+#endif
 	else return;
 
 	// Setup clock generator
 	clocks_hw->clk[gpclk].ctrl = (src << 5) | B11; // select source and enable clock
-	clocks_hw->clk[gpclk].div = (div_int << 8) | div_frac; // set divider
+	clocks_hw->clk[gpclk].div = (div_int << CLK_DIV_FRAC_BITS) | div_frac; // set divider
 
 	// Set gpio pin to gpclock function
 	gpio_set_function(gpio, GPIO_FUNC_GPCK);
@@ -682,9 +781,14 @@ const u8 gpin0_src[CLK_COUNT] = {
 	1,	// CLK_REF
 	4,	// CLK_SYS
 	5,	// CLK_PERI
+#if !RP2040
+	3,	// CLK_HSTX
+#endif
 	4,	// CLK_USB
 	4,	// CLK_ADC
+#if RP2040
 	4,	// CLK_RTC
+#endif
 };
 
 // Configure a clock to come from a gpio input (Valid GPIOs are: 20 and 22)
@@ -694,6 +798,10 @@ bool clock_configure_gpin(enum clock_index clk_index, uint gpio, u32 src_freq, u
 	uint gpin;
 	if      (gpio == 20) gpin = 0;
 	else if (gpio == 22) gpin = 1;
+#if PICO_RP2350
+	else if (gpio == 12) gpin = 0;
+	else if (gpio == 14) gpin = 1;
+#endif
 	else return False;
 
 	// index of auxiliary source

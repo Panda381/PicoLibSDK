@@ -1,0 +1,1 @@
+Output a 12.5 MHz square wave (if system clock frequency is 125 MHz).

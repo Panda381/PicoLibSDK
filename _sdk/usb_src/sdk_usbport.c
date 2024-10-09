@@ -44,6 +44,14 @@ u16 UsbPortActive = 0;
 //                              Initialize
 // ----------------------------------------------------------------------------
 
+// unaligned memcpy (libc memcpy on RP2350 does unaligned access, but DPRAM does not support it)
+void UsbPortMemcpy(void* dst, const void* src, u32 n)
+{
+	u8* d = (u8*)dst;
+	const u8* s = (const u8*)src;
+	while (n--) *d++ = *s++;
+}
+
 // get DPRAM buffer address of the channel (64 bytes long + 64 bytes reserve after it)
 //  chan ... channel 0..15
 u8* UsbPortBuf(u8 chan)
@@ -237,7 +245,7 @@ static u8 UsbPortStart(u8 chan, const void* buf, int len, Bool send)
 	}
 
 	// copy data to DPRAM buffer
-	if (send && (ram != buf)) memcpy(ram, buf, len);
+	if (send && (ram != buf)) UsbPortMemcpy(ram, buf, len);
 
 	// pointer to buffer control register
 	bc = (UsbPort == USBPORT_MASTER) ? USB_EP_INTBUF(chan) : USB_EP_BUF(epinx);
@@ -415,7 +423,7 @@ u8 UsbPortRecvChan(u8 chan, void* buf, int len)
 		u8* ram = UsbPortBuf(chan);
 
 		// copy data
-		if (ram != buf) memcpy(buf, ram, n);
+		if (ram != buf) UsbPortMemcpy(buf, ram, n);
 	}
 
 	// clear buffer status
@@ -453,7 +461,7 @@ u8 UsbPortSendPkt(u8 chan, const void* pkt)
 	sUsbPortPkt* ram = (sUsbPortPkt*)UsbPortBuf(chan);
 
 	// copy packet to DPRAM buffer
-	memcpy(ram, p, len);
+	UsbPortMemcpy(ram, p, len);
 
 	// calculate CRC
 	ram->crc = Crc16AFast((u8*)ram+2, len-2);

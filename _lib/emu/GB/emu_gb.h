@@ -189,7 +189,7 @@ typedef struct {
 	sGB_Cache	cache_list[GB_CACHE_PAGENUM]; // list of cache pages
 } sGBC;
 
-STATIC_ASSERT(sizeof(sGBC) <= sizeof(FrameBuf), "Overflow sGBC size - check GB_CACHE_SIZE!");
+STATIC_ASSERT(sizeof(sGBC) <= sizeof(FrameBuf), "Overflow sGBC size - check GB_CACHE_NUM!");
 
 #define GBC ((sGBC*)FrameBuf)	// emulator context
 

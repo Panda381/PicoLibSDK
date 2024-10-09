@@ -1,6 +1,6 @@
 
 # ASM source files
-ASRC += src/fixed.S
+# ASRC += src/fixed.S
 
 # C source files
 CSRC +=

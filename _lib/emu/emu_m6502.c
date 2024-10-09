@@ -36,7 +36,7 @@ void M6502_Reset(sM6502* cpu)
 #include "emu_m6502_macro.h"
 
 // execute program (start or continue, until "stop" request)
-// Size of code of this function: 7320 code + 1024 jump table = 8344 bytes
+// Size of code of this function: 7568 code + 1024 jump table = 8592 bytes
 // CPU loading at 1.77 MHz on 177 MHz: used 42-49%, max. 42-62%
 void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 {
@@ -95,13 +95,16 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 				cpu->pch = cpu->readmem(M6502_VECT_IRQ+1); // load jump address HIGH
 				cpu->pcl = pcl;
 				cpu->f |= M6502_I; // disable interrupt
+#if M6502_CPU_2A03 || M6502_CPU_65C02
+				cpu->f &= ~M6502_D; // disable decimal
+#endif
 			}
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// ORA (indirect,X)
 		case 0x01:
-			M6502_ORA(cpu, M6502_IndX(cpu));
+			M6502_ORA(cpu, M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
@@ -124,7 +127,7 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// SLO (indirect,X) ... undocumented
 		case 0x03:
-			M6502_SLO(cpu, M6502_IndX(cpu));
+			M6502_SLO(cpu, M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*8;
 			break;
 
@@ -170,19 +173,19 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// ORA zeropage
 		case 0x05:
-			M6502_ORA(cpu, M6502_ProgByte(cpu));
+			M6502_ORA_Zp(cpu, M6502_ProgByte(cpu)); // 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// ASL zeropage
 		case 0x06:
-			M6502_ASL_M(cpu, M6502_ProgByte(cpu));
+			M6502_ASL_Zp(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// SLO zeropage ... undocumented
 		case 0x07:
-			M6502_SLO(cpu, M6502_ProgByte(cpu));
+			M6502_SLO(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
@@ -194,7 +197,7 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// ORA #immediate
 		case 0x09:
-			M6502_ORA(cpu, cpu->pc);
+			M6502_ORA(cpu, cpu->pc);	// 16-bit address
 			cpu->pc++;
 			cpu->sync.clock += M6502_CLOCKMUL*2;
 			break;
@@ -209,7 +212,7 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 		case 0x0B:
 		case 0x2B:
 			{
-				M6502_AND(cpu, cpu->pc);
+				M6502_AND(cpu, cpu->pc);	// 16-bit address
 				cpu->pc++;
 				u8 f = cpu->f | M6502_C;
 				if ((cpu->a & B7) == 0) f ^= M6502_C;
@@ -220,58 +223,54 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// ORA absolute
 		case 0x0D:
-			M6502_ORA(cpu, M6502_ProgWord(cpu));
+			M6502_ORA(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// ASL absolute
 		case 0x0E:
-			M6502_ASL_M(cpu, M6502_ProgWord(cpu));
+			M6502_ASL_M(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// SLO absolute ... undocumented
 		case 0x0F:
-			M6502_SLO(cpu, M6502_ProgWord(cpu));
+			M6502_SLO(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// BPL relative
 		case 0x10:
-			{
-				s8 rel = (s8)M6502_ProgByte(cpu);
-				if ((cpu->f & M6502_N) == 0) cpu->pc += rel;
-			}
-			cpu->sync.clock += M6502_CLOCKMUL*2;
+			M6502_BRA(cpu, (cpu->f & M6502_N) == 0);
 			break;
 
 		// ORA (indirect),Y
 		case 0x11:
-			M6502_ORA(cpu, M6502_IndY(cpu));
+			M6502_ORA(cpu, M6502_IndYR(cpu));	// 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// SLO (indirect),Y ... undocumented
 		case 0x13:
-			M6502_SLO(cpu, M6502_IndY(cpu));
+			M6502_SLO(cpu, M6502_IndYW(cpu));	// 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*8;
 			break;
 
 		// ORA zeropage,X
 		case 0x15:
-			M6502_ORA(cpu, M6502_ZeropageX(cpu));
+			M6502_ORA_Zp(cpu, M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// ASL zeropage,X
 		case 0x16:
-			M6502_ASL_M(cpu, M6502_ZeropageX(cpu));
+			M6502_ASL_Zp(cpu, M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// SLO zeropage,X ... undocumented
 		case 0x17:
-			M6502_SLO(cpu, M6502_ZeropageX(cpu));
+			M6502_SLO(cpu, M6502_ZeropageX(cpu));	// 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
@@ -283,31 +282,31 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// ORA absolute,Y
 		case 0x19:
-			M6502_ORA(cpu, M6502_AbsoluteY(cpu));
+			M6502_ORA(cpu, M6502_AbsoluteYR(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// SLO absolute,Y ... undocumented
 		case 0x1B:
-			M6502_SLO(cpu, M6502_AbsoluteY(cpu));
+			M6502_SLO(cpu, M6502_AbsoluteYW(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// ORA absolute,X
 		case 0x1D:
-			M6502_ORA(cpu, M6502_AbsoluteX(cpu));
+			M6502_ORA(cpu, M6502_AbsoluteXR(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// ASL absolute,X
 		case 0x1E:
-			M6502_ASL_M(cpu, M6502_AbsoluteX(cpu));
+			M6502_ASL_M(cpu, M6502_AbsoluteXW(cpu)); // immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// SLO absolute,X ... undocumented
 		case 0x1F:
-			M6502_SLO(cpu, M6502_AbsoluteX(cpu));
+			M6502_SLO(cpu, M6502_AbsoluteXW(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
@@ -332,37 +331,37 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// AND (indirect,X)
 		case 0x21:
-			M6502_AND(cpu, M6502_IndX(cpu));
+			M6502_AND(cpu, M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// RLA (indirect,X) ... undocumented
 		case 0x23:
-			M6502_RLA(cpu, M6502_IndX(cpu));
+			M6502_RLA(cpu, M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*8;
 			break;
 
 		// BIT zeropage
 		case 0x24:
-			M6502_BIT(cpu, M6502_ProgByte(cpu));
+			M6502_BIT_Zp(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// AND zeropage
 		case 0x25:
-			M6502_AND(cpu, M6502_ProgByte(cpu));
+			M6502_AND_Zp(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// ROL zeropage
 		case 0x26:
-			M6502_ROL_M(cpu, M6502_ProgByte(cpu));
+			M6502_ROL_Zp(cpu, M6502_ProgByte(cpu)); // 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// RLA zeropage ... undocumented
 		case 0x27:
-			M6502_RLA(cpu, M6502_ProgByte(cpu));
+			M6502_RLA(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
@@ -374,7 +373,7 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// AND #immediate
 		case 0x29:
-			M6502_AND(cpu, cpu->pc);
+			M6502_AND(cpu, cpu->pc);	// 16-bit address
 			cpu->pc++;
 			cpu->sync.clock += M6502_CLOCKMUL*2;
 			break;
@@ -387,64 +386,60 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// BIT absolute
 		case 0x2C:
-			M6502_BIT(cpu, M6502_ProgWord(cpu));
+			M6502_BIT(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// AND absolute
 		case 0x2D:
-			M6502_AND(cpu, M6502_ProgWord(cpu));
+			M6502_AND(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// ROL absolute
 		case 0x2E:
-			M6502_ROL_M(cpu, M6502_ProgWord(cpu));
+			M6502_ROL_M(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// RLA absolute ... undocumented
 		case 0x2F:
-			M6502_RLA(cpu, M6502_ProgWord(cpu));
+			M6502_RLA(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// BMI relative
 		case 0x30:
-			{
-				s8 rel = (s8)M6502_ProgByte(cpu);
-				if ((cpu->f & M6502_N) != 0) cpu->pc += rel;
-			}
-			cpu->sync.clock += M6502_CLOCKMUL*2;
+			M6502_BRA(cpu, (cpu->f & M6502_N) != 0);
 			break;
 
 		// AND (indirect),Y
 		case 0x31:
-			M6502_AND(cpu, M6502_IndY(cpu));
+			M6502_AND(cpu, M6502_IndYR(cpu));	// 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// RLA (indirect),Y ... undocumented
 		case 0x33:
-			M6502_RLA(cpu, M6502_IndY(cpu));
+			M6502_RLA(cpu, M6502_IndYR(cpu));	// 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*8;
 			break;
 
 		// AND zeropage,X
 		case 0x35:
-			M6502_AND(cpu, M6502_ZeropageX(cpu));
+			M6502_AND_Zp(cpu, M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// ROL zeropage,X
 		case 0x36:
-			M6502_ROL_M(cpu, M6502_ZeropageX(cpu));
+			M6502_ROL_Zp(cpu, M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// RLA zeropage,X ... undocumented
 		case 0x37:
-			M6502_RLA(cpu, M6502_ZeropageX(cpu));
+			M6502_RLA(cpu, M6502_ZeropageX(cpu));	// 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
@@ -456,31 +451,31 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// AND absolute,Y
 		case 0x39:
-			M6502_AND(cpu, M6502_AbsoluteY(cpu));
+			M6502_AND(cpu, M6502_AbsoluteYR(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// RLA absolute,Y ... undocumented
 		case 0x3B:
-			M6502_RLA(cpu, M6502_AbsoluteY(cpu));
+			M6502_RLA(cpu, M6502_AbsoluteYW(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// AND absolute,X
 		case 0x3D:
-			M6502_AND(cpu, M6502_AbsoluteX(cpu));
+			M6502_AND(cpu, M6502_AbsoluteXR(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// ROL absolute,X
 		case 0x3E:
-			M6502_ROL_M(cpu, M6502_AbsoluteX(cpu));
+			M6502_ROL_M(cpu, M6502_AbsoluteXW(cpu)); // immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// RLA absolute,X ... undocumented
 		case 0x3F:
-			M6502_RLA(cpu, M6502_AbsoluteX(cpu));
+			M6502_RLA(cpu, M6502_AbsoluteXW(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
@@ -498,31 +493,31 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// EOR (indirect,X)
 		case 0x41:
-			M6502_EOR(cpu, M6502_IndX(cpu));
+			M6502_EOR(cpu, M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// SRE (indirect,X) ... undocumented
 		case 0x43:
-			M6502_SRE(cpu, M6502_IndX(cpu));
+			M6502_SRE(cpu, M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*8;
 			break;
 
 		// EOR zeropage
 		case 0x45:
-			M6502_EOR(cpu, M6502_ProgByte(cpu));
+			M6502_EOR_Zp(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// LSR zeropage
 		case 0x46:
-			M6502_LSR_M(cpu, M6502_ProgByte(cpu));
+			M6502_LSR_Zp(cpu, M6502_ProgByte(cpu)); // 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// SRE zeropage ... undocumented
 		case 0x47:
-			M6502_SRE(cpu, M6502_ProgByte(cpu));
+			M6502_SRE(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
@@ -534,7 +529,7 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// EOR #immediate
 		case 0x49:
-			M6502_ORA(cpu, cpu->pc);
+			M6502_ORA(cpu, cpu->pc);	// 16-bit address
 			cpu->pc++;
 			cpu->sync.clock += M6502_CLOCKMUL*2;
 			break;
@@ -562,58 +557,54 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// EOR absolute
 		case 0x4D:
-			M6502_EOR(cpu, M6502_ProgWord(cpu));
+			M6502_EOR(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// LSR absolute
 		case 0x4E:
-			M6502_LSR_M(cpu, M6502_ProgWord(cpu));
+			M6502_LSR_M(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// SRE absolute ... undocumented
 		case 0x4F:
-			M6502_SRE(cpu, M6502_ProgWord(cpu));
+			M6502_SRE(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// BVC relative
 		case 0x50:
-			{
-				s8 rel = (s8)M6502_ProgByte(cpu);
-				if ((cpu->f & M6502_V) == 0) cpu->pc += rel;
-			}
-			cpu->sync.clock += M6502_CLOCKMUL*2;
+			M6502_BRA(cpu, (cpu->f & M6502_V) == 0);
 			break;
 
 		// EOR (indirect),Y
 		case 0x51:
-			M6502_EOR(cpu, M6502_IndY(cpu));
+			M6502_EOR(cpu, M6502_IndYR(cpu));	// 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// SRE (indirect),Y ... undocumented
 		case 0x53:
-			M6502_SRE(cpu, M6502_IndY(cpu));
+			M6502_SRE(cpu, M6502_IndYW(cpu));	// 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*8;
 			break;
 
 		// EOR zeropage,X
 		case 0x55:
-			M6502_EOR(cpu, M6502_ZeropageX(cpu));
+			M6502_EOR_Zp(cpu, M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// LSR zeropage,X
 		case 0x56:
-			M6502_LSR_M(cpu, M6502_ZeropageX(cpu));
+			M6502_LSR_Zp(cpu, M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// SRE zeropage,X ... undocumented
 		case 0x57:
-			M6502_SRE(cpu, M6502_ZeropageX(cpu));
+			M6502_SRE(cpu, M6502_ZeropageX(cpu));	// 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
@@ -625,31 +616,31 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// EOR absolute,Y
 		case 0x59:
-			M6502_EOR(cpu, M6502_AbsoluteY(cpu));
+			M6502_EOR(cpu, M6502_AbsoluteYR(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// SRE absolute,Y ... undocumented
 		case 0x5B:
-			M6502_SRE(cpu, M6502_AbsoluteY(cpu));
+			M6502_SRE(cpu, M6502_AbsoluteYW(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// EOR absolute,X
 		case 0x5D:
-			M6502_EOR(cpu, M6502_AbsoluteX(cpu));
+			M6502_EOR(cpu, M6502_AbsoluteXR(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// LSR absolute,X
 		case 0x5E:
-			M6502_LSR_M(cpu, M6502_AbsoluteX(cpu));
+			M6502_LSR_M(cpu, M6502_AbsoluteXW(cpu)); // immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// SRE absolute,X ... undocumented
 		case 0x5F:
-			M6502_SRE(cpu, M6502_AbsoluteX(cpu));
+			M6502_SRE(cpu, M6502_AbsoluteXW(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
@@ -666,31 +657,31 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// ADC (indirect,X)
 		case 0x61:
-			M6502_ADC(cpu, M6502_IndX(cpu));
+			M6502_ADC(cpu, M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// RRA (indirect,X) ... undocumented
 		case 0x63:
-			M6502_RRA(cpu, M6502_IndX(cpu));
+			M6502_RRA(cpu, M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*8;
 			break;
 
 		// ADC zeropage
 		case 0x65:
-			M6502_ADC(cpu, M6502_ProgByte(cpu));
+			M6502_ADC_Zp(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// ROR zeropage
 		case 0x66:
-			M6502_ROR_M(cpu, M6502_ProgByte(cpu));
+			M6502_ROR_Zp(cpu, M6502_ProgByte(cpu)); // 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// RRA zeropage ... undocumented
 		case 0x67:
-			M6502_RRA(cpu, M6502_ProgByte(cpu));
+			M6502_RRA(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
@@ -706,7 +697,7 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// ADC #immediate
 		case 0x69:
-			M6502_ADC(cpu, cpu->pc);
+			M6502_ADC(cpu, cpu->pc);	// 16-bit address
 			cpu->pc++;
 			cpu->sync.clock += M6502_CLOCKMUL*2;
 			break;
@@ -751,58 +742,54 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// ADC absolute
 		case 0x6D:
-			M6502_ADC(cpu, M6502_ProgWord(cpu));
+			M6502_ADC(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// ROR absolute
 		case 0x6E:
-			M6502_ROR_M(cpu, M6502_ProgWord(cpu));
+			M6502_ROR_M(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// RRA absolute ... undocumented
 		case 0x6F:
-			M6502_RRA(cpu, M6502_ProgWord(cpu));
+			M6502_RRA(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// BVS relative
 		case 0x70:
-			{
-				s8 rel = (s8)M6502_ProgByte(cpu);
-				if ((cpu->f & M6502_V) != 0) cpu->pc += rel;
-			}
-			cpu->sync.clock += M6502_CLOCKMUL*2;
+			M6502_BRA(cpu, (cpu->f & M6502_V) != 0);
 			break;
 
 		// ADC (indirect),Y
 		case 0x71:
-			M6502_ADC(cpu, M6502_IndY(cpu));
+			M6502_ADC(cpu, M6502_IndYR(cpu));	// 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// RRA (indirect),Y ... undocumented
 		case 0x73:
-			M6502_RRA(cpu, M6502_IndY(cpu));
+			M6502_RRA(cpu, M6502_IndYW(cpu));	// 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*8;
 			break;
 
 		// ADC zeropage,X
 		case 0x75:
-			M6502_ADC(cpu, M6502_ZeropageX(cpu));
+			M6502_ADC_Zp(cpu, M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// ROR zeropage,X
 		case 0x76:
-			M6502_ROR_M(cpu, M6502_ZeropageX(cpu));
+			M6502_ROR_Zp(cpu, M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// RRA zeropage,X ... undocumented
 		case 0x77:
-			M6502_RRA(cpu, M6502_ZeropageX(cpu));
+			M6502_RRA(cpu, M6502_ZeropageX(cpu));	// 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
@@ -814,61 +801,61 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// ADC absolute,Y
 		case 0x79:
-			M6502_ADC(cpu, M6502_AbsoluteY(cpu));
+			M6502_ADC(cpu, M6502_AbsoluteYR(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// RRA absolute,Y ... undocumented
 		case 0x7B:
-			M6502_RRA(cpu, M6502_AbsoluteY(cpu));
+			M6502_RRA(cpu, M6502_AbsoluteYW(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// ADC absolute,X
 		case 0x7D:
-			M6502_ADC(cpu, M6502_AbsoluteX(cpu));
+			M6502_ADC(cpu, M6502_AbsoluteXR(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// ROR absolute,X
 		case 0x7E:
-			M6502_ROR_M(cpu, M6502_AbsoluteX(cpu));
+			M6502_ROR_M(cpu, M6502_AbsoluteXW(cpu)); // immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// RRA absolute,X ... undocumented
 		case 0x7F:
-			M6502_RRA(cpu, M6502_AbsoluteX(cpu));
+			M6502_RRA(cpu, M6502_AbsoluteXW(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// STA (indirect,X)
 		case 0x81:
-			cpu->writemem(M6502_IndX(cpu), cpu->a);
+			cpu->writemem(M6502_IndX(cpu), cpu->a);	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// SAX (indirect,X) ... undocumented
 		case 0x83:
-			cpu->writemem(M6502_IndX(cpu), cpu->a & cpu->x);
+			cpu->writemem(M6502_IndX(cpu), cpu->a & cpu->x); // 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// STY zeropage
 		case 0x84:
-			cpu->writemem(M6502_ProgByte(cpu), cpu->x);
+			cpu->writemem(M6502_ProgByte(cpu), cpu->y); // 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// STA zeropage
 		case 0x85:
-			cpu->writemem(M6502_ProgByte(cpu), cpu->a);
+			cpu->writemem(M6502_ProgByte(cpu), cpu->a); // 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// STX zeropage
 		case 0x86:
-			cpu->writemem(M6502_ProgByte(cpu), cpu->x);
+			cpu->writemem(M6502_ProgByte(cpu), cpu->x); // 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
@@ -935,17 +922,13 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// BCC relative
 		case 0x90:
-			{
-				s8 rel = (s8)M6502_ProgByte(cpu);
-				if ((cpu->f & M6502_C) == 0) cpu->pc += rel;
-			}
-			cpu->sync.clock += M6502_CLOCKMUL*2;
+			M6502_BRA(cpu, (cpu->f & M6502_C) == 0);
 			break;
 
 		// STA (indirect),Y
 		case 0x91:
-			cpu->writemem(M6502_IndY(cpu), cpu->a);
-			cpu->sync.clock += M6502_CLOCKMUL*5;
+			cpu->writemem(M6502_IndYW(cpu), cpu->a); // 16-bit address from zero page 8(imm) + Y
+			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// SHA (indirect),Y  ... undocumented
@@ -963,25 +946,25 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// STY zeropage,X
 		case 0x94:
-			cpu->writemem(M6502_ZeropageX(cpu), cpu->y);
+			cpu->writemem(M6502_ZeropageX(cpu), cpu->y);	// 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// STA zeropage,X
 		case 0x95:
-			cpu->writemem(M6502_ZeropageX(cpu), cpu->a);
+			cpu->writemem(M6502_ZeropageX(cpu), cpu->a);	// 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// STX zeropage,Y
 		case 0x96:
-			cpu->writemem(M6502_ZeropageY(cpu), cpu->x);
+			cpu->writemem(M6502_ZeropageY(cpu), cpu->x);	// 8-bit zero page address 8(imm + Y)
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// SAX zeropage,Y ... undocumented
 		case 0x97:
-			cpu->writemem(M6502_ZeropageY(cpu), cpu->a & cpu->x);
+			cpu->writemem(M6502_ZeropageY(cpu), cpu->a & cpu->x); // 8-bit zero page address 8(imm + Y)
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
@@ -997,7 +980,7 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// STA absolute,Y
 		case 0x99:
-			cpu->writemem(M6502_AbsoluteY(cpu), cpu->a);
+			cpu->writemem(M6502_AbsoluteYW(cpu), cpu->a); // immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
@@ -1035,7 +1018,7 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// STA absolute,X
 		case 0x9D:
-			cpu->writemem(M6502_AbsoluteX(cpu), cpu->a);
+			cpu->writemem(M6502_AbsoluteXW(cpu), cpu->a); // immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
@@ -1061,51 +1044,73 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// LDY #immediate
 		case 0xA0:
-			cpu->y = cpu->readmem(cpu->pc);
-			cpu->pc++;
+			{
+				u8 n = M6502_ProgByte(cpu);
+				cpu->y = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*2;
 			break;
 
 		// LDA (indirect,X)
 		case 0xA1:
-			cpu->a = cpu->readmem(M6502_IndX(cpu));
+			{
+				u8 n = cpu->readmem(M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
+				cpu->a = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// LDX #immediate
 		case 0xA2:
-			cpu->x = cpu->readmem(cpu->pc);
-			cpu->pc++;
+			{
+				u8 n = M6502_ProgByte(cpu);
+				cpu->x = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*2;
 			break;
 
 		// LAX (indirect,X) ... undocumented
 		case 0xA3:
-			M6502_LAX(cpu, M6502_IndX(cpu));
+			M6502_LAX(cpu, M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// LDY zeropage
 		case 0xA4:
-			cpu->y = cpu->readmem(M6502_ProgByte(cpu));
+			{
+				u8 n = cpu->readmem(M6502_ProgByte(cpu)); // 8-bit zero page address 8(imm)
+				cpu->y = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// LDA zeropage
 		case 0xA5:
-			cpu->a = cpu->readmem(M6502_ProgByte(cpu));
+			{
+				u8 n = cpu->readmem(M6502_ProgByte(cpu)); // 8-bit zero page address 8(imm)
+				cpu->a = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// LDX zeropage
 		case 0xA6:
-			cpu->a = cpu->readmem(M6502_ProgByte(cpu));
+			{
+				u8 n = cpu->readmem(M6502_ProgByte(cpu)); // 8-bit zero page address 8(imm)
+				cpu->x = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// LAX zeropage ... undocumented
 		case 0xA7:
-			M6502_LAX(cpu, M6502_ProgByte(cpu));
+			M6502_LAX_Zp(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
@@ -1121,8 +1126,11 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// LDA #immediate
 		case 0xA9:
-			cpu->a = cpu->readmem(cpu->pc);
-			cpu->pc++;
+			{
+				u8 n = M6502_ProgByte(cpu);
+				cpu->a = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*2;
 			break;
 
@@ -1138,77 +1146,101 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// LXA #immediate ... undocumented
 		case 0xAB:
-			M6502_LAX(cpu, cpu->pc);
+			M6502_LAX(cpu, cpu->pc);		// 16-bit address
 			cpu->pc++;
 			cpu->sync.clock += M6502_CLOCKMUL*2;
 			break;
 
 		// LDY absolute
 		case 0xAC:
-			cpu->y = cpu->readmem(M6502_ProgWord(cpu));
+			{
+				u8 n = cpu->readmem(M6502_ProgWord(cpu));
+				cpu->y = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// LDA absolute
 		case 0xAD:
-			cpu->a = cpu->readmem(M6502_ProgWord(cpu));
+			{
+				u8 n = cpu->readmem(M6502_ProgWord(cpu));
+				cpu->a = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// LDX absolute
 		case 0xAE:
-			cpu->x = cpu->readmem(M6502_ProgWord(cpu));
+			{
+				u8 n = cpu->readmem(M6502_ProgWord(cpu));
+				cpu->x = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// LAX absolute ... undocumented
 		case 0xAF:
-			M6502_LAX(cpu, M6502_ProgWord(cpu));
+			M6502_LAX(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// BCS relative
 		case 0xB0:
-			{
-				s8 rel = (s8)M6502_ProgByte(cpu);
-				if ((cpu->f & M6502_C) != 0) cpu->pc += rel;
-			}
-			cpu->sync.clock += M6502_CLOCKMUL*2;
+			M6502_BRA(cpu, (cpu->f & M6502_C) != 0);
 			break;
 
 		// LDA (indirect),Y
 		case 0xB1:
-			cpu->a = cpu->readmem(M6502_IndY(cpu));
+			{
+				u8 n = cpu->readmem(M6502_IndYR(cpu));	// 16-bit address from zero page 8(imm) + Y
+				cpu->a = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// LAX (indirect),Y ... undocumented
 		case 0xB3:
-			M6502_LAX(cpu, M6502_IndY(cpu));
+			M6502_LAX(cpu, M6502_IndYR(cpu));	// 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// LDY zeropage,X
 		case 0xB4:
-			cpu->y = cpu->readmem(M6502_ZeropageX(cpu));
+			{
+				u8 n = cpu->readmem(M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
+				cpu->y = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// LDA zeropage,X
 		case 0xB5:
-			cpu->a = cpu->readmem(M6502_ZeropageX(cpu));
+			{
+				u8 n = cpu->readmem(M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
+				cpu->a = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// LDX zeropage,Y
 		case 0xB6:
-			cpu->x = cpu->readmem(M6502_ZeropageY(cpu));
+			{
+				u8 n = cpu->readmem(M6502_ZeropageY(cpu)); // 8-bit zero page address 8(imm + Y)
+				cpu->x = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// LAX zeropage,Y ... undocumented
 		case 0xB7:
-			M6502_LAX(cpu, M6502_ZeropageY(cpu));
+			M6502_LAX_Zp(cpu, M6502_ZeropageY(cpu));	// 8-bit zero page address 8(imm + Y)
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
@@ -1220,7 +1252,11 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// LDA absolute,Y
 		case 0xB9:
-			cpu->a = cpu->readmem(M6502_AbsoluteY(cpu));
+			{
+				u8 n = cpu->readmem(M6502_AbsoluteYR(cpu)); // immediate 16-bit absolute address 16(imm) + Y
+				cpu->a = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
@@ -1237,7 +1273,7 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 		// LAS absolute,Y ... undocumented
 		case 0xBB:
 			{
-				u8 n = cpu->readmem(M6502_AbsoluteY(cpu));
+				u8 n = cpu->readmem(M6502_AbsoluteYR(cpu)); // immediate 16-bit absolute address 16(imm) + Y
 				n &= cpu->sp;
 				cpu->a = n;
 				cpu->x = n;
@@ -1249,68 +1285,80 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// LDY absolute,X
 		case 0xBC:
-			cpu->y = cpu->readmem(M6502_AbsoluteX(cpu));
+			{
+				u8 n = cpu->readmem(M6502_AbsoluteXR(cpu)); // immediate 16-bit absolute address 16(imm) + X
+				cpu->y = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// LDA absolute,X
 		case 0xBD:
-			cpu->a = cpu->readmem(M6502_AbsoluteX(cpu));
+			{
+				u8 n = cpu->readmem(M6502_AbsoluteXR(cpu)); // immediate 16-bit absolute address 16(imm) + X
+				cpu->a = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// LDX absolute,Y
 		case 0xBE:
-			cpu->x = cpu->readmem(M6502_AbsoluteY(cpu));
+			{
+				u8 n = cpu->readmem(M6502_AbsoluteYR(cpu)); // immediate 16-bit absolute address 16(imm) + Y
+				cpu->x = n;
+				M6502_SetNZ(cpu, n);
+			}
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// LAX absolute,Y  ... undocumented
 		case 0xBF:
-			M6502_LAX(cpu, M6502_AbsoluteY(cpu));
+			M6502_LAX(cpu, M6502_AbsoluteYR(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// CPY #immediate
 		case 0xC0:
-			M6502_CMP(cpu, cpu->y, cpu->pc);
+			M6502_CMP(cpu, cpu->y, cpu->pc);	// 16-bit address
 			cpu->pc++;
 			cpu->sync.clock += M6502_CLOCKMUL*2;
 			break;
 
 		// CMP (indirect,X)
 		case 0xC1:
-			M6502_CMP(cpu, cpu->a, M6502_IndX(cpu));
+			M6502_CMP(cpu, cpu->a, M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// DCP (indirect,X) ... undocumented
 		case 0xC3:
-			M6502_DCP(cpu, M6502_IndX(cpu));
+			M6502_DCP(cpu, M6502_IndX(cpu));		// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*8;
 			break;
 
 		// CPY zeropage
 		case 0xC4:
-			M6502_CMP(cpu, cpu->y, M6502_ProgByte(cpu));
+			M6502_CMP_Zp(cpu, cpu->y, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// CMP zeropage
 		case 0xC5:
-			M6502_CMP(cpu, cpu->a, M6502_ProgByte(cpu));
+			M6502_CMP_Zp(cpu, cpu->a, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// DEC zeropage
 		case 0xC6:
-			M6502_DEC(cpu, M6502_ProgByte(cpu));
+			M6502_DEC_Zp(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// DCP zeropage ... undocumented
 		case 0xC7:
-			M6502_DCP(cpu, M6502_ProgByte(cpu));
+			M6502_DCP(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
@@ -1326,7 +1374,7 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// CMP #immediate
 		case 0xC9:
-			M6502_CMP(cpu, cpu->a, cpu->pc);
+			M6502_CMP(cpu, cpu->a, cpu->pc);	// 16-bit address
 			cpu->pc++;
 			cpu->sync.clock += M6502_CLOCKMUL*2;
 			break;
@@ -1357,64 +1405,60 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// CPY absolute
 		case 0xCC:
-			M6502_CMP(cpu, cpu->y, M6502_ProgWord(cpu));
+			M6502_CMP(cpu, cpu->y, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// CMP absolute
 		case 0xCD:
-			M6502_CMP(cpu, cpu->a, M6502_ProgWord(cpu));
+			M6502_CMP(cpu, cpu->a, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// DEC absolute
 		case 0xCE:
-			M6502_DEC(cpu, M6502_ProgWord(cpu));
+			M6502_DEC(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// DCP absolute ... undocumented
 		case 0xCF:
-			M6502_DCP(cpu, M6502_ProgWord(cpu));
+			M6502_DCP(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// BNE relative
 		case 0xD0:
-			{
-				s8 rel = (s8)M6502_ProgByte(cpu);
-				if ((cpu->f & M6502_Z) == 0) cpu->pc += rel;
-			}
-			cpu->sync.clock += M6502_CLOCKMUL*2;
+			M6502_BRA(cpu, (cpu->f & M6502_Z) == 0);
 			break;
 
 		// CMP (indirect),Y
 		case 0xD1:
-			M6502_CMP(cpu, cpu->a, M6502_IndY(cpu));
+			M6502_CMP(cpu, cpu->a, M6502_IndYR(cpu)); // 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// DCP (indirect),Y ... undocumented
 		case 0xD3:
-			M6502_DCP(cpu, M6502_IndY(cpu));
+			M6502_DCP(cpu, M6502_IndYR(cpu));	// 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*8;
 			break;
 
 		// CMP zeropage,X
 		case 0xD5:
-			M6502_CMP(cpu, cpu->a, M6502_ZeropageX(cpu));
+			M6502_CMP_Zp(cpu, cpu->a, M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// DEC zeropage,X
 		case 0xD6:
-			M6502_DEC(cpu, M6502_ZeropageX(cpu));
+			M6502_DEC_Zp(cpu, M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// DCP zeropage,X ... undocumented
 		case 0xD7:
-			M6502_DCP(cpu, M6502_ZeropageX(cpu));
+			M6502_DCP(cpu, M6502_ZeropageX(cpu));	// 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
@@ -1426,74 +1470,74 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// CMP absolute,Y
 		case 0xD9:
-			M6502_CMP(cpu, cpu->a, M6502_AbsoluteY(cpu));
+			M6502_CMP(cpu, cpu->a, M6502_AbsoluteYR(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// DCP absolute,Y ... undocumented
 		case 0xDB:
-			M6502_DCP(cpu, M6502_AbsoluteY(cpu));
+			M6502_DCP(cpu, M6502_AbsoluteYR(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// CMP absolute,X
 		case 0xDD:
-			M6502_CMP(cpu, cpu->a, M6502_AbsoluteX(cpu));
+			M6502_CMP(cpu, cpu->a, M6502_AbsoluteXR(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// DEC absolute,X
 		case 0xDE:
-			M6502_DEC(cpu, M6502_AbsoluteX(cpu));
+			M6502_DEC(cpu, M6502_AbsoluteXW(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// DCP absolute,X  ... undocumented
 		case 0xDF:
-			M6502_DCP(cpu, M6502_AbsoluteX(cpu));
+			M6502_DCP(cpu, M6502_AbsoluteXW(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// CPX #immediate
 		case 0xE0:
-			M6502_CMP(cpu, cpu->x, cpu->pc);
+			M6502_CMP(cpu, cpu->x, cpu->pc);	// 16-bit address
 			cpu->pc++;
 			cpu->sync.clock += M6502_CLOCKMUL*2;
 			break;
 
 		// SBC (indirect,X)
 		case 0xE1:
-			M6502_SBC(cpu, M6502_IndX(cpu));
+			M6502_SBC(cpu, M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// ISC (indirect,X) ... undocumented
 		case 0xE3:
-			M6502_ISC(cpu, M6502_IndX(cpu));
+			M6502_ISC(cpu, M6502_IndX(cpu));	// 16-bit address from zero page 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*8;
 			break;
 
 		// CPX zeropage
 		case 0xE4:
-			M6502_CMP(cpu, cpu->x, M6502_ProgByte(cpu));
+			M6502_CMP_Zp(cpu, cpu->x, M6502_ProgByte(cpu)); // 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// SBC zeropage
 		case 0xE5:
-			M6502_SBC(cpu, M6502_ProgByte(cpu));
+			M6502_SBC_Zp(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*3;
 			break;
 
 		// INC zeropage
 		case 0xE6:
-			M6502_INC(cpu, M6502_ProgByte(cpu));
+			M6502_INC_Zp(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// ISC zeropage ... undocumented
 		case 0xE7:
-			M6502_ISC(cpu, M6502_ProgByte(cpu));
+			M6502_ISC(cpu, M6502_ProgByte(cpu));	// 8-bit zero page address 8(imm)
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
@@ -1510,71 +1554,67 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 		// SBC #immediate
 		case 0xE9:
 		case 0xEB: // USBC #immediate ... undocumented
-			M6502_SBC(cpu, cpu->pc);
+			M6502_SBC(cpu, cpu->pc);	// 16-bit address
 			cpu->pc++;
 			cpu->sync.clock += M6502_CLOCKMUL*2;
 			break;
 
 		// CPX absolute
 		case 0xEC:
-			M6502_CMP(cpu, cpu->x, M6502_ProgWord(cpu));
+			M6502_CMP(cpu, cpu->x, M6502_ProgWord(cpu)); // 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// SBC absolute
 		case 0xED:
-			M6502_SBC(cpu, M6502_ProgWord(cpu));
+			M6502_SBC(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// INC absolute
 		case 0xEE:
-			M6502_INC(cpu, M6502_ProgWord(cpu));
+			M6502_INC(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// ISC absolute ... undocumented
 		case 0xEF:
-			M6502_ISC(cpu, M6502_ProgWord(cpu));
+			M6502_ISC(cpu, M6502_ProgWord(cpu));	// 16-bit address
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// BEQ relative
 		case 0xF0:
-			{
-				s8 rel = (s8)M6502_ProgByte(cpu);
-				if ((cpu->f & M6502_Z) != 0) cpu->pc += rel;
-			}
-			cpu->sync.clock += M6502_CLOCKMUL*2;
+			M6502_BRA(cpu, (cpu->f & M6502_Z) != 0);
 			break;
 
 		// SBC (indirect),Y
 		case 0xF1:
-			M6502_SBC(cpu, M6502_IndY(cpu));
+			M6502_SBC(cpu, M6502_IndYR(cpu));	// 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*5;
 			break;
 
 		// ISC (indirect),Y ... undocumented
 		case 0xF3:
-			M6502_ISC(cpu, M6502_IndY(cpu));
+			M6502_ISC(cpu, M6502_IndYW(cpu));	// 16-bit address from zero page 8(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*8;
 			break;
 
 		// SBC zeropage,X
 		case 0xF5:
-			M6502_SBC(cpu, M6502_ZeropageX(cpu));
+			M6502_SBC_Zp(cpu, M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// INC zeropage,X
 		case 0xF6:
-			M6502_INC(cpu, M6502_ZeropageX(cpu));
+			M6502_INC_Zp(cpu, M6502_ZeropageX(cpu)); // 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
 		// ISC zeropage,X  ... undocumented
 		case 0xF7:
-			M6502_ISC(cpu, M6502_ZeropageX(cpu));
+			M6502_ISC(cpu, M6502_ZeropageX(cpu));	// 8-bit zero page address 8(imm + X)
 			cpu->sync.clock += M6502_CLOCKMUL*6;
 			break;
 
@@ -1586,31 +1626,31 @@ void FASTCODE NOFLASH(M6502_Exec)(sM6502* cpu)
 
 		// SBC absolute,Y
 		case 0xF9:
-			M6502_SBC(cpu, M6502_AbsoluteY(cpu));
+			M6502_SBC(cpu, M6502_AbsoluteYR(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// ISC absolute,Y ... undocumented
 		case 0xFB:
-			M6502_ISC(cpu, M6502_AbsoluteY(cpu));
+			M6502_ISC(cpu, M6502_AbsoluteYW(cpu));	// immediate 16-bit absolute address 16(imm) + Y
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// SBC absolute,X
 		case 0xFD:
-			M6502_SBC(cpu, M6502_AbsoluteX(cpu));
+			M6502_SBC(cpu, M6502_AbsoluteXR(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*4;
 			break;
 
 		// INC absolute,X
 		case 0xFE:
-			M6502_INC(cpu, M6502_AbsoluteX(cpu));
+			M6502_INC(cpu, M6502_AbsoluteXW(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 
 		// ISC absolute,X ... undocumented
 		case 0xFF:
-			M6502_ISC(cpu, M6502_AbsoluteX(cpu));
+			M6502_ISC(cpu, M6502_AbsoluteXW(cpu));	// immediate 16-bit absolute address 16(imm) + X
 			cpu->sync.clock += M6502_CLOCKMUL*7;
 			break;
 		}

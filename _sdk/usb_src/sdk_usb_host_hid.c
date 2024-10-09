@@ -412,7 +412,7 @@ void UsbHostHidParse(u8 hid_inx)
 				if (col_depth == 0)
 				{
 					info->usage_page = 0;
-					memcpy(&info->usage_page, s, (size > 1) ? 2 : size);
+					UsbMemcpy(&info->usage_page, s, (size > 1) ? 2 : size);
 				}
 				break;
 
@@ -748,7 +748,7 @@ Bool UsbHostHidComp(u8 dev_addr, u8 dev_epinx, u8 xres, u16 len)
 				}
 
 				// backup current report
-				memcpy(&UsbHidKeyOld, rep, sizeof(sUsbHidKey));
+				UsbMemcpy(&UsbHidKeyOld, rep, sizeof(sUsbHidKey));
 			}
 			hid->rx_len = 0;
 		}
@@ -768,7 +768,7 @@ Bool UsbHostHidComp(u8 dev_addr, u8 dev_epinx, u8 xres, u16 len)
 				sEvent e;
 				e.data[0] = *(u32*)hid->rx_buf | B7;
 				EventRingWrite(&UsbHostHidMouseRing, &e);
-				memcpy(&UsbHidMouseOld, hid->rx_buf, sizeof(sUsbHidMouse));
+				UsbMemcpy(&UsbHidMouseOld, hid->rx_buf, sizeof(sUsbHidMouse));
 			}
 			hid->rx_len = 0;
 		}
@@ -866,7 +866,7 @@ u8 UsbHostHidTxSave(u8 hid_inx, const void* buf, u8 len, u8 rep_id)
 	}
 
 	// copy report to buffer
-	memcpy(d, buf, len2);
+	UsbMemcpy(d, buf, len2);
 
 	return len;
 }

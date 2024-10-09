@@ -34,7 +34,7 @@ extern u16 TitleCrc;
 #define GB_CACHE_SHIFT		12			// number of shifts of cache page
 #define GB_CACHE_SIZE		BIT(GB_CACHE_SHIFT)	// size of cache page (= 4096 = 0x1000)
 #define GB_CACHE_MASK		(GB_CACHE_SIZE-1)	// mask of cache page (to keep page bits; = 0x0FFF)
-#define GB_CACHE_INVMASK	(~GB_CACHE_MASK)	// inverted mask of cachepage (to clear page bits; = 0xFFFFF000)
+#define GB_CACHE_INVMASK	(~GB_CACHE_MASK)	// inverted mask of cache page (to clear page bits; = 0xFFFFF000)
 #define GB_ROMMAX		(8*1024*1024)		// max. ROM file size (8 MB)
 #define GB_ROMCACHEMAX		(GB_ROMMAX/GB_CACHE_SIZE) // max. number of ROM cache pages (= 2048)
 

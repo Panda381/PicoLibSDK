@@ -1,0 +1,3 @@
+Use two DMA channels to make a programmed sequence of data transfers to the
+UART (a data gather operation). One channel is responsible for transferring
+the actual data, the other repeatedly reprograms that channel.

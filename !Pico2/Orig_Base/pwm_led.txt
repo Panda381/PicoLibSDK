@@ -1,0 +1,2 @@
+Fade an LED between low and high brightness. An interrupt handler updates
+the PWM slice's output level each time the counter wraps.

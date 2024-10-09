@@ -21,6 +21,9 @@
 //#define USE_USB_STDIO		1		// use USB stdio (UsbPrint function)
 //#define USE_UART_STDIO	1		// use UART stdio (UartPrint function)
 
+#define USE_DOUBLE	2		// use Double-floating point 1=in RAM, 2=in Flash (sdk_double.c, sdk_double_asm.S, sdk_double.h)
+#define USE_FLOAT	2		// use Single-floating point 1=in RAM, 2=in Flash (sdk_float.c, sdk_float_asm.S, sdk_float.h)
+
 //#define USE_ORIGSDK		1		// include interface of original-SDK
 //#define USE_SCREENSHOT	1		// use screen shots
 

@@ -1,0 +1,10 @@
+^YHypno^0
+
+Demo - hypnotic rotating
+       pattern
+
+^WY^0 ....... quit
+
+Support USB keyboard:
+A->Ctrl, B->Alt, X->Shift,
+Y->Esc

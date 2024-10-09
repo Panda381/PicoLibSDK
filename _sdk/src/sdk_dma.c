@@ -26,7 +26,7 @@
 u16 DmaClaimed = 0;		// claimed DMA channels
 u8 DmaTimerClaimed = 0;		// claimed DMA timers
 
-// claim free unused DMA channel (returns -1 on error)
+// claim free unused DMA channel (returns index of channel. of -1 on error)
 //  This function is not atomic safe! (not recommended to be used in both cores or in IRQ at the same time)
 s8 DMA_ClaimFree(void)
 {
@@ -50,7 +50,7 @@ s8 DMA_ClaimFree(void)
 	return -1;
 }
 
-// claim free unused DMA timer (returns -1 on error)
+// claim free unused DMA timer (returns index of timer, -1 on error)
 //  This function is not atomic safe! (not recommended to be used in both cores or in IRQ at the same time)
 s8 DMA_TimerClaimFree(void)
 {
@@ -74,39 +74,12 @@ s8 DMA_TimerClaimFree(void)
 	return -1;
 }
 
-// abort DMA transfer
-void DMA_Abort(int dma)
-{
-	// get address of DMA channel registers
-	dma_channel_hw_t* hw = DMA_GetHw(dma);
-
-	// lock interrupt
-	IRQ_LOCK;
-	dmb();
-
-// Interrupts must be disabled - an interrupt could come from the DMA after aborting
-// the transfer and the waiting loop would not finish.
-
-	// abort channel
-	*DMA_ABORT = BIT(dma); // request to abort transfers
-
-	// wait to finish
-	DMA_Wait_hw(hw); // wait to finish all transfers from FIFO
-
-	// unlock interrupt
-	dmb();
-	IRQ_UNLOCK;
-
-// This alternative is not safe if IRQ is in "in-flight" state, IRQ may occurs later:
-//	while ((*DMA_ABORT & BIT(dma)) != 0) {} // wait to finish all transfers from FIFO
-}
-
 // set DMA config, without trigger
-//  dma = channel 0..11
+//  dma = channel 0..11 (or 0..15)
 //  src = source address
 //  dst = destination address
-//  count = number of transfers
-//  ctrl = control word
+//  count = number of transfers (can be combined with flags DMA_COUNT_TRIGGER or DMA_COUNT_ENDLESS)
+//  ctrl = control word (can be prepared using DMA_Cfg* functions)
 void DMA_Config(int dma, const volatile void* src, volatile void* dst, u32 count, u32 ctrl)
 {
 	DMA_SetRead(dma, src);
@@ -124,11 +97,11 @@ void DMA_Config_hw(dma_channel_hw_t* hw, const volatile void* src, volatile void
 }
 
 // set DMA config, with trigger
-//  dma = channel 0..11
+//  dma = channel 0..11 (or 0..15)
 //  src = source address
 //  dst = destination address
-//  count = number of transfers
-//  ctrl = control word
+//  count = number of transfers (can be combined with flags DMA_COUNT_TRIGGER or DMA_COUNT_ENDLESS)
+//  ctrl = control word (can be prepared using DMA_Cfg* functions)
 void DMA_ConfigTrig(int dma, const volatile void* src, volatile void* dst, u32 count, u32 ctrl)
 {
 	DMA_SetRead(dma, src);
@@ -147,8 +120,68 @@ void DMA_ConfigTrig_hw(dma_channel_hw_t* hw, const volatile void* src, volatile 
 	DMA_SetCtrlTrig_hw(hw, ctrl);
 }
 
+// abort DMA transfer
+void DMA_Abort(int dma)
+{
+	int i;
+
+	// prepare address of DMA channel registers
+	dma_channel_hw_t* hw = DMA_GetHw(dma);
+
+	// disable channel
+	Bool chan_en = DMA_IsEnabled_hw(hw);
+	DMA_Disable_hw(hw);
+
+	// cancel chain
+	int chain = DMA_Chain_hw(hw);
+	DMA_SetChain_hw(hw, dma);
+
+	// disable interrupts
+	Bool irq_en[DMA_IRQ_NUM];
+	for (i = 0; i < DMA_IRQ_NUM; i++)
+	{
+		irq_en[i] = DMA_IRQIsEnabled(i, dma);
+		DMA_IRQDisable(i, dma);
+	}
+
+	// lock interrupt
+	IRQ_LOCK;
+	dmb();
+
+// Interrupts must be disabled - an interrupt could come from the DMA after aborting
+// the transfer and the waiting loop would not finish.
+
+	// abort channel
+	dma_hw->abort = BIT(dma); // request to abort transfers
+
+	// wait to finish
+	DMA_Wait_hw(hw); // wait to finish all transfers from FIFO
+
+	// clear interrupt status
+	for (i = 0; i < DMA_IRQ_NUM; i++) DMA_IRQClear(i, dma);
+
+	// clear errors
+	DMA_ClearError_hw(hw);
+
+	// unlock interrupt
+	dmb();
+	IRQ_UNLOCK;
+
+	// re-enable interrupts
+	for (i = 0; i < DMA_IRQ_NUM; i++)
+	{
+		if (irq_en[i]) DMA_IRQEnable(i, dma);
+	}
+
+	// restore chain
+	DMA_SetChain_hw(hw, chain);
+
+	// re-enable channel
+	if (chan_en) DMA_Enable_hw(hw);
+}
+
 // perform 32-bit DMA transfer from memory to memory, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u32 (must be aligned to u32)
 //   src = pointer to first source u32 (must be aligned to u32)
 //   count = number of u32 elements to transfer
@@ -162,20 +195,36 @@ void DMA_MemCopy32(int dma, u32* dst, const u32* src, int count)
 	dma_channel_hw_t* hw = DMA_GetHw(dma);
 
 	// setup DMA
-	DMA_ClearError_hw(hw); // clear errors
+//	DMA_ClearError_hw(hw); // clear errors
 	DMA_SetRead_hw(hw, src); // set source address
 	DMA_SetWrite_hw(hw, dst); // set destination address
 	DMA_SetCount_hw(hw, count); // set count of elements
 
 	// start transfer
 	cb(); // compiler barrier
-	DMA_SetCtrlTrig_hw(hw, DMA_CTRL_TREQ_FORCE | DMA_CTRL_CHAIN(dma) |
-		DMA_CTRL_INC_WRITE | DMA_CTRL_INC_READ |
-		DMA_CTRL_SIZE(DMA_SIZE_32) | DMA_CTRL_EN); // set control and trigger transfer
+	DMA_SetCtrlTrig_hw(hw,  // set control and trigger transfer
+		// DMA_CTRL_SNIFF |	// NOT sniff
+		// DMA_CTRL_BSWAP |	// NOT byte swap
+		// DMA_CTRL_QUIET |	// NOT quiet
+		DMA_CTRL_TREQ_FORCE |	// permanent request
+		DMA_CTRL_CHAIN(dma) |	// chain disabled
+		// DMA_CTRL_RING_WRITE | // NOT wrap ring on write
+		DMA_CTRL_RING_SIZE(0) |	// NOT ring
+#if !RP2040
+		// DMA_CTRL_INC_WRITE_REV | // NOT decrement write
+#endif
+		DMA_CTRL_INC_WRITE |	// increment write
+#if !RP2040
+		// DMA_CTRL_INC_READ_REV | // NOT decrement read
+#endif
+		DMA_CTRL_INC_READ |	// increment read
+		DMA_CTRL_SIZE(DMA_SIZE_32) | // data size 32 bits
+		// DMA_CTRL_HIGH_PRIORITY | // NOT high priority
+		DMA_CTRL_EN);		// enable DMA
 }
 
 // perform 16-bit DMA transfer from memory to memory, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u16 (must be aligned to u16)
 //   src = pointer to first source u16 (must be aligned to u16)
 //   count = number of u16 elements to transfer
@@ -189,20 +238,36 @@ void DMA_MemCopy16(int dma, u16* dst, const u16* src, int count)
 	dma_channel_hw_t* hw = DMA_GetHw(dma);
 
 	// setup DMA
-	DMA_ClearError_hw(hw); // clear errors
+//	DMA_ClearError_hw(hw); // clear errors
 	DMA_SetRead_hw(hw, src); // set source address
 	DMA_SetWrite_hw(hw, dst); // set destination address
 	DMA_SetCount_hw(hw, count); // set count of elements
 
 	// start transfer
 	cb(); // compiler barrier
-	DMA_SetCtrlTrig_hw(hw, DMA_CTRL_TREQ_FORCE | DMA_CTRL_CHAIN(dma) |
-		DMA_CTRL_INC_WRITE | DMA_CTRL_INC_READ |
-		DMA_CTRL_SIZE(DMA_SIZE_16) | DMA_CTRL_EN); // set control and trigger transfer
+	DMA_SetCtrlTrig_hw(hw, // set control and trigger transfer
+		// DMA_CTRL_SNIFF |	// NOT sniff
+		// DMA_CTRL_BSWAP |	// NOT byte swap
+		// DMA_CTRL_QUIET |	// NOT quiet
+		DMA_CTRL_TREQ_FORCE |	// permanent request
+		DMA_CTRL_CHAIN(dma) |	// chain disabled
+		// DMA_CTRL_RING_WRITE | // NOT wrap ring on write
+		DMA_CTRL_RING_SIZE(0) |	// NOT ring
+#if !RP2040
+		// DMA_CTRL_INC_WRITE_REV | // NOT decrement write
+#endif
+		DMA_CTRL_INC_WRITE |	// increment write
+#if !RP2040
+		// DMA_CTRL_INC_READ_REV | // NOT decrement read
+#endif
+		DMA_CTRL_INC_READ |	// increment read
+		DMA_CTRL_SIZE(DMA_SIZE_16) | // data size 16 bits
+		// DMA_CTRL_HIGH_PRIORITY | // NOT high priority
+		DMA_CTRL_EN);		// enable DMA
 }
 
 // perform 8-bit DMA transfer from memory to memory, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u8
 //   src = pointer to first source u8
 //   count = number of u8 elements to transfer
@@ -216,16 +281,32 @@ void DMA_MemCopy8(int dma, u8* dst, const u8* src, int count)
 	dma_channel_hw_t* hw = DMA_GetHw(dma);
 
 	// setup DMA
-	DMA_ClearError_hw(hw); // clear errors
+//	DMA_ClearError_hw(hw); // clear errors
 	DMA_SetRead_hw(hw, src); // set source address
 	DMA_SetWrite_hw(hw, dst); // set destination address
 	DMA_SetCount_hw(hw, count); // set count of elements
 
 	// start transfer
 	cb(); // compiler barrier
-	DMA_SetCtrlTrig_hw(hw, DMA_CTRL_TREQ_FORCE | DMA_CTRL_CHAIN(dma) |
-		DMA_CTRL_INC_WRITE | DMA_CTRL_INC_READ |
-		DMA_CTRL_SIZE(DMA_SIZE_8) | DMA_CTRL_EN); // set control and trigger transfer
+	DMA_SetCtrlTrig_hw(hw, // set control and trigger transfer
+		// DMA_CTRL_SNIFF |	// NOT sniff
+		// DMA_CTRL_BSWAP |	// NOT byte swap
+		// DMA_CTRL_QUIET |	// NOT quiet
+		DMA_CTRL_TREQ_FORCE |	// permanent request
+		DMA_CTRL_CHAIN(dma) |	// chain disabled
+		// DMA_CTRL_RING_WRITE | // NOT wrap ring on write
+		DMA_CTRL_RING_SIZE(0) |	// NOT ring
+#if !RP2040
+		// DMA_CTRL_INC_WRITE_REV | // NOT decrement write
+#endif
+		DMA_CTRL_INC_WRITE |	// increment write
+#if !RP2040
+		// DMA_CTRL_INC_READ_REV | // NOT decrement read
+#endif
+		DMA_CTRL_INC_READ |	// increment read
+		DMA_CTRL_SIZE(DMA_SIZE_8) | // data size 8 bits
+		// DMA_CTRL_HIGH_PRIORITY | // NOT high priority
+		DMA_CTRL_EN);		// enable DMA
 }
 
 // perform optimised DMA transfer from memory to memory, waiting for completion
@@ -326,7 +407,7 @@ void DMA_MemCopy(volatile void* dst, const volatile void* src, int num)
 }
 
 // fill memory with 32-bit sample using 32-bit DMA, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u32 (must be aligned to u32)
 //   data = pointer to 32-bit sample to fill (must be aligned to u32)
 //   count = number of u32 elements to fill
@@ -340,19 +421,36 @@ void DMA_MemFill32(int dma, u32* dst, const volatile u32* data, int count)
 	dma_channel_hw_t* hw = DMA_GetHw(dma);
 
 	// setup DMA
-	DMA_ClearError_hw(hw); // clear errors
+//	DMA_ClearError_hw(hw); // clear errors
 	DMA_SetRead_hw(hw, data); // set source address
 	DMA_SetWrite_hw(hw, dst); // set destination address
 	DMA_SetCount_hw(hw, count); // set count of elements
 
 	// start transfer
 	cb(); // compiler barrier
-	DMA_SetCtrlTrig_hw(hw, DMA_CTRL_TREQ_FORCE | DMA_CTRL_CHAIN(dma) |
-		DMA_CTRL_INC_WRITE | DMA_CTRL_SIZE(DMA_SIZE_32) | DMA_CTRL_EN); // set control and trigger transfer
+	DMA_SetCtrlTrig_hw(hw, // set control and trigger transfer
+		// DMA_CTRL_SNIFF |	// NOT sniff
+		// DMA_CTRL_BSWAP |	// NOT byte swap
+		// DMA_CTRL_QUIET |	// NOT quiet
+		DMA_CTRL_TREQ_FORCE |	// permanent request
+		DMA_CTRL_CHAIN(dma) |	// chain disabled
+		// DMA_CTRL_RING_WRITE | // NOT wrap ring on write
+		DMA_CTRL_RING_SIZE(0) |	// NOT ring
+#if !RP2040
+		// DMA_CTRL_INC_WRITE_REV | // NOT decrement write
+#endif
+		DMA_CTRL_INC_WRITE |	// increment write
+#if !RP2040
+		// DMA_CTRL_INC_READ_REV | // NOT decrement read
+#endif
+		// DMA_CTRL_INC_READ |	// NOT increment read
+		DMA_CTRL_SIZE(DMA_SIZE_32) | // data size 32 bits
+		// DMA_CTRL_HIGH_PRIORITY | // NOT high priority
+		DMA_CTRL_EN);		// enable DMA
 }
 
 // fill memory with 16-bit sample using 16-bit DMA, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u16 (must be aligned to u16)
 //   data = pointer to 16-bit sample to fill (must be aligned to u16)
 //   count = number of u16 elements to fill
@@ -366,19 +464,36 @@ void DMA_MemFill16(int dma, u16* dst, const volatile u16* data, int count)
 	dma_channel_hw_t* hw = DMA_GetHw(dma);
 
 	// setup DMA
-	DMA_ClearError_hw(hw); // clear errors
+//	DMA_ClearError_hw(hw); // clear errors
 	DMA_SetRead_hw(hw, data); // set source address
 	DMA_SetWrite_hw(hw, dst); // set destination address
 	DMA_SetCount_hw(hw, count); // set count of elements
 
 	// start transfer
 	cb(); // compiler barrier
-	DMA_SetCtrlTrig_hw(hw, DMA_CTRL_TREQ_FORCE | DMA_CTRL_CHAIN(dma) |
-		DMA_CTRL_INC_WRITE | DMA_CTRL_SIZE(DMA_SIZE_16) | DMA_CTRL_EN); // set control and trigger transfer
+	DMA_SetCtrlTrig_hw(hw, // set control and trigger transfer
+		// DMA_CTRL_SNIFF |	// NOT sniff
+		// DMA_CTRL_BSWAP |	// NOT byte swap
+		// DMA_CTRL_QUIET |	// NOT quiet
+		DMA_CTRL_TREQ_FORCE |	// permanent request
+		DMA_CTRL_CHAIN(dma) |	// chain disabled
+		// DMA_CTRL_RING_WRITE | // NOT wrap ring on write
+		DMA_CTRL_RING_SIZE(0) |	// NOT ring
+#if !RP2040
+		// DMA_CTRL_INC_WRITE_REV | // NOT decrement write
+#endif
+		DMA_CTRL_INC_WRITE |	// increment write
+#if !RP2040
+		// DMA_CTRL_INC_READ_REV | // NOT decrement read
+#endif
+		// DMA_CTRL_INC_READ |	// NOT increment read
+		DMA_CTRL_SIZE(DMA_SIZE_16) | // data size 16 bits
+		// DMA_CTRL_HIGH_PRIORITY | // NOT high priority
+		DMA_CTRL_EN);		// enable DMA
 }
 
 // fill memory with 8-bit sample using 8-bit DMA, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u8
 //   data = pointer to 8-bit sample to fill
 //   count = number of u8 elements to fill
@@ -392,15 +507,32 @@ void DMA_MemFill8(int dma, u8* dst, const volatile u8* data, int count)
 	dma_channel_hw_t* hw = DMA_GetHw(dma);
 
 	// setup DMA
-	DMA_ClearError_hw(hw); // clear errors
+//	DMA_ClearError_hw(hw); // clear errors
 	DMA_SetRead_hw(hw, data); // set source address
 	DMA_SetWrite_hw(hw, dst); // set destination address
 	DMA_SetCount_hw(hw, count); // set count of elements
 
 	// start transfer
 	cb(); // compiler barrier
-	DMA_SetCtrlTrig_hw(hw, DMA_CTRL_TREQ_FORCE | DMA_CTRL_CHAIN(dma) |
-		DMA_CTRL_INC_WRITE | DMA_CTRL_SIZE(DMA_SIZE_8) | DMA_CTRL_EN); // set control and trigger transfer
+	DMA_SetCtrlTrig_hw(hw, // set control and trigger transfer
+		// DMA_CTRL_SNIFF |	// NOT sniff
+		// DMA_CTRL_BSWAP |	// NOT byte swap
+		// DMA_CTRL_QUIET |	// NOT quiet
+		DMA_CTRL_TREQ_FORCE |	// permanent request
+		DMA_CTRL_CHAIN(dma) |	// chain disabled
+		// DMA_CTRL_RING_WRITE | // NOT wrap ring on write
+		DMA_CTRL_RING_SIZE(0) |	// NOT ring
+#if !RP2040
+		// DMA_CTRL_INC_WRITE_REV | // NOT decrement write
+#endif
+		DMA_CTRL_INC_WRITE |	// increment write
+#if !RP2040
+		// DMA_CTRL_INC_READ_REV | // NOT decrement read
+#endif
+		// DMA_CTRL_INC_READ |	// NOT increment read
+		DMA_CTRL_SIZE(DMA_SIZE_8) | // data size 8 bits
+		// DMA_CTRL_HIGH_PRIORITY | // NOT high priority
+		DMA_CTRL_EN);		// enable DMA
 }
 
 // fill memory with 32-bit double word sample using optimised DMA transfer, waiting for completion
@@ -483,7 +615,7 @@ void DMA_MemFill(volatile void* dst, u8 data, int num)
 }
 
 // DMA send data from memory to port, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   port = pointer to u32 port
 //   src = pointer to first source u32 (must be aligned to u32)
 //   count = number of u32 elements to transfer
@@ -497,19 +629,36 @@ void DMA_ToPort(int dma, volatile u32* port, const u32* src, int count, int dreq
 	dma_channel_hw_t* hw = DMA_GetHw(dma);
 
 	// setup DMA
-	DMA_ClearError_hw(hw); // clear errors
+//	DMA_ClearError_hw(hw); // clear errors
 	DMA_SetRead_hw(hw, src); // set source address (memory)
 	DMA_SetWrite_hw(hw, port); // set destination address (port)
 	DMA_SetCount_hw(hw, count); // set count of elements
 
 	// start transfer
 	cb(); // compiler barrier
-	DMA_SetCtrlTrig_hw(hw, DMA_CTRL_TREQ(dreq) | DMA_CTRL_CHAIN(dma) |
-		DMA_CTRL_INC_READ | DMA_CTRL_SIZE(DMA_SIZE_32) | DMA_CTRL_EN); // set control and trigger transfer
+	DMA_SetCtrlTrig_hw(hw, // set control and trigger transfer
+		// DMA_CTRL_SNIFF |	// NOT sniff
+		// DMA_CTRL_BSWAP |	// NOT byte swap
+		// DMA_CTRL_QUIET |	// NOT quiet
+		DMA_CTRL_TREQ(dreq) |	// data request
+		DMA_CTRL_CHAIN(dma) |	// chain disabled
+		// DMA_CTRL_RING_WRITE | // NOT wrap ring on write
+		DMA_CTRL_RING_SIZE(0) |	// NOT ring
+#if !RP2040
+		// DMA_CTRL_INC_WRITE_REV | // NOT decrement write
+#endif
+		// DMA_CTRL_INC_WRITE |	// NOT increment write
+#if !RP2040
+		// DMA_CTRL_INC_READ_REV | // NOT decrement read
+#endif
+		DMA_CTRL_INC_READ |	// increment read
+		DMA_CTRL_SIZE(DMA_SIZE_32) | // data size 32 bits
+		// DMA_CTRL_HIGH_PRIORITY | // NOT high priority
+		DMA_CTRL_EN);		// enable DMA
 }
 
 // DMA receive data from port to memory, not waiting for completion (wait with DMA_Wait function)
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   dst = pointer to first destination u32 (must be aligned to u32)
 //   port = pointer to u32 port
 //   count = number of u32 elements to transfer
@@ -523,21 +672,38 @@ void DMA_FromPort(int dma, u32* dst, const volatile u32* port, int count, int dr
 	dma_channel_hw_t* hw = DMA_GetHw(dma);
 
 	// setup DMA
-	DMA_ClearError_hw(hw); // clear errors
+//	DMA_ClearError_hw(hw); // clear errors
 	DMA_SetRead_hw(hw, port); // set source address (port)
 	DMA_SetWrite_hw(hw, dst); // set destination address (memory)
 	DMA_SetCount_hw(hw, count); // set count of elements
 
 	// start transfer
 	cb(); // compiler barrier
-	DMA_SetCtrlTrig_hw(hw, DMA_CTRL_TREQ(dreq) | DMA_CTRL_CHAIN(dma) |
-		DMA_CTRL_INC_WRITE | DMA_CTRL_SIZE(DMA_SIZE_32) | DMA_CTRL_EN); // set control and trigger transfer
+	DMA_SetCtrlTrig_hw(hw,
+		// DMA_CTRL_SNIFF |	// NOT sniff
+		// DMA_CTRL_BSWAP |	// NOT byte swap
+		// DMA_CTRL_QUIET |	// NOT quiet
+		DMA_CTRL_TREQ(dreq) |	// data request
+		DMA_CTRL_CHAIN(dma) |	// chain disabled
+		// DMA_CTRL_RING_WRITE | // NOT wrap ring on write
+		DMA_CTRL_RING_SIZE(0) |	// NOT ring
+#if !RP2040
+		// DMA_CTRL_INC_WRITE_REV | // NOT decrement write
+#endif
+		DMA_CTRL_INC_WRITE |	// increment write
+#if !RP2040
+		// DMA_CTRL_INC_READ_REV | // NOT decrement read
+#endif
+		// DMA_CTRL_INC_READ |	// NOT increment read
+		DMA_CTRL_SIZE(DMA_SIZE_32) | // data size 32 bits
+		// DMA_CTRL_HIGH_PRIORITY | // NOT high priority
+		DMA_CTRL_EN);		// enable DMA
 }
 
 // calculate optimised CRC checksum using DMA (wait for completion)
 //   mode = CRC mode DMA_CRC_* (can include OR-ed flags DMA_CRC_INV and DMA_CRC_REV)
 //   init = init data
-//   dma = DMA channel 0..11
+//   dma = DMA channel 0..11 or 0..15
 //   data = pointer to data
 //   num = number of bytes
 // Calculation speed: 2 us per 1 KB
@@ -553,7 +719,7 @@ u32 DMA_CRC(int mode, u32 init, int dma, const void* data, int num)
 
 	// abort previous transfer
 	DMA_Abort(dma); // abort current transfer
-	DMA_ClearError_hw(hw); // clear errors
+//	DMA_ClearError_hw(hw); // clear errors
 	cb(); // compiler barrier
 
 	// prepare sniff registers
@@ -646,7 +812,7 @@ u32 DMA_SUM(int mode, u32 init, int dma, const void* data, int num, int size)
 
 	// abort previous transfer
 	DMA_Abort(dma); // abort current transfer
-	DMA_ClearError_hw(hw); // clear errors
+//	DMA_ClearError_hw(hw); // clear errors
 	cb(); // compiler barrier
 
 	// prepare sniff registers
