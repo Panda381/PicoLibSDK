@@ -70,8 +70,10 @@ Bool CrcCheck()
 	// check Xor checksum calculation (returns False on error)
 	if (!CrcXorCheck()) return False;
 
+#if USE_MD5	// use MD5 hash - may need to be disabled when colliding with BTStack
 	// check MD5 hash calculations (returns False on error)
 	if (!MD5_Check()) return False;
+#endif
 
 	// check SHA256 hash calculations (returns False on error)
 	if (!SHA256_Check()) return False;
@@ -275,6 +277,8 @@ Bool SHA256_Check(void)
 //                         MD5 hash (128-bit checksum)
 // ============================================================================
 
+#if USE_MD5	// use MD5 hash - may need to be disabled when colliding with BTStack
+
 // rorate amounts table
 const u8 MD5_S[] = {
 		7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
@@ -467,6 +471,8 @@ Bool MD5_Check(void)
 
 	return True;
 }
+
+#endif // USE_MD5
 
 // ============================================================================
 //                           CRC-64 Normal (CRC64A)

@@ -435,6 +435,10 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #define USE_MALLOC	1		// use Memory Allocator (lib_malloc.c, lib_malloc.h)
 #endif
 
+#ifndef USE_MD5
+#define USE_MD5		1		// use MD5 hash - may need to be disabled when colliding with BTStack
+#endif
+
 #ifndef USE_MINIRING
 #define USE_MINIRING	1		// use Mini-Ring buffer (lib_miniring.c, lib_miniring.h)
 #endif

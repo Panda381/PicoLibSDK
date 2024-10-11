@@ -93,6 +93,8 @@ Bool SHA256_Check(void);
 //  Sample 0xFC 0x05 0x4A -> 0x4f,0x58,0xb5,0x2f,0xf8,0x00,0x09,0x60,0xfd,0xce,0x70,0x63,0x2a,0xb7,0x04,0x53
 //  Sample CRC32BTable 1KB -> 0x11,0x3b,0x12,0xab,0xbc,0x21,0x2d,0xae,0x31,0xc2,0xa6,0xc7,0xb4,0x07,0x6c,0x19
 
+#if USE_MD5	// use MD5 hash - may need to be disabled when colliding with BTStack
+
 #define MD5_HASH_SIZE	16	// MD5 hash size in number of bytes
 
 // MD5 context
@@ -125,6 +127,8 @@ void MD5_Calc(u8* dst, const void* src, int len);
 
 // check MD5 hash calculations (returns False on error)
 Bool MD5_Check(void);
+
+#endif // USE_MD5
 
 // ============================================================================
 //                           CRC-64 Normal (CRC64A)
