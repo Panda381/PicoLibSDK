@@ -198,6 +198,8 @@ Bool MYPREFIX(ispow2d)(double x)
 }
 
 // round to given number of significant digits (digits<=0 to use default number of digits)
+// @TODO: probably will be deleted (accuracy cannot be guaranteed)
+/*
 double MYPREFIX(rounddig)(double x, int digits)
 {
 	// invalid values
@@ -218,6 +220,7 @@ double MYPREFIX(rounddig)(double x, int digits)
 	if (neg) x = -x;
 	return x;
 }
+*/
 
 #if RISCV || USE_DOUBLELIBC
 // Check if comparison is unordered (either input is NaN)
@@ -437,6 +440,13 @@ void MYPREFIX(sincos_deg)(double x, double* psin, double* pcos) { sincos(deg2rad
 // tangent in degrees
 double MYPREFIX(tan_deg)(double x) { return tan(deg2rad(x)); }
 
+// cotangent
+double MYPREFIX(cotan)(double x) { return drec(tan(x)); }
+
+// cotangent in degrees
+double MYPREFIX(cotan_deg)(double x) { return cotan(deg2rad(x)); }
+
+#if !RISCV // these functions are slower on RISC-V than libc variants
 // arc sine
 double MYPREFIX(WRAPPER_FUNC(asin))(double x)
 {
@@ -449,9 +459,6 @@ double MYPREFIX(WRAPPER_FUNC(asin))(double x)
 	return atan2(x, sqrt(u));
 }
 
-// arc sine in degrees
-double MYPREFIX(asin_deg)(double x) { return rad2deg(asin(x)); }
-
 // arc cosine
 double MYPREFIX(WRAPPER_FUNC(acos))(double x)
 {
@@ -463,11 +470,7 @@ double MYPREFIX(WRAPPER_FUNC(acos))(double x)
 	return atan2(sqrt(u), x);
 }
 
-// arc cosine in degrees
-double MYPREFIX(acos_deg)(double x) { return rad2deg(acos(x)); }
-
 // RISC-V: atanf cannot be implemented this way because atanf is internally called from atan2f in libc
-#if !RISCV
 // arc tangent
 double MYPREFIX(WRAPPER_FUNC(atan))(double x)
 {
@@ -481,16 +484,24 @@ double MYPREFIX(WRAPPER_FUNC(atan))(double x)
 }
 #endif
 
+// arc sine in degrees
+double MYPREFIX(asin_deg)(double x) { return rad2deg(asin(x)); }
+
+// arc cosine in degrees
+double MYPREFIX(acos_deg)(double x) { return rad2deg(acos(x)); }
+
 // arc tangent in degrees
 double MYPREFIX(atan_deg)(double x) { return rad2deg(atan(x)); }
 
 // arc tangent of y/x in degrees
 double MYPREFIX(atan2_deg)(double y, double x) { return rad2deg(atan2(y, x)); }
 
+#if !RISCV // these functions are slower on RISC-V than libc variants
 // hyperbolic sine
 double MYPREFIX(WRAPPER_FUNC(sinh))(double x)
 {
-	if (diszero(x)) return x; // zero
+	int e = dgetexp(x);
+	if (e < 1023 - 18) return x;
 
 	// (e^x - e^-x)/2
 	return ldexp(exp(x) - exp(dneg(x)), -1);
@@ -502,17 +513,16 @@ double MYPREFIX(WRAPPER_FUNC(cosh))(double x)
 	// (e^x + e^-x)/2
 	return ldexp(exp(x) + exp(dneg(x)), -1);
 }
+#endif
 
 // hyperbolic tangent
 double MYPREFIX(WRAPPER_FUNC(tanh))(double x)
 {
-	if (diszero(x)) return x; // zero
-
-	// get exponent
 	int e = dgetexp(x);
+	if (e < 1023 - 18) return x;
 
 	// check big number
-	if (e >= 5+0x3ff) // check exponent 5 (+ bias 1023); number abs(x) >= 32?
+	if (e >= 1023 + 5) // check exponent 5 (+ bias 1023); number abs(x) >= 32?
 	{
 		if (!disneg(x)) return 1;  // limit positive result to 1
 		return -1; // limit negative result to -1
@@ -526,13 +536,11 @@ double MYPREFIX(WRAPPER_FUNC(tanh))(double x)
 // inverse hyperbolic sine
 double MYPREFIX(WRAPPER_FUNC(asinh))(double x)
 {
-	if (diszero(x)) return x; // zero
-
-	// get exponent
 	int e = dgetexp(x);
+	if (e < 1023 - 19) return x;
 
 	// check big number
-	if (e >= 32+0x3ff) // check exponent 32 (+ bias 1023); number abs(x) >= 2^32?
+	if (e >= 1023 + 32) // check exponent 32 (+ bias 1023); number abs(x) >= 2^32?
 	{
 		if (!disneg(x)) return log(x) + LOG2;  // 1/x^2 << 1
 		return dneg(log(dneg(x)) + LOG2); // 1/x^2 << 1
@@ -557,7 +565,7 @@ double MYPREFIX(WRAPPER_FUNC(acosh))(double x)
 	int e = dgetexp(x);
 
 	// check big number; check exponent 32 (+ bias 1023); number abs(x) >= 2^32?
-	if (e >= 32+0x3ff) return log(x) + LOG2;
+	if (e >= 1023 + 32) return log(x) + LOG2;
 
 	// log(sqrt((x + 1)*(x - 1)) + x)
 	return log(sqrt((x + 1.0)*(x - 1.0)) + x);
@@ -566,7 +574,8 @@ double MYPREFIX(WRAPPER_FUNC(acosh))(double x)
 // inverse hyperbolic tangent
 double MYPREFIX(WRAPPER_FUNC(atanh))(double x)
 {
-	if (diszero(x)) return x; // zero
+	int e = dgetexp(x);
+	if (e < 1023 - 18) return x;
 
 	// log((1 + x) / (1 - x)) / 2
 	return ldexp(log((1.0 + x)/(1.0 - x)), -1);
@@ -613,14 +622,18 @@ double MYPREFIX(WRAPPER_FUNC(log10))(double x)
 // exp(x) - 1
 double MYPREFIX(WRAPPER_FUNC(expm1))(double x)
 {
-	if (diszero(x)) return 0.0; // zero
+	int e = dgetexp(x);
+	if (e < 1023 - 27) return x;
+
 	return exp(x) - 1;
 }
 
 // log(x + 1)
 double MYPREFIX(WRAPPER_FUNC(log1p))(double x)
 {
-	if (dgetexp(x) < 0x3ff - 26) return x;
+	int e = dgetexp(x);
+	if (e < 1023 - 26) return x;
+
 	return log(1 + x);
 }
 
@@ -916,6 +929,8 @@ double MYPREFIX(WRAPPER_FUNC(pow))(double x, double y)
 	return dpow_1(x,y);
 }
 
+#if !RISCV // these functions are slower on RISC-V than libc variants
+
 // square root of sum of squares (hypotenuse), sqrt(x*x + y*y)
 double MYPREFIX(WRAPPER_FUNC(hypot))(double x, double y)
 {
@@ -976,6 +991,7 @@ double MYPREFIX(WRAPPER_FUNC(cbrt))(double x)
 	// restore exponent
 	return ldexp(x, e);
 }
+#endif
 
 // ==== basic arithmetic
 

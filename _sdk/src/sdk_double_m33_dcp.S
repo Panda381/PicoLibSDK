@@ -139,6 +139,7 @@ saving_func2 wrapper __aeabi_dmul dmul
   pop {r4,lr}
   saving_func_return
 
+/*
 double_section ddiv_fast
 saving_func regular ddiv_fast
   dcp_ddiv_fast_m r0,r1,r0,r1,r2,r3,r0,r1,r2,r3,r12
@@ -149,7 +150,25 @@ saving_func2 wrapper __aeabi_ddiv ddiv
 @ with correct rounding
   dcp_ddiv_m r0,r1,r0,r1,r2,r3,r0,r1,r2,r3,r12
   saving_func_return
+*/
 
+#if USE_M33_DDIV == 1		// RP2350-ARM ddiv() function: 1=fast (recommended), 2=precise
+
+double_wrapper_section __aeabi_ddiv
+saving_func2 wrapper __aeabi_ddiv ddiv
+  dcp_ddiv_fast_m r0,r1,r0,r1,r2,r3,r0,r1,r2,r3,r12
+  saving_func_return
+
+#else
+
+double_wrapper_section __aeabi_ddiv
+saving_func2 wrapper __aeabi_ddiv ddiv
+  dcp_ddiv_m r0,r1,r0,r1,r2,r3,r0,r1,r2,r3,r12
+  saving_func_return
+
+#endif
+
+/*
 double_section sqrt_fast
 saving_func regular sqrt_fast
   dcp_dsqrt_fast_m r0,r1,r0,r1,r0,r1,r2,r3,r12
@@ -160,6 +179,23 @@ saving_func wrapper sqrt
 @ with correct rounding
   dcp_dsqrt_m r0,r1,r0,r1,r0,r1,r2,r3,r12
   saving_func_return
+*/
+
+#if USE_M33_SQRT == 1		// RP2350-ARM sqrt() function: 1=fast (recommended), 2=precise
+
+double_wrapper_section sqrt
+saving_func wrapper sqrt
+  dcp_dsqrt_fast_m r0,r1,r0,r1,r0,r1,r2,r3,r12
+  saving_func_return
+
+#else
+
+double_wrapper_section sqrt
+saving_func wrapper sqrt
+  dcp_dsqrt_m r0,r1,r0,r1,r0,r1,r2,r3,r12
+  saving_func_return
+
+#endif
 
 // todo not a real thing
 double_wrapper_section __aeabi_dclassify

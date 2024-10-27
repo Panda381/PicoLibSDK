@@ -63,7 +63,7 @@ public:
 		if (d2 >= rad2) return false;
 
 		// half length of intersection
-		float thc = (float)sqrtf_fast(rad2 - d2);
+		float thc = (float)sqrtf(rad2 - d2);
 
 		// distance of intersections
 		*t1 = tca - thc;

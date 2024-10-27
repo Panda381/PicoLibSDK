@@ -60,7 +60,7 @@ int Text_CheckDifF(float num1, float num2)
 	int exp1 = Test_GetExpF(num1);
 	int exp2 = Test_GetExpF(num2);
 
-#if CHECK_NOINF		// 1 = disable check of infinity ranges
+#if !CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
 	if ((exp1 == FLOAT_EXPINF) || (exp2 == FLOAT_EXPINF)) return 0;
 #else
 	// Infinities with opposite signs are unequal
@@ -141,7 +141,7 @@ int Text_CheckDifD(double num1, double num2)
 	int exp1 = Test_GetExpD(num1);
 	int exp2 = Test_GetExpD(num2);
 
-#if CHECK_NOINF		// 1 = disable check of infinity ranges
+#if !CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
 	if ((exp1 == DOUBLE_EXPINF) || (exp2 == DOUBLE_EXPINF)) return 0;
 #else
 	// Infinities with opposite signs are unequal
@@ -246,7 +246,7 @@ volatile s32 TestI2[TEST_SPEEDNUM];
 volatile s64 TestI64[TEST_SPEEDNUM];
 
 // add difference with float result
-void TestInfoAddF(float ref, float tst)
+NOINLINE void TestInfoAddF(float ref, float tst)
 {
 	int dif = Text_CheckDifF(ref, tst);
 	DifSum += dif;
@@ -254,7 +254,7 @@ void TestInfoAddF(float ref, float tst)
 }
 
 // add difference with double result
-void TestInfoAddD(double ref, double tst)
+NOINLINE void TestInfoAddD(double ref, double tst)
 {
 	int dif = Text_CheckDifD(ref, tst);
 	DifSum += dif;
@@ -262,7 +262,7 @@ void TestInfoAddD(double ref, double tst)
 }
 
 // add difference with int result
-void TestInfoAddI(int ref, int tst)
+NOINLINE void TestInfoAddI(int ref, int tst)
 {
 	int dif = ref - tst;
 	if (dif < 0) dif = -dif;
@@ -273,7 +273,7 @@ void TestInfoAddI(int ref, int tst)
 }
 
 // add difference with int64 result
-void TestInfoAddI64(s64 ref, s64 tst)
+NOINLINE void TestInfoAddI64(s64 ref, s64 tst)
 {
 	s64 dif = ref - tst;
 	if (dif < 0) dif = -dif;
@@ -439,7 +439,8 @@ typedef float (*pTest_FF)(float);
 void MYPREFIX(Test_FF)(pTest_FF ref_fnc, pTest_FF fnc, int loop) {
 	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, tst;
 	for (; loop > 0; loop--) {
-		a = MyRandTestFloat(); tst = fnc(a);
+		do { a = MyRandTestFloat(); } while ((a >= 0.99f) && (a <= 1.01f));
+		tst = fnc(a);
 		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(a) && !Test_IsOverF(tst))
 			{ TestAF[num] = a; num++; }
 		TestInfoAddF(ref_fnc(a), tst);
@@ -481,6 +482,58 @@ void MYPREFIX(Test_DD)(pTest_DD ref_fnc, pTest_DD fnc, int loop) {
 		res = fnc(a2); res = fnc(a2); res = fnc(a2); res = fnc(a2);
 		res = fnc(a2); res = fnc(a2); res = fnc(a2); res = fnc(a2); }
 	u32 t2 = Time(); dmb(); ei(); TestTime = (t2 - t1 + 4)/8 - Test_DD_Calib; }
+
+// float fnc(float) logarithm
+int Test_FFlog_Calib = 0;
+float MYPREFIX(Test_FFlog_Nop)(float a) { return a; }
+typedef float (*pTest_FFlog)(float);
+void MYPREFIX(Test_FFlog)(pTest_FFlog ref_fnc, pTest_FFlog fnc, int loop) {
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, tst;
+	for (; loop > 0; loop--) {
+		do { a = MyRandTestFloat(); } while ((a >= 0.99f) && (a <= 1.01f));
+		tst = fnc(a);
+		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(a) && !Test_IsOverF(tst))
+			{ TestAF[num] = a; num++; }
+		TestInfoAddF(ref_fnc(a), tst);
+#if 0
+		if (DifMax >= 23) {
+			DrawPrint("FFlog: %.8g %.8g %.8g\n", a, ref_fnc(a), tst);
+			while(True) {} }
+#endif
+	}
+	while (num < TEST_SPEEDNUM) { TestAF[num] = TestAF[num0]; num++; num0++; }
+	volatile float *pa = TestAF; volatile float a2, res;
+	di(); dmb(); u32 t1 = Time();
+	for (; num > 0; num--) { a2 = *pa++;
+		res = fnc(a2); res = fnc(a2); res = fnc(a2); res = fnc(a2);
+		res = fnc(a2); res = fnc(a2); res = fnc(a2); res = fnc(a2); }
+	u32 t2 = Time(); dmb(); ei(); TestTime = (t2 - t1 + 4)/8 - Test_FFlog_Calib; }
+
+// double fnc(double) logarithm
+int Test_DDlog_Calib = 0;
+double MYPREFIX(Test_DDlog_Nop)(double a) { return a; }
+typedef double (*pTest_DDlog)(double);
+void MYPREFIX(Test_DDlog)(pTest_DDlog ref_fnc, pTest_DDlog fnc, int loop) {
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, tst;
+	for (; loop > 0; loop--) {
+		do { a = MyRandTestDouble(); } while ((a >= 0.0999) && (a <= 1.0001));
+		tst = fnc(a);
+		if ((num < TEST_SPEEDNUM) && !Test_IsOverD(a) && !Test_IsOverD(tst))
+			{ TestAD[num] = a; num++; }
+		TestInfoAddD(ref_fnc(a), tst);
+#if 0
+		if (DifMax >= 52) {
+			DrawPrint("DDlog: %.8g %.8g %.8g\n", a, ref_fnc(a), tst);
+			while(True) {} }
+#endif
+	}
+	while (num < TEST_SPEEDNUM) { TestAD[num] = TestAD[num0]; num++; num0++; }
+	volatile double *pa = TestAD; volatile double a2, res;
+	di(); dmb(); u32 t1 = Time();
+	for (; num > 0; num--) { a2 = *pa++;
+		res = fnc(a2); res = fnc(a2); res = fnc(a2); res = fnc(a2);
+		res = fnc(a2); res = fnc(a2); res = fnc(a2); res = fnc(a2); }
+	u32 t2 = Time(); dmb(); ei(); TestTime = (t2 - t1 + 4)/8 - Test_DDlog_Calib; }
 
 // float fnc(float, float) modulo
 int Test_FFFmod_Calib = 0;
@@ -1051,15 +1104,16 @@ int Test_FFangle_Calib = 0;
 float MYPREFIX(Test_FFangle_Nop)(float a) { return a; }
 typedef float (*pTest_FFangle)(float);
 void MYPREFIX(Test_FFangle)(pTest_FFangle ref_fnc, pTest_FFangle fnc, int loop) {
-	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, tst;
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, tst, ref, k;
 	for (; loop > 0; loop--) {
-		a = MyRandTestFloatMinMax(FLOAT_EXP1 - 10, FLOAT_EXP1 + 3); tst = fnc(a);
-		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(a) && !Test_IsOverF(tst))
-			{ TestAF[num] = a; num++; }
-		TestInfoAddF(ref_fnc(a), tst);
+		do a = MyRandTestFloatMinMax(FLOAT_EXP1 - 5, FLOAT_EXP1 + 2);
+			while (Test_IsOverF(a)); // sin(inf) is undefined
+		ref = ref_fnc(a); tst = fnc(a); k = (absf(ref) < 0.5f) ? ((ref < 0) ? -0.25f : 0.25f) : 0; // small angles have undefined precision
+		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(tst)) { TestAF[num] = a; num++; }
+		TestInfoAddF(ref + k, tst + k);
 #if 0
 		if (DifMax >= 23) {
-			DrawPrint("FFa: %.8g %.8g %.8g\n", a, ref_fnc(a), tst);
+			DrawPrint("FFa: %.8g %.8g %.8g\n", a, ref, tst);
 			while(True) {} }
 #endif
 	}
@@ -1076,15 +1130,16 @@ int Test_DDangle_Calib = 0;
 double MYPREFIX(Test_DDangle_Nop)(double a) { return a; }
 typedef double (*pTest_DDangle)(double);
 void MYPREFIX(Test_DDangle)(pTest_DDangle ref_fnc, pTest_DDangle fnc, int loop) {
-	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, tst;
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, tst, ref, k;
 	for (; loop > 0; loop--) {
-		a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 10, DOUBLE_EXP1 + 3); tst = fnc(a);
-		if ((num < TEST_SPEEDNUM) && !Test_IsOverD(a) && !Test_IsOverD(tst))
-			{ TestAD[num] = a; num++; }
-		TestInfoAddD(ref_fnc(a), tst);
+		do a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 8, DOUBLE_EXP1 + 2); 
+			while (Test_IsOverD(a)); // sin(inf) is undefined
+		ref = ref_fnc(a); tst = fnc(a); k = (absd(ref) < 0.5) ? ((ref < 0) ? -0.25 : 0.25) : 0; // small angles have undefined precision
+		if ((num < TEST_SPEEDNUM) && !Test_IsOverD(tst)) { TestAD[num] = a; num++; }
+		TestInfoAddD(ref + k, tst + k);
 #if 0
 		if (DifMax >= 52) {
-			DrawPrint("DDa: %.8g %.8g %.8g\n", a, ref_fnc(a), tst);
+			DrawPrint("DDa: %.8g %.8g %.8g\n", a, ref, tst);
 			while(True) {} }
 #endif
 	}
@@ -1101,13 +1156,16 @@ int Test_VPFPFangle_Calib = 0;
 void MYPREFIX(Test_VPFPFangle_Nop)(float a, float* si, float* co) { *si = 0; *co = 0; }
 typedef void (*pTest_VPFPFangle)(float, float*, float*);
 void MYPREFIX(Test_VPFPFangle)(pTest_VPFPFangle ref_fnc, pTest_VPFPFangle fnc, int loop) {
-	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, si_ref, co_ref, si_tst, co_tst;
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, si_ref, co_ref, si_tst, co_tst, si_k, co_k;
 	for (; loop > 0; loop--) {
-		a = MyRandTestFloatMinMax(FLOAT_EXP1 - 10, FLOAT_EXP1 + 3);
+		do a = MyRandTestFloatMinMax(FLOAT_EXP1 - 5, FLOAT_EXP1 + 2);
+			while (Test_IsOverF(a)); // sincos(inf) is undefined
 		ref_fnc(a, &si_ref, &co_ref); fnc(a, &si_tst, &co_tst);
-		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(a) && !Test_IsOverF(si_tst) && !Test_IsOverF(co_tst))
+		si_k = (absf(si_ref) < 0.5f) ? ((si_ref < 0) ? -0.25f : 0.25f) : 0; // small angles have undefined precision
+		co_k = (absf(co_ref) < 0.5f) ? ((co_ref < 0) ? -0.25f : 0.25f) : 0; // small angles have undefined precision
+		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(si_tst) && !Test_IsOverF(co_tst))
 			{ TestAF[num] = a; num++; }
-		TestInfoAddF(si_ref, si_tst); TestInfoAddF(co_ref, co_tst);
+		TestInfoAddF(si_ref + si_k, si_tst + si_k); TestInfoAddF(co_ref + co_k, co_tst + co_k);
 #if 0
 		if (DifMax >= 23) {
 			DrawPrint("VPFPFa: %.8g %.8g %.8g %.8g %.8g\n", a, si_ref, si_tst, co_ref, co_tst);
@@ -1128,13 +1186,16 @@ int Test_VPDPDangle_Calib = 0;
 void MYPREFIX(Test_VPDPDangle_Nop)(double a, double* si, double* co) { *si = 0; *co = 0; }
 typedef void (*pTest_VPDPDangle)(double, double*, double*);
 void MYPREFIX(Test_VPDPDangle)(pTest_VPDPDangle ref_fnc, pTest_VPDPDangle fnc, int loop) {
-	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, si_ref, co_ref, si_tst, co_tst;
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, si_ref, co_ref, si_tst, co_tst, si_k, co_k;
 	for (; loop > 0; loop--) {
-		a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 10, DOUBLE_EXP1 + 3);
+		do a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 8, DOUBLE_EXP1 + 2);
+			while (Test_IsOverD(a)); // sincos(inf) is undefined
 		ref_fnc(a, &si_ref, &co_ref); fnc(a, &si_tst, &co_tst);
-		if ((num < TEST_SPEEDNUM) && !Test_IsOverD(a) && !Test_IsOverD(si_tst) && !Test_IsOverD(co_tst))
+		si_k = (absd(si_ref) < 0.5) ? ((si_ref < 0) ? -0.25 : 0.25) : 0; // small angles have undefined precision
+		co_k = (absd(co_ref) < 0.5) ? ((co_ref < 0) ? -0.25 : 0.25) : 0; // small angles have undefined precision
+		if ((num < TEST_SPEEDNUM) && !Test_IsOverD(si_tst) && !Test_IsOverD(co_tst))
 			{ TestAD[num] = a; num++; }
-		TestInfoAddD(si_ref, si_tst); TestInfoAddD(co_ref, co_tst);
+		TestInfoAddD(si_ref + si_k, si_tst + si_k); TestInfoAddD(co_ref + co_k, co_tst + co_k);
 #if 0
 		if (DifMax >= 52) {
 			DrawPrint("VPDPDa: %.8g %.8g %.8g %.8g %.8g\n", a, si_ref, si_tst, co_ref, co_tst);
@@ -1155,12 +1216,17 @@ int Test_FFarcangle_Calib = 0;
 float MYPREFIX(Test_FFarcangle_Nop)(float a) { return a; }
 typedef float (*pTest_FFarcangle)(float);
 void MYPREFIX(Test_FFarcangle)(pTest_FFarcangle ref_fnc, pTest_FFarcangle fnc, int loop) {
-	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, tst;
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, tst, ref;
 	for (; loop > 0; loop--) {
-		a = MyRandTestFloatMinMax(FLOAT_EXP1 - 10, FLOAT_EXP1); tst = fnc(a);
+#if CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
+		a = MyRandTestFloatMinMax(FLOAT_EXP1 - 25, FLOAT_EXP1);
+#else
+		a = MyRandTestFloatMinMax(FLOAT_EXP1 - 7, FLOAT_EXP1-1);
+#endif
+		ref = ref_fnc(a); tst = fnc(a);
 		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(a) && !Test_IsOverF(tst))
 			{ TestAF[num] = a; num++; }
-		TestInfoAddF(ref_fnc(a), tst);
+		TestInfoAddF(ref, tst);
 #if 0
 		if (DifMax >= 23) {
 			DrawPrint("FFarc: %.8g %.8g %.8g\n", a, ref_fnc(a), tst);
@@ -1180,12 +1246,17 @@ int Test_DDarcangle_Calib = 0;
 double MYPREFIX(Test_DDarcangle_Nop)(double a) { return a; }
 typedef double (*pTest_DDarcangle)(double);
 void MYPREFIX(Test_DDarcangle)(pTest_DDarcangle ref_fnc, pTest_DDarcangle fnc, int loop) {
-	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, tst;
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, tst, ref;
 	for (; loop > 0; loop--) {
-		a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 10, DOUBLE_EXP1); tst = fnc(a);
+#if CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
+		a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 54, DOUBLE_EXP1);
+#else
+		a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 10, DOUBLE_EXP1-1);
+#endif
+		ref = ref_fnc(a); tst = fnc(a);
 		if ((num < TEST_SPEEDNUM) && !Test_IsOverD(a) && !Test_IsOverD(tst))
 			{ TestAD[num] = a; num++; }
-		TestInfoAddD(ref_fnc(a), tst);
+		TestInfoAddD(ref, tst);
 #if 0
 		if (DifMax >= 52) {
 			DrawPrint("DDarc: %.8g %.8g %.8g\n", a, ref_fnc(a), tst);
@@ -1200,17 +1271,78 @@ void MYPREFIX(Test_DDarcangle)(pTest_DDarcangle ref_fnc, pTest_DDarcangle fnc, i
 		res = fnc(a2); res = fnc(a2); res = fnc(a2); res = fnc(a2); }
 	u32 t2 = Time(); dmb(); ei(); TestTime = (t2 - t1 + 4)/8 - Test_DDarcangle_Calib; }
 
+// float fnc(float) arc-tan
+int Test_FFarctan_Calib = 0;
+float MYPREFIX(Test_FFarctan_Nop)(float a) { return a; }
+typedef float (*pTest_FFarctan)(float);
+void MYPREFIX(Test_FFarctan)(pTest_FFarctan ref_fnc, pTest_FFarctan fnc, int loop) {
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, tst, ref;
+	for (; loop > 0; loop--) {
+#if CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
+		a = MyRandTestFloat();
+#else
+		a = MyRandTestFloatMinMax(FLOAT_EXP1 - 7, FLOAT_EXP1 + 7);
+#endif
+		ref = ref_fnc(a); tst = fnc(a);
+		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(a) && !Test_IsOverF(tst))
+			{ TestAF[num] = a; num++; }
+		TestInfoAddF(ref, tst);
+#if 0
+		if (DifMax >= 23) {
+			DrawPrint("FFarc: %.8g %.8g %.8g\n", a, ref_fnc(a), tst);
+			while(True) {} }
+#endif
+	}
+	while (num < TEST_SPEEDNUM) { TestAF[num] = TestAF[num0]; num++; num0++; }
+	volatile float *pa = TestAF; volatile float a2, res;
+	di(); dmb(); u32 t1 = Time();
+	for (; num > 0; num--) { a2 = *pa++;
+		res = fnc(a2); res = fnc(a2); res = fnc(a2); res = fnc(a2);
+		res = fnc(a2); res = fnc(a2); res = fnc(a2); res = fnc(a2); }
+	u32 t2 = Time(); dmb(); ei(); TestTime = (t2 - t1 + 4)/8 - Test_FFarctan_Calib; }
+
+// double fnc(double) arc-tan
+int Test_DDarctan_Calib = 0;
+double MYPREFIX(Test_DDarctan_Nop)(double a) { return a; }
+typedef double (*pTest_DDarctan)(double);
+void MYPREFIX(Test_DDarctan)(pTest_DDarctan ref_fnc, pTest_DDarctan fnc, int loop) {
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, tst, ref;
+	for (; loop > 0; loop--) {
+#if CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
+		a = MyRandTestDouble();
+#else
+		a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 10, DOUBLE_EXP1 + 10);
+#endif
+		ref = ref_fnc(a); tst = fnc(a);
+		if ((num < TEST_SPEEDNUM) && !Test_IsOverD(a) && !Test_IsOverD(tst))
+			{ TestAD[num] = a; num++; }
+		TestInfoAddD(ref, tst);
+#if 0
+		if (DifMax >= 52) {
+			DrawPrint("DDarc: %.8g %.8g %.8g\n", a, ref_fnc(a), tst);
+			while(True) {} }
+#endif
+	}
+	while (num < TEST_SPEEDNUM) { TestAD[num] = TestAD[num0]; num++; num0++; }
+	volatile double *pa = TestAD; volatile double a2, res;
+	di(); dmb(); u32 t1 = Time();
+	for (; num > 0; num--) { a2 = *pa++;
+		res = fnc(a2); res = fnc(a2); res = fnc(a2); res = fnc(a2);
+		res = fnc(a2); res = fnc(a2); res = fnc(a2); res = fnc(a2); }
+	u32 t2 = Time(); dmb(); ei(); TestTime = (t2 - t1 + 4)/8 - Test_DDarctan_Calib; }
+
 // float fnc(float) angledeg
 int Test_FFangledeg_Calib = 0;
 float MYPREFIX(Test_FFangledeg_Nop)(float a) { return a; }
 typedef float (*pTest_FFangledeg)(float);
 void MYPREFIX(Test_FFangledeg)(pTest_FFangledeg ref_fnc, pTest_FFangledeg fnc, int loop) {
-	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, tst;
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, tst, ref, k;
 	for (; loop > 0; loop--) {
-		a = MyRandTestFloatMinMax(FLOAT_EXP1 - 10+6, FLOAT_EXP1 + 3+6); tst = fnc(a);
-		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(a) && !Test_IsOverF(tst))
-			{ TestAF[num] = a; num++; }
-		TestInfoAddF(ref_fnc(a), tst);
+		do a = MyRandTestFloatMinMax(FLOAT_EXP1 - 5+6, FLOAT_EXP1 + 2+6);
+			while (Test_IsOverF(a)); // sin(inf) is undefined
+		ref = ref_fnc(a); tst = fnc(a); k = (absf(ref) < 0.5f) ? ((ref < 0) ? -0.25f : 0.25f) : 0; // small angles have undefined precision
+		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(tst)) { TestAF[num] = a; num++; }
+		TestInfoAddF(ref + k, tst + k);
 #if 0
 		if (DifMax >= 23) {
 			DrawPrint("FFad: %.8g %.8g %.8g\n", a, ref_fnc(a), tst);
@@ -1230,12 +1362,14 @@ int Test_DDangledeg_Calib = 0;
 double MYPREFIX(Test_DDangledeg_Nop)(double a) { return a; }
 typedef double (*pTest_DDangledeg)(double);
 void MYPREFIX(Test_DDangledeg)(pTest_DDangledeg ref_fnc, pTest_DDangledeg fnc, int loop) {
-	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, tst;
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, tst, ref, k;
 	for (; loop > 0; loop--) {
-		a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 10+6, DOUBLE_EXP1 + 3+6); tst = fnc(a);
+		do a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 8+6, DOUBLE_EXP1 + 2+6);
+			while (Test_IsOverD(a)); // sin(inf) is undefined
+		ref = ref_fnc(a); tst = fnc(a); k = (absd(ref) < 0.5) ? ((ref < 0) ? -0.25 : 0.25) : 0; // small angles have undefined precision
 		if ((num < TEST_SPEEDNUM) && !Test_IsOverD(a) && !Test_IsOverD(tst))
 			{ TestAD[num] = a; num++; }
-		TestInfoAddD(ref_fnc(a), tst);
+		TestInfoAddD(ref + k, tst + k);
 #if 0
 		if (DifMax >= 52) {
 			DrawPrint("DDad: %.8g %.8g %.8g\n", a, ref_fnc(a), tst);
@@ -1255,13 +1389,16 @@ int Test_VPFPFangledeg_Calib = 0;
 void MYPREFIX(Test_VPFPFangledeg_Nop)(float a, float* si, float* co) { *si = 0; *co = 0; }
 typedef void (*pTest_VPFPFangledeg)(float, float*, float*);
 void MYPREFIX(Test_VPFPFangledeg)(pTest_VPFPFangledeg ref_fnc, pTest_VPFPFangledeg fnc, int loop) {
-	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, si_ref, co_ref, si_tst, co_tst;
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, si_ref, co_ref, si_tst, co_tst, si_k, co_k;
 	for (; loop > 0; loop--) {
-		a = MyRandTestFloatMinMax(FLOAT_EXP1 - 10+6, FLOAT_EXP1 + 3+6);
+		do a = MyRandTestFloatMinMax(FLOAT_EXP1 - 5+6, FLOAT_EXP1 + 2+6);
+			while (Test_IsOverF(a)); // sincos(inf) is undefined
 		ref_fnc(a, &si_ref, &co_ref); fnc(a, &si_tst, &co_tst);
+		si_k = (absf(si_ref) < 0.5f) ? ((si_ref < 0) ? -0.25f : 0.25f) : 0; // small angles have undefined precision
+		co_k = (absf(co_ref) < 0.5f) ? ((co_ref < 0) ? -0.25f : 0.25f) : 0; // small angles have undefined precision
 		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(a) && !Test_IsOverF(si_tst) && !Test_IsOverF(co_tst))
 			{ TestAF[num] = a; num++; }
-		TestInfoAddF(si_ref, si_tst); TestInfoAddF(co_ref, co_tst);
+		TestInfoAddF(si_ref + si_k, si_tst + si_k); TestInfoAddF(co_ref + co_k, co_tst + co_k);
 #if 0
 		if (DifMax >= 23) {
 			DrawPrint("VPFPFad: %.8g %.8g %.8g %.8g %.8g\n", a, si_ref, si_tst, co_ref, co_tst);
@@ -1282,13 +1419,16 @@ int Test_VPDPDangledeg_Calib = 0;
 void MYPREFIX(Test_VPDPDangledeg_Nop)(double a, double* si, double* co) { *si = 0; *co = 0; }
 typedef void (*pTest_VPDPDangledeg)(double, double*, double*);
 void MYPREFIX(Test_VPDPDangledeg)(pTest_VPDPDangledeg ref_fnc, pTest_VPDPDangledeg fnc, int loop) {
-	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, si_ref, co_ref, si_tst, co_tst;
+	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, si_ref, co_ref, si_tst, co_tst, si_k, co_k;
 	for (; loop > 0; loop--) {
-		a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 10+6, DOUBLE_EXP1 + 3+6);
+		do a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 8+6, DOUBLE_EXP1 + 2+6);
+			while (Test_IsOverD(a)); // sincos(inf) is undefined
 		ref_fnc(a, &si_ref, &co_ref); fnc(a, &si_tst, &co_tst);
+		si_k = (absd(si_ref) < 0.5) ? ((si_ref < 0) ? -0.25 : 0.25) : 0; // small angles have undefined precision
+		co_k = (absd(co_ref) < 0.5) ? ((co_ref < 0) ? -0.25 : 0.25) : 0; // small angles have undefined precision
 		if ((num < TEST_SPEEDNUM) && !Test_IsOverD(a) && !Test_IsOverD(si_tst) && !Test_IsOverD(co_tst))
 			{ TestAD[num] = a; num++; }
-		TestInfoAddD(si_ref, si_tst); TestInfoAddD(co_ref, co_tst);
+		TestInfoAddD(si_ref + si_k, si_tst + si_k); TestInfoAddD(co_ref + co_k, co_tst + co_k);
 #if 0
 		if (DifMax >= 52) {
 			DrawPrint("VPDPDad: %.8g %.8g %.8g %.8g %.8g\n", a, si_ref, si_tst, co_ref, co_tst);
@@ -1311,8 +1451,8 @@ typedef float (*pTest_FFexp)(float);
 void MYPREFIX(Test_FFexp)(pTest_FFexp ref_fnc, pTest_FFexp fnc, int loop) {
 	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; float a, tst;
 	for (; loop > 0; loop--) {
-		a = MyRandTestFloatMinMax(FLOAT_EXP1 - 9, FLOAT_EXP1 + 9); tst = fnc(a);
-		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(a) && !Test_IsOverF(tst))
+		a = MyRandTestFloatMinMax(FLOAT_EXP1 - 26, FLOAT_EXP1 + 7); tst = fnc(a);
+		if ((num < TEST_SPEEDNUM) && !Test_IsOverF(a) && !Test_IsOverF(tst) && !Test_IsZeroF(tst) && (Test_GetExpF(tst) != FLOAT_EXP1))
 			{ TestAF[num] = a; num++; }
 		TestInfoAddF(ref_fnc(a), tst);
 #if 0
@@ -1336,8 +1476,8 @@ typedef double (*pTest_DDexp)(double);
 void MYPREFIX(Test_DDexp)(pTest_DDexp ref_fnc, pTest_DDexp fnc, int loop) {
 	DifSum = 0; DifMax = 0; int num = 0; int num0 = 0; double a, tst;
 	for (; loop > 0; loop--) {
-		a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 12, DOUBLE_EXP1 + 12); tst = fnc(a);
-		if ((num < TEST_SPEEDNUM) && !Test_IsOverD(a) && !Test_IsOverD(tst))
+		a = MyRandTestDoubleMinMax(DOUBLE_EXP1 - 54, DOUBLE_EXP1 + 10); tst = fnc(a);
+		if ((num < TEST_SPEEDNUM) && !Test_IsOverD(a) && !Test_IsOverD(tst) && !Test_IsZeroD(tst) && (Test_GetExpD(tst) != DOUBLE_EXP1))
 			{ TestAD[num] = a; num++; }
 		TestInfoAddD(ref_fnc(a), tst);
 #if 0
@@ -1531,6 +1671,12 @@ void Test_Calib()
 	Test_DD(Test_DD_Nop, Test_DD_Nop, 2000);
 	Test_DD_Calib = TestTime;
 
+	Test_FFlog(Test_FFlog_Nop, Test_FFlog_Nop, 2000);
+	Test_FFlog_Calib = TestTime;
+
+	Test_DDlog(Test_DDlog_Nop, Test_DDlog_Nop, 2000);
+	Test_DDlog_Calib = TestTime;
+
 	Test_FFFmod(Test_FFFmod_Nop, Test_FFFmod_Nop, 2000);
 	Test_FFFmod_Calib = TestTime;
 
@@ -1615,6 +1761,12 @@ void Test_Calib()
 	Test_DDarcangle(Test_DDarcangle_Nop, Test_DDarcangle_Nop, 2000);
 	Test_DDarcangle_Calib = TestTime;
 
+	Test_FFarctan(Test_FFarctan_Nop, Test_FFarctan_Nop, 2000);
+	Test_FFarctan_Calib = TestTime;
+
+	Test_DDarctan(Test_DDarctan_Nop, Test_DDarctan_Nop, 2000);
+	Test_DDarctan_Calib = TestTime;
+
 	Test_FFangledeg(Test_FFangledeg_Nop, Test_FFangledeg_Nop, 2000);
 	Test_FFangledeg_Calib = TestTime;
 
@@ -1693,10 +1845,6 @@ void Test_dsqr(int loop) { Test_DD(Ref_dsqr, dsqr, loop); }
 // Division, x / y
 void Test_fdiv(int loop) { Test_FFF(Ref_fdiv, fdiv, loop); }
 void Test_ddiv(int loop) { Test_DDD(Ref_ddiv, ddiv, loop); }
-
-// Fast fivision, x / y
-void Test_fdiv_fast(int loop) { Test_FFF(Ref_fdiv, fdiv_fast, loop); }
-void Test_ddiv_fast(int loop) { Test_DDD(Ref_ddiv, ddiv_fast, loop); }
 
 // Reciprocal 1 / x
 void Test_frec(int loop) { Test_FF(Ref_frec, frec, loop); }
@@ -1846,10 +1994,6 @@ void Test_ceil(int loop) { Test_DD(Ref_ceil, ceil, loop); }
 void Test_sqrtf(int loop) { Test_FF(Ref_sqrtf, sqrtf, loop); }
 void Test_sqrt(int loop) { Test_DD(Ref_sqrt, sqrt, loop); }
 
-// Fast square root
-void Test_sqrtf_fast(int loop) { Test_FF(Ref_sqrtf, sqrtf_fast, loop); }
-void Test_sqrt_fast(int loop) { Test_DD(Ref_sqrt, sqrt_fast, loop); }
-
 // convert degrees to radians
 void Test_deg2radf(int loop) { Test_FF(Ref_deg2radf, deg2radf, loop); }
 void Test_deg2rad(int loop) { Test_DD(Ref_deg2rad, deg2rad, loop); }
@@ -1890,6 +2034,14 @@ void Test_tan(int loop) { Test_DDangle(Ref_tan, tan, loop); }
 void Test_tanf_deg(int loop) { Test_FFangledeg(Ref_tanf_deg, tanf_deg, loop); }
 void Test_tan_deg(int loop) { Test_DDangledeg(Ref_tan_deg, tan_deg, loop); }
 
+// cotangent in radians
+void Test_cotanf(int loop) { Test_FFangle(Ref_cotanf, cotanf, loop); }
+void Test_cotan(int loop) { Test_DDangle(Ref_cotan, cotan, loop); }
+
+// cotangent in degrees
+void Test_cotanf_deg(int loop) { Test_FFangledeg(Ref_cotanf_deg, cotanf_deg, loop); }
+void Test_cotan_deg(int loop) { Test_DDangledeg(Ref_cotan_deg, cotan_deg, loop); }
+
 // arc sine in radians
 void Test_asinf(int loop) { Test_FFarcangle(Ref_asinf, asinf, loop); }
 void Test_asin(int loop) { Test_DDarcangle(Ref_asin, asin, loop); }
@@ -1907,12 +2059,20 @@ void Test_acosf_deg(int loop) { Test_FFarcangle(Ref_acosf_deg, acosf_deg, loop);
 void Test_acos_deg(int loop) { Test_DDarcangle(Ref_acos_deg, acos_deg, loop); }
 
 // arc tangent in radians
-void Test_atanf(int loop) { Test_FFexp(Ref_atanf, atanf, loop); }
-void Test_atan(int loop) { Test_DDexp(Ref_atan, atan, loop); }
+void Test_atanf(int loop) { Test_FFarctan(Ref_atanf, atanf, loop); }
+void Test_atan(int loop) { Test_DDarctan(Ref_atan, atan, loop); }
 
 // arc tangent in degrees
-void Test_atanf_deg(int loop) { Test_FFexp(Ref_atanf_deg, atanf_deg, loop); }
-void Test_atan_deg(int loop) { Test_DDexp(Ref_atan_deg, atan_deg, loop); }
+void Test_atanf_deg(int loop) { Test_FFarctan(Ref_atanf_deg, atanf_deg, loop); }
+void Test_atan_deg(int loop) { Test_DDarctan(Ref_atan_deg, atan_deg, loop); }
+
+// arc cotangent in radians
+void Test_acotanf(int loop) { Test_FFarctan(Ref_acotanf, acotanf, loop); }
+void Test_acotan(int loop) { Test_DDarctan(Ref_acotan, acotan, loop); }
+
+// arc cotangent in degrees
+void Test_acotanf_deg(int loop) { Test_FFarctan(Ref_acotanf_deg, acotanf_deg, loop); }
+void Test_acotan_deg(int loop) { Test_DDarctan(Ref_acotan_deg, acotan_deg, loop); }
 
 // arc tangent of y/x in radians
 void Test_atan2f(int loop) { Test_FFF(Ref_atan2f, atan2f, loop); }
@@ -1951,8 +2111,8 @@ void Test_expf(int loop) { Test_FFexp(Ref_expf, expf, loop); }
 void Test_exp(int loop) { Test_DDexp(Ref_exp, exp, loop); }
 
 // Natural logarithm
-void Test_logf(int loop) { Test_FF(Ref_logf, logf, loop); }
-void Test_log(int loop) { Test_DD(Ref_log, log, loop); }
+void Test_logf(int loop) { Test_FFlog(Ref_logf, logf, loop); }
+void Test_log(int loop) { Test_DDlog(Ref_log, log, loop); }
 
 // exponent with base 2
 void Test_exp2f(int loop) { Test_FFexp(Ref_exp2f, exp2f, loop); }
@@ -2009,5 +2169,157 @@ void Test_float2double(int loop) { Test_DF(Ref_float2double, float2double, loop)
 void Test_double2float(int loop) { Test_FD(Ref_double2float, double2float, loop); }
 
 // round to given number of significant digits
-void Test_rounddigf(int loop) { Test_FFIdig(Ref_rounddigf, rounddigf, loop); }
-void Test_rounddig(int loop) { Test_DDIdig(Ref_rounddig, rounddig, loop); }
+// @TODO: probably will be deleted (accuracy cannot be guaranteed)
+//void Test_rounddigf(int loop) { Test_FFIdig(Ref_rounddigf, rounddigf, loop); }
+//void Test_rounddig(int loop) { Test_DDIdig(Ref_rounddig, rounddig, loop); }
+
+// consistency test sqrtf (whether exponent is synchronous with mantissa)
+typedef float (*pTest_conFFsqrt)(float);
+void Test_conFFsqrt(pTest_conFFsqrt invfnc, pTest_conFFsqrt reffnc, pTest_conFFsqrt fnc)
+{
+	DifMax = 0;
+	u32 e;
+	u32 xn;
+	int i;
+	float a, ref, tst, old;
+
+	old = Test_MMaxF();
+	for (e = 127-62; e < 127+64; e++)
+	{
+		if (e == 127) continue;
+		a = invfnc(Test_u32float(e << 23));
+		xn = Test_floatu32(a);
+		for (i = -10; i <= 10; i++)
+		{
+			a = Test_u32float(xn + i);
+			ref = reffnc(a);
+			tst = fnc(a);
+			int dif = Text_CheckDifF(ref, tst);
+			if (tst < old) dif = 100;
+			if (dif > DifMax) DifMax = dif;
+#if 0
+			if (dif > 8) {
+				DrawPrint("conFFsqrt: %.8g %.8g %.8g %.8g\n", a, ref, tst, old);
+				while(True) {} }
+#endif
+			old = tst;
+		}
+	}
+}
+
+// consistency test expf (whether exponent is synchronous with mantissa)
+typedef float (*pTest_conFFexp)(float);
+typedef float (*pTest_conFFlog)(float);
+void Test_conFFexp(pTest_conFFlog invfnc, pTest_conFFexp reffnc, pTest_conFFexp fnc)
+{
+	DifMax = 0;
+	u32 e;
+	u32 xn;
+	int i;
+	float a, ref, tst, old;
+
+	old = Test_MMaxF();
+	for (e = 2; e <= 254; e++)
+	{
+		if (e == 127) continue; // skip testing around 1.0
+		a = invfnc(Test_u32float(e << 23));
+		xn = Test_floatu32(a);
+		for (i = -10; i <= 10; i++)
+		{
+			if ((s32)xn < 0)
+				a = Test_u32float(xn - i);
+			else
+				a = Test_u32float(xn + i);
+			ref = reffnc(a);
+			tst = fnc(a);
+			int dif = Text_CheckDifF(ref, tst);
+			if (tst < old) dif = 100;
+			if (dif > DifMax) DifMax = dif;
+#if 0
+			if (dif > 8) {
+				DrawPrint("conFFexp: %.8g %.8g %.8g %.8g\n", a, ref, tst, old);
+				while(True) {} }
+#endif
+			old = tst;
+		}
+	}
+}
+
+// consistency test (whether exponent is synchronous with mantissa)
+void Test_conFFlog(pTest_conFFexp invfnc, pTest_conFFlog reffnc, pTest_conFFlog fnc)
+{
+	DifMax = 0;
+	u32 e;
+	u32 xn;
+	int i;
+	float a, ref, tst, old;
+
+// Do not use exponent below 127-7 - it would lose its precision around 1.0
+
+	// positive number
+	for (e = 127-7; e <= 127+7; e++)
+	{
+		old = Test_MMaxF();
+		a = invfnc(Test_u32float(e << 23));
+		if (Test_IsOverF(ref)) continue;
+		xn = Test_floatu32(a);
+		for (i = -10; i <= 10; i++)
+		{
+			a = Test_u32float(xn + i);
+			ref = reffnc(a);
+			if (!Test_IsOverF(ref))
+			{
+				tst = fnc(a);
+				int dif = Text_CheckDifF(ref, tst);
+				if (tst < old) dif = 100;
+				if (dif > DifMax) DifMax = dif;
+#if 0
+				if (dif > 8) {
+					DrawPrint("conFFlog+: %.8g %.8g %.8g %.8g\n", a, ref, tst, old);
+					while(True) {} }
+#endif
+				old = tst;
+			}
+		}
+	}
+
+	// negative number
+	for (e = 127+7; e >= 127-7; e--)
+	{
+		old = Test_MMaxF();
+		a = invfnc(Test_u32float((e << 23) | B31));
+		if (Test_IsOverF(ref)) continue;
+		xn = Test_floatu32(a);
+		for (i = 10; i >= -10; i--)
+		{
+			a = Test_u32float(xn + i);
+			ref = reffnc(a);
+			if (!Test_IsOverF(ref))
+			{
+				tst = fnc(a);
+				int dif = Text_CheckDifF(ref, tst);
+				if (tst < old) dif = 100;
+				if (dif > DifMax) DifMax = dif;
+#if 0
+				if (dif > 8) {
+					DrawPrint("conFFlog-: %.8g %.8g %.8g %.8g\n", a, ref, tst, old);
+					while(True) {} }
+#endif
+				old = tst;
+			}
+		}
+	}
+}
+
+// sqrtf() constistency check
+void Test_conFF_sqrtf() { Test_conFFsqrt(Ref_fsqr, Ref_sqrtf, sqrtf); }
+
+// expf() constistency check
+void Test_conFF_expf() { Test_conFFexp(Ref_logf, Ref_expf, expf); }
+void Test_conFF_exp2f() { Test_conFFexp(Ref_log2f, Ref_exp2f, exp2f); }
+void Test_conFF_exp10f() { Test_conFFexp(Ref_log10f, Ref_exp10f, exp10f); }
+
+// logf() constistency check
+void Test_conFF_logf() { Test_conFFlog(Ref_expf, Ref_logf, logf); }
+void Test_conFF_log2f() { Test_conFFlog(Ref_exp2f, Ref_log2f, log2f); }
+void Test_conFF_log10f() { Test_conFFlog(Ref_exp10f, Ref_log10f, log10f); }

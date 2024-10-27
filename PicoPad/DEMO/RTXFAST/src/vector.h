@@ -35,7 +35,7 @@ public:
 	// set normalized vector (set length to 1)
 	void SetNorm(const V3 &v)
 	{
-		float r = (float)sqrtf_fast(v.x*v.x + v.y*v.y + v.z*v.z);
+		float r = (float)sqrtf(v.x*v.x + v.y*v.y + v.z*v.z);
 		if (r == 0)
 		{
 			x = y = 0;
@@ -72,13 +72,13 @@ public:
 	V3& operator *= (const float &k) { x *= k; y *= k; z *= k; return *this; }
 
 	// division
-	void Div(float k) { k = fdiv_fast(1.0f, k); x *= k; y *= k; z *= k; }
-	V3 operator / (float k) const { k = fdiv_fast(1.0f, k); return V3(x*k, y*k, z*k); }
-	V3& operator /= (float k) { k = fdiv_fast(1.0f, k); x *= k; y *= k; z *= k; return *this; }
+	void Div(float k) { k = fdiv(1.0f, k); x *= k; y *= k; z *= k; }
+	V3 operator / (float k) const { k = fdiv(1.0f, k); return V3(x*k, y*k, z*k); }
+	V3& operator /= (float k) { k = fdiv(1.0f, k); x *= k; y *= k; z *= k; return *this; }
 
 	// length of vector
 	float Len2() const { return x*x + y*y + z*z; }
-	float Len() const { return (float)sqrtf_fast(x*x + y*y + z*z); }
+	float Len() const { return (float)sqrtf(x*x + y*y + z*z); }
 
 	// distance of two vectors
 	float Dist2(const V3 &v) const
@@ -88,23 +88,23 @@ public:
 		float dz = z - v.z;
 		return dx*dx + dy*dy + dz*dz;
 	}
-	float FASTCODE NOFLASH(Dist)(const V3 &v) const { return (float)sqrtf_fast(Dist2(v)); }
+	float FASTCODE NOFLASH(Dist)(const V3 &v) const { return (float)sqrtf(Dist2(v)); }
 
 	// normalize vector (set length to 1)
 	void Norm()
 	{
-		float r = (float)sqrtf_fast(x*x + y*y + z*z);
+		float r = (float)sqrtf(x*x + y*y + z*z);
 		if (r == 0)
 			{ x = 0; y = 0; z = 1; }
 		else
-			{ r = fdiv_fast(1.0f, r); x *= r; y *= r; z *= r; }
+			{ r = fdiv(1.0f, r); x *= r; y *= r; z *= r; }
 	}
 
 	// scalar (dot) product V1.V2 (result is cosinus of angle of two vectors * lengths of vectors)
 	float FASTCODE NOFLASH(Dot)(const V3 &v) const { return x*v.x + y*v.y + z*v.z; }
 	float FASTCODE NOFLASH(Angle)(const V3 &v)
 	{
-		float r = (float)sqrtf_fast(Len2()*v.Len2());
+		float r = (float)sqrtf(Len2()*v.Len2());
 		if (r == 0) return 0;
 		return (float)acosf((x*v.x + y*v.y + z*v.z)/r);
 	}

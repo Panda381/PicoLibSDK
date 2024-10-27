@@ -977,6 +977,10 @@ INLINE EXP REALNAME(LnExt)(REAL* num, EXP exp) { return REALNAME(LnFromExt)(num,
 
 // === Exp(x)
 
+// @TODO: Verify that EXP functions do not cause curve inconsistency around the exponent change boundary.
+//  If the calculated mantissa exceeds the range 1.0..1.999x, values with 2x higher or lower value may appear.
+//  Precautions - either clip the mantissa range, or correct the exponent when overflow occurs (and check for exponent overflow).
+
 // natural exponent - Taylor serie
 //  Function uses 4 temporary numbers in the stack.
 // Takes on R-Pico:
@@ -1631,7 +1635,7 @@ void REALNAME(Pol2CartExt)(REAL* x, EXP* x_exp, REAL* y, EXP* y_exp,
 		const REAL* angle, EXP angle_exp, const REAL* radius, EXP radius_exp);
 void REALNAME(Pol2Cart)(REAL* x, REAL* y, const REAL* angle, const REAL* radius);
 
-// arcus cotangent (result is in range -PI/2..+PI/2)
+// arcus cotangent (result is in range 0..+PI)
 //  Function uses 7 temporary numbers in the stack.
 void REALNAME(ACoTanFrom)(REAL* num, const REAL* src);
 INLINE void REALNAME(ACoTan)(REAL* num) { REALNAME(ACoTanFrom)(num, num); }

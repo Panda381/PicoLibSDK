@@ -31,13 +31,13 @@
 // macro - .text.* section
 .macro section_text x
 .section .text.\x	// located in separate section .text.NAME
-.align 1,,		// align address to 2-byte boundary (required by instructions)
+.align 2,,		// align address to 4-byte boundary
 .endm
 
 // macro - .time_critical.* section
 .macro section_noflash x
 .section .time_critical.\x // located in separate section .time_critical.NAME
-.align 1,,		// align address to 2-byte boundary (required by instructions)
+.align 2,,		// align address to 4-byte boundary
 .endm
 
 // macro - .text.* data section

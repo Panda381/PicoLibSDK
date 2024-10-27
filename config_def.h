@@ -351,10 +351,6 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #define USE_USB_HOST_VENDOR	0		// use USB VENDOR Vendor specific device (host)
 #endif
 
-#ifndef USE_VFP
-#define USE_VFP		1		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
-#endif
-
 #ifndef USE_WATCHDOG
 #define USE_WATCHDOG	1		// use Watchdog timer (sdk_watchdog.c, sdk_watchdog.h)
 #endif
@@ -509,6 +505,56 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 
 #ifndef FONTH
 #define FONTH		16		// height of system font
+#endif
+
+// ----------------------------------------------------------------------------
+//                     Fast float functions
+// ----------------------------------------------------------------------------
+
+#ifndef USE_M33_VFP
+#define USE_M33_VFP	1		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
+#endif
+
+// float
+#ifndef USE_M33_SQRTF
+#define USE_M33_SQRTF	1		// RP2350-ARM sqrtf() function: 1=fast (recommended), 2=precise
+#endif
+
+#ifndef USE_M33_FDIV
+#define USE_M33_FDIV	1		// RP2350-ARM fdiv() function: 1=fast (recommended), 2=precise
+#endif
+
+#ifndef USE_RISCV_SQRTF
+#define USE_RISCV_SQRTF	1		// RISC-V sqrtf() function: 0=libc, 1=fast (recommended)
+#endif
+
+#ifndef USE_RISCV_EXPF
+#define USE_RISCV_EXPF	1		// RISC-V expf(), exp2f() and exp10f() function: 0=libc, 1=Chebyshev (recommended), 2=Taylor, 3=Cordic
+#endif
+
+#ifndef USE_RISCV_LOGF
+#define USE_RISCV_LOGF	1		// RISC-V logf(), log2f() and log10f() function: 0=libc, 1=Chebyshev (recommended), 2=Mercator, 3=Cordic
+#endif
+
+#ifndef USE_RISCV_SINF
+#define USE_RISCV_SINF	2		// RISC-V sinf(), cosf(), sincosf(), tanf(), cotanf() functions: 0=libc, 1=Chebyshev, 2=Taylor (recommended), 3=Cordic
+#endif
+
+#ifndef USE_RISCV_ASINF
+#define USE_RISCV_ASINF	2		// RISC-V asinf(), acosf() functions: 0=libc, 2=Taylor (recommended), 3=Cordic
+#endif
+
+#ifndef USE_RISCV_ATANF
+#define USE_RISCV_ATANF	1		// RISC-V atanf(), acotanf(), atan2f() functions: 0=libc, 1=Chebyshev (recommended), 3=Cordic
+#endif
+
+// double
+#ifndef USE_M33_SQRT
+#define USE_M33_SQRT	1		// RP2350-ARM sqrt() function: 1=fast (recommended), 2=precise
+#endif
+
+#ifndef USE_M33_DDIV
+#define USE_M33_DDIV	1		// RP2350-ARM ddiv() function: 1=fast (recommended), 2=precise
 #endif
 
 // ----------------------------------------------------------------------------

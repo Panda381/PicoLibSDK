@@ -57,7 +57,8 @@ Bool isoddintf(float num);
 Bool ispow2f(float num);
 
 // round to given number of significant digits (digits<=0 to use default number of digits)
-float rounddigf(float x, int digits);
+// @TODO: probably will be deleted (accuracy cannot be guaranteed)
+//float rounddigf(float x, int digits);
 
 // Check if comparison is unordered (either input is NaN)
 Bool fcmpun(float x, float y);
@@ -111,6 +112,9 @@ void sincosf_deg(float x, float* psin, float* pcos);
 // tangent in degrees
 float tanf_deg(float x);
 
+// cotangent in degrees
+float cotanf_deg(float x);
+
 // arc sine in radians
 float asinf(float x);
 
@@ -124,13 +128,19 @@ float acosf(float x);
 float acosf_deg(float x);
 
 // RISC-V: atanf cannot be implemented this way because atanf is internally called from atan2f in libc
-#if !RISCV
+//#if !RISCV
 // arc tangent in radians
 float atanf(float x);
-#endif
+//#endif
 
 // arc tangent in degrees
 float atanf_deg(float x);
+
+// arc cotangent in radians
+float acotanf(float x);
+
+// arc cotangent in degrees
+float acotanf_deg(float x);
 
 // arc tangent of y/x in degrees
 float atan2f_deg(float y, float x);
@@ -222,14 +232,17 @@ float fsub(float x, float y);
 // Multiplication, x * y
 float fmul(float x, float y);
 
+// Multiply by unsigned integer u16, x * n
+//float fmulu16(float x, u16 n);
+
 // Square, x^2 
 float fsqr(float x);
 
 // Division, x / y
 float fdiv(float x, float y);
 
-// Fast division, x / y (less precise rounding)
-INLINE float fdiv_fast(float x, float y) { return fdiv(x, y); }
+// Divide by unsigned integer u16, x / n
+//float fdivu16(float x, u16 n);
 
 // Reciprocal 1 / x
 float frec(float x);
@@ -336,9 +349,6 @@ u64 float2ufix64(float num, int e);
 // Square root
 float sqrtf(float x);
 
-// Fast square root (less precise rounding)
-INLINE float sqrtf_fast(float x) { return sqrtf(x); }
-
 // sine in radians
 float sinf(float x);
 
@@ -350,6 +360,9 @@ void sincosf(float x, float* psin, float* pcos);
 
 // tangent in radians
 float tanf(float x);
+
+// cotangent in radians
+float cotanf(float x);
 
 // arc tangent of y/x in radians
 float atan2f(float y, float x);
@@ -379,14 +392,17 @@ float fsub(float x, float y);
 // Multiplication, x * y
 float fmul(float x, float y);
 
+// Multiply by unsigned integer u16, x * n
+//INLINE float fmulu16(float x, u16 n) { return x * n; }
+
 // Square, x^2 
 INLINE float fsqr(float x) { return x * x; }
 
 // Division, x / y
 float fdiv(float x, float y);
 
-// Fast division, x / y (less precise rounding)
-float fdiv_fast(float x, float y);
+// Divide by unsigned integer u16, x / n
+//INLINE float fdivu16(float x, u16 n) { return x / n; }
 
 // Reciprocal 1 / x
 INLINE float frec(float x) { return 1.0f / x; }
@@ -492,9 +508,6 @@ u64 float2ufix64(float num, int e);
 // Square root
 float sqrtf(float x);
 
-// Fast square root (less precise rounding)
-float sqrtf_fast(float x);
-
 // sine in radians
 float sinf(float x);
 
@@ -506,6 +519,9 @@ void sincosf(float x, float* psin, float* pcos);
 
 // tangent in radians
 float tanf(float x);
+
+// cotangent in radians
+float cotanf(float x);
 
 // arc tangent of y/x in radians
 float atan2f(float y, float x);
@@ -538,6 +554,9 @@ float fsub(float x, float y);
 float __mulsf3(float x, float y);
 float fmul(float x, float y);
 
+// Multiply by unsigned integer u16, x * n
+//INLINE float fmulu16(float x, u16 n) { return x * n; }
+
 // Square, x^2 
 INLINE float fsqr(float x) { return x * x; }
 
@@ -545,8 +564,8 @@ INLINE float fsqr(float x) { return x * x; }
 float __divsf3(float x, float y);
 float fdiv(float x, float y);
 
-// Fast division, x / y (less precise rounding)
-INLINE float fdiv_fast(float x, float y) { return fdiv(x, y); }
+// Divide by unsigned integer u16, x / n
+//INLINE float fdivu16(float x, u16 n) { return x / n; }
 
 // Reciprocal 1 / x
 INLINE float frec(float x) { return 1.0f / x; }
@@ -574,108 +593,84 @@ INLINE Bool fcmpgt(float x, float y) { return x > y; }
 // ==== convert integer to float
 
 // Convert signed int to float
-INLINE float i2f(s32 num) { return (float)num; }
-INLINE float int2float(s32 num) { return (float)num; }
+float i2f(s32 num);
+float int2float(s32 num);
 
 // Convert unsigned int to float
-INLINE float ui2f(u32 num) { return (float)num; }
-INLINE float uint2float(u32 num) { return (float)num; }
+float ui2f(u32 num);
+float uint2float(u32 num);
 
 // Convert 64-bit signed int to float
-INLINE float l2f(s64 num) { return (float)num; }
-INLINE float int642float(s64 num) { return (float)num; }
+float l2f(s64 num);
+float int642float(s64 num);
 
 // Convert 64-bit unsigned int to float
-INLINE float ul2f(s64 num) { return (float)num; }
-INLINE float uint642float(u64 num) { return (float)num; }
+float ul2f(s64 num);
+float uint642float(u64 num);
 
 // Convert signed fixed point to float
 //  e = number of bits of fractional part (binary exponent)
-INLINE float fix2float(s32 num, int e) { return ldexpf((float)num, -e); }
+float fix2float(s32 num, int e);
 
 // Convert unsigned fixed point to float
 //  e = number of bits of fractional part (binary exponent)
-INLINE float ufix2float(u32 num, int e) { return ldexpf((float)num, -e); }
+float ufix2float(u32 num, int e);
 
 // Convert 64-bit signed fixed point to float
 //  e = number of bits of fractional part (binary exponent)
-INLINE float fix642float(s64 num, int e) { return ldexpf((float)num, -e); }
+float fix642float(s64 num, int e);
 
 // Convert 64-bit unsigned fixed point to float
 //  e = number of bits of fractional part (binary exponent)
-INLINE float ufix642float(u64 num, int e) { return ldexpf((float)num, -e); }
+float ufix642float(u64 num, int e);
 
 // ==== convert float to integer
 
 // Convert float to signed int, rounding to zero (C-style int conversion)
-INLINE s32 f2iz(float num) { return (s32)num; }
-INLINE s32 float2int_z(float num) { return (s32)num; }
+s32 f2iz(float num);
+s32 float2int_z(float num);
 
 // Convert float to signed int, rounding down
-INLINE s32 f2i(float num) { return (s32)floorf(num); }
-INLINE s32 float2int(float num) { return (s32)floorf(num); }
+s32 f2i(float num);
+s32 float2int(float num);
 
 // Convert float to unsigned int, rounding down
-INLINE u32 f2ui(float num)
-{
-	s64 nn = (s64)num;
-	if (nn < 0) return 0;
-	if (nn > 0xffffffffull) return 0xfffffffful;
-	return (u32)nn;
-}
-INLINE u32 float2uint(float num) { return f2ui(num); }
+u32 f2ui(float num);
+u32 float2uint(float num);
+
 
 // Convert float to 64-bit signed int, rounding to zero (C-style int conversion)
-INLINE s64 f2lz(float num)
-{
-	u32 n = *(u32*)&num;
-	if ((s32)n >= 0) // num >= 0
-	{
-		if (n >= 0x5f000000ul) return 0x7fffffffffffffffll; // overflow
-	}
-	else // num < 0
-	{
-		if (n >= 0xdf000000ul) return 0x8000000000000000ll; // underflow
-	}
-	return (s64)num;
-}
-INLINE s64 float2int64_z(float num) { return f2lz(num); }
+s64 f2lz(float num);
+s64 float2int64_z(float num);
 
 // Convert float to 64-bit signed int, rounding down
-INLINE s64 f2l(float num) { return f2lz(floorf(num)); }
-INLINE s64 float2int64(float num) { return f2l(num); }
+s64 f2l(float num);
+s64 float2int64(float num);
 
 // Convert float to 64-bit unsigned int, rounding down
-INLINE u64 f2ul(float num)
-{
-	if (num < 0) return 0;
-	return (u64)num;
-}
-INLINE u64 float2uint64(float num) { return f2ul(num); }
+u64 f2ul(float num);
+u64 float2uint64(float num);
 
 // Convert float to signed fixed point, rounding down
 //  e = number of bits of fractional part (binary exponent)
-INLINE s32 float2fix(float num, int e) { return f2i(ldexpf(num, e)); }
+s32 float2fix(float num, int e);
 
 // Convert float to unsigned fixed point, rounding down
 //  e = number of bits of fractional part (binary exponent)
-INLINE u32 float2ufix(float num, int e) { return f2ui(ldexpf(num, e)); }
+u32 float2ufix(float num, int e);
 
 // Convert float to 64-bit signed fixed point, rounding down
 //  e = number of bits of fractional part (binary exponent)
-INLINE s64 float2fix64(float num, int e) { return f2l(ldexpf(num, e)); }
+s64 float2fix64(float num, int e);
 
 // Convert float to 64-bit unsigned fixed point, rounding down
 //  e = number of bits of fractional part (binary exponent)
-INLINE u64 float2ufix64(float num, int e) { return f2ul(ldexpf(num, e)); }
+u64 float2ufix64(float num, int e);
 
 // ==== scientific functions
 
 // Square root
 float sqrtf(float x);
-
-// Fast square root (less precise rounding)
-INLINE float sqrtf_fast(float x) { return sqrtf(x); }
 
 // sine in radians
 float sinf(float x);
@@ -688,6 +683,9 @@ void sincosf(float x, float* psin, float* pcos);
 
 // tangent in radians
 float tanf(float x);
+
+// cotangent in radians
+float cotanf(float x);
 
 // arc tangent of y/x in radians
 float atan2f(float y, float x);
@@ -725,14 +723,17 @@ INLINE float fsub(float x, float y) { return x - y; }
 // Multiplication, x * y
 INLINE float fmul(float x, float y) { return x * y; }
 
+// Multiply by unsigned integer u16, x * n
+//INLINE float fmulu16(float x, u16 n) { return x * n; }
+
 // Square, x^2 
 INLINE float fsqr(float x) { return x * x; }
 
 // Division, x / y
 INLINE float fdiv(float x, float y) { return x / y; }
 
-// Fast division, x / y (less precise rounding)
-INLINE float fdiv_fast(float x, float y) { return fdiv(x, y); }
+// Divide by unsigned integer u16, x / n
+//INLINE float fdivu16(float x, u16 n) { return x / n; }
 
 // Reciprocal 1 / x
 INLINE float frec(float x) { return 1.0f / x; }
@@ -860,47 +861,56 @@ INLINE u64 float2ufix64(float num, int e) { return f2ul(ldexpf(num, e)); }
 // Square root
 float sqrtf(float x);
 
-// Fast square root (less precise rounding)
-INLINE float sqrtf_fast(float x) { return sqrtf(x); }
-
 // sine in radians
 float sinf(float x);
 
 // sine in degrees
-INLINE float sinf_deg(float x) { return sinf(deg2radf(x)); }
+float sinf_deg(float x);
 
 // cosine in radians
 float cosf(float x);
 
 // cosine in degrees
-INLINE float cosf_deg(float x) { return cosf(deg2radf(x)); }
+float cosf_deg(float x);
 
 // sine-cosine in radians
 void sincosf(float x, float* psin, float* pcos);
 
 // sine-cosine in degrees
-INLINE void sincosf_deg(float x, float* psin, float* pcos) { sincosf(deg2radf(x), psin, pcos); }
+void sincosf_deg(float x, float* psin, float* pcos);
 
 // tangent in radians
 float tanf(float x);
 
 // tangent in degrees
-INLINE float tanf_deg(float x) { return tanf(deg2radf(x)); }
+float tanf_deg(float x);
+
+// cotangent
+float cotanf(float x);
+
+// cotangent in degrees
+float cotanf_deg(float x);
 
 // arc sine in degrees
-INLINE float asinf_deg(float x) { return rad2degf(asinf(x)); }
+float asinf_deg(float x);
 
 // arc cosine in degrees
-INLINE float acosf_deg(float x) { return rad2degf(acosf(x)); }
+float acosf_deg(float x);
 
 // arc tangent of y/x in radians
 float atan2f(float y, float x);
 
 // arc tangent in degrees
-INLINE float atanf_deg(float x) { return rad2degf(atanf(x)); }
+float atanf_deg(float x);
+
+// arc cotangent in radians
+float acotanf(float x);
+
+// arc cotangent in degrees
+float acotanf_deg(float x);
 
 // arc tangent of y/x in degrees
-INLINE float atan2f_deg(float y, float x) { return rad2degf(atan2f(y, x)); }
+float atan2f_deg(float y, float x);
 
 // Natural exponent
 float expf(float x);

@@ -424,7 +424,7 @@ float MyRandTestFloat()
 
 	// mode 7 bits (faster special cases)
 	int mode = flags & 0x7f;
-#if !CHECK_NOINF		// 1 = disable check of infinity ranges
+#if CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
 	if (mode == 0)
 		return Test_PInfF(); // +1.#INF
 	else if (mode == 1)
@@ -441,7 +441,7 @@ float MyRandTestFloat()
 
 	// exponent 8 bits
 	int exp = flags >> (32-8);
-#if !CHECK_NOINF		// 1 = disable check of infinity ranges
+#if !CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
 	if (exp == FLOAT_EXPINF) exp = FLOAT_EXP1;
 #endif
 
@@ -472,7 +472,7 @@ float MyRandTestFloatMinMax(u8 expmin, u8 expmax)
 
 	// mode 7 bits (faster special cases)
 	int mode = flags & 0x7f;
-#if !CHECK_NOINF		// 1 = disable check of infinity ranges
+#if CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
 	if (mode == 0)
 		return Test_PInfF(); // +1.#INF
 	else if (mode == 1)
@@ -489,7 +489,7 @@ float MyRandTestFloatMinMax(u8 expmin, u8 expmax)
 
 	// exponent 8 bits
 	int exp = MyRandU8MinMax(expmin, expmax);
-#if !CHECK_NOINF		// 1 = disable check of infinity ranges
+#if !CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
 	while (exp == FLOAT_EXPINF) exp = MyRandU8MinMax(expmin, expmax);
 #endif
 
@@ -520,7 +520,7 @@ double MyRandTestDouble()
 
 	// mode 7 bits (faster special cases)
 	int mode = flags & 0x7f;
-#if !CHECK_NOINF		// 1 = disable check of infinity ranges
+#if CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
 	if (mode == 0)
 		return Test_PInfD(); // +1.#INF
 	else if (mode == 1)
@@ -537,7 +537,7 @@ double MyRandTestDouble()
 
 	// exponent 11 bits
 	int exp = flags >> (32-11);
-#if !CHECK_NOINF		// 1 = disable check of infinity ranges
+#if !CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
 	if (exp == DOUBLE_EXPINF) exp = DOUBLE_EXP1;
 #endif
 
@@ -567,7 +567,7 @@ double MyRandTestDoubleMinMax(u16 expmin, u16 expmax)
 
 	// mode 7 bits (faster special cases)
 	int mode = flags & 0x7f;
-#if !CHECK_NOINF		// 1 = disable check of infinity ranges
+#if CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
 	if (mode == 0)
 		return Test_PInfD(); // +1.#INF
 	else if (mode == 1)
@@ -584,7 +584,7 @@ double MyRandTestDoubleMinMax(u16 expmin, u16 expmax)
 
 	// exponent 11 bits
 	int exp = MyRandU16MinMax(expmin, expmax);
-#if !CHECK_NOINF		// 1 = disable check of infinity ranges
+#if !CHECK_FULLRANGE		// 1=check full range (incl. inf), 0=check precision and speed
 	while (exp == DOUBLE_EXPINF) exp = MyRandU16MinMax(expmin, expmax);
 #endif
 

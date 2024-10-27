@@ -219,6 +219,8 @@ Bool MYPREFIX(ispow2f)(float x)
 }
 
 // round to given number of significant digits (digits<=0 to use default number of digits)
+// @TODO: probably will be deleted (accuracy cannot be guaranteed)
+/*
 float MYPREFIX(rounddigf)(float x, int digits)
 {
 	// invalid values
@@ -239,14 +241,67 @@ float MYPREFIX(rounddigf)(float x, int digits)
 	if (neg) x = -x;
 	return x;
 }
-
-#if RISCV || USE_FLOATLIBC
+*/
+#if USE_FLOATLIBC || RISCV
 // Check if comparison is unordered (either input is NaN)
 Bool MYPREFIX(fcmpun)(float x, float y)
 {
 	return fisnan(x) || fisnan(y);
 }
 #endif
+
+#if USE_FLOATLIBC || !RISCV || (USE_RISCV_SINF==0) || (USE_RISCV_SINF==3)
+// sine in degrees
+float MYPREFIX(sinf_deg)(float x) { return sinf(deg2radf(x)); }
+
+// cosine in degrees
+float MYPREFIX(cosf_deg)(float x) { return cosf(deg2radf(x)); }
+
+// sine-cosine in degrees
+void MYPREFIX(sincosf_deg)(float x, float* psin, float* pcos) { sincosf(deg2radf(x), psin, pcos); }
+
+// tangent in degrees
+float MYPREFIX(tanf_deg)(float x) { return tanf(deg2radf(x)); }
+
+// cotangent in degrees
+float MYPREFIX(cotanf_deg)(float x) { return cotanf(deg2radf(x)); }
+#endif
+
+#if USE_FLOATLIBC || !RISCV || (USE_RISCV_SINF==0)
+// cotangent
+float MYPREFIX(cotanf)(float x) { return frec(tanf(x)); }
+#endif
+
+#if USE_FLOATLIBC || !RISCV || (USE_RISCV_ASINF!=2)
+// arc sine in degrees
+float MYPREFIX(asinf_deg)(float x) { return rad2degf(asinf(x)); }
+
+
+// arc cosine in degrees
+float MYPREFIX(acosf_deg)(float x) { return rad2degf(acosf(x)); }
+#endif
+
+#if USE_FLOATLIBC || !RISCV || (USE_RISCV_ATANF!=1)
+// arc cotangent in radians
+float acotanf(float x)
+{
+	if (fgetexp(x) >= 127+20) return fisneg(x) ? PIf : frec(x);
+	return (float)(PI/2) - atanf(x);
+}
+
+// arc cotangent in degrees
+float acotanf_deg(float x)
+{
+	if (fgetexp(x) >= 127+20) return fisneg(x) ? 180 : rad2degf(frec(x));
+	return 90.0f - atanf_deg(x);
+}
+
+// arc tangent in degrees
+float MYPREFIX(atanf_deg)(float x) { return rad2degf(atanf(x)); }
+#endif
+
+// arc tangent of y/x in degrees
+float MYPREFIX(atan2f_deg)(float y, float x) { return rad2degf(atan2f(y, x)); }
 
 // ----------------------------------------------------------------------------
 //                 Common functions - faster alternative to libc
@@ -446,18 +501,7 @@ float MYPREFIX(WRAPPER_FUNC(ceilf))(float x)
 
 // ==== scientific functions
 
-// sine in degrees
-float MYPREFIX(sinf_deg)(float x) { return sinf(deg2radf(x)); }
-
-// cosine in degrees
-float MYPREFIX(cosf_deg)(float x) { return cosf(deg2radf(x)); }
-
-// sine-cosine in degrees
-void MYPREFIX(sincosf_deg)(float x, float* psin, float* pcos) { sincosf(deg2radf(x), psin, pcos); }
-
-// tangent in degrees
-float MYPREFIX(tanf_deg)(float x) { return tanf(deg2radf(x)); }
-
+#if !RISCV || (USE_RISCV_ASINF!=2)
 // arc sine
 float MYPREFIX(WRAPPER_FUNC(asinf))(float x)
 {
@@ -470,9 +514,6 @@ float MYPREFIX(WRAPPER_FUNC(asinf))(float x)
 	return atan2f(x, sqrtf(u));
 }
 
-// arc sine in degrees
-float MYPREFIX(asinf_deg)(float x) { return rad2degf(asinf(x)); }
-
 // arc cosine
 float MYPREFIX(WRAPPER_FUNC(acosf))(float x)
 {
@@ -483,12 +524,101 @@ float MYPREFIX(WRAPPER_FUNC(acosf))(float x)
 	// get acosf from atan2f
 	return atan2f(sqrtf(u), x);
 }
+#endif
 
-// arc cosine in degrees
-float MYPREFIX(acosf_deg)(float x) { return rad2degf(acosf(x)); }
+#if RISCV && (USE_RISCV_ATANF == 1)
+// arc tangent of y/x in radians
+float MYPREFIX(WRAPPER_FUNC(atan2f))(float y, float x)
+{
+	// get exponents
+	int ex = fgetexp(x);
+	int ey = fgetexp(y);
+
+	// get signs
+	Bool sx = fisneg(x);
+	Bool sy = fisneg(y);
+	
+	// y is infinity
+	float res;
+	if (ey == 255)
+	{
+		// prepare result PI/2
+		res = (float)(PI/2);
+
+		// x is infinity too - result is PI/4
+		if (ex == 255) res = (float)(PI/4);
+	}
+	else
+	{
+		// x is infinity, y is not - result is 0
+		if (ex == 255)
+			res = 0;
+		else
+		{
+			// y is zero - result is 0
+			if (ey == 0)
+				res = 0;
+			else
+			{
+				// x is zero - result is pi/2
+				if (ex == 0)
+					res = (float)(PI/2);
+				// x and y are in usual range
+				else
+				{
+					// calculate atan(y/x)
+					float a = y/x;
+					res = atanf(a);
+					if (fisneg(res)) res = fneg(res);
+				}
+			}
+		}
+	}
+
+	// shift result by X value (= PI - num)
+	if (sx) res = (float)PI - res;
+
+	// set sign by the Y
+	if (sy) res = fneg(res);
+
+	return res;
+}
+#endif
+
+#if /*USE_FLOATLIBC ||*/ !RISCV || (USE_RISCV_EXPF == 0) || (USE_RISCV_EXPF == 3)
+// exponent with base 2
+float MYPREFIX(WRAPPER_FUNC(exp2f))(float x)
+{
+	// exp(x * log(2))
+	return expf(x*LOG2f);
+}
+
+// exponent with base 10
+float MYPREFIX(WRAPPER_FUNC(exp10f))(float x)
+{
+	// exp(x * log(10))
+	return expf(x*LOG10f);
+}
+#endif
+
+#if /*USE_FLOATLIBC ||*/ !RISCV || (USE_RISCV_LOGF == 0) || (USE_RISCV_LOGF == 3)
+// logarithm with base 2
+float MYPREFIX(WRAPPER_FUNC(log2f))(float x)
+{
+	// log(x) / log(2)
+	return logf(x)*LOG2Ef;
+}
+
+// logarithm with base 10
+float MYPREFIX(WRAPPER_FUNC(log10f))(float x)
+{
+	// log(x) / log(10)
+	return logf(x)*LOG10Ef;
+}
+#endif
 
 // RISC-V: atanf cannot be implemented this way because atanf is internally called from atan2f in libc
-#if !RISCV
+#if !RISCV || (USE_RISCV_ATANF == 3)
 // arc tangent
 float MYPREFIX(WRAPPER_FUNC(atanf))(float x)
 {
@@ -502,16 +632,11 @@ float MYPREFIX(WRAPPER_FUNC(atanf))(float x)
 }
 #endif // !RISCV
 
-// arc tangent in degrees
-float MYPREFIX(atanf_deg)(float x) { return rad2degf(atanf(x)); }
-
-// arc tangent of y/x in degrees
-float MYPREFIX(atan2f_deg)(float y, float x) { return rad2degf(atan2f(y, x)); }
-
 // hyperbolic sine
 float MYPREFIX(WRAPPER_FUNC(sinhf))(float x)
 {
-	if (fiszero(x)) return x; // zero
+	int e = fgetexp(x);
+	if (e < 127 - 9) return x;
 
 	// (e^x - e^-x)/2
 	return ldexpf(expf(x) - expf(fneg(x)), -1);
@@ -527,13 +652,11 @@ float MYPREFIX(WRAPPER_FUNC(coshf))(float x)
 // hyperbolic tangent
 float MYPREFIX(WRAPPER_FUNC(tanhf))(float x)
 {
-	if (fiszero(x)) return x; // zero
-
-	// get exponent
 	int e = fgetexp(x);
+	if (e < 127 - 9) return x;
 
 	// check big number
-	if (e >= 4+0x7f) // check exponent 4 (+ bias 127); number abs(x) >= 16?
+	if (e >= 127 + 4) // check exponent 4 (+ bias 127); number abs(x) >= 16?
 	{
 		if (!fisneg(x)) return 1;  // limit positive result to 1
 		return -1; // limit negative result to -1
@@ -547,13 +670,11 @@ float MYPREFIX(WRAPPER_FUNC(tanhf))(float x)
 // inverse hyperbolic sine
 float MYPREFIX(WRAPPER_FUNC(asinhf))(float x)
 {
-	if (fiszero(x)) return x; // zero
-
-	// get exponent
 	int e = fgetexp(x);
+	if (e < 127 - 8) return x;
 
 	// check big number
-	if (e >= 16+0x7f) // check exponent 16 (+ bias 127); number abs(x) >= 2^16?
+	if (e >= 127 + 16) // check exponent 16 (+ bias 127); number abs(x) >= 2^16?
 	{
 		if (!fisneg(x)) return logf(x) + LOG2f;  // 1/x^2 << 1
 		return fneg(logf(fneg(x)) + LOG2f); // 1/x^2 << 1
@@ -587,51 +708,26 @@ float MYPREFIX(WRAPPER_FUNC(acoshf))(float x)
 // inverse hyperbolic tangent
 float MYPREFIX(WRAPPER_FUNC(atanhf))(float x)
 {
-	if (fiszero(x)) return x; // zero
+	int e = fgetexp(x);
+	if (e < 127 - 8) return x;
 
 	// log((1 + x) / (1 - x)) / 2
 	return ldexpf(logf((1.0f + x)/(1.0f - x)), -1);
 }
 
-// exponent with base 2
-float MYPREFIX(WRAPPER_FUNC(exp2f))(float x)
-{
-	// exp(x * log(2))
-	return expf(x*LOG2f);
-}
-
-// logarithm with base 2
-float MYPREFIX(WRAPPER_FUNC(log2f))(float x)
-{
-	// log(x) / log(2)
-	return logf(x)*LOG2Ef;
-}
-
-// exponent with base 10
-float MYPREFIX(WRAPPER_FUNC(exp10f))(float x)
-{
-	// exp(x * log(10))
-	return expf(x*LOG10f);
-}
-
-// logarithm with base 10
-float MYPREFIX(WRAPPER_FUNC(log10f))(float x)
-{
-	// log(x) / log(10)
-	return logf(x)*LOG10Ef;
-}
-
 // expf(x) - 1
 float MYPREFIX(WRAPPER_FUNC(expm1f))(float x)
 {
-	if (fiszero(x)) return 0.0f; // zero
+	int e = fgetexp(x);
+	if (e < 127 - 15) return x;
+
 	return expf(x) - 1;
 }
 
 // logf(x + 1)
 float MYPREFIX(WRAPPER_FUNC(log1pf))(float x)
 {
-	if (fgetexp(x) < 0x3f - 12) return x;
+	if (fgetexp(x) < 127 - 12) return x;
 	return logf(1 + x);
 }
 

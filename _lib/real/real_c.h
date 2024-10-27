@@ -6780,6 +6780,10 @@ void REALNAME(Ln_ChebyshevFrom)(REAL* num, const REAL* src)
 //  exp(x) = 1 + x/1! + x^2/2! + x^3/3! + x^4/4! + x^5/5! + ...
 //  Function uses 4 temporary numbers in the stack.
 
+// @TODO: Verify that EXP functions do not cause curve inconsistency around the exponent change boundary.
+//  If the calculated mantissa exceeds the range 1.0..1.999x, values with 2x higher or lower value may appear.
+//  Precautions - either clip the mantissa range, or correct the exponent when overflow occurs (and check for exponent overflow).
+
 void REALNAME(Exp_TaylorFrom_old)(REAL* num, const REAL* src)
 {
 	REAL x, res;
@@ -6863,6 +6867,10 @@ void REALNAME(Exp_TaylorFrom_old)(REAL* num, const REAL* src)
 		REALNAME(SetInf)(num);
 		return;
 	}
+
+// @TODO: Verify that EXP functions do not cause curve inconsistency around the exponent change boundary.
+//  If the calculated mantissa exceeds the range 1.0..1.999x, values with 2x higher or lower value may appear.
+//  Precautions - either clip the mantissa range, or correct the exponent when overflow occurs (and check for exponent overflow).
 
 	// set exponent and copy result
 	REALNAME(SetExpS)(&res, exps);
@@ -6964,6 +6972,10 @@ EXP REALNAME(Exp_TaylorFromExt)(REAL* num, const REAL* src, EXP src_exp)
 		return EXPEXT_INF;
 	}
 
+// @TODO: Verify that EXP functions do not cause curve inconsistency around the exponent change boundary.
+//  If the calculated mantissa exceeds the range 1.0..1.999x, values with 2x higher or lower value may appear.
+//  Precautions - either clip the mantissa range, or correct the exponent when overflow occurs (and check for exponent overflow).
+
 	// copy result
 	REALNAME(Copy)(num, &res);
 
@@ -6982,6 +6994,10 @@ void REALNAME(Exp_TaylorFrom)(REAL* num, const REAL* src)
 //                 natural exponent - Chebyshev approximation
 // ---------------------------------------------------------------------------
 //  Returns number of iteration loops.
+
+// @TODO: Verify that EXP functions do not cause curve inconsistency around the exponent change boundary.
+//  If the calculated mantissa exceeds the range 1.0..1.999x, values with 2x higher or lower value may appear.
+//  Precautions - either clip the mantissa range, or correct the exponent when overflow occurs (and check for exponent overflow).
 
 #ifdef CHEB_EXP
 EXP REALNAME(Exp_ChebyshevFromExt)(REAL* num, const REAL* src, EXP src_exp)
@@ -7046,6 +7062,10 @@ EXP REALNAME(Exp_ChebyshevFromExt)(REAL* num, const REAL* src, EXP src_exp)
 		REALNAME(SetInfExt)(num);
 		return EXPEXT_INF;
 	}
+
+// @TODO: Verify that EXP functions do not cause curve inconsistency around the exponent change boundary.
+//  If the calculated mantissa exceeds the range 1.0..1.999x, values with 2x higher or lower value may appear.
+//  Precautions - either clip the mantissa range, or correct the exponent when overflow occurs (and check for exponent overflow).
 
 	return exps;
 }
@@ -10011,7 +10031,7 @@ void REALNAME(Pol2Cart)(REAL* x, REAL* y, const REAL* angle, const REAL* radius)
 }
 
 // ---------------------------------------------------------------------------
-//          arcus cotangent (result is in range -PI/2..+PI/2)
+//          arcus cotangent (result is in range 0..+PI)
 // ---------------------------------------------------------------------------
 //  Function uses 7 temporary numbers in the stack.
 

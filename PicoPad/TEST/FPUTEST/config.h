@@ -39,7 +39,19 @@
 #define USE_DOUBLE	2
 #endif
 
-#define USE_VFP		1		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
+//#define USE_M33_VFP		1		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
+// float:
+//#define USE_M33_SQRTF		1		// RP2350-ARM sqrtf() function: 1=fast (recommended), 2=precise
+//#define USE_M33_FDIV		1		// RP2350-ARM fdiv() function: 1=fast (recommended), 2=precise
+//#define USE_RISCV_SQRTF	1		// RISC-V sqrtf() function: 0=libc, 1=fast (recommended)
+//#define USE_RISCV_EXPF	1		// RISC-V expf(), exp2f() and exp10f() function: 0=libc, 1=Chebyshev (recommended), 2=Taylor, 3=Cordic
+//#define USE_RISCV_LOGF	1		// RISC-V logf(), log2f() and log10f() function: 0=libc, 1=Chebyshev (recommended), 2=Mercator, 3=Cordic
+//#define USE_RISCV_SINF	1		// RISC-V sinf(), cosf(), sincosf(), tanf(), cotanf() functions: 0=libc, 1=Chebyshev, 2=Taylor (recommended), 3=Cordic
+//#define USE_RISCV_ASINF	2		// RISC-V asinf(), acosf() functions: 0=libc, 2=Taylor (recommended), 3=Cordic
+//#define USE_RISCV_ATANF	1		// RISC-V atanf(), acotanf(), atan2f() functions: 0=libc, 1=Chebyshev (recommended), 3=Cordic
+// double:
+//#define USE_M33_SQRT		1		// RP2350-ARM sqrt() function: 1=fast (recommended), 2=precise
+//#define USE_M33_DDIV		1		// RP2350-ARM ddiv() function: 1=fast (recommended), 2=precise
 
 //#define USE_USBPAD		1		// simulate keypad with USB keyboard
 //#define USE_USBPORT		1		// use USB Mini-Port (sdk_usbport.c, sdk_usbport.h)

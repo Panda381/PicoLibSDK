@@ -834,6 +834,7 @@ History of versions
 	Simple PC DOS emulator.
 06/14/2024 version 1.13: Game Boy Emulator
 10/08/2024 version 2.00: RP2350 Pico 2 support
+10/27/2024 version 2.01: Fast float library for RISC-V Hazard3 core.
 
 
 Missing and @TODO

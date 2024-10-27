@@ -33,18 +33,18 @@ int StrComp(const char* text1, const char* text2);
 
 #if USE_FLOAT		// use float support 1=in RAM, 2=in Flash 
 // check special float numbers
-INLINE Bool CheckInfF(float num) { return ((u16*)&num)[1] == 0x7f80; } // 1#INF
-INLINE Bool CheckSInfF(float num) { return ((u16*)&num)[1] == 0xff80; } // -1#INF
-INLINE Bool CheckNanF(float num) { return ((u16*)&num)[1] == 0x7fc0; } // 1#NAN
-INLINE Bool CheckSNanF(float num) { return ((u16*)&num)[1] == 0xffc0; } // -1#NAN
+INLINE Bool CheckInfF(float num)  { return (*(u32*)&num>>22) == (0x7f800000>>22); } // +1#INF
+INLINE Bool CheckSInfF(float num) { return (*(u32*)&num>>22) == (0xff800000>>22); } // -1#INF
+INLINE Bool CheckNanF(float num)  { return (*(u32*)&num>>22) == (0x7fc00000>>22); } // +1#NAN
+INLINE Bool CheckSNanF(float num) { return (*(u32*)&num>>22) == (0xffc00000>>22); } // -1#NAN
 #endif // USE_FLOAT		// use float support
 
 #if USE_DOUBLE		// use double support
 // check special double numbers
-INLINE Bool CheckInfD(double num) { return ((u16*)&num)[3] == 0x7ff0; } // 1#INF
-INLINE Bool CheckSInfD(double num) { return ((u16*)&num)[3] == 0xfff0; } // -1#INF
-INLINE Bool CheckNanD(double num) { return ((u16*)&num)[3] == 0x7ff8; } // 1#NAN
-INLINE Bool CheckSNanD(double num) { return ((u16*)&num)[3] == 0xfff8; } // -1#NAN
+INLINE Bool CheckInfD(double num)  { return (((u32*)&num)[1]>>19) == (0x7ff00000>>19); } // +1#INF
+INLINE Bool CheckSInfD(double num) { return (((u32*)&num)[1]>>19) == (0xfff00000>>19); } // -1#INF
+INLINE Bool CheckNanD(double num)  { return (((u32*)&num)[1]>>19) == (0x7ff80000>>19); } // +1#NAN
+INLINE Bool CheckSNanD(double num) { return (((u32*)&num)[1]>>19) == (0xfff80000>>19); } // -1#NAN
 #endif // USE_DOUBLE		// use double support
 
 // check special numbers

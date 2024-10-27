@@ -233,6 +233,14 @@ double Ref_tan(double x);
 float Ref_tanf_deg(float x);
 double Ref_tan_deg(double x);
 
+// cotangent in radians
+float Ref_cotanf(float x);
+double Ref_cotan(double x);
+
+// cotangent in degrees
+float Ref_cotanf_deg(float x);
+double Ref_cotan_deg(double x);
+
 // arc sine in radians
 float Ref_asinf(float x);
 double Ref_asin(double x);
@@ -256,6 +264,14 @@ double Ref_atan(double x);
 // arc tangent in degrees
 float Ref_atanf_deg(float x);
 double Ref_atan_deg(double x);
+
+// arc cotangent in radians
+float Ref_acotanf(float x);
+double Ref_acotan(double x);
+
+// arc cotangent in degrees
+float Ref_acotanf_deg(float x);
+double Ref_acotan_deg(double x);
 
 // arc tangent of y/x in radians
 float Ref_atan2f(float y, float x);
@@ -352,5 +368,35 @@ double Ref_float2double(float num);
 float Ref_double2float(double num);
 
 // round to given number of significant digits (digits<=0 to use default number of digits)
-float Ref_rounddigf(float x, int digits);
-double Ref_rounddig(double x, int digits);
+// @TODO: probably will be deleted (accuracy cannot be guaranteed)
+//float Ref_rounddigf(float x, int digits);
+//double Ref_rounddig(double x, int digits);
+
+
+
+
+
+float expf_fast(float x);
+float logf_fast(float x);
+
+void sincosf_fast(float x, float* psin, float* pcos);
+void sincosf_deg_fast(float x, float* psin, float* pcos);
+float sinf_fast(float x);
+float sinf_deg_fast(float x);
+float cosf_fast(float x);
+float cosf_deg_fast(float x);
+float tanf_fast(float x);
+float tanf_deg_fast(float x);
+float cotanf_fast(float x);
+float cotanf_deg_fast(float x);
+
+float asinf_fast(float x);
+float asinf_deg_fast(float x);
+float acosf_fast(float x);
+float acosf_deg_fast(float x);
+
+
+float atanf_fast(float x);
+float atanf_deg_fast(float x);
+float acotanf_fast(float x);
+float acotanf_deg_fast(float x);

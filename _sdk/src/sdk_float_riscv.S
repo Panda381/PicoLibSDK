@@ -12,8 +12,14 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+// >>> Some functions are adaptations of the functions from Pico1 M0+ (c) Raspberry Pi <<<
+
 // >>> Warning - the original __mulsf3 function has a bug of unhandled
-// >>> overflow during rounding - it is fixed here.
+//     overflow during rounding - it is fixed here. <<<
+
+// .p2align 2,,
+// On riscv32-unknown-elf-gcc-13.2.0 this alignment works incorrectly - adds incorrect alignment
+// after the end of the section. Use commas ,, to work a little better.
 
 #include "../asm_include.inc"
 
@@ -43,8 +49,6 @@
 
 float_section __addsf3
 .p2align 2,,
-// On riscv32-unknown-elf-gcc-13.2.0 this alignment works incorrectly - adds incorrect alignment
-// after the end of the section. Use commas ,, to work a little better.
 
 .global __wrap___subsf3
 .global __subsf3
@@ -276,8 +280,6 @@ __addsf_return_0:
 
 float_section __mulsf3
 .p2align 2,,
-// On riscv32-unknown-elf-gcc-13.2.0 this alignment works incorrectly - adds incorrect alignment
-// after the end of the section. Use commas ,, to work a little better.
 
 .global __wrap___mulsf3
 .global __mulsf3
@@ -440,19 +442,13 @@ __mulsf_y_nan_inf:
 //                            Division, x / y
 // ----------------------------------------------------------------------------
 // float fdiv(float x, float y);
-
 // INPUT: A0 = 1st argument X
 //	  A1 = 2nd argument Y
 // OUTPUT: A0 = result X / Y
 // TRASHED: A2, A3, A4, A5, A6, T0
 
-// >>> This code is an adaptation of the fdiv function from Pico1 M0+ (c) Mark Owen & Raspberry Pi <<<
-// >>> @TODO: This code needs to be more optimised for RISC-V
-
-float_section __fdiv
+float_section __divsf3
 .p2align 2,,
-// On riscv32-unknown-elf-gcc-13.2.0 this alignment works incorrectly - adds incorrect alignment
-// after the end of the section. Use commas ,, to work a little better.
 
 .global __wrap___divsf3
 .global __divsf3
@@ -641,26 +637,896 @@ retzero:
 	mv	a0,a6		// sign -> result A0
 	ret
 
+
+// ==== convert integer to float
+
+// ----------------------------------------------------------------------------
+//                      Convert unsigned int to float
+// ----------------------------------------------------------------------------
+// float ui2f(u32 num);
+// float uint2float(u32 num);
+// input: A0 = integer number
+// output: A0 = float number
+// trashes: A1, A2, A4, A5
+
+float_section _uint2float
+.p2align 2,,
+
+wrapper_func __floatunsisf
+regular_func ui2f
+regular_func uint2float
+
+	// check if number is zero
+	sub	a1,a1,a1		// prepare positive result sign -> A1
+	bnez	a0,i2f_2		// number is not zero
+	ret
+
+// ----------------------------------------------------------------------------
+//                      Convert signed int to float
+// ----------------------------------------------------------------------------
+// float i2f(s32 num);
+// float int2float(s32 num);
+// input: A0 = integer number
+// output: A0 = float number
+// trashes: A1, A2, A4, A5
+
+wrapper_func __floatsisf
+regular_func i2f
+regular_func int2float
+
+	// prepare result sign -> A1
+	srli	a1,a0,31		// get sign bit -> A1
+	slli	a1,a1,31		// shift sign bit back to position 31
+
+	// absolute value of the number
+	bgez	a1,1f			// number is positive
+	neg	a0,a0			// absolute value of the number
+
+	// check if number is zero
+1:	beqz	a0,10f			// result is 0
+
+	// count leading zeroes -> A0
+i2f_2:	mv	a2,a1			// A2 <- sign
+	mv	a1,a0			// A1 <- integer number, absolute value
+	clz	a0,a0			// A0 <- count leading zeroes
+
+	// normalize number (shift left) -> A1
+	sll	a1,a1,a0		// normalize number - shift bits to left -> A1
+
+	// prepare result exponent -> A0
+	//   exponent 127 represents '1' + 31 bits of integer without high '1' - count of zeros (=number of shift left)
+	addi	a0,a0,-158		// count of zeros - 158
+	neg	a0,a0			// A0 <- 158 - count of zeros
+
+	// rounding input number
+	//  float mantissa is 23 bits + 1 bit '1' = 24 bits, 8 bits of integer stays unused (=hidden decimal part)
+	addi	a1,a1,0x80		// rounding least bit of the mantissa
+	bgez	a1,5f			// overflow (carry)
+
+	// check bottom 8 bits (unused float bits) to carry rounding
+	slli	a3,a1,24		// check bottom 8 bits of A1
+	beqz	a3,6f			// lowest bits of mantissa are = 0, round to even number
+
+	// remove leading hidden bit '1'
+	slli	a1,a1,1			// remove leading 1 (hidden 1)
+
+	// composing float number
+3:	srli	a1,a1,9			// align mantissa to its position (shift to bits 0..22)
+	slli	a0,a0,23		// align exponent (shift to bits 23..30)
+	or	a0,a0,a2		// assembler exponent and mantissa
+4:	or	a0,a0,a1		// apply sign (add to bit 31)
+10:	ret
+
+	// overflow number after rounding - increase exponent and skip shift left
+5:	addi	a0,a0,1			// correct exponent
+	j	3b			// skip shift left
+
+	// lowest 8 bits are = 0, round mantissa to even number
+6:	srli	a1,a1,9			// ensure even result (destroy lowest bit of mantissa)
+	slli	a1,a1,10		// shift mantissa back and remove leading hidden bit '1'
+	j	3b			// skip shift left
+
+// ----------------------------------------------------------------------------
+//                 Convert signed fixed point to float
+// ----------------------------------------------------------------------------
+//  e = number of bits of fractional part (binary exponent)
+// float fix2float(s32 num, int e);
+// input: A0 = integer number
+//	  A1 = size of fractional part
+// output: A0 = float number
+// trashes: A1, A2, A4, A5, T0
+
+float_section _fix2float
+.p2align 2,,
+
+regular_func fix2float
+
+fix2float_1:
+	li	a2,29
+	sub	a2,a2,a1	// fix exponent
+
+	// pack number
+	li	a5,0		// pack and return, sticky bits=0
+// input: A0 = signed mantissa (24 significant bits)
+//        A2 = signed exponent (bias removed) (zero = -380, infinity = +640)
+//        A5 = sticky bits (used for rounding)
+// output: A0 = float number
+// trashes: A2, A4, A5, T0
+	j	_asm_packx
+
+// ---- continue to ufix2float
+
+// ----------------------------------------------------------------------------
+//                 Convert unsigned fixed point to float
+// ----------------------------------------------------------------------------
+//  e = number of bits of fractional part (binary exponent)
+// float ufix2float(u32 num, int e);
+// input: A0 = integer number
+//	  A1 = size of fractional part
+// output: A0 = float number
+// trashes: A1, A2, A4, A5, T0
+
+regular_func ufix2float
+
+	bgez	a0,fix2float_1	// treat <2^31 as signed
+	li	a2,30
+	sub	a2,a2,a1	// fix exponent
+	slli	a5,a0,31	// one sticky bit
+	srli	a0,a0,1
+
+	// pack number
+// input: A0 = signed mantissa (24 significant bits)
+//        A2 = signed exponent (bias removed) (zero = -380, infinity = +640)
+//        A5 = sticky bits (used for rounding)
+// output: A0 = float number
+// trashes: A2, A4, A5, T0
+	j	_asm_packx
+
+// ----------------------------------------------------------------------------
+//                    Convert 64-bit unsigned int to float
+// ----------------------------------------------------------------------------
+// float ul2f(s64 num);
+// float uint642float(u64 num);
+// input: A1:A0 = integer number
+// output: A0 = float number
+// trashes: A1, A2, A4, A5, T0
+
+float_section _uint642float
+.p2align 2,,
+
+wrapper_func __floatundisf
+regular_func ul2f
+regular_func uint642float
+
+	li	a2,0		// fall through
+
+// ---- continue to ufix642float
+
+// ----------------------------------------------------------------------------
+//                 Convert 64-bit unsigned fixed point to float
+// ----------------------------------------------------------------------------
+//  e = number of bits of fractional part (binary exponent)
+// float ufix642float(u64 num, int e);
+// input: A1:A0 = integer number
+//	  A2 = size of fractional part
+// output: A0 = float number
+// trashes: A1, A2, A4, A5, T0
+
+regular_func ufix642float
+
+	bgez	a1,fix642float_3 // positive? we can use signed code
+
+	slli	a5,a1,31	// contribution to sticky bits
+	or	a5,a5,a0
+	srli	a0,a1,1
+	addi	a2,a2,-1
+	j	fix642float_4
+
+// ---- continue to int642float
+
+// ----------------------------------------------------------------------------
+//                     Convert 64-bit signed int to float
+// ----------------------------------------------------------------------------
+// float l2f(s64 num);
+// float int642float(s64 num);
+// input: A1:A0 = integer number
+// output: A0 = float number
+// trashes: A1, A2, A4, A5, T0
+
+wrapper_func __floatdisf
+regular_func l2f
+regular_func int642float
+
+	li	a2,0		// fall through
+
+// ---- continue to fix642float
+
+// ----------------------------------------------------------------------------
+//                 Convert 64-bit signed fixed point to float
+// ----------------------------------------------------------------------------
+//  e = number of bits of fractional part (binary exponent)
+// float fix642float(s64 num, int e);
+// input: A1:A0 = integer number
+//	  A2 = size of fractional part
+// output: A0 = float number
+// trashes: A1, A2, A4, A5, T0
+
+regular_func fix642float
+
+	// check if number is 0 (result will be +0.0)
+fix642float_3:
+3:	mv	a5,a0		// number low -> A5
+	or	a5,a5,a1	// or number high -> A5
+	beqz	a5,5f	// zero? return +0
+
+	// prepare sign bit 0 or -1 -> A5
+	srai	a5,a1,31	// sign bits
+
+	// checking the upper 7 bits if they are insignificant
+2:	srai	a4,a1,24	// try shifting 7 bits at a time
+	bne	a4,a5,1f	// next shift will overflow?
+
+	// shift number by 7 bits left (to fast normalize)
+	slli	a1,a1,7		// shift number high by 7 bits left
+	srli	a4,a0,25	// high 7 bits of number low -> A4
+	or	a1,a1,a4	// carry 7 bits to number high -> A1
+	slli	a0,a0,7		// shift number low by 7 bits left
+	addi	a2,a2,7		// shift exponent by 7
+	j	2b		// next normalisation iterations
+
+	// pack float number
+1:	mv	a5,a0		// sticky bits (used for rounding) -> A5
+	mv	a0,a1		// partially normalised number -> A0
+
+fix642float_4:
+4:	neg	a2,a2		// negate exponent in A2
+	addi	a2,a2,32+29	// absolute exponent -> A2
+
+	// pack number
+// input: A0 = signed mantissa (24 significant bits)
+//        A2 = signed exponent (bias removed) (zero = -380, infinity = +640)
+//        A5 = sticky bits (used for rounding)
+// output: A0 = float number
+// trashes: A2, A4, A5, T0
+	j	_asm_packx
+
+5:	ret	
+
+
+// ==== convert float to integer
+
+// ----------------------------------------------------------------------------
+//     Convert float to signed int, rounding to zero (C-style int conversion)
+// ----------------------------------------------------------------------------
+// s32 f2iz(float num);
+// s32 float2int_z(float num);
+// input: A0 = float number
+// output: A0 = integer number
+// trashes: A1, A2, A3
+
+float_section _f2iz
+.p2align 2,,
+
+wrapper_func __fixsfsi
+regular_func f2iz
+regular_func float2int_z
+
+	// get exponent of float number -> A2
+	slli	a1,a0,1			// shift 1 bit left to get float number without sign -> A1
+	srli	a2,a1,24		// shift 24 bits right to get exponent -> A2
+
+	// check minimal exponent 0.5 - result will be 0
+	li	a3,126			// check minimal exponent of 0.5
+	ble	a2,a3,1f		// number is too small - result will be 0
+
+	// prepare overflow number 0x80000000
+	li	a3,0x80000000		// overflow number base
+
+	// check maximal exponent
+	add	a2,a2,-158		// exponent - exponent bias 127 - max. mantissa bits 31 = exponent - 158
+	bgez	a2,2f			// number is too big, limit overflow result
+
+	// prepare sign
+	srai	a1,a0,31		// prepare sign: positive 0, negative 0xffffffff
+
+	// prepare mantissa
+	slli	a0,a0,9			// delete sign and exponent
+	srli	a0,a0,1			// mantissa is in bits 8..30
+	or	a0,a0,a3		// restore highest hidden bit '1'
+
+	// relative exponent
+	neg	a2,a2			// relative exponent -> R2
+
+	// shift mantissa to integer position
+	srl	a0,a0,a2		// shift mantissa right by exponent bits
+
+	// compose mantissa with sign
+	slli	a1,a1,1			// sign (0 or 0xffffffff) shift left -> 0 or 0xfffffffe
+	addi	a1,a1,1			// sign + 1 -> positive 1, negative 0xffffffff
+	mul	a0,a0,a1		// multiply mantissa with sign 1 or -1
+	ret				// return
+
+	// result is number 0
+1:	li	a0,0			// A0 <- 0
+	ret				// return
+
+	// number is too big - limit number on overflow
+2:	srli	a0,a0,31		// get sign flag into bit 0
+	add	a0,a0,a3		// add overflow number 0x80000000
+	addi	a0,a0,-1		// -1 -> limited result is 0x7FFFFFFF for positive number, 0x80000000 for negative
+	ret				// return
+
+// ----------------------------------------------------------------------------
+//                   Convert float to signed int, rounding down
+// ----------------------------------------------------------------------------
+// s32 float2int(float num);
+// s32 f2i(float num);
+// input: A0 = float number
+// output: A0 = integer number
+// trashes: A1, A2, A3, A4
+
+float_section _f2i
+.p2align 2,,
+
+regular_func f2i
+regular_func float2int
+
+// convert float to signed int, rounding towards -Inf, clamping
+
+	li	a1,0		// fall through
+
+// ---- continue to float2fix
+
+// ----------------------------------------------------------------------------
+//               Convert float to signed fixed point, rounding down
+// ----------------------------------------------------------------------------
+//  e = number of bits of fractional part (binary exponent)
+// s32 float2fix(float num, int e);
+// input: A0 = float number
+//	  A1 = size of fractional part
+// output: A0 = integer number
+// trashes: A1, A2, A3, A4
+
+regular_func float2fix
+.global _asm_float2fix	// use in library with defined register usage
+_asm_float2fix:
+
+// convert float in a0 to signed fixed point in a0, clamping
+
+	// unpack number A0 -> A0 mant, A2 exp
+// input: A0 = float number
+// output: A0 = signed mantissa 9Q23 (24 significant bits)
+//         A2 = signed exponent (bias removed) (zero = -380, infinity = +640)
+// trashes: A4
+	mv	a3,ra		// A3 <- save return address RA
+	call	_asm_unpackx	// unpack number A0 -> A0 mant, A2 exp
+	mv	ra,a3		// restore RA
+
+	// check if number is zero
+	addi	a3,a2,130	// unbias exponent
+	bltz	a3,6f		// -0? number is zero
+
+	// check shift direction
+	add	a2,a2,a1	// incorporate binary point position into exponent
+	addi	a2,a2,-23	// a2 is now amount of left shift required
+	bltz	a2,1f		// requires right shift?
+
+	// left shift - check overflow
+	li	a3,7		// overflow?
+	ble	a2,a3,float2ufix_4 // not overflow - left shift
+
+	// overflow
+	srai	a1,a0,31	// +ve:0 -ve:0xffffffff
+	not	a1,a1		// invert, +ve:0xffffffff -ve:0
+	li	a0,1
+	slli	a0,a0,31
+
+float2fix_5:
+5:	xor	a0,a0,a1	// +ve:0x7fffffff -ve:0x80000000 (unsigned path: 0xffffffff)
+	ret
+
+	// right shift
+float2fix_1:
+1:	neg	a2,a2		// right shift for a0, >0
+	li	a3,31		// max. shift 31
+	blt	a2,a3,2f
+	mv	a2,a3		// limit number of shifts to 31
+2:	sra	a0,a0,a2
+	ret
+
+6:	li	a0,0
+	ret
+
+// ---- continue to float2uint
+
+// ----------------------------------------------------------------------------
+//                 Convert float to unsigned int, rounding down
+// ----------------------------------------------------------------------------
+// u32 f2ui(float num);
+// u32 float2uint(float num);
+// input: A0 = float number
+// output: A0 = integer number
+// trashes: A1, A2, A3, A4
+
+wrapper_func __fixunssfsi
+regular_func f2ui
+regular_func float2uint
+
+	li	a1,0		// fall through
+
+// ---- continue to float2ufix
+
+// ----------------------------------------------------------------------------
+//             Convert float to unsigned fixed point, rounding down
+// ----------------------------------------------------------------------------
+//  e = number of bits of fractional part (binary exponent)
+// u32 float2ufix(float num, int e);
+// input: A0 = float number
+//	  A1 = size of fractional part
+// output: A0 = integer number
+// trashes: A1, A2, A3, A4
+
+regular_func float2ufix
+
+	// unpack number A0 -> A0 mant, A2 exp
+// input: A0 = float number
+// output: A0 = signed mantissa 9Q23 (24 significant bits)
+//         A2 = signed exponent (bias removed) (zero = -380, infinity = +640)
+// trashes: A4
+	mv	a3,ra		// A3 <- save return address RA
+	call	_asm_unpackx	// unpack number A0 -> A0 mant, A2 exp
+	mv	ra,a3		// restore RA
+
+	add	a2,a2,a1	// incorporate binary point position into exponent
+	mv	a1,a0
+	bltz	a1,float2fix_5	// negative? return zero
+
+	addi	a2,a2,-23	// a2 is now amount of left shift required
+	bltz	a2,float2fix_1	// requires right shift?
+
+	not	a1,a0		// ready to return 0xffffffff
+	li	a3,8
+	bgt	a2,a3,float2fix_5 // overflow
+
+	// left shift
+float2ufix_4:
+4:	sll	a0,a0,a2	// result fits, left shifted
+	ret
+
+// ----------------------------------------------------------------------------
+// Convert float to 64-bit signed int, rounding to zero (C-style int conversion)
+// ----------------------------------------------------------------------------
+// s64 f2lz(float num);
+// s64 float2int64_z(float num);
+// input: A0 = float number
+// output: A1:A0 = integer number
+// trashes: A2, A3, A4, A5, T0, T1
+
+float_section _f2lz
+.p2align 2,,
+
+wrapper_func __fixsfdi
+regular_func f2lz
+regular_func float2int64_z
+
+	// if number is not negative, convert with rounding down
+// input: A0 = float number
+// output: A1:A0 = integer number
+// trashes: A2, A3, A4, A5, T0, T1
+	bgez	a0,float2int64	// number is not negative - convert with rounding down
+
+	// convert as unsigned, using absolute value
+	slli	a0,a0,1		// discard sign bit
+	srli	a0,a0,1		// shift back
+
+// input: A0 = float number
+// output: A1:A0 = integer number
+// trashes: A2, A3, A4, T0, T1
+	mv	a5,ra		// save return address
+	call	float2uint64	// convert to u64
+	mv	ra,a5
+
+	// check overflow signed range
+	bltz	a1,1f		// overflow
+
+	// negate s64 result
+	neg	a0,a0		// negate result LOW -> A0
+	snez	a2,a0		// AA <- 1 if A0 not zero
+	neg	a1,a1		// negate result HIGH -> A1
+	sub	a1,a1,a2	// correct result HIGH if carry from LOW
+	ret
+
+	// return max. negative value
+1:	li	a1,128		// A1 <- 0x80
+	slli	a1,a1,24	// A1 <- 0x800... max. negative value
+	li	a0,0		// A0 <- 0
+	ret
+
+// ---- continue to float2int64
+
+// ----------------------------------------------------------------------------
+//              Convert float to 64-bit signed int, rounding down
+// ----------------------------------------------------------------------------
+// s64 f2l(float num);
+// s64 float2int64(float num);
+// input: A0 = float number
+// output: A1:A0 = integer number
+// trashes: A2, A3, A4, A5, T0, T1
+
+regular_func f2l
+regular_func float2int64
+
+	li	a1,0		// 2nd parameter - number of bits = 0
+
+// ---- continue to float2fix64
+
+// ----------------------------------------------------------------------------
+//         Convert float to 64-bit signed fixed point, rounding down
+// ----------------------------------------------------------------------------
+//  e = number of bits of fractional part (binary exponent)
+// s64 float2fix64(float num, int e);
+// input: A0 = float number
+//	  A1 = size of fractional part
+// output: A1:A0 = integer number
+// trashes: A2, A3, A4, A5, T0, T1
+
+regular_func float2fix64
+
+	// convert float to signed fixed point
+// input: A0 = float number
+//        A1 = result exponent (number of bits after decimal point of output integer)
+// output: A3:A1:A0 = signed fixed point (clamped, A3 is 0 or -1)
+// trashes: A2, A4, T0, T1
+	mv	a5,ra		// save return address -> A5
+	call	f2fix		// convert float to signed fixed point
+	mv	ra,a5
+
+	// check overflow signed int64
+	srai	a2,a1,31	// get sign bit of A1 -> A2
+	bne	a2,a3,1f	// sign extension bits fail to match sign of result?
+	ret
+
+	// signed int64 overflow, return max. number
+1:	not	a0,a3		// not sign -> A0 (0 on negative, -1 on positive)
+	li	a1,1		// A1 <- 1
+	slli	a1,a1,31	// A1 <- bit 31
+	xor	a1,a1,a0	// max. integer -> A1 (0x800.. on negative, 0x7FF.. on positive)
+	ret
+
+// ----------------------------------------------------------------------------
+//                    Convert float to 64-bit unsigned int
+// ----------------------------------------------------------------------------
+// u64 f2ul(float num);
+// u64 float2uint64(float num);
+// input: A0 = float number
+// output: A1:A0 = integer number
+// trashes: A2, A3, A4, T0, T1
+
+float_section _f2ul
+.p2align 2,,
+
+wrapper_func __fixunssfdi
+regular_func f2ul
+regular_func float2uint64
+
+	li	a1,0			// 2nd parameter - number of bits = 0
+
+// ---- continue to float2ufix64
+
+// ----------------------------------------------------------------------------
+//                  Convert float to 64-bit unsigned fixed point
+// ----------------------------------------------------------------------------
+//  e = number of bits of fractional part (binary exponent)
+// u64 float2ufix64(float num, int e);
+// input: A0 = float number
+//	  A1 = size of fractional part
+// output: A1:A0 = integer number
+// trashes: A2, A3, A4, T0, T1
+
+regular_func float2ufix64
+
+	// check if number is negative - return 0 to be clamped to unsigned int
+	srai	a3,a0,23	// get sign and exponent -> A3
+	bltz	a3,5f		// number is negative, return -0.0
+
+// ---- convert float to signed fixed point, rounding down
+
+// input: A0 = float number
+//        A1 = result exponent (number of bits after decimal point of output integer)
+// output: A3:A1:A0 = signed fixed point (clamped, A3 is 0 or -1)
+// trashes: A2, A4, T0, T1
+
+f2fix:
+	// save register A1 -> T0
+	mv	t0,a1		// required exponent -> T0
+
+	// get sign -> A3
+	srai	a3,a0,31	// get sign bit 0 or -1 -> A3
+	slli	a0,a0,1		// delete sign bit from float
+
+	// get exponent -> A2
+	srli	a2,a0,24	// isolate exponent -> A2
+	beqz	a2,1f		// zero number, result is zero
+	li	t1,0xff
+	beq	a2,t1,2f	// infinity, result is max number
+
+	// get absolute exponent
+	addi	a1,a2,-1	// exponent - 1 -> A1
+	addi	a2,a2,-0x7f	// subtract exponent bias 127 - 1
+
+	// isolate mantissa and restore hidden implied bit '1' -> A0
+	slli	a1,a1,24	// shift 'exponent - 1' back to position 24
+	sub	a0,a0,a1	// insert back hidden implied highest bit '1'
+
+	// absolute value of mantissa
+	xor	a0,a0,a3	// NOT mantissa with negative sign -1
+	sub	a0,a0,a3	// negative mantissa correction to get two's complement
+
+	// shift mantissa
+	srai	a1,a0,4		// convert mantissa to int
+	slli	a0,a0,28	// mantissa low
+
+// input: A1:A0 = two's complement mantissa
+//        A2 = unbaised exponent
+//        A3 = mantissa sign extension bits (0 or -1)
+//        T0 = required output exponent
+// output: A3:A1:A0 = signed fixed point (clamped, A3 is 0 or -1)
+// trashes: A2, A4, T1
+	j	d2fix_a		// shift mantissa A3:A1:A0 by A2+T0 bits
+
+	// result is plus zero +0.0
+1:	li	a0,0		// 0 -> A0
+	mv	a1,a0		// 0 -> A1
+	mv	a3,a0		// 0 -> A3
+	ret
+
+	// result is overflow, return max integer (0 on negative number, -1 on positive)
+2:	not	a0,a3		// inverse sign -> A0
+	not	a1,a3		// inverse sign -> A1
+	ret
+
+	// result is minus zero -0.0 (here is A3 = sign 0 or -1)
+5:	li	a0,0		// 0 -> A0
+	li	a1,0		// 0 -> A1
+	ret
+
+// ---- continue conversion float/double to int64 ... shift mantissa A3:A1:A0 by A2+T0 bits
+
+// input: A1:A0 = two's complement mantissa
+//        A2 = unbaised exponent
+//        A3 = mantissa sign extension bits (0 or -1)
+//        T0 = required output exponent
+// output: A3:A1:A0 = signed fixed point (clamped, A3 is 0 or -1)
+// trashes: A2, A4, T1
+
+regular_func d2fix_a
+
+	// prepare shift up by A2 bits
+	add	a2,a2,t0	// exponent plus offset for required binary point position
+	addi	a2,a2,-52	// required shift
+	bltz	a2,1f		// shift down?
+
+	// check shift up overflow
+	li	t1,12
+	bge	a2,t1,2f	// clamp shift up
+	beqz	a2,20f		// shift is 0
+
+	// shift mantissa up (left) by A2 bits
+	mv	a4,a0		// save mantissa low -> A4
+	sll	a1,a1,a2	// shift mantissa high by A2 bits left -> A1
+	sll	a0,a0,a2	// shift mantissa low by A2 bits left -> A0
+	neg	a2,a2		// negate number of shifts
+	addi	a2,a2,32	// complementary shift 32-A2
+	srl	a4,a4,a2	// shift mantissa low by 32-A2 bits right
+	or	a1,a1,a4	// add carry from mantissa low to new mantissa high -> A1
+20:	ret
+
+	// clamp shift up, return max integer (0 on negative number, -1 on positive)
+2:	not	a0,a3		// not sign -> A0
+	not	a1,a3		// not sign -> A1
+	ret
+
+	// prepare shift down (right) by A2 bits
+1:	addi	a2,a2,32	// required shift
+	blez	a2,1f		// long shift down
+
+	// shift mantissa down by A2 bits
+	mv	a4,a1		// save mantissa high -> A4
+	sll	a4,a4,a2	// shift mantissa high by A2 bits left -> A4
+	neg	a2,a2		// negate number of shifts
+	addi	a2,a2,32	// complementary shift
+	sra	a1,a1,a2	// shift mantissa high by A2 bits right -> A1
+	srl	a0,a0,a2	// shift mantissa low by A2 bits right -> A0
+	or	a0,a0,a4	// add carry from mantissa high to new mantissa low -> A0
+	ret
+
+	// long shift down
+1:	mv	a0,a1		// A0 <- mantissa high
+	srai	a1,a1,31	// shift mantissa high by 31 bits to get only sign 0 or -1
+	addi	a2,a2,32	// required number of shifts
+	blez	a2,2f		// very long shift
+	neg	a2,a2		// negate number of shifts
+	addi	a2,a2,32	// complementary shift 32-A2
+	sra	a0,a0,a2	// shift mantissa low by A2 bits right
+	ret
+
+	// very long shift down
+2:	mv	a0,a3		// result will be 0 or -1 (taken from sign A2)
+	mv	a1,a3		// result high
+	ret
+
+// ----------------------------------------------------------------------------
+//                           Exchange operands
+// ----------------------------------------------------------------------------
+// input: A0,A2 = 1st operand
+//	  A1,A3 = 2nd operand
+// output: A0,A2 = 2nd operand
+//	  A1,A3 = 2nd operand
+// trashes:
+
+// ---- exchange a0<->a1, a2<->a3
+
+float_section _asm_xchxy
+.p2align 2,,
+
+.global _asm_xchxy
+_asm_xchxy:
+	xor	a0,a0,a1	// A0 <- A0 ^ A1
+	xor	a1,a0,a1	// A1 <- (A0 ^ A1) ^ A1 = A0
+	xor	a0,a0,a1	// A0 <- (A0 ^ A1) ^ A0 = A1
+
+	xor	a2,a2,a3	// A2 <- A2 ^ A3
+	xor	a3,a2,a3	// A3 <- (A2 ^ A3) ^ A3 = A2
+	xor	a2,a2,a3	// A2 <- (A2 ^ A3) ^ A2 = A3
+	ret
+
+// ----------------------------------------------------------------------------
+//                       Unpack float number
+// ----------------------------------------------------------------------------
+// input: A0 = float number
+// output: A0 = signed mantissa 9Q23 (24 significant bits)
+//         A2 = signed exponent (bias removed) (zero = -380, infinity = +640)
+// trashes: A4
+
+float_section _asm_unpackx
+.p2align 2,,
+
+.global _asm_unpackx
+_asm_unpackx:
+
+	// extract exponent and sign -> A2
+	mv	a4,a0		// A4 <- save the number
+	srli	a2,a0,23	// A2 <- exponent and sign
+
+	// extract mantissa -> A0 (23 bits)
+	slli	a0,a0,9
+	srli	a0,a0,9
+
+	// restore implied leading bit '1' in mantissa
+	bseti	a0,a0,23	// set hidden bit '1'
+
+	// negate mantissa
+	bgez	a4,1f		// number is not negative
+	bclri	a2,a2,8		// clear sign bit from exponent
+	neg	a0,a0		// negate mantissa
+
+	// check zero/inf
+1:	addi	a2,a2,-1	// exponent - 1 (0 becomes 0xffffffff)
+	li	a4,254
+	bgeu	a2,a4,2f	// number is zero or infinity
+
+	// convert exponent to signed
+	addi	a2,a2,-126	// remove exponent bias (= 127 - 1)
+	ret			// return
+
+	// zero or infinity - limit mantissa to +1 or -1
+2:	mv	a4,a0		// A4 <- result mantissa
+	li	a0,0x00800000	// set mantissa to +1 (= 0x00800000)
+	bgez	a4,3f		// mantissa is positive
+	neg	a0,a0		// negate mantissa - set mantissa to -1 (= 0xff800000)
+
+	// exponent correction
+3:	addi	a2,a2,-126	// exponent - 126: zero -> -127, infinity -> 128
+	slli	a2,a2,2		// exponent * 4: zero -> -508, infinity -> 512
+	addi	a2,a2,128	// exponent + 128: zero -> -380, infinity -> 640
+	ret			// return
+
+// ----------------------------------------------------------------------------
+//                      Normalize and pack signed mantissa
+// ----------------------------------------------------------------------------
+// input: A0 = signed mantissa (24 significant bits)
+//        A2 = signed exponent (bias removed) (zero = -380, infinity = +640)
+//        A5 = sticky bits (used for rounding)
+// output: A0 = float number
+// trashes: A2, A4, A5, T0
+
+float_section _asm_packx
+.p2align 2,,
+
+.global _asm_packx
+_asm_packx:
+
+	// extract sign bit from mantissa -> A4 bit 31
+	srli	a4,a0,31	// shift mantissa 31 bits right
+	slli	a4,a4,31	// shift sign bit back to position 31
+
+	// absolute value of mantissa, and add carry from sticky bits in A5
+	bgez	a4,2f		// mantissa is positive
+	beqz	a5,11f		// do not rounding
+	addi	a0,a0,1		// round mantissa up
+11:	neg	a0,a0		// negate mantissa
+	bltz	a0,3f		// mantissa was 0x80000000, skip normalization
+
+	// normalize mantissa
+2:	beqz	a0,1f		// mantissa is zero, stop normalization
+	clz	t0,a0		// T0 <- count leading zeroes
+	sll	a0,a0,t0	// normalize mantissa
+	sub	a2,a2,t0	// shift exponent
+
+	// add exponent bias
+3:	addi	a2,a2,129	// add bias + 2
+	bnez	a2,12f		// not zero exponent (special case: highest denormal can round to lowest normal)
+	addi	a0,a0,0x80	// zero exponent - add rounding 0x80 correction to mantissa
+	bgez	a0,4f		// carry (A0 could have bit 31 set), skip rounding
+
+	// rounding mantissa
+12:	addi	a0,a0,0x80	// add rounding correction 128 to mantissa
+	bgez	a0,4f		// carry (A0 could have bit 31 set), skip rounding from sticky bits
+	beqz	a5,7f		// sticky bits are zero
+
+	// shift mantissa left to remove leading bit 1
+8:	slli	a0,a0,1		// remove leading bit 1
+9:	addi	a2,a2,-1	// compensate exponent
+
+	// check exponent overflow
+4:	li	a5,254		// overflowed exponent
+	bge	a2,a5,5f	// exponent overflow
+
+	// correct exponent offset
+	addi	a2,a2,1		// correct exponent offset
+	blez	a2,10f		// zero or underflow
+
+	// assemble exponent and mantissa
+	srli	a0,a0,9		// align mantissa
+	slli	a2,a2,23	// align exponent
+	or	a0,a0,a2	// assemble exponent and mantissa
+6:	or	a0,a0,a4	// apply sign
+1:	ret			// return
+
+	// overflow, return +-infinity
+5:	li	a0,0xff		// result will be infinity
+	slli	a0,a0,23	// shift exponent to position
+	j	6b		// appli sign
+
+	// underflow, return 0
+10:	li	a0,0		// result will be 0
+	ret			// return
+
+	// rounding using sticky bits
+7:	slli	a5,a0,24	// check bottom 8 bits of a0
+	bnez	a5,8b		// rounding in normal way
+	srli	a0,a0,9		// ensure even result of mantissa if sticky bits = 0
+	slli	a0,a0,10	// shift mantissa back
+	j	9b		// compentase exponent
+
 #endif // !USE_FLOATLIBC
 #endif // USE_FLOAT
-
 
 #if !USE_FLOATLIBC
 
 // This is a hack to improve soft float performance for the routines we don't
 // implement (e.g. libm) in libraries built against a non-Zbb ISA dialect:
+
 float_section __clz2si
 .p2align 2,,
-// On riscv32-unknown-elf-gcc-13.2.0 this alignment works incorrectly - adds incorrect alignment
-// after the end of the section. Use commas ,, to work a little better.
 
+.global __wrap___clzsi2
 .global __clz2si
 .global __clzsi2
-.global __wrap___clzsi2
 //.global clz
+__wrap___clzsi2:
 __clz2si:
 __clzsi2:
-__wrap___clzsi2:
 //clz:
 	clz		a0,a0
 	ret

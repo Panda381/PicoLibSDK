@@ -207,20 +207,20 @@ float Ref_fmul(float x, float y)
 #if USE_FLOATLIBC
 #if RISCV
 			return Test_QNanF();
-#else
+#else // RISCV
 		{
 			if (Test_IsOverF(x))
 				return Test_GetSignF(x) ? Test_IndF() : Test_QNanF();
 			else
 				return Test_GetSignF(y) ? Test_IndF() : Test_QNanF();
 		}
-#endif
-#else
+#endif // RISCV
+#else // FLOATLIBC
 			return Test_IndF();
-#endif
-#elif USE_FLOATLIBC
+#endif // DOUBLELIBC
+#elif USE_FLOATLIBC // RP2040 FLOATLIBC
 			return Test_QNanF();
-#else
+#else // RP2040 !FLOATLIBC
 			return (Test_GetSignF(x) ^ Test_GetSignF(y)) ? Test_MInfF() : Test_PInfF();
 #endif
 	REAL tr, xr, yr;
@@ -238,24 +238,23 @@ double Ref_dmul(double x, double y)
 #if USE_DOUBLELIBC
 #if RISCV
 			return Test_QNanD();
-#else
+#else // RISCV
 		{
 			if (Test_IsOverD(x))
 				return Test_GetSignD(x) ? Test_IndD() : Test_QNanD();
 			else
 				return Test_GetSignD(y) ? Test_IndD() : Test_QNanD();
 		}
-#endif
-#else
-//#if RISCV
-//			return Test_QNanD();
-//#else // RISCV
-			return Test_IndD();
-//#endif // RISCV
-#endif
-#elif USE_DOUBLELIBC
+#endif // RISCV
+#else // DOUBLELIBC
+
 			return Test_QNanD();
-#else
+//			return Test_IndD();
+
+#endif // DOUBLELIBC
+#elif USE_DOUBLELIBC // RP2040 DOUBLELIBC
+			return Test_QNanD();
+#else // RP2040 !DOUBLELIBX
 			return (Test_GetSignD(x) ^ Test_GetSignD(y)) ? Test_MInfD() : Test_PInfD();
 #endif
 	REAL tr, xr, yr;
@@ -973,7 +972,7 @@ double Ref_ceil(double num)
 // Square root
 float Ref_sqrtf(float x)
 {
-#if USE_FLOATLIBC //|| RISCV
+#if USE_FLOATLIBC || (RISCV && (USE_RISCV_SQRTF == 0))
 	if (x < 0) return Test_QNanF();
 #else
 #if RP2040
@@ -1231,6 +1230,48 @@ double Ref_tan_deg(double x)
 	return REALNAME(ToDouble)(&t);
 }
 
+// cotangent in radians
+float Ref_cotanf(float x)
+{
+	if (Test_IsOverF(x) || Test_IsZeroF(x)) return 1/tanf(x); // inf is undefined
+	REAL t;
+	REALNAME(FromFloat)(&t, x);
+	REALNAME(CoTan)(&t);
+	return REALNAME(ToFloat)(&t);
+}
+
+double Ref_cotan(double x)
+{
+	if (Test_IsOverD(x) || Test_IsZeroF(x)) return 1/tan(x); // inf is undefined
+	REAL t;
+	REALNAME(FromDouble)(&t, x);
+	REALNAME(CoTan)(&t);
+	return REALNAME(ToDouble)(&t);
+}
+
+// cotangent in degrees
+float Ref_cotanf_deg(float x)
+{
+	if (Test_IsOverF(x) || Test_IsZeroF(x)) return 1/tanf(x); // inf is undefined
+	REAL t;
+	REALNAME(FromFloat)(&t, x);
+	Unit = UNIT_DEG;
+	REALNAME(ToRad)(&t);
+	REALNAME(CoTan)(&t);
+	return REALNAME(ToFloat)(&t);
+}
+
+double Ref_cotan_deg(double x)
+{
+	if (Test_IsOverD(x) || Test_IsZeroF(x)) return 1/tan(x); // inf is undefined
+	REAL t;
+	REALNAME(FromDouble)(&t, x);
+	Unit = UNIT_DEG;
+	REALNAME(ToRad)(&t);
+	REALNAME(CoTan)(&t);
+	return REALNAME(ToDouble)(&t);
+}
+
 // arc sine in radians
 float Ref_asinf(float x)
 {
@@ -1348,6 +1389,44 @@ double Ref_atan_deg(double x)
 	REAL t;
 	REALNAME(FromDouble)(&t, x);
 	REALNAME(ATan)(&t);
+	Unit = UNIT_DEG;
+	REALNAME(FromRad)(&t);
+	return REALNAME(ToDouble)(&t);
+}
+
+// arc cotangent in radians
+float Ref_acotanf(float x)
+{
+	REAL t;
+	REALNAME(FromFloat)(&t, x);
+	REALNAME(ACoTan)(&t);
+	return REALNAME(ToFloat)(&t);
+}
+
+double Ref_acotan(double x)
+{
+	REAL t;
+	REALNAME(FromDouble)(&t, x);
+	REALNAME(ACoTan)(&t);
+	return REALNAME(ToDouble)(&t);
+}
+
+// arc cotangent in degrees
+float Ref_acotanf_deg(float x)
+{
+	REAL t;
+	REALNAME(FromFloat)(&t, x);
+	REALNAME(ACoTan)(&t);
+	Unit = UNIT_DEG;
+	REALNAME(FromRad)(&t);
+	return REALNAME(ToFloat)(&t);
+}
+
+double Ref_acotan_deg(double x)
+{
+	REAL t;
+	REALNAME(FromDouble)(&t, x);
+	REALNAME(ACoTan)(&t);
 	Unit = UNIT_DEG;
 	REALNAME(FromRad)(&t);
 	return REALNAME(ToDouble)(&t);
@@ -2191,6 +2270,8 @@ float Ref_double2float(double num)
 }
 
 // round to given number of significant digits (digits<=0 to use default number of digits)
+// @TODO: probably will be deleted (accuracy cannot be guaranteed)
+/*
 float Ref_rounddigf(float x, int digits)
 {
 	// invalid values
@@ -2250,121 +2331,4 @@ double Ref_rounddig(double x, int digits)
 	if (neg) x = -x;
 	return x;
 }
-
-INLINE u64 MyUMul(u32 a, u32 b) { return (u64)a*b; }
-INLINE u32 MyUMulHigh(u32 a, u32 b) { return (u32)(((u64)a*b) >> 32); }
-
-INLINE s64 MySMul(s32 a, s32 b) { return (s64)a*b; }
-INLINE s32 MySMulHigh(s32 a, s32 b) { return (s32)(((s64)a*b) >> 32); }
-
-#if 0
-
-// sine in radians
-float sinf_fast(float x)
-{
-	// get exponent
-	int exp = Test_GetExpF(x); // get exponent, unsigned
-
-	// infinity
-	if (exp == 0xff) return x;
-
-	// small angle
-	if (exp < FLOAT_EXP1 - 9) return x; // 11 = FLOAT_MANTBITS/2
-
-#define SINF_FRACT	28
-#define SINF_INT	(32-SINF_FRACT)	// = 4
-
-	// normalize big angles
-	if (exp >= FLOAT_EXP1+SINF_INT-1) x = remainderf(x, (float)PI2);
-
-	// small angle
-	exp = Test_GetExpF(x); // get exponent, unsigned
-	if (exp < FLOAT_EXP1 - 9) return x; // 11 = FLOAT_MANTBITS/2
-
-	// save sign
-	Bool sign = (Bool)Test_GetSignF(x);
-
-	// normalize mantissa - shift to max position and restore hidden bit '1'
-	u32 m = (Test_floatu32(x) << 8) | B31;
-
-	// shift mantissa right by exponent bits
-	// - get angle as signed fixed number in format 4.28
-	m >>= -(exp + SINF_FRACT - 127 - 31);
-
-	// modulo angle to range 0..2pi
-	s32 p = (s32)(26986075409ll >> SINF_INT); // 2pi in format 4.28 (= (2*pi * 2^32) >> 4 )
-	s32 n = m;
-	do n -= p; while (n >= 0);
-	do n += p; while (n < 0);
-
-	// convert to range 0..PI
-	p >>= 1; // pi
-	if (n >= p) // x >= PI ?
-	{
-		n -= p;
-		sign = !sign;
-	}
-
-	// convert to range 0..PI/2
-	s32 p2 = p >> 1; // pi/2
-	if (n >= p2) n = p - n;
-
-	// prepare Taylor serie
-	u32 n2 = (u32)(MyUMul(n, n) >> SINF_FRACT); // mant * x^2
-
-	// = x^1/1!
-	s32 acc = n; // acc = x^1/1!
-
-	// - x^3/3!
-	n = (u32)(MyUMul(n, n2) >> SINF_FRACT); // mant * x^2
-	n = MyUMulHigh(n, 0xAAAAAAAB) >> 2; // 2^34/(2*3) = 2863311531 round up
-	acc -= n;
-
-	// + x^5/5!
-	n = (u32)(MyUMul(n, n2) >> SINF_FRACT); // mant * x^2
-	if (n >= 4*5)
-	{
-		n = MyUMulHigh(n, 0xCCCCCCCD) >> 4; // 2^36/(4*5) = 3435973837 round up
-		acc += n;
-
-		// - x^7/7!
-		n = (u32)(MyUMul(n, n2) >> SINF_FRACT); // mant * x^2
-		if (n >= 6*7)
-		{
-			n = MyUMulHigh(n, 0xC30C30C4) >> 5; // 2^37/(6*7) = 3272356036 round up
-			acc -= n;
-
-			// + x^9/9!
-			n = (u32)(MyUMul(n, n2) >> SINF_FRACT); // mant * x^2
-			if (n >= 8*9)
-			{
-				n = MyUMulHigh(n, 0xE38E38E4) >> 6; // 2^38/(8*9) = 3817748708 round up
-				acc += n;
-
-				// - x^11/11!
-				n = (u32)(MyUMul(n, n2) >> SINF_FRACT); // mant * x^2
-				if (n >= 10*11)
-				{
-					n = MyUMulHigh(n, 0x94F20950) >> 6; // 2^38/(10*11) = 2498890064 round up
-					acc -= n;
-
-					// + x^13/13!
-					n = (u32)(MyUMul(n, n2) >> SINF_FRACT); // mant * x^2
-					if (n >= 12*13)
-					{
-						n = MyUMulHigh(n, 0xD20D20D3) >> 7; // 2^39/(12*13) = 3524075731 round up
-						acc += n;
-					}
-				}
-			}
-		}
-	}
-
-	// correct sign
-	if (sign) acc = -acc;
-
-	// convert back to float
-	return fix2float(acc, SINF_FRACT);
-}
-
-#endif
+*/

@@ -32,7 +32,7 @@
 float_section WRAPPER_FUNC_NAME(\func)
 .endm
 
-#if !USE_FLOATLIBC && USE_VFP		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
+#if !USE_FLOATLIBC && USE_M33_VFP		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
 
 @ load a 32-bit constant n into register rx
 .macro movlong rx,n
@@ -866,6 +866,6 @@ trigtab3:
 .word 0x18a10560,0x3f781071  @ phi=0.76965588 : tan phi=3fef020e20005c05 38.5b
 .word 0x19214060,0x3f7ff451  @ phi=0.78530902 : tan phi=3feffe8a1fffe11b 40.1b
 
-#endif // !USE_FLOATLIBC && USE_VFP		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
+#endif // !USE_FLOATLIBC && USE_M33_VFP		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
 
 #endif // USE_FLOAT		// use float support

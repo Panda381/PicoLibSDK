@@ -532,7 +532,6 @@ fm_4:
 //                 Multiply by unsigned integer u16, x * n
 // ----------------------------------------------------------------------------
 // float fmulu16(float x, u16 n);
-// - Obsolete function, do not use. Use fmul function instead.
 
 #if 0
 
@@ -669,6 +668,7 @@ fmulu16_0:
 fmulu16_x:
 	// result is 'x' from R0
 	bx	lr
+
 #endif
 
 // ----------------------------------------------------------------------------
@@ -900,7 +900,6 @@ retzero:
 //                 Divide by unsigned integer u16, x / n
 // ----------------------------------------------------------------------------
 // float fdivu16(float x, u16 n);
-// - Obsolete function, do not use. Use fdiv function instead.
 
 #if 0
 

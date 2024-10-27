@@ -41,7 +41,8 @@ Bool isoddintd(double num);
 Bool ispow2d(double num);
 
 // round to given number of significant digits (digits<=0 to use default number of digits)
-double rounddig(double x, int digits);
+// @TODO: probably will be deleted (accuracy cannot be guaranteed)
+//double rounddig(double x, int digits);
 
 // Check if comparison is unordered (either input is NaN)
 Bool dcmpun(double x, double y);
@@ -95,6 +96,12 @@ void sincos_deg(double x, double* psin, double* pcos);
 // tangent in degrees
 double tan_deg(double x);
 
+// cotangent
+double cotan(double x);
+
+// cotangent in degrees
+double cotan_deg(double x);
+
 // arc sine in radians
 double asin(double x);
 
@@ -107,7 +114,7 @@ double acos(double x);
 // arc cosine in degrees
 double acos_deg(double x);
 
-// RISC-V: atanf cannot be implemented this way because atanf is internally called from atan2f in libc
+// RISC-V: atan cannot be implemented this way because atan is internally called from atan2 in libc
 #if !RISCV
 // arc tangent in radians
 double atan(double x);
@@ -115,6 +122,12 @@ double atan(double x);
 
 // arc tangent in degrees
 double atan_deg(double x);
+
+// arc cotangent in radians
+INLINE double acotan(double x) { return PI/2 - atan(x); }
+
+// arc cotangent in degrees
+INLINE double acotan_deg(double x) { return 90.0 - atan_deg(x); }
 
 // arc tangent of y/x in degrees
 double atan2_deg(double y, double x);
@@ -213,9 +226,6 @@ double dsqr(double x);
 
 // Division, x / y
 double ddiv(double x, double y);
-
-// Fast division, x / y (less precise rounding)
-INLINE double ddiv_fast(double x, double y) { return ddiv(x, y); }
 
 // Reciprocal 1 / x
 double drec(double x);
@@ -322,9 +332,6 @@ u64 double2ufix64(double num, int e);
 // Square root
 double sqrt(double x);
 
-// Fast square root (less precise rounding)
-INLINE double sqrt_fast(double x) { return sqrt(x); }
-
 // sine in radians
 double sin(double x);
 
@@ -367,9 +374,6 @@ double dmul(double x, double y);
 
 // Square, x^2 
 INLINE double dsqr(double x) { return x * x; }
-
-// Fast division, x / y (less precise rounding)
-double ddiv_fast(double x, double y);
 
 // Division, x / y
 double ddiv(double x, double y);
@@ -481,9 +485,6 @@ u64 double2ufix64(double num, int e);
 // Square root
 double sqrt(double x);
 
-// Fast square root (less precise rounding)
-double sqrt_fast(double x);
-
 // sine in radians
 double sin(double x);
 
@@ -529,9 +530,6 @@ INLINE double dsqr(double x) { return x * x; }
 
 // Division, x / y
 INLINE double ddiv(double x, double y) { return x / y; }
-
-// Fast division, x / y (less precise rounding)
-INLINE double ddiv_fast(double x, double y) { return ddiv(x, y); }
 
 // Reciprocal 1 / x
 INLINE double drec(double x) { return 1.0 / x; }
@@ -658,9 +656,6 @@ INLINE u64 double2ufix64(double num, int e) { return d2ul(ldexp(num, e)); }
 
 // Square root
 double sqrt(double x);
-
-// Fast square root (less precise rounding)
-INLINE double sqrt_fast(double x) { return sqrt(x); }
 
 // sine in radians
 double sin(double x);
@@ -716,9 +711,6 @@ INLINE double dsqr(double x) { return x * x; }
 // Division, x / y
 INLINE double ddiv(double x, double y) { return x / y; }
 
-// Fast division, x / y (less precise rounding)
-INLINE double ddiv_fast(double x, double y) { return ddiv(x, y); }
-
 // Reciprocal 1 / x
 INLINE double drec(double x) { return 1.0 / x; }
 
@@ -845,9 +837,6 @@ INLINE u64 double2ufix64(double num, int e) { return d2ul(ldexp(num, e)); }
 // Square root
 double sqrt(double x);
 
-// Fast square root (less precise rounding)
-INLINE double sqrt_fast(double x) { return sqrt(x); }
-
 // sine in radians
 double sin(double x);
 
@@ -872,6 +861,12 @@ double tan(double x);
 // tangent in degrees
 INLINE double tan_deg(double x) { return tan(deg2rad(x)); }
 
+// cotangent
+INLINE double cotan(double x) { return drec(tan(x)); }
+
+// cotangent in degrees
+INLINE double cotan_deg(double x) { return cotan(deg2rad(x)); }
+
 // arc sine in radians
 double asin(double x);
 
@@ -889,6 +884,12 @@ double atan(double x);
 
 // arc tangent in degrees
 INLINE double atan_deg(double x) { return rad2deg(atan(x)); }
+
+// arc cotangent in radians
+INLINE double acotan(double x) { return PI/2 - atan(x); }
+
+// arc cotangent in degrees
+INLINE double acotan_deg(double x) { return 90.0 - atan_deg(x); }
 
 // arc tangent of y/x in radians
 double atan2(double y, double x);

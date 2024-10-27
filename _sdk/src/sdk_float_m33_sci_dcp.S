@@ -32,7 +32,7 @@
 float_section WRAPPER_FUNC_NAME(\func)
 .endm
 
-#if !USE_FLOATLIBC && !USE_VFP		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
+#if !USE_FLOATLIBC && !USE_M33_VFP		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
 
 .extern rtwopi
 .extern logtab0
@@ -811,6 +811,6 @@ wrapper_func cosf
  eors r0,r0,r5,lsl#1         @ negate sine result if argument was negative
  pop {r4-r6,r15}
 
-#endif // !USE_FLOATLIBC && !USE_VFP		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
+#endif // !USE_FLOATLIBC && !USE_M33_VFP		// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
 
 #endif // USE_FLOAT		// use float support

@@ -11,7 +11,7 @@
 
 #include "../../../includes.h"	// all includes
 
-#define CHECK_NOINF	0		// 1 = disable check of infinity ranges
+#define CHECK_FULLRANGE	0		// 1 = check full range (incl. inf), 0 = check precision and speed
 
 #undef USE_REAL32
 

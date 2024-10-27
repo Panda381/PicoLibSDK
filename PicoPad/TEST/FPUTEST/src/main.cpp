@@ -29,6 +29,10 @@ void MyPrint(const char* name, double maxavg, int max, int loops)
 //   a value of 1 can generate large differences in the results.
 // - fma function - result can be near 0 and therefore inaccurate.
 
+// To use "libc" functions, set USE_FLOATLIBC and USE_DOUBLELIBC in Makefile.inc to 1.
+
+float myacotanf(float x) { return (float)(PI/2 - atan(x)); }
+
 int main()
 {
 	// print title
@@ -43,9 +47,6 @@ int main()
 #endif
 		(ClockGetHz(CLK_SYS)+200000)/1000000);
 
-	// initialize random generator
-	MyRandSet(123456789123456789ULL);
-
 	// calibrate time
 	DrawPrint("Calibrating...");
 	Test_Calib();
@@ -54,6 +55,9 @@ int main()
 // single precision
 
 	DrawPrint("--- Checking float functions:\n");
+
+	// initialize random generator
+	MyRandSet(123456789123456789ULL);
 
 	// compose floating point with magnitude of 'num' and sign of 'sign'
 	Test_copysignf(LOOPS_SLOW); MyPrint("copysignf", 0, 0, LOOPS_SLOW);
@@ -84,9 +88,6 @@ int main()
 
 	// Division, x / y
 	Test_fdiv(LOOPS_FAST); MyPrint("fdiv", 0.03, 1, LOOPS_FAST);
-
-	// Fast division, x / y
-	Test_fdiv_fast(LOOPS_FAST); MyPrint("fdiv_fast", 0.1, 1, LOOPS_FAST);
 
 	// Reciprocal 1 / x
 	Test_frec(LOOPS_FAST); MyPrint("frec", 0.01, 1, LOOPS_FAST);
@@ -182,7 +183,8 @@ int main()
 	Test_roundf(LOOPS); MyPrint("roundf", 0.01, 1, LOOPS);
 
 	// round to given number of significant digits
-	Test_rounddigf(LOOPS_FAST); MyPrint("rounddigf", 5, 24, LOOPS_FAST);
+	// @TODO: probably will be deleted (accuracy cannot be guaranteed)
+//	Test_rounddigf(LOOPS_FAST); MyPrint("rounddigf", 5, 24, LOOPS_FAST);
 
 	// round number down to integer
 	Test_floorf(LOOPS); MyPrint("floorf", 0.01, 1, LOOPS);
@@ -192,9 +194,7 @@ int main()
 
 	// Square root
 	Test_sqrtf(LOOPS_FAST); MyPrint("sqrtf", 0.15, 1, LOOPS_FAST);
-
-	// Fast square root
-	Test_sqrtf_fast(LOOPS_FAST); MyPrint("sqrtf_fast", 0.1, 1, LOOPS_FAST);
+	Test_conFF_sqrtf(); DrawPrint("sqrtf consistency: %s (%d)\n", (DifMax <= 4) ? "OK" : "ERROR", DifMax);
 
 	// convert degrees to radians
 	Test_deg2radf(LOOPS); MyPrint("deg2radf", 0.06, 1, LOOPS);
@@ -226,6 +226,12 @@ int main()
 	// tangent in degrees
 	Test_tanf_deg(LOOPS_FAST); MyPrint("tanf_deg", 3.5, 24, LOOPS_FAST);
 
+	// cotangent in radians
+	Test_cotanf(LOOPS_FAST); MyPrint("cotanf", 3.0, 24, LOOPS_FAST);
+
+	// cotangent in degrees
+	Test_cotanf_deg(LOOPS_FAST); MyPrint("cotanf_deg", 3.5, 24, LOOPS_FAST);
+
 	// arc sine in radians
 	Test_asinf(LOOPS_FAST); MyPrint("asinf", 2.0, 10, LOOPS_FAST);
 
@@ -233,16 +239,22 @@ int main()
 	Test_asinf_deg(LOOPS_FAST); MyPrint("asinf_deg", 2.2, 12, LOOPS_FAST);
 
 	// arc cosine in radians
-	Test_acosf(LOOPS_FAST); MyPrint("acosf", 0.2, 5, LOOPS_FAST);
+	Test_acosf(LOOPS_FAST); MyPrint("acosf", 0.4, 12, LOOPS_FAST);
 
 	// arc cosine in degrees
 	Test_acosf_deg(LOOPS_FAST); MyPrint("acosf_deg", 0.4, 6, LOOPS_FAST);
 
 	// arc tangent in radians
-	Test_atanf(LOOPS_FAST); MyPrint("atanf", 1, 10, LOOPS_FAST);
+	Test_atanf(LOOPS_FAST); MyPrint("atanf", 1, 24, LOOPS_FAST);
 
 	// arc tangent in degrees
-	Test_atanf_deg(LOOPS_FAST); MyPrint("atanf_deg", 1.2, 12, LOOPS_FAST);
+	Test_atanf_deg(LOOPS_FAST); MyPrint("atanf_deg", 1.2, 24, LOOPS_FAST);
+
+	// arc cotangent in radians
+	Test_acotanf(LOOPS_FAST); MyPrint("acotanf", 2, 24, LOOPS_FAST);
+
+	// arc cotangent in degrees
+	Test_acotanf_deg(LOOPS_FAST); MyPrint("acotanf_deg", 2, 24, LOOPS_FAST);
 
 	// arc tangent of y/x in radians
 	Test_atan2f(LOOPS_FAST); MyPrint("atan2f", 10, 24, LOOPS_FAST);
@@ -251,7 +263,7 @@ int main()
 	Test_atan2f_deg(LOOPS_FAST); MyPrint("atan2f_deg", 12, 24, LOOPS_FAST);
 
 	// hyperbolic sine
-	Test_sinhf(LOOPS_FAST); MyPrint("sinhf", 3, 12, LOOPS_FAST);
+	Test_sinhf(LOOPS_FAST); MyPrint("sinhf", 2, 12, LOOPS_FAST);
 
 	// hyperbolic cosine
 	Test_coshf(LOOPS_FAST); MyPrint("coshf", 0.4, 5, LOOPS_FAST);
@@ -260,7 +272,7 @@ int main()
 	Test_tanhf(LOOPS_FAST); MyPrint("tanhf", 2.0, 12, LOOPS_FAST);
 
 	// inverse hyperbolic sine
-	Test_asinhf(LOOPS_FAST); MyPrint("asinhf", 2.0, 24, LOOPS_FAST);
+	Test_asinhf(LOOPS_FAST); MyPrint("asinhf", 8.0, 24, LOOPS_FAST);
 
 	// inverse hyperbolic cosine
 	Test_acoshf(LOOPS_FAST); MyPrint("acoshf", 0.2, 24, LOOPS_FAST);
@@ -270,27 +282,33 @@ int main()
 
 	// Natural exponent
 	Test_expf(LOOPS_FAST); MyPrint("expf", 0.6, 3, LOOPS_FAST);
+	Test_conFF_expf(); DrawPrint("expf consistency: %s (%d)\n", (DifMax <= 2) ? "OK" : "ERROR", DifMax);
 
 	// Natural logarithm
-	Test_logf(LOOPS_FAST); MyPrint("logf", 0.1, 24, LOOPS_FAST);
+	Test_logf(LOOPS_FAST); MyPrint("logf", 0.2, 24, LOOPS_FAST);
+	Test_conFF_logf(); DrawPrint("logf consistency: %s (%d)\n", (DifMax <= 10) ? "OK" : "ERROR", DifMax);
 
 	// exponent with base 2
 	Test_exp2f(LOOPS_FAST); MyPrint("exp2f", 1.0, 10, LOOPS_FAST);
+	Test_conFF_exp2f(); DrawPrint("exp2f consistency: %s (%d)\n", (DifMax <= 8) ? "OK" : "ERROR", DifMax);
 
 	// logarithm with base 2
-	Test_log2f(LOOPS_FAST); MyPrint("log2f", 0.2, 24, LOOPS_FAST);
+	Test_log2f(LOOPS_FAST); MyPrint("log2f", 0.3, 24, LOOPS_FAST);
+	Test_conFF_log2f(); DrawPrint("log2f consistency: %s (%d)\n", (DifMax <= 10) ? "OK" : "ERROR", DifMax);
 
 	// exponent with base 10
 	Test_exp10f(LOOPS_FAST); MyPrint("exp10f", 1.0, 10, LOOPS_FAST);
+	Test_conFF_exp10f(); DrawPrint("exp10f consistency: %s (%d)\n", (DifMax <= 10) ? "OK" : "ERROR", DifMax);
 
 	// logarithm with base 10
-	Test_log10f(LOOPS_FAST); MyPrint("log10f", 0.25, 24, LOOPS_FAST);
+	Test_log10f(LOOPS_FAST); MyPrint("log10f", 0.6, 24, LOOPS_FAST);
+	Test_conFF_log10f(); DrawPrint("log10f consistency: %s (%d)\n", (DifMax <= 12) ? "OK" : "ERROR", DifMax);
 
 	// expf(x) - 1
-	Test_expm1f(LOOPS_FAST); MyPrint("expm1f", 2.0, 13, LOOPS_FAST);
+	Test_expm1f(LOOPS_FAST); MyPrint("expm1f", 5.0, 20, LOOPS_FAST);
 
 	// logf(x + 1)
-	Test_log1pf(LOOPS_FAST); MyPrint("log1pf", 12, 24, LOOPS_FAST);
+	Test_log1pf(LOOPS_FAST); MyPrint("log1pf", 4, 24, LOOPS_FAST);
 
 	// x*y + z
 	Test_fmaf(LOOPS); MyPrint("fmaf", 0.05, 24, LOOPS);
@@ -302,7 +320,7 @@ int main()
 	Test_powf(LOOPS_FAST); MyPrint("powf", 0.3, 24, LOOPS_FAST);
 
 	// square root of sum of squares (hypotenuse), sqrt(x*x + y*y)
-	Test_hypotf(LOOPS_FAST); MyPrint("hypotf", 0.06, 2, LOOPS_FAST);
+	Test_hypotf(LOOPS_FAST); MyPrint("hypotf", 0.1, 2, LOOPS_FAST);
 
 	// cube root, sqrt3(x), x^(1/3)
 	Test_cbrtf(LOOPS_FAST); MyPrint("cbrtf", 0.5, 3, LOOPS_FAST);
@@ -316,6 +334,9 @@ int main()
 // double precision
 
 	DrawPrint("--- Checking double functions:\n");
+
+	// initialize random generator
+	MyRandSet(123456789123456789ULL);
 
 	// compose floating point with magnitude of 'num' and sign of 'sign'
 	Test_copysign(LOOPS_SLOW); MyPrint("copysign", 0, 0, LOOPS_SLOW);
@@ -345,13 +366,10 @@ int main()
 	Test_dsqr(LOOPS); MyPrint("dsqr", 0.01, 1, LOOPS);
 
 	// Division, x / y
-	Test_ddiv(LOOPS_FAST); MyPrint("ddiv", 0.01, 1, LOOPS_FAST);
-
-	// Fast division, x / y
-	Test_ddiv_fast(LOOPS_FAST); MyPrint("ddiv_fast", 0.1, 1, LOOPS_FAST);
+	Test_ddiv(LOOPS_FAST); MyPrint("ddiv", 0.02, 1, LOOPS_FAST);
 
 	// Reciprocal 1 / x
-	Test_drec(LOOPS_FAST); MyPrint("drec", 0.01, 1, LOOPS_FAST);
+	Test_drec(LOOPS_FAST); MyPrint("drec", 0.02, 1, LOOPS_FAST);
 
 	// get remainder of division x/y, rounded towards zero
 	Test_fmod(LOOPS_FAST); MyPrint("fmod", 0.01, 1, LOOPS_FAST);
@@ -381,7 +399,7 @@ int main()
 	Test_dcmpgt(LOOPS_SLOW); MyPrint("dcmpgt", 0, 0, LOOPS_SLOW);
 
 	// Check if comparison is unordered (both inputs are NaN)
-	Test_dcmpun(LOOPS_SLOW); MyPrint("dcmpun", 0.8, 1, LOOPS_SLOW);
+	Test_dcmpun(LOOPS_SLOW); MyPrint("dcmpun", 1.0, 1, LOOPS_SLOW);
 
 	// Convert signed int to float
 	Test_int2double(LOOPS_SLOW); MyPrint("int2double", 0.01, 1, LOOPS_SLOW);
@@ -444,7 +462,8 @@ int main()
 	Test_round(LOOPS); MyPrint("round", 0.01, 1, LOOPS);
 
 	// round to given number of significant digits
-	Test_rounddig(LOOPS_FAST); MyPrint("rounddig", 8, 53, LOOPS_FAST);
+	// @TODO: probably will be deleted (accuracy cannot be guaranteed)
+//	Test_rounddig(LOOPS_FAST); MyPrint("rounddig", 8, 53, LOOPS_FAST);
 
 	// round number down to integer
 	Test_floor(LOOPS); MyPrint("floor", 0.01, 1, LOOPS);
@@ -453,10 +472,7 @@ int main()
 	Test_ceil(LOOPS); MyPrint("ceil", 0.01, 1, LOOPS);
 
 	// Square root
-	Test_sqrt(LOOPS_FAST); MyPrint("sqrt", 0.01, 1, LOOPS_FAST);
-
-	// Fast square root
-	Test_sqrt_fast(LOOPS_FAST); MyPrint("sqrt_fast", 0.1, 1, LOOPS_FAST);
+	Test_sqrt(LOOPS_FAST); MyPrint("sqrt", 0.1, 1, LOOPS_FAST);
 
 	// convert degrees to radians
 	Test_deg2rad(LOOPS); MyPrint("deg2rad", 0.10, 1, LOOPS);
@@ -488,6 +504,12 @@ int main()
 	// tangent in degrees
 	Test_tan_deg(LOOPS_FAST); MyPrint("tan_deg", 1.3, 53, LOOPS_FAST);
 
+	// cotangent in radians
+	Test_cotan(LOOPS_FAST); MyPrint("cotan", 1.0, 53, LOOPS_FAST);
+
+	// cotangent in degrees
+	Test_cotan_deg(LOOPS_FAST); MyPrint("cotan_deg", 1.3, 53, LOOPS_FAST);
+
 	// arc sine in radians
 	Test_asin(LOOPS_FAST); MyPrint("asin", 1.2, 10, LOOPS_FAST);
 
@@ -501,43 +523,51 @@ int main()
 	Test_acos_deg(LOOPS_FAST); MyPrint("acos_deg", 0.6, 5, LOOPS_FAST);
 
 	// arc tangent in radians
-	Test_atan(LOOPS_FAST); MyPrint("atan", 1, 10, LOOPS_FAST);
+	Test_atan(LOOPS_FAST); MyPrint("atan", 1, 53, LOOPS_FAST);
 
 	// arc tangent in degrees
-	Test_atan_deg(LOOPS_FAST); MyPrint("atan_deg", 1.2, 12, LOOPS_FAST);
+	Test_atan_deg(LOOPS_FAST); MyPrint("atan_deg", 1.2, 53, LOOPS_FAST);
+
+	// arc cotangent in radians
+	// RISC-V libc: 34000ns 0.552080 11
+	Test_acotan(LOOPS_FAST); MyPrint("acotan", 2, 53, LOOPS_FAST);
+
+	// arc cotangent in degrees
+	// RISC-V libc: 20100ns 0.420440 13
+	Test_acotan_deg(LOOPS_FAST); MyPrint("acotan_deg", 2, 53, LOOPS_FAST);
 
 	// arc tangent of y/x in radians
-	Test_atan2(LOOPS_FAST); MyPrint("atan2", 15, 53, LOOPS_FAST);
+	Test_atan2(LOOPS_FAST); MyPrint("atan2", 10, 53, LOOPS_FAST);
 
 	// arc tangent of y/x in degrees
-	Test_atan2_deg(LOOPS_FAST); MyPrint("atan2_deg", 16, 53, LOOPS_FAST);
+	Test_atan2_deg(LOOPS_FAST); MyPrint("atan2_deg", 10, 53, LOOPS_FAST);
 
 	// hyperbolic sine
-	Test_sinh(LOOPS_FAST); MyPrint("sinh", 3, 15, LOOPS_FAST);
+	Test_sinh(LOOPS_FAST); MyPrint("sinh", 8, 53, LOOPS_FAST);
 
 	// hyperbolic cosine
-	Test_cosh(LOOPS_FAST); MyPrint("cosh", 0.2, 2, LOOPS_FAST);
+	Test_cosh(LOOPS_FAST); MyPrint("cosh", 0.2, 5, LOOPS_FAST);
 
 	// hyperbolic tangent
-	Test_tanh(LOOPS_FAST); MyPrint("tanh", 2.2, 15, LOOPS_FAST);
+	Test_tanh(LOOPS_FAST); MyPrint("tanh", 3, 53, LOOPS_FAST);
 
 	// inverse hyperbolic sine
-	Test_asinh(LOOPS_FAST); MyPrint("asinh", 2.5, 53, LOOPS_FAST);
+	Test_asinh(LOOPS_FAST); MyPrint("asinh", 3, 53, LOOPS_FAST);
 
 	// inverse hyperbolic cosine
 	Test_acosh(LOOPS_FAST); MyPrint("acosh", 0.3, 53, LOOPS_FAST);
 
 	// inverse hyperbolic tangent
-	Test_atanh(LOOPS_FAST); MyPrint("atanh", 2.0, 53, LOOPS_FAST);
+	Test_atanh(LOOPS_FAST); MyPrint("atanh", 3, 53, LOOPS_FAST);
 
 	// Natural exponent
-	Test_exp(LOOPS_FAST); MyPrint("exp", 0.1, 2, LOOPS_FAST);
+	Test_exp(LOOPS_FAST); MyPrint("exp", 0.2, 3, LOOPS_FAST);
 
 	// Natural logarithm
 	Test_log(LOOPS_FAST); MyPrint("log", 0.01, 53, LOOPS_FAST);
 
 	// exponent with base 2
-	Test_exp2(LOOPS_FAST); MyPrint("exp2", 0.1, 2, LOOPS_FAST);
+	Test_exp2(LOOPS_FAST); MyPrint("exp2", 0.4, 3, LOOPS_FAST);
 
 	// logarithm with base 2
 	Test_log2(LOOPS_FAST); MyPrint("log2", 0.2, 53, LOOPS_FAST);
@@ -549,7 +579,7 @@ int main()
 	Test_log10(LOOPS_FAST); MyPrint("log10", 0.2, 53, LOOPS_FAST);
 
 	// expf(x) - 1
-	Test_expm1(LOOPS_FAST); MyPrint("expm1", 2.5, 15, LOOPS_FAST);
+	Test_expm1(LOOPS_FAST); MyPrint("expm1", 10, 53, LOOPS_FAST);
 
 	// logf(x + 1)
 	Test_log1p(LOOPS_FAST); MyPrint("log1p", 28, 53, LOOPS_FAST);

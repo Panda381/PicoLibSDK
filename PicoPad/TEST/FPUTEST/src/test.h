@@ -39,19 +39,23 @@ INLINE u32 Test_floatu32(float f) { float_u32 tmp; tmp.f = f; return tmp.n; }
 INLINE u64 Test_doubleu64(double f) { double_u64 tmp; tmp.f = f; return tmp.n; }
 
 // get special numbers
-INLINE float Test_PInfF() { return Test_u32float(0x7f800000); }		// +1.#INF
-INLINE float Test_MInfF() { return Test_u32float(0xff800000); }		// -1.#INF
-INLINE float Test_QNanF() { return Test_u32float(0x7fc00000); }		// +1.#QNAN
-INLINE float Test_IndF() { return Test_u32float(0xffc00000); }		// -1.#IND
+INLINE float Test_PInfF()  { return Test_u32float(0x7f800000); }	// +1.#INF
+INLINE float Test_MInfF()  { return Test_u32float(0xff800000); }	// -1.#INF
+INLINE float Test_QNanF()  { return Test_u32float(0x7fc00000); }	// +1.#QNAN
+INLINE float Test_IndF()   { return Test_u32float(0xffc00000); }	// -1.#IND
 INLINE float Test_PZeroF() { return Test_u32float(0x00000000); }	// +0.0
 INLINE float Test_MZeroF() { return Test_u32float(0x80000000); }	// -0.0
+INLINE float Test_P1F()    { return Test_u32float(0x3F800000); }	// +1.0
+INLINE float Test_PMaxF()  { return Test_u32float(0x7f7fffff); }	// max. valid positive number
+INLINE float Test_MMaxF()  { return Test_u32float(0xff7fffff); }	// max. valid negative number
 
-INLINE double Test_PInfD() { return Test_u64double(0x7ff0000000000000ULL); }	// +1.#INF
-INLINE double Test_MInfD() { return Test_u64double(0xfff0000000000000ULL); }	// -1.#INF
-INLINE double Test_QNanD() { return Test_u64double(0x7ff8000000000000ULL); }	// +1.#QNAN
-INLINE double Test_IndD() { return Test_u64double(0xfff8000000000000ULL); }	// -1.#IND
+INLINE double Test_PInfD()  { return Test_u64double(0x7ff0000000000000ULL); }	// +1.#INF
+INLINE double Test_MInfD()  { return Test_u64double(0xfff0000000000000ULL); }	// -1.#INF
+INLINE double Test_QNanD()  { return Test_u64double(0x7ff8000000000000ULL); }	// +1.#QNAN
+INLINE double Test_IndD()   { return Test_u64double(0xfff8000000000000ULL); }	// -1.#IND
 INLINE double Test_PZeroD() { return Test_u64double(0x0000000000000000ULL); }	// +0.0
 INLINE double Test_MZeroD() { return Test_u64double(0x8000000000000000ULL); }	// -0.0
+INLINE double Test_P1D()    { return Test_u64double(0x3ff8000000000000ULL); }	// +1.0
 
 // extract signed exponent from the number
 int Test_GetExpF(float num);
@@ -146,10 +150,6 @@ void Test_dsqr(int loop);
 // Division, x / y
 void Test_fdiv(int loop);
 void Test_ddiv(int loop);
-
-// Fast fivision, x / y
-void Test_fdiv_fast(int loop);
-void Test_ddiv_fast(int loop);
 
 // Reciprocal 1 / x
 void Test_frec(int loop);
@@ -299,10 +299,6 @@ void Test_ceil(int loop);
 void Test_sqrtf(int loop);
 void Test_sqrt(int loop);
 
-// Fast square root
-void Test_sqrtf_fast(int loop);
-void Test_sqrt_fast(int loop);
-
 // convert degrees to radians
 void Test_deg2radf(int loop);
 void Test_deg2rad(int loop);
@@ -343,6 +339,14 @@ void Test_tan(int loop);
 void Test_tanf_deg(int loop);
 void Test_tan_deg(int loop);
 
+// cotangent in radians
+void Test_cotanf(int loop);
+void Test_cotan(int loop);
+
+// cotangent in degrees
+void Test_cotanf_deg(int loop);
+void Test_cotan_deg(int loop);
+
 // arc sine in radians
 void Test_asinf(int loop);
 void Test_asin(int loop);
@@ -366,6 +370,14 @@ void Test_atan(int loop);
 // arc tangent in degrees
 void Test_atanf_deg(int loop);
 void Test_atan_deg(int loop);
+
+// arc cotangent in radians
+void Test_acotanf(int loop);
+void Test_acotan(int loop);
+
+// arc cotangent in degrees
+void Test_acotanf_deg(int loop);
+void Test_acotan_deg(int loop);
 
 // arc tangent of y/x in radians
 void Test_atan2f(int loop);
@@ -462,5 +474,19 @@ void Test_float2double(int loop);
 void Test_double2float(int loop);
 
 // round to given number of significant digits
-void Test_rounddigf(int loop);
-void Test_rounddig(int loop);
+// @TODO: probably will be deleted (accuracy cannot be guaranteed)
+//void Test_rounddigf(int loop);
+//void Test_rounddig(int loop);
+
+// sqrtf() constistency check
+void Test_conFF_sqrtf();
+
+// expf() constistency check
+void Test_conFF_expf();
+void Test_conFF_exp2f();
+void Test_conFF_exp10f();
+
+// logf() constistency check
+void Test_conFF_logf();
+void Test_conFF_log2f();
+void Test_conFF_log10f();

@@ -232,6 +232,9 @@ CFLAGS += -ffunction-sections -fdata-sections
 # use unsigned char (this is default for ARM cpu)
 CFLAGS += -funsigned-char
 
+# use fast math
+# CFLAGS += -ffast-math -fno-math-errno -funsafe-math-optimizations -fno-signed-zeros -fno-signaling-nans
+
 # pedantic - to report error when 'return' is missing ... cannot be used, it does not support noname structures
 #CFLAGS += -Wall -fms-extensions -ansi -pedantic
 
@@ -331,9 +334,9 @@ LDFLAGS+=-Wl,--wrap=ceilf
 LDFLAGS+=-Wl,--wrap=asinf
 LDFLAGS+=-Wl,--wrap=acosf
 # RISC-V: atanf cannot be implemented this way because atanf is internally called from atan2f in libc
-ifneq (${CPUCLASS},RP2350RISCV)
+#ifneq (${CPUCLASS},RP2350RISCV)
 LDFLAGS+=-Wl,--wrap=atanf
-endif
+#endif
 LDFLAGS+=-Wl,--wrap=sinhf
 LDFLAGS+=-Wl,--wrap=coshf
 LDFLAGS+=-Wl,--wrap=tanhf
@@ -364,14 +367,24 @@ LDFLAGS+=-Wl,--wrap=trunc
 LDFLAGS+=-Wl,--wrap=round
 LDFLAGS+=-Wl,--wrap=floor
 LDFLAGS+=-Wl,--wrap=ceil
+
+# libc is faster
+ifneq (${CPUCLASS},RP2350RISCV)
 LDFLAGS+=-Wl,--wrap=asin
 LDFLAGS+=-Wl,--wrap=acos
+endif
+
 # RISC-V: atanf cannot be implemented this way because atanf is internally called from atan2f in libc
 ifneq (${CPUCLASS},RP2350RISCV)
 LDFLAGS+=-Wl,--wrap=atan
 endif
+
+# libc is faster
+ifneq (${CPUCLASS},RP2350RISCV)
 LDFLAGS+=-Wl,--wrap=sinh
 LDFLAGS+=-Wl,--wrap=cosh
+endif
+
 LDFLAGS+=-Wl,--wrap=tanh
 LDFLAGS+=-Wl,--wrap=asinh
 LDFLAGS+=-Wl,--wrap=acosh
@@ -385,8 +398,13 @@ LDFLAGS+=-Wl,--wrap=log1p
 LDFLAGS+=-Wl,--wrap=fma
 LDFLAGS+=-Wl,--wrap=powint
 LDFLAGS+=-Wl,--wrap=pow
+
+# libc is faster
+ifneq (${CPUCLASS},RP2350RISCV)
 LDFLAGS+=-Wl,--wrap=hypot
 LDFLAGS+=-Wl,--wrap=cbrt
+endif
+
 LDFLAGS+=-Wl,--wrap=fmod
 LDFLAGS+=-Wl,--wrap=remquo
 LDFLAGS+=-Wl,--wrap=remainder
@@ -555,10 +573,40 @@ LDFLAGS+=-Wl,--wrap=__addsf3
 LDFLAGS+=-Wl,--wrap=__subsf3
 LDFLAGS+=-Wl,--wrap=__mulsf3
 LDFLAGS+=-Wl,--wrap=__divsf3
+
 LDFLAGS+=-Wl,--wrap=__clzsi2
 LDFLAGS+=-Wl,--wrap=__clz2si
-LDFLAGS+=-Wl,--wrap=sinf
+
 LDFLAGS+=-Wl,--wrap=sqrtf
+
+LDFLAGS+=-Wl,--wrap=expf
+LDFLAGS+=-Wl,--wrap=exp2f
+LDFLAGS+=-Wl,--wrap=exp12f
+
+LDFLAGS+=-Wl,--wrap=logf
+LDFLAGS+=-Wl,--wrap=log2f
+LDFLAGS+=-Wl,--wrap=log10f
+
+LDFLAGS+=-Wl,--wrap=sinf
+LDFLAGS+=-Wl,--wrap=cosf
+LDFLAGS+=-Wl,--wrap=sincosf
+LDFLAGS+=-Wl,--wrap=tanf
+LDFLAGS+=-Wl,--wrap=cotanf
+
+LDFLAGS+=-Wl,--wrap=asinf
+LDFLAGS+=-Wl,--wrap=acosf
+LDFLAGS+=-Wl,--wrap=atanf
+LDFLAGS+=-Wl,--wrap=acotanf
+LDFLAGS+=-Wl,--wrap=atan2f
+
+LDFLAGS+=-Wl,--wrap=__fixsfsi
+LDFLAGS+=-Wl,--wrap=__fixunssfsi
+LDFLAGS+=-Wl,--wrap=__fixsfdi
+LDFLAGS+=-Wl,--wrap=__fixunssfdi
+LDFLAGS+=-Wl,--wrap=__floatsisf
+LDFLAGS+=-Wl,--wrap=__floatunsisf
+LDFLAGS+=-Wl,--wrap=__floatdisf
+LDFLAGS+=-Wl,--wrap=__floatundisf
 endif
 endif
 

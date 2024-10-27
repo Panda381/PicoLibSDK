@@ -137,6 +137,7 @@ saving_func2 __aeabi_fmul fmul
   dcp_fmul_m r0,r0,r1,r0,r1
   saving_func_return
 
+/*
 float_section fdiv_fast
 saving_func2 fdiv_fast fdiv_fast
   dcp_fdiv_fast_m r0,r0,r1,r0,r1,r2
@@ -147,7 +148,25 @@ saving_func2 __aeabi_fdiv fdiv
 @ with correct rounding
   dcp_fdiv_m r0,r0,r1,r0,r1,r2,r3
   saving_func_return
+*/
 
+#if USE_M33_FDIV == 1		// RP2350-ARM fdiv() function: 1=fast (recommended), 2=precise
+
+float_wrapper_section __aeabi_fdiv
+saving_func2 __aeabi_fdiv fdiv
+  dcp_fdiv_fast_m r0,r0,r1,r0,r1,r2
+  saving_func_return
+
+#else
+
+float_wrapper_section __aeabi_fdiv
+saving_func2 __aeabi_fdiv fdiv
+  dcp_fdiv_m r0,r0,r1,r0,r1,r2,r3
+  saving_func_return
+
+#endif
+
+/*
 float_section sqrtf_fast
 saving_func2 sqrtf_fast sqrtf_fast
   dcp_fsqrt_fast_m r0,r0,r0,r1,r2,r3
@@ -158,6 +177,23 @@ saving_func sqrtf
 @ with correct rounding
   dcp_fsqrt_m r0,r0,r0,r1,r2,r3
   saving_func_return
+*/
+
+#if USE_M33_SQRTF == 1		// RP2350-ARM sqrtf() function: 1=fast (recommended), 2=precise
+
+float_wrapper_section sqrtf
+saving_func sqrtf
+  dcp_fsqrt_fast_m r0,r0,r0,r1,r2,r3
+  saving_func_return
+
+#else
+
+float_wrapper_section sqrtf
+saving_func sqrtf
+  dcp_fsqrt_m r0,r0,r0,r1,r2,r3
+  saving_func_return
+
+#endif
 
 // todo not a real thing
 float_wrapper_section __aeabi_fclassify
