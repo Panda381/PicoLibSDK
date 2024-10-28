@@ -371,32 +371,3 @@ float Ref_double2float(double num);
 // @TODO: probably will be deleted (accuracy cannot be guaranteed)
 //float Ref_rounddigf(float x, int digits);
 //double Ref_rounddig(double x, int digits);
-
-
-
-
-
-float expf_fast(float x);
-float logf_fast(float x);
-
-void sincosf_fast(float x, float* psin, float* pcos);
-void sincosf_deg_fast(float x, float* psin, float* pcos);
-float sinf_fast(float x);
-float sinf_deg_fast(float x);
-float cosf_fast(float x);
-float cosf_deg_fast(float x);
-float tanf_fast(float x);
-float tanf_deg_fast(float x);
-float cotanf_fast(float x);
-float cotanf_deg_fast(float x);
-
-float asinf_fast(float x);
-float asinf_deg_fast(float x);
-float acosf_fast(float x);
-float acosf_deg_fast(float x);
-
-
-float atanf_fast(float x);
-float atanf_deg_fast(float x);
-float acotanf_fast(float x);
-float acotanf_deg_fast(float x);
