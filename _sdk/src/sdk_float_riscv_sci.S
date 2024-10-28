@@ -35,6 +35,9 @@
 //  acotanf (*Chebyshev 1030ns)
 //  acotanf_deg (*Chebyshev 1070ns)
 
+// Functions were tested with the FPUTEST application from the PicoLibSDK  
+// https://github.com/Panda381/PicoLibSDK/tree/main/PicoPad/TEST/FPUTEST
+
 // .p2align 2,,
 // On riscv32-unknown-elf-gcc-13.2.0 this alignment works incorrectly - adds incorrect alignment
 // after the end of the section. Use commas ,, to work a little better.
@@ -1150,7 +1153,7 @@ expf_exp2f_jump:
 	// Rounding
 4:	addi	a0,a0,0x100		// add rounding correction
 
-	// @TODO: Tests have not shown this case to occur - is this necessary?
+// acc before rounding is in range 0x00000100..0xFFFFFE0B, overflow will never occur, but beware
 //	li	t0,0x100
 //	bgeu	a0,t0,5f		// no overflow
 //	li	a0,-1			// limit to 0xFFFFFFFF

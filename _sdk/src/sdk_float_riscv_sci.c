@@ -11,6 +11,9 @@
 // assembly. C function alternatives can be used to compile for processors
 // other than RISC-V Hazard3.
 
+// Functions were tested with the FPUTEST application from the PicoLibSDK  
+// https://github.com/Panda381/PicoLibSDK/tree/main/PicoPad/TEST/FPUTEST
+
 // compilation setup
 #define USE_RISCV_EXPF		1		// RISC-V expf(), exp2f() and exp10f() function: 1=Chebyshev (recommended), 2=Taylor
 #define EXPF_MODE		1		// expf mode: 1=expf, 2=exp2f, 3=exp10f
@@ -468,7 +471,8 @@ float expf_fast(float x)
 
 	// Rounding
 	acc += 0x100;
-	// @TODO: Tests have not shown this case to occur - is this necessary?
+
+	// acc before rounding is in range 0x00000100..0xFFFFFE0B, overflow will never occur, but beware
 	//if (acc < 0x100) acc = 0xFFFFFFFF;
 
 	// Normalize mantissa

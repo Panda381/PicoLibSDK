@@ -17,6 +17,9 @@
 // >>> Warning - the original __mulsf3 function has a bug of unhandled
 //     overflow during rounding - it is fixed here. <<<
 
+// Functions were tested with the FPUTEST application from the PicoLibSDK  
+// https://github.com/Panda381/PicoLibSDK/tree/main/PicoPad/TEST/FPUTEST
+
 // .p2align 2,,
 // On riscv32-unknown-elf-gcc-13.2.0 this alignment works incorrectly - adds incorrect alignment
 // after the end of the section. Use commas ,, to work a little better.
