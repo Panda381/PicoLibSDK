@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico, RP2040 and RP2350
 ==========================================================================
-SDK Programmer's Guide, Version 2.01, October 2024
+SDK Programmer's Guide, Version 2.02, November 2024
 
 Copyright (c) 2023-2024 Miroslav Nemecek
 
@@ -835,17 +835,16 @@ History of versions
 06/14/2024 version 1.13: Game Boy Emulator
 10/08/2024 version 2.00: RP2350 Pico 2 support
 10/27/2024 version 2.01: Fast float library for RISC-V Hazard3 core.
+11/05/2024 version 2.02: NES Emulator
 
 
 Missing and @TODO
 -----------------
 SDK supports that are missing in the library and are needed @TODO:
 
-- run double-floating-point from bootrom
 - bluetooth and wifi
 - more USB drivers (audio, bluetooth, dfu, midi, msc, net, tmc, video)
 - DDS compression image format, JPG compression
 - MP3 compression
 - 3D graphics support
-- add multiple cache sector buffers to FAT file system module
 - encapsulation of text strings into C++ objects

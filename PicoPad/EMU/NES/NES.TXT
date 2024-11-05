@@ -1,0 +1,14 @@
+      ^YNES Emulator^0
+
+         ^XButtons:^0
+^WARROWS^0 ............ arrows
+^WA,B^0 ........... action A,B
+^WX,Y^0 ......... START,SELECT
+^WY+UP^0 ........... game menu
+^WY+DOWN^0 .............. zoom
+      ^XUSB keyboard:^0
+^Warrows^0 ............ arrows
+^WCtrl,Shift^0 ........... A,B
+^WEnter/BkSpc^0 . START,SELECT
+^WEsc^0 ............ game menu
+^WTab^0 ................. zoom

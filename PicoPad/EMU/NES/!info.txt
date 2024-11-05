@@ -1,0 +1,37 @@
+Game menu: press Y + Up
+
+A ... screenshot
+
+
+To compile all samples *.NES use c_all_samples.bat.
+
+
+
+Rarely used switches in *.h: (need to update files InfoNES_Mapper.cpp and NES_APU.cpp files on compilation)
+============================
+// handling of exceptional situations of emulation (in 99% of cases, there is no need to use)
+//#define NES_NOIRQ_HIT0	// uncomment this to disable NMI IRQ on sprite #0 hit
+//#define NES_NOIRQ_VBLANK	// uncomment this to disable NMI IRQ on V-blank
+//#define NES_NOIRQ_FRAME	// uncomment this to disable IRQ on APU frame
+//#define NES_NOIRQ_DMC		// uncomment this to disable IRQ on APU DMC end of sound
+//#define NES_NOIRQ_HSYNC	// uncomment this to disable IRQ on H-Sync of mapper
+
+If you are using these "rarely used switches", either do a full compilation (delete the old
+compilation using d.bat) or uncomment the rows in _c_1.bat to delete the InfoNES_Mapper.cpp
+and NES_APU.cpp files.
+
+
+Other rarely switches
+=====================
+//#define NES_FRAMELEN_ADD 0	// uncomment this and enter adding to APU frame length (base value is 29824 or 37280)
+
+// rewrite default maper
+//#define NES_MAPPERNO	0	// uncomment this and enter custom mapper number (do not use zeros before the number)
+				// Supported mappers: 0-11, 13, 15-19, 21-26, 32-34, 40-51, 57-58, 60-62, 64-80,
+				//    82-83, 85-97, 100-101, 105, 107-110, 112-119, 122, 133-135, 140, 151, 160,
+				//    180-183, 185, 187-189, 191, 193-194, 200-202, 222, 225-236, 240-246, 248-249,
+				//    251-252, 255
+
+//#define NES_SUBMAPPER	1	// uncomment this to use submapper 0, 1.. (0 is default)
+
+//#define NES_MIRRORING	1	// uncomment this to use custom mirroring: 0=horiz, 1=vert, 2=2400, 3=2000, 4=four, 5=0001, 6=0111
