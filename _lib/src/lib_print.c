@@ -773,12 +773,17 @@ PrintRestart:
 					{
 						*d++ = (expI / 100) + '0';
 						expI = expI % 100;
-					}
 
-					if (expI >= 10)
-					{
 						*d++ = (expI / 10) + '0';
 						expI = expI % 10;
+					}
+					else
+					{
+						if (expI >= 10)
+						{
+							*d++ = (expI / 10) + '0';
+							expI = expI % 10;
+						}
 					}
 
 					*d++ = expI + '0';
