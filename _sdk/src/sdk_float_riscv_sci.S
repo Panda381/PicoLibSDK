@@ -10,12 +10,12 @@
 // (all-libc means libc without fast fmul/fadd support, no speed-up at all)
 
 //  sqrtf (all-libc 3600ns, libc 2900ns, *fast 359ns)
-//  expf (all-libc 13700ns, libc 6600ns, *Chebyshev 475ns, Taylor 533ns, Cordic 3270ns)
-//  logf (all-libc 14400ns, libc 6700ns, *Chebyshev 633ns, Mercator 822ns, Cordic 4770ns)
-//  exp2f  (all-libc 47100ns, libc 6730ns, *Chebyshev 431ns, Taylor 501ns, Cordic 3580ns)
-//  log2f (all-libc 15800ns, libc 7060ns, *Chebyshev 680ns, Mercator 876ns, Cordic 5090ns)
-//  exp10f (all-libc 61200ns, libc 7000ns, *Chebyshev 528ns, Taylor 584ns, Cordic 3580ns)
-//  log10f (all-libc 16700ns, libc 6900ns, *Chebyshev 686ns, Mercator 882ns, Cordic 5090ns)
+//  expf (all-libc 13700ns, libc 6600ns, *Chebyshev 468ns, Taylor 533ns, Cordic 3270ns)
+//  exp2f  (all-libc 47100ns, libc 6730ns, *Chebyshev 433ns, Taylor 501ns, Cordic 3580ns)
+//  exp10f (all-libc 61200ns, libc 7000ns, *Chebyshev 530ns, Taylor 584ns, Cordic 3580ns)
+//  logf (all-libc 14400ns, libc 6700ns, *Chebyshev 616ns, Mercator 822ns, Cordic 4770ns)
+//  log2f (all-libc 15800ns, libc 7060ns, *Chebyshev 650ns, Mercator 876ns, Cordic 5090ns)
+//  log10f (all-libc 16700ns, libc 6900ns, *Chebyshev 676ns, Mercator 882ns, Cordic 5090ns)
 //  sinf (all-libc 11800ns, libc 5680ns, Chebyshev 867ns, *Taylor 730ns, Cordic 3440ns)
 //  sinf_deg (Chebyshev 808ns, *Taylor 687ns, Cordic 3750ns)
 //  cosf (all-libc 13600ns, libc -ns, Chebyshev 880ns, *Taylor 766ns, Cordic 3500ns)
@@ -107,7 +107,7 @@
 // INPUT: A0 = argument x
 // OUTPUT: A0 = result sqrtf(x)
 // TRASHED: A1, A2, A3, A4
-// 359ns, err avg=0.094, err max=1
+// 357ns, err avg=0.089, err max=1
 
 #if USE_RISCV_SQRTF == 1		// RISC-V sqrtf() function: 0=libc, 1=fast (recommended)
 
@@ -571,7 +571,7 @@ expf:
 // INPUT: A0 = x
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, A3, A4, T0, T1
-// 475ns, err avg=0.119, err max=1
+// 467ns, err avg=0.088, err max=1
 
 // Another alternative method is the Taylor series (see below),
 // but this one is a little faster and a little more accurate.
@@ -654,6 +654,10 @@ expf_exp10f_jump:
 	// convert to range 0..1.0: multiply by 1/ln(2) ... number will be in 0.32 format
 	//   1/ln(2) << 31 = 3098164010 round up
 	mulhu	a0,a0,t0		// A0 <- mantissa * 3098164010
+
+// overflow (no need, but be aware)
+// if ((s32)xx < 0) xx = (u32)-1;
+
 	slli	a4,a0,1			// A4 <- mantissa << 1
 
 expf_exp2f_jump:
@@ -774,18 +778,17 @@ expf_exp2f_jump:
 	add	a1,a1,-1		// exp--
 
 	// rounding
-4:	addi	a0,a0,0x80		// add rounding correction
+4:	addi	a0,a0,0x80+1		// add rounding correction
 	bltz	a0,5f			// no overflow
 	li	a0,-1			// limit mantissa on overflow to 0xFFFFFFFF (do not do exponent correction - could overflow to inf)
 
 	// Normalize mantissa
-5:	slli	a0,a0,1			// remove hidden bit '1'
-	srli	a0,a0,9			// shift mantissa to position
+5:	srli	a0,a0,8			// shift mantissa to position
 
 	// compose number
-	addi	a1,a1,FLOAT_EXP1	// add bias to exponent
+	addi	a1,a1,FLOAT_EXP1 - 1	// add bias to exponent (use "exponent - 1" to clear hidden bit '1' of the mantissa)
 	slli	a1,a1,23		// shift exponent to position
-	or	a0,a0,a1		// compose number
+	add	a0,a0,a1		// compose number
 	ret
 
 	// number is negative - check minimal negative number
@@ -806,21 +809,6 @@ expf_14:
 14:	li	a0,0x3F800000		// +1.0
 	ret
 
-// expf table of constants
-.p2align 2,,
-expf_chebtab:
-	.word	3098164010		// 0: 1/ln(2) << 31 = 3098164010 round up (= 0xB8AA3B2A)
-	.word	2977044472		// 4: ln(2) << 32 = 2977044472 round up (= 0xB17217F8)
-	.word	0x00000B3C		// 8: coeff[8] = 2876 = 1.3392906481613e-006 << 31
-	.word	0x00007FF1		// 12: coeff[7] = 32753 = 1.52517549025788e-005 << 31
-	.word	0x00050C03		// 16: coeff[6] = 330755 = 0.000154019750482348 << 31
-	.word	0x002BB101		// 20: coeff[5] = 2863361 = 0.00133335616465047 << 31
-	.word	0x013B2AC3		// 24: coeff[4] = 20654787 = 0.00961813466710737 << 31
-	.word	0x071AC236		// 28: coeff[3] = 119194166 = 0.0555041086190613 << 31
-	.word	0x1EBFBDFE		// 32: coeff[2] = 515882494 = 0.240226506255567 << 31
-	.word	0x58B90BFC		// 36: coeff[1] = 1488522236 = 0.693147180601954 << 31
-	.word	2472381918		// 40: ln(10) << 30 = 2472381918 round up
-
 // ---- continue to exp2f
 
 // ----------------------------------------------------------------------------
@@ -830,7 +818,7 @@ expf_chebtab:
 // INPUT: A0 = x
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, A3, A4, T0, T1
-// 431ns, err avg=0.108, err max=1
+// 433ns, err avg=0.109, err max=1
 
 .global __wrap_exp2f
 .global exp2f
@@ -904,7 +892,7 @@ exp2f:
 // INPUT: A0 = x
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, A3, A4, T0, T1
-// 528ns, err avg=0.384, err max=1
+// 530ns, err avg=0.329, err max=1
 
 .global __wrap_exp10f
 .global exp10f
@@ -972,6 +960,23 @@ exp10f:
 
 15:	li	a0,0x3F800000		// +1.0
 	ret
+
+float_section _expf_cheb_tab
+
+// expf table of constants
+.p2align 2,,
+expf_chebtab:
+	.word	3098164010+1		// 0: 1/ln(2) << 31 = 3098164010 round up (= 0xB8AA3B2A)
+	.word	2977044472		// 4: ln(2) << 32 = 2977044472 round up (= 0xB17217F8)
+	.word	0x00000B3C		// 8: coeff[8] = 2876 = 1.3392906481613e-006 << 31
+	.word	0x00007FF1		// 12: coeff[7] = 32753 = 1.52517549025788e-005 << 31
+	.word	0x00050C03		// 16: coeff[6] = 330755 = 0.000154019750482348 << 31
+	.word	0x002BB101		// 20: coeff[5] = 2863361 = 0.00133335616465047 << 31
+	.word	0x013B2AC3		// 24: coeff[4] = 20654787 = 0.00961813466710737 << 31
+	.word	0x071AC236		// 28: coeff[3] = 119194166 = 0.0555041086190613 << 31
+	.word	0x1EBFBDFE		// 32: coeff[2] = 515882494 = 0.240226506255567 << 31
+	.word	0x58B90BFC		// 36: coeff[1] = 1488522236 = 0.693147180601954 << 31
+	.word	2472381918+1		// 40: ln(10) << 30 = 2472381918 round up
 
 #endif // USE_RISCV_EXPF == 1
 
@@ -1185,22 +1190,6 @@ expf_14:
 14:	li	a0,0x3F800000		// +1.0
 	ret
 
-// expf table of constants
-.p2align 2,,
-expf_tab:
-	.word	1549082005		// 0: 1/ln(2) << 30 = 1549082005 round up (= 0x5C551D95)
-	.word	1488522236		// 4: ln(2) << 31 = 1488522236 round up (= 0x58B90BFC)
-	.word	1431655766		// 8: 1/3 << 32 = 1431655766 round up (= 0x55555556)
-	.word	858993460		// 12: 1/5 << 32 = 858993460 round up (= 0x33333334)
-	.word	715827883		// 16: 1/6 << 32 = 715827883 round up (= 0x2AAAAAAB)
-	.word	613566757		// 20: 1/7 << 32 = 613566757 round up (= 0x24924925)
-	.word	477218589		// 24: 1/9 << 32 = 477218589 round up (= 0x1C71C71D)
-	.word	429496730		// 28: 1/10 << 32 = 429496730 round up (= 0x1999999A)
-	.word	390451573		// 32: 1/11 << 32 = 390451573 round up (= 0x1745D175)
-	.word	0xB1721700		// 36: max. value of the mantissa
-	.word	2977044472		// 40: ln(2) << 32 = 2977044472 round up
-	.word	2472381918		// 44: ln(10) << 30 = 2472381918 round up
-
 // ---- continue to exp2f
 
 // ----------------------------------------------------------------------------
@@ -1365,6 +1354,24 @@ exp10f:
 
 15:	li	a0,0x3F800000		// +1.0
 	ret
+
+float_section _expf_taylor_tab
+
+// expf table of constants
+.p2align 2,,
+expf_tab:
+	.word	1549082005		// 0: 1/ln(2) << 30 = 1549082005 round up (= 0x5C551D95)
+	.word	1488522236		// 4: ln(2) << 31 = 1488522236 round up (= 0x58B90BFC)
+	.word	1431655766		// 8: 1/3 << 32 = 1431655766 round up (= 0x55555556)
+	.word	858993460		// 12: 1/5 << 32 = 858993460 round up (= 0x33333334)
+	.word	715827883		// 16: 1/6 << 32 = 715827883 round up (= 0x2AAAAAAB)
+	.word	613566757		// 20: 1/7 << 32 = 613566757 round up (= 0x24924925)
+	.word	477218589		// 24: 1/9 << 32 = 477218589 round up (= 0x1C71C71D)
+	.word	429496730		// 28: 1/10 << 32 = 429496730 round up (= 0x1999999A)
+	.word	390451573		// 32: 1/11 << 32 = 390451573 round up (= 0x1745D175)
+	.word	0xB1721700		// 36: max. value of the mantissa
+	.word	2977044472		// 40: ln(2) << 32 = 2977044472 round up
+	.word	2472381918		// 44: ln(10) << 30 = 2472381918 round up
 
 #endif // USE_RISCV_EXPF == 2
 
@@ -1551,9 +1558,9 @@ mul0:
 // INPUT: A0 = x
 // OUTPUT: A0 = result
 // TRASHED: A1,A2,A3,A4,A5,T0
-// logf(): 633ns, err avg=0.045, err max=5
-// log2f(): 680ns, err avg=0.006, err max=4
-// log10f(): 686ns, err avg=0.283, err max=5
+// logf(): 616ns, err avg=0.045, err max=2
+// log2f(): 650ns, err avg=0.005, err max=1
+// log10f(): 676ns, err avg=0.283, err max=2
 
 #if USE_RISCV_LOGF == 1		// RISC-V logf(), log2f() and log10f() function: 0=libc, 1=Chebyshev (recommended), 2=Mercator, 3=Cordic
 
@@ -1622,79 +1629,67 @@ logf_start:
 //  A3 = table address
 
 	// coeff[12]
-	li	a0,-465			// A0 <- coeff[12] = -465 = -2.16502815508779e-007 << 31
+	li	a0,-930			// A0 <- coeff[12] = -930 = -2,16502815508779e-007 << 32
 	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
-	slli	a0,a0,1			// A0 << 1
 
 	// coeff[11]
 	li	t0,1515			// T0 <- coeff[11] = 1515 = 7.05661007405212e-007 << 31
 	add	a0,a0,t0		// A0 <- add coeff
-	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
 	lw	t0,40(a3)		// T0 <- coeff[10] = -3466 = -1.61398543996327e-006 << 31
-	slli	a0,a0,1			// A0 << 1
+	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
 
 	// coeff[10]
-	add	a0,a0,t0		// A0 <- add coeff
-	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
+	sh1add	a0,a0,t0		// A0 <- add coeff
 	lw	t0,36(a3)		// T0 <- coeff[ 9] =  11572 = 5.38877348255085e-006 << 31
-	slli	a0,a0,1			// A0 << 1
+	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
 
 	// coeff[9]
-	add	a0,a0,t0		// A0 <- add coeff
-	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
+	sh1add	a0,a0,t0		// A0 <- add coeff
 	lw	t0,32(a3)		// T0 <- coeff[ 8] = -41019 = -1.91011454901968e-005 << 31
-	slli	a0,a0,1			// A0 << 1
+	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
 
 	// coeff[8]
-	add	a0,a0,t0		// A0 <- add coeff
-	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
+	sh1add	a0,a0,t0		// A0 <- add coeff
 	lw	t0,28(a3)		// T0 <- coeff[ 7] =  140616 = 6.54794611136822e-005 << 31
-	slli	a0,a0,1			// A0 << 1
+	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
 
 	// coeff[7]
-	add	a0,a0,t0		// A0 <- add coeff
-	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
+	sh1add	a0,a0,t0		// A0 <- add coeff
 	lw	t0,24(a3)		// T0 <- coeff[ 6] = -490934 = -0.000228609107864486 << 31
-	slli	a0,a0,1			// A0 << 1
+	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
 
 	// coeff[6]
-	add	a0,a0,t0		// A0 <- add coeff
-	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
+	sh1add	a0,a0,t0		// A0 <- add coeff
 	lw	t0,20(a3)		// T0 <- coeff[ 5] =  1767375 = 0.000822998312287382 << 31
-	slli	a0,a0,1			// A0 << 1
+	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
 
 	// coeff[5]
-	add	a0,a0,t0		// A0 <- add coeff
-	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
+	sh1add	a0,a0,t0		// A0 <- add coeff
 	lw	t0,16(a3)		// T0 <- coeff[ 4] = -6628040 = -0.00308642159143346 << 31
-	slli	a0,a0,1			// A0 << 1
+	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
 
 	// coeff[4]
-	add	a0,a0,t0		// A0 <- add coeff
-	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
+	sh1add	a0,a0,t0		// A0 <- add coeff
 	lw	t0,12(a3)		// T0 <- coeff[ 3] = 26512157 = 0.0123456849323702 << 31
-	slli	a0,a0,1			// A0 << 1
+	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
 
 	// coeff[3]
-	add	a0,a0,t0		// A0 <- add coeff
-	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
+	sh1add	a0,a0,t0		// A0 <- add coeff
 	lw	t0,8(a3)		// T0 <- coeff[ 2] = -119304647 = -0.0555555554892635 << 31
-	slli	a0,a0,1			// A0 << 1
+	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
 
 	// coeff[2]
-	add	a0,a0,t0		// A0 <- add coeff
-	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
+	sh1add	a0,a0,t0		// A0 <- add coeff
 	lw	t0,4(a3)		// T0 <- coeff[ 1] = 715827882 = 0.333333333139308 << 31
-	slli	a0,a0,1			// A0 << 1
+	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
 
 	// coeff[1]
-	add	a0,a0,t0		// A0 <- add coeff
-	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
+	sh1add	a0,a0,t0		// A0 <- add coeff
 	lw	t0,0(a3)		// T0 <- coeff[ 0] = 870729689 = 0.405465108109638 << 31
-	slli	a0,a0,1			// A0 << 1
+	mulh	a0,a0,a2		// A0 <- accumulator * mantissa
 
 	// coeff[0]
-	add	a0,a0,t0		// A0 <- add coeff
+	sh1add	a0,a0,t0		// A0 <- add coeff
 
 // Here is:
 //  A0 = result unsigned mantissa in 1.31 format, value 0..0.6931 (log(2)) = 0x00000001..0x58B90BFC
@@ -1826,6 +1821,8 @@ log10f_path:
 	// prepare result exponent base -> A1
 	li	a1,FLOAT_EXP1 - 2	// A1 <- exponent base
 	j	log10f_return
+
+float_section _logf_cheb_tab
 
 // logf table of constants
 .p2align 2,,
@@ -2190,6 +2187,8 @@ log10f_path:
 	// prepare result exponent base -> A1
 	li	a1,FLOAT_EXP1 - 2	// A1 <- exponent base
 	j	log10f_return
+
+float_section _logf_merc_tab
 
 // logf table of constants
 .p2align 2,,

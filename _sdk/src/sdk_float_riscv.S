@@ -6,6 +6,8 @@
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
 
+// Copyright (c) 2020 Mark Owen https://www.quinapalus.com - GPLv2 licence
+
 /*
  * Copyright (c) 2024 Raspberry Pi (Trading) Ltd.
  *
@@ -48,7 +50,7 @@
 // INPUT: A0 = 1st argument X
 //	  A1 = 2nd argument Y
 // OUTPUT: A0 = result X - Y
-// TRASHED: A2, A3, A4, A5, T0, T1
+// TRASHED: A1, A2, A3, A4, A5, T0, T1
 
 float_section __addsf3
 .p2align 2,,
@@ -72,7 +74,7 @@ fsub:
 // INPUT: A0 = 1st argument X
 //	  A1 = 2nd argument Y
 // OUTPUT: A0 = result X + Y
-// TRASHED: A2, A3, A4, A5, T0, T1
+// TRASHED: A1, A2, A3, A4, A5, T0, T1
 
 .global __wrap___addsf3
 .global __addsf3
@@ -279,7 +281,7 @@ __addsf_return_0:
 // INPUT: A0 = 1st argument X
 //	  A1 = 2nd argument Y
 // OUTPUT: A0 = result X + Y
-// TRASHED: A2, A3, A4, A5, A6, T0
+// TRASHED: A1, A2, A3, A4, A5, A6, T0
 
 float_section __mulsf3
 .p2align 2,,
@@ -448,7 +450,7 @@ __mulsf_y_nan_inf:
 // INPUT: A0 = 1st argument X
 //	  A1 = 2nd argument Y
 // OUTPUT: A0 = result X / Y
-// TRASHED: A2, A3, A4, A5, A6, T0
+// TRASHED: A1, A2, A3, A4, A5, A6, T0
 
 float_section __divsf3
 .p2align 2,,
