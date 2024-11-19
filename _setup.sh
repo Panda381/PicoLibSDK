@@ -82,7 +82,7 @@ case "$1" in
 	export DEVDIR="!PicoPadVGA"
 	;;
      *) 
-	export DEVICE="picopad20"
+	export DEVICE="picopad10"
 	export DEVCLASS="picopad"
 	export DEVDIR="!PicoPad20"
 	;;
