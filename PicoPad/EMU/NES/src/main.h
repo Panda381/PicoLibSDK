@@ -215,8 +215,8 @@ typedef struct {
 	// --- framebuf[0] = end address of VRAM_WCHECK check
 	u8	framebuf[NES_FRAMESIZE]; // frame buffer
 
-#define XX (1*1024)
-	u8	xx[XX];		// .... unused reserve to check free RAM
+#define XX 0 //(1*1024)
+//	u8	xx[XX];		// .... unused reserve to check free RAM
 
 } sNES;
 
