@@ -63,6 +63,14 @@ extern "C" {
 					//	to reduce interference to the audio output)
 #define BACKLIGHT_CLOCK	(BACKLIGHT_RATE*256) // PWM clock (= 22050*256 = 5644800)
 
+#ifndef DISP_OFFSET_X
+#define DISP_OFFSET_X	0		// offset of display controller buffer X
+#endif
+
+#ifndef DISP_OFFSET_Y
+#define DISP_OFFSET_Y	0		// offset of display controller buffer Y
+#endif
+
 // DISP_SPI_BAUD	24000000
 // send data: 320x240x2 = 153600 B = 1 228 800 bits
 // transfer time: 51 ms, real time: 70 ms

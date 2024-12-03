@@ -428,6 +428,7 @@ double MYPREFIX(WRAPPER_FUNC(ceil))(double x)
 
 // ==== scientific functions
 
+#if !RISCV
 // sine in degrees
 double MYPREFIX(sin_deg)(double x) { return sin(deg2rad(x)); }
 
@@ -446,7 +447,6 @@ double MYPREFIX(cotan)(double x) { return drec(tan(x)); }
 // cotangent in degrees
 double MYPREFIX(cotan_deg)(double x) { return cotan(deg2rad(x)); }
 
-#if !RISCV // these functions are slower on RISC-V than libc variants
 // arc sine
 double MYPREFIX(WRAPPER_FUNC(asin))(double x)
 {
@@ -470,7 +470,7 @@ double MYPREFIX(WRAPPER_FUNC(acos))(double x)
 	return atan2(sqrt(u), x);
 }
 
-// RISC-V: atanf cannot be implemented this way because atanf is internally called from atan2f in libc
+// RISC-V: atanf cannot be implemented this way because atan is internally called from atan2 in libc
 // arc tangent
 double MYPREFIX(WRAPPER_FUNC(atan))(double x)
 {
@@ -482,7 +482,6 @@ double MYPREFIX(WRAPPER_FUNC(atan))(double x)
 	// get atan from atan2
 	return atan2(x, 1.0);
 }
-#endif
 
 // arc sine in degrees
 double MYPREFIX(asin_deg)(double x) { return rad2deg(asin(x)); }
@@ -492,11 +491,8 @@ double MYPREFIX(acos_deg)(double x) { return rad2deg(acos(x)); }
 
 // arc tangent in degrees
 double MYPREFIX(atan_deg)(double x) { return rad2deg(atan(x)); }
+#endif
 
-// arc tangent of y/x in degrees
-double MYPREFIX(atan2_deg)(double y, double x) { return rad2deg(atan2(y, x)); }
-
-#if !RISCV // these functions are slower on RISC-V than libc variants
 // hyperbolic sine
 double MYPREFIX(WRAPPER_FUNC(sinh))(double x)
 {
@@ -513,7 +509,68 @@ double MYPREFIX(WRAPPER_FUNC(cosh))(double x)
 	// (e^x + e^-x)/2
 	return ldexp(exp(x) + exp(dneg(x)), -1);
 }
+
+#if RISCV
+// arc tangent of y/x in radians
+double MYPREFIX(WRAPPER_FUNC(atan2))(double y, double x)
+{
+	// get exponents
+	int ex = dgetexp(x);
+	int ey = dgetexp(y);
+
+	// get signs
+	Bool sx = disneg(x);
+	Bool sy = disneg(y);
+	
+	// y is infinity
+	double res;
+	if (ey == 0x7ff)
+	{
+		// prepare result PI/2
+		res = PI/2;
+
+		// x is infinity too - result is PI/4
+		if (ex == 0x7ff) res = PI/4;
+	}
+	else
+	{
+		// x is infinity, y is not - result is 0
+		if (ex == 0x7ff)
+			res = 0;
+		else
+		{
+			// y is zero - result is 0
+			if (ey == 0)
+				res = 0;
+			else
+			{
+				// x is zero - result is pi/2
+				if (ex == 0)
+					res = PI/2;
+				// x and y are in usual range
+				else
+				{
+					// calculate atan(y/x)
+					double a = y/x;
+					res = atan(a);
+					if (disneg(res)) res = dneg(res);
+				}
+			}
+		}
+	}
+
+	// shift result by X value (= PI - num)
+	if (sx) res = PI - res;
+
+	// set sign by the Y
+	if (sy) res = dneg(res);
+
+	return res;
+}
 #endif
+
+// arc tangent of y/x in degrees
+double MYPREFIX(atan2_deg)(double y, double x) { return rad2deg(atan2(y, x)); }
 
 // hyperbolic tangent
 double MYPREFIX(WRAPPER_FUNC(tanh))(double x)
@@ -581,6 +638,7 @@ double MYPREFIX(WRAPPER_FUNC(atanh))(double x)
 	return ldexp(log((1.0 + x)/(1.0 - x)), -1);
 }
 
+#if !RISCV
 // exponent with base 2
 double MYPREFIX(WRAPPER_FUNC(exp2))(double x)
 {
@@ -598,18 +656,20 @@ double MYPREFIX(WRAPPER_FUNC(exp2))(double x)
 	return ldexp(exp(x*LOG2), e);
 }
 
-// logarithm with base 2
-double MYPREFIX(WRAPPER_FUNC(log2))(double x)
-{
-	// log(x) / log(2)
-	return log(x)*LOG2E;
-}
-
 // exponent with base 10
 double MYPREFIX(WRAPPER_FUNC(exp10))(double x)
 {
 	// exp(x * log(10))
 	return exp(x*LOG10); // alternative: return pow(10,x);
+}
+#endif
+
+#if !RISCV
+// logarithm with base 2
+double MYPREFIX(WRAPPER_FUNC(log2))(double x)
+{
+	// log(x) / log(2)
+	return log(x)*LOG2E;
 }
 
 // logarithm with base 10
@@ -618,6 +678,7 @@ double MYPREFIX(WRAPPER_FUNC(log10))(double x)
 	// log(x) / log(10)
 	return log(x)*LOG10E;
 }
+#endif
 
 // exp(x) - 1
 double MYPREFIX(WRAPPER_FUNC(expm1))(double x)
@@ -929,7 +990,7 @@ double MYPREFIX(WRAPPER_FUNC(pow))(double x, double y)
 	return dpow_1(x,y);
 }
 
-#if !RISCV // these functions are slower on RISC-V than libc variants
+//#if !RISCV // these functions are slower on RISC-V than libc variants
 
 // square root of sum of squares (hypotenuse), sqrt(x*x + y*y)
 double MYPREFIX(WRAPPER_FUNC(hypot))(double x, double y)
@@ -991,7 +1052,7 @@ double MYPREFIX(WRAPPER_FUNC(cbrt))(double x)
 	// restore exponent
 	return ldexp(x, e);
 }
-#endif
+//#endif
 
 // ==== basic arithmetic
 

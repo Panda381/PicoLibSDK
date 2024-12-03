@@ -216,6 +216,18 @@ s16 RandTestS16();
 s32 RandTestS32();
 s64 RandTestS64();
 
+#if USE_FLOAT
+// random float number for tests
+float RandTestFloat();
+float RandTestFloatMinMax(u8 expmin, u8 expmax);
+#endif // USE_FLOAT
+
+#if USE_DOUBLE
+// random double number for tests
+double RandTestDouble();
+double RandTestDoubleMinMax(u16 expmin, u16 expmax);
+#endif // USE_DOUBLE
+
 #if USE_FLOAT || USE_DOUBLE	// use float or double support 1=in RAM, 2=in Flash 
 // 1D coordinate Perlin noise generator (output -1..+1)
 //  Takes 2 us

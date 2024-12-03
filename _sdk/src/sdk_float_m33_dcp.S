@@ -117,6 +117,8 @@ generic_restore_state:
 
 // ============== ARITHMETIC FUNCTIONS ===============
 
+#if !USE_M33_VFP	// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
+
 float_wrapper_section __aeabi_fadd
 saving_func2 __aeabi_fadd fadd
   dcp_fadd_m r0,r0,r1
@@ -165,6 +167,8 @@ saving_func2 __aeabi_fdiv fdiv
   saving_func_return
 
 #endif
+
+#endif // !USE_M33_VFP
 
 /*
 float_section sqrtf_fast

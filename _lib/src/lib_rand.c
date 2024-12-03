@@ -434,6 +434,182 @@ s64 RandTestS64()
 	return num >> shift;
 }
 
+#if USE_FLOAT
+// random float number for tests
+float RandTestFloat()
+{
+	// get flags
+	u32 flags = RandU32();
+
+	// mode 7 bits (faster special cases)
+	int mode = flags & 0x7f;
+
+	if (mode == 0)
+		return u32float(0x7f800000); // +1.#INF
+	else if (mode == 1)
+		return u32float(0xff800000); // -1.#INF
+	else if (mode == 2)
+		return u32float(0x00000000); // +0.0
+	else if (mode == 3)
+		return u32float(0x80000000); // -0.0
+
+	// sign 1 bit
+	int sign = flags & 1;
+
+	// exponent 8 bits
+	int exp = flags >> (32-8);
+
+	// mantissa
+	u32 mant;
+	if ((exp == 0) || (exp >= FLOAT_EXP_INF))
+		mant = 0;
+	else
+		mant = RandU32() & FLOAT_MANT_MASK;
+
+	// random shift mantissa to get power of 2
+	int shift = (flags >> 7) & 0x1f; // shift 5 bits
+	if ((flags & 2) != 0)
+		mant >>= shift;
+	else
+		mant <<= shift;
+	mant &= FLOAT_MANT_MASK;
+
+	// compose
+	return u32float(mant | (exp << FLOAT_MANT_BITS) | (sign << 31));
+}
+
+// random float number for tests
+float RandTestFloatMinMax(u8 expmin, u8 expmax)
+{
+	// get flags
+	u32 flags = RandU32();
+
+	// mode 7 bits (faster special cases)
+	int mode = flags & 0x7f;
+
+	if (mode == 0)
+		return u32float(0x7f800000); // +1.#INF
+	else if (mode == 1)
+		return u32float(0xff800000); // -1.#INF
+	else if (mode == 2)
+		return u32float(0x00000000); // +0.0
+	else if (mode == 3)
+		return u32float(0x80000000); // -0.0
+
+	// sign 1 bit
+	int sign = flags & 1;
+
+	// exponent 8 bits
+	int exp = RandU8MinMax(expmin, expmax);
+
+	// mantissa
+	u32 mant;
+	if ((exp == 0) || (exp >= FLOAT_EXP_INF))
+		mant = 0;
+	else
+		mant = RandU32() & FLOAT_MANT_MASK;
+
+	// random shift mantissa to get power of 2
+	int shift = (flags >> 7) & 0x1f; // shift 5 bits
+	if ((flags & 2) != 0)
+		mant >>= shift;
+	else
+		mant <<= shift;
+	mant &= FLOAT_MANT_MASK;
+
+	// compose
+	return u32float(mant | (exp << FLOAT_MANT_BITS) | (sign << 31));
+}
+#endif // USE_FLOAT
+
+#if USE_DOUBLE
+// random double number for tests
+double RandTestDouble()
+{
+	// get flags
+	u32 flags = RandU32();
+
+	// mode 7 bits (faster special cases)
+	int mode = flags & 0x7f;
+
+	if (mode == 0)
+		return u64double(0x7ff0000000000000ULL); // +1.#INF
+	else if (mode == 1)
+		return u64double(0xfff0000000000000ULL); // -1.#INF
+	else if (mode == 2)
+		return u64double(0x0000000000000000ULL); // +0.0
+	else if (mode == 3)
+		return u64double(0x8000000000000000ULL); // -0.0
+
+	// sign 1 bit
+	int sign = flags & 1;
+
+	// exponent 11 bits
+	int exp = flags >> (32-11);
+
+	// mantissa
+	u64 mant;
+	if ((exp == 0) || (exp >= DOUBLE_EXP_INF))
+		mant = 0;
+	else
+		mant = RandU64() & DOUBLE_MANT_MASK;
+
+	// random shift mantissa to get power of 2
+	int shift = (flags >> 7) & 0x3f; // shift 6 bits
+	if ((flags & 2) != 0)
+		mant >>= shift;
+	else
+		mant <<= shift;
+	mant &= DOUBLE_MANT_MASK;
+
+	// compose
+	return u64double(mant | ((u64)exp << DOUBLE_MANT_BITS) | ((u64)sign << 63));
+}
+
+// random double number for tests
+double RandTestDoubleMinMax(u16 expmin, u16 expmax)
+{
+	// get flags
+	u32 flags = RandU32();
+
+	// mode 7 bits (faster special cases)
+	int mode = flags & 0x7f;
+
+	if (mode == 0)
+		return u64double(0x7ff0000000000000ULL); // +1.#INF
+	else if (mode == 1)
+		return u64double(0xfff0000000000000ULL); // -1.#INF
+	else if (mode == 2)
+		return u64double(0x0000000000000000ULL); // +0.0
+	else if (mode == 3)
+		return u64double(0x8000000000000000ULL); // -0.0
+
+	// sign 1 bit
+	int sign = flags & 1;
+
+	// exponent 11 bits
+	int exp = RandU16MinMax(expmin, expmax);
+
+	// mantissa
+	u64 mant;
+	if ((exp == 0) || (exp >= DOUBLE_EXP_INF))
+		mant = 0;
+	else
+		mant = RandU64() & DOUBLE_MANT_MASK;
+
+	// random shift mantissa to get power of 2
+	int shift = (flags >> 7) & 0x3f; // shift 6 bits
+	if ((flags & 2) != 0)
+		mant >>= shift;
+	else
+		mant <<= shift;
+	mant &= DOUBLE_MANT_MASK;
+
+	// compose
+	return u64double(mant | ((u64)exp << DOUBLE_MANT_BITS) | ((u64)sign << 63));
+}
+#endif // USE_DOUBLE
+
 #if USE_FLOAT || USE_DOUBLE	// use float or double support 1=in RAM, 2=in Flash
 // 1D coordinate Perlin noise generator (output -1..+1)
 float Noise1D(int x, int seed)

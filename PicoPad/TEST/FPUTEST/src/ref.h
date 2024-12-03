@@ -371,3 +371,9 @@ float Ref_double2float(double num);
 // @TODO: probably will be deleted (accuracy cannot be guaranteed)
 //float Ref_rounddigf(float x, int digits);
 //double Ref_rounddig(double x, int digits);
+
+// (u64 * u64 -> u128) >> 64
+u64 MyU64MulHigh(u64 a, u64 b);
+
+// (s64 * s64 -> s128) >> 64
+//s64 MyS64MulHigh(s64 a, s64 b);

@@ -232,13 +232,13 @@ void DispWindow(u16 x1, u16 x2, u16 y1, u16 y2)
 	u16 buf[2];
 
 	// set columns
-	buf[0] = ENDIAN16(x1);
-	buf[1] = ENDIAN16(x2-1);
+	buf[0] = ENDIAN16(x1 + DISP_OFFSET_X);
+	buf[1] = ENDIAN16(x2-1 + DISP_OFFSET_X);
 	DispWriteCmdData(ST7789_CASET, buf, 4);
 
 	// set rows
-	buf[0] = ENDIAN16(y1);
-	buf[1] = ENDIAN16(y2-1);
+	buf[0] = ENDIAN16(y1 + DISP_OFFSET_Y);
+	buf[1] = ENDIAN16(y2-1 + DISP_OFFSET_Y);
 	DispWriteCmdData(ST7789_RASET, buf, 4);
 
 	// send command to send data

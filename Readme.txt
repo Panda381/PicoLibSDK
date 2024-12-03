@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico, RP2040 and RP2350
 ==========================================================================
-SDK Programmer's Guide, Version 2.02, November 2024
+SDK Programmer's Guide, Version 2.03, December 2024
 
 Copyright (c) 2023-2024 Miroslav Nemecek
 
@@ -836,6 +836,7 @@ History of versions
 10/08/2024 version 2.00: RP2350 Pico 2 support
 10/27/2024 version 2.01: Fast float library for RISC-V Hazard3 core.
 11/05/2024 version 2.02: NES Emulator
+12/03/2024 version 2.03: Fast double library for RISC-V Hazard3 core.
 
 
 Missing and @TODO

@@ -1,6 +1,7 @@
 CSRC += ../../../_display/minivga/minivga.c
 CSRC += ../../../_display/dvi/dvi.c
 CSRC += ../../../_display/dvivga/dvivga.c
+CSRC += ../../../_display/st7789/st7789.c
 CSRC += ../../../_devices/pico/pico_init.c
 CSRC += ../../../_devices/pico/pico_bat.c
 

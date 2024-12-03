@@ -961,8 +961,6 @@ float logf_fast(float x)
 // ----------------------------------------------------------------------------
 //                       sinf(x) - Chebyshev approximation
 // ----------------------------------------------------------------------------
-// sine in radians - Taylor serie
-//  sin(x) = x/1! - x^3/3! + x^5/5! - x^7/7! + x^9/9! - ...
 
 #if USE_RISCV_SINF == 1		// RISC-V sinf(), cosf(), sincosf(), tanf(), cotanf() functions: 1=Chebyshev, 2=Taylor (recommended)
 

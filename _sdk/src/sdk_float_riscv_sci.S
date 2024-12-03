@@ -19,7 +19,7 @@
 //  sinf (all-libc 11800ns, libc 5680ns, Chebyshev 867ns, *Taylor 730ns, Cordic 3440ns)
 //  sinf_deg (Chebyshev 808ns, *Taylor 687ns, Cordic 3750ns)
 //  cosf (all-libc 13600ns, libc -ns, Chebyshev 880ns, *Taylor 766ns, Cordic 3500ns)
-//  cosf_def (Chebyshev 814ns, *Taylor 719ns, Cordic 3810ns)
+//  cosf_deg (Chebyshev 814ns, *Taylor 719ns, Cordic 3810ns)
 //  sincosf (all-libc 25700ns, libc -ns, Chebyshev 1370ns, *Taylor 1120ns, Cordic 3530ns)
 //  sincosf_deg (Chebyshev 1290ns, *Taylor 1070ns, Cordic 3870ns)
 //  tanf (all-libc 24100ns, libc -ns, Chebyshev 1840ns, *Taylor 1610ns, Cordic 3970ns)
@@ -82,7 +82,7 @@
 
 #define FLOAT_EXP1	0x7f		// exponent of '1' (= 127)
 
-.macro _asm_rad2deg	// convert radians to degrees (do not call inline rad2deg directly, a slow function in Flash would be used)
+.macro _asm_rad2degf	// convert radians to degrees (do not call inline rad2degf directly, a slow function in Flash would be used)
 	li	a1,0x42652ee1		// A1 <- 180/PI = 57.29578f
 	call	fmul			// convert radians to degrees
 .endm
@@ -2503,7 +2503,7 @@ sinf:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_norm
+	call	_asm_sinf_norm
 
 	// convert range 0..pi/2 in unsigned fixed point format 3.29 to range -1..+1 in signed fixed point format 2.30
 	//  k = (0x80000000 / 0x3243F6A8 << 32) >> 2 = (2147483648 / 843314856 << 32) >> 2 = 2734261104
@@ -2520,7 +2520,7 @@ sinf:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s2			// A1 <- sin sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 
 sinf_return:
 	// pop registers
@@ -2528,7 +2528,7 @@ sinf_return:
 	lw	s3,12(sp)		// restore S3
 	lw	s2,8(sp)		// restore S2
 	lw	ra,0(sp)		// restore original return address
-	add	sp,sp,SINF_STACK_SIZE	// destroy space in the stavk
+	add	sp,sp,SINF_STACK_SIZE	// destroy space in the stack
 9:	ret
 
 // ----------------------------------------------------------------------------
@@ -2557,7 +2557,7 @@ cosf:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_norm
+	call	_asm_sinf_norm
 
 	// convert range 0..pi/2 in unsigned fixed point format 3.29 to range -1..+1 in signed fixed point format 2.30
 	//  k = (0x80000000 / 0x3243F6A8 << 32) >> 2 = (2147483648 / 843314856 << 32) >> 2 = 2734261104
@@ -2574,7 +2574,7 @@ cosf:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s3			// A1 <- cos sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 	j	sinf_return		// return
 
 // ----------------------------------------------------------------------------
@@ -2607,7 +2607,7 @@ sincosf:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_norm
+	call	_asm_sinf_norm
 
 	// convert range 0..pi/2 in unsigned fixed point format 3.29 to range -1..+1 in signed fixed point format 2.30
 	//  k = (0x80000000 / 0x3243F6A8 << 32) >> 2 = (2147483648 / 843314856 << 32) >> 2 = 2734261104
@@ -2625,7 +2625,7 @@ sincosf:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s2			// A1 <- sin sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 	lw	a1,24(sp)		// A1 <- load pointer to psin
 	sw	a0,(a1)			// save sin result
 
@@ -2638,7 +2638,7 @@ sincosf:
 	lw	a0,20(sp)		// A0 <- load normalized angle
 	neg	a0,a0			// negate angle
 	mv	a1,s3			// A1 <- cos sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 	lw	a1,28(sp)		// A1 <- load pointer to pcos
 	sw	a0,(a1)			// save cos result
 	j	sinf_return		// return
@@ -2675,7 +2675,7 @@ tanf:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_norm
+	call	_asm_sinf_norm
 
 	// convert range 0..pi/2 in unsigned fixed point format 3.29 to range -1..+1 in signed fixed point format 2.30
 	//  k = (0x80000000 / 0x3243F6A8 << 32) >> 2 = (2147483648 / 843314856 << 32) >> 2 = 2734261104
@@ -2693,7 +2693,7 @@ tanf:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s2			// A1 <- sin sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 	lw	a1,20(sp)		// A1 <- load normalized angle
 	sw	a0,20(sp)		// save sin result
 	neg	a0,a1			// negate angle
@@ -2705,7 +2705,7 @@ tanf:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s3			// A1 <- cos sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 
 	// divide sin/cos
 	mv	a1,a0			// A1 <- cos
@@ -2741,7 +2741,7 @@ cotanf:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_norm
+	call	_asm_sinf_norm
 
 	// convert range 0..pi/2 in unsigned fixed point format 3.29 to range -1..+1 in signed fixed point format 2.30
 	//  k = (0x80000000 / 0x3243F6A8 << 32) >> 2 = (2147483648 / 843314856 << 32) >> 2 = 2734261104
@@ -2759,7 +2759,7 @@ cotanf:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s2			// A1 <- sin sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 	lw	a1,20(sp)		// A1 <- load normalized angle
 	sw	a0,20(sp)		// save sin result
 	neg	a0,a1			// negate angle
@@ -2771,7 +2771,7 @@ cotanf:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s3			// A1 <- cos sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 
 	// divide sin/cos
 	lw	a1,20(sp)		// A1 <- sin
@@ -2802,7 +2802,7 @@ sinf_deg:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_deg_norm
+	call	_asm_sinf_deg_norm
 
 	// convert range 0..90 in unsigned fixed point format 7.25 to range -1..+1 in signed fixed point format 2.30
 	//  k = (0x80000000 / 0xB4000000 << 32) = (2147483648 / 3019898880 << 32) = 3054198967 round up
@@ -2818,7 +2818,7 @@ sinf_deg:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s2			// A1 <- sin sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 
 	j	sinf_return
 
@@ -2846,7 +2846,7 @@ cosf_deg:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_deg_norm
+	call	_asm_sinf_deg_norm
 
 	// convert range 0..90 in unsigned fixed point format 7.25 to range -1..+1 in signed fixed point format 2.30
 	//  k = (0x80000000 / 0xB4000000 << 32) = (2147483648 / 3019898880 << 32) = 3054198967 round up
@@ -2862,13 +2862,13 @@ cosf_deg:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s3			// A1 <- cos sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 	j	sinf_return		// return
 
 // ----------------------------------------------------------------------------
 //                 sincosf_deg(x) - Chebyshev approximation
 // ----------------------------------------------------------------------------
-// void sincosf(float x, float* psin, float* pcos);
+// void sincosf_deg(float x, float* psin, float* pcos);
 // INPUT: A0 = argument x
 // 	  A1 = pointer to sin() result
 // 	  A2 = pointer to cos() result
@@ -2893,7 +2893,7 @@ sincosf_deg:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_deg_norm
+	call	_asm_sinf_deg_norm
 
 	// convert range 0..90 in unsigned fixed point format 7.25 to range -1..+1 in signed fixed point format 2.30
 	//  k = (0x80000000 / 0xB4000000 << 32) = (2147483648 / 3019898880 << 32) = 3054198967 round up
@@ -2910,7 +2910,7 @@ sincosf_deg:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s2			// A1 <- sin sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 	lw	a1,24(sp)		// A1 <- load pointer to psin
 	sw	a0,(a1)			// save sin result
 
@@ -2923,7 +2923,7 @@ sincosf_deg:
 	lw	a0,20(sp)		// A0 <- load normalized angle
 	neg	a0,a0			// negate angle
 	mv	a1,s3			// A1 <- cos sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 	lw	a1,28(sp)		// A1 <- load pointer to pcos
 	sw	a0,(a1)			// save cos result
 	j	sinf_return		// return
@@ -2931,7 +2931,7 @@ sincosf_deg:
 // ----------------------------------------------------------------------------
 //                 tanf_deg(x) - Chebyshev approximation
 // ----------------------------------------------------------------------------
-// float cosf(float x);
+// float tanf_deg(float x);
 // INPUT: A0 = argument x
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, A3, A4 (+ registers from remainderf function)
@@ -2952,7 +2952,7 @@ tanf_deg:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_deg_norm
+	call	_asm_sinf_deg_norm
 
 	// convert range 0..90 in unsigned fixed point format 7.25 to range -1..+1 in signed fixed point format 2.30
 	//  k = (0x80000000 / 0xB4000000 << 32) = (2147483648 / 3019898880 << 32) = 3054198967 round up
@@ -2969,7 +2969,7 @@ tanf_deg:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s2			// A1 <- sin sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 	lw	a1,20(sp)		// A1 <- load normalized angle
 	sw	a0,20(sp)		// save sin result
 	neg	a0,a1			// negate angle
@@ -2981,7 +2981,7 @@ tanf_deg:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s3			// A1 <- cos sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 
 	// divide sin/cos
 	mv	a1,a0			// A1 <- cos
@@ -3013,7 +3013,7 @@ cotanf_deg:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_deg_norm
+	call	_asm_sinf_deg_norm
 
 	// convert range 0..90 in unsigned fixed point format 7.25 to range -1..+1 in signed fixed point format 2.30
 	//  k = (0x80000000 / 0xB4000000 << 32) = (2147483648 / 3019898880 << 32) = 3054198967 round up
@@ -3030,7 +3030,7 @@ cotanf_deg:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s2			// A1 <- sin sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 	lw	a1,20(sp)		// A1 <- load normalized angle
 	sw	a0,20(sp)		// save sin result
 	neg	a0,a1			// negate angle
@@ -3042,7 +3042,7 @@ cotanf_deg:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 	mv	a1,s3			// A1 <- cos sign
-	call	_asm_sin_cheb
+	call	_asm_sinf_cheb
 
 	// divide sin/cos
 	lw	a1,20(sp)		// A1 <- sin
@@ -3057,10 +3057,10 @@ cotanf_deg:
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
 
-float_section _asm_sin_norm
+float_section _asm_sinf_norm
 .p2align 2,,
 
-_asm_sin_norm:
+_asm_sinf_norm:
 	// push registers
 	sw	ra,4(sp)		// save internal return address
 	sw	s2,8(sp)		// save S2
@@ -3155,10 +3155,10 @@ _asm_sin_norm:
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
 
-float_section _asm_sin_deg_norm
+float_section _asm_sinf_deg_norm
 .p2align 2,,
 
-_asm_sin_deg_norm:
+_asm_sinf_deg_norm:
 	// push registers
 	sw	ra,4(sp)		// save internal return address
 	sw	s2,8(sp)		// save S2
@@ -3243,10 +3243,10 @@ _asm_sin_deg_norm:
 // OUTPUT: A0 = result
 // TRASHED: A1, A2, T0
 
-float_section _asm_sin_cheb
+float_section _asm_sinf_cheb
 .p2align 2,,
 
-_asm_sin_cheb:
+_asm_sinf_cheb:
 
 	// coeff[10]
 	li	a2,-19			// A2 <- add coeff[10] = -19 = -1.74017541973437e-008 << 30
@@ -3430,7 +3430,7 @@ sinf:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_norm
+	call	_asm_sinf_norm
 
 	// Taylor serie
 // INPUT: A0 = mantissa in fixed point format 2.30, range 0..0x6487ED50 = 1686629712 (= 0..pi/2)
@@ -3447,7 +3447,7 @@ sinf_return:
 	lw	s3,12(sp)		// restore S3
 	lw	s2,8(sp)		// restore S2
 	lw	ra,0(sp)		// restore original return address
-	add	sp,sp,SINF_STACK_SIZE	// destroy space in the stavk
+	add	sp,sp,SINF_STACK_SIZE	// destroy space in the stack
 9:	ret
 
 // ----------------------------------------------------------------------------
@@ -3476,7 +3476,7 @@ cosf:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_norm
+	call	_asm_sinf_norm
 
 	li	a1,1686629712		// A1 <- pi/2 in 2.30 format
 	sub	a0,a1,a0		// x = pi - x
@@ -3521,7 +3521,7 @@ sincosf:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_norm
+	call	_asm_sinf_norm
 	sw	a0,20(sp)		// save normalized angle
 
 	// Taylor serie - sin()
@@ -3582,7 +3582,7 @@ tanf:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_norm
+	call	_asm_sinf_norm
 	sw	a0,20(sp)		// save normalized angle
 
 	// Taylor serie - sin()
@@ -3641,7 +3641,7 @@ cotanf:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_norm
+	call	_asm_sinf_norm
 	sw	a0,20(sp)		// save normalized angle
 
 	// Taylor serie - sin()
@@ -3695,7 +3695,7 @@ sinf_deg:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_deg_norm
+	call	_asm_sinf_deg_norm
 
 	// Taylor serie - sin()
 // INPUT: A0 = mantissa in fixed point format 2.30, range 0..0x6487ED50 = 1686629712 (= 0..pi/2)
@@ -3732,7 +3732,7 @@ cosf_deg:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_deg_norm
+	call	_asm_sinf_deg_norm
 
 	li	a1,1686629712		// A1 <- pi/2 in 2.30 format
 	sub	a0,a1,a0		// x = pi - x
@@ -3775,7 +3775,7 @@ sincosf_deg:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_deg_norm
+	call	_asm_sinf_deg_norm
 	sw	a0,20(sp)		// save normalized angle
 
 	// Taylor serie - sin()
@@ -3828,7 +3828,7 @@ tanf_deg:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_deg_norm
+	call	_asm_sinf_deg_norm
 	sw	a0,20(sp)		// save normalized angle
 
 	// Taylor serie - sin()
@@ -3883,7 +3883,7 @@ cotanf_deg:
 //	   S3 = cos sign 0 or -1
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
-	call	_asm_sin_deg_norm
+	call	_asm_sinf_deg_norm
 	sw	a0,20(sp)		// save normalized angle
 
 	// Taylor serie - sin()
@@ -3921,10 +3921,10 @@ cotanf_deg:
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
 
-float_section _asm_sin_norm
+float_section _asm_sinf_norm
 .p2align 2,,
 
-_asm_sin_norm:
+_asm_sinf_norm:
 	// push registers
 	sw	ra,4(sp)		// save internal return address
 	sw	s2,8(sp)		// save S2
@@ -4023,10 +4023,10 @@ _asm_sin_norm:
 //	   S4 = pointer to table of constants
 // TRASHED: A1, T0 (+ registers from remainderf function)
 
-float_section _asm_sin_deg_norm
+float_section _asm_sinf_deg_norm
 .p2align 2,,
 
-_asm_sin_deg_norm:
+_asm_sinf_deg_norm:
 	// push registers
 	sw	ra,4(sp)		// save internal return address
 	sw	s2,8(sp)		// save S2
@@ -4759,7 +4759,7 @@ _asm_asincosf_0:
 	beqz	t3,1f			// return x if radians (T3 = 0=radians, 1=degrees)
 	add	sp,sp,-8		// space in the stack
 	sw	ra,4(sp)		// save return address
-	_asm_rad2deg			// convert radians to degrees
+	_asm_rad2degf			// convert radians to degrees
 	lw	ra,4(sp)		// restore return address
 	add	sp,sp,8			// destroy space in the stack
 1:	ret
@@ -4873,14 +4873,14 @@ _asm_atanf:
 	srli	a3,a2,23		// A3 <- unsigned exponent
 
 	// zero or small angle
-	li	t0,FLOAT_EXP1-9		// TI <- minimal exponent
+	li	t0,FLOAT_EXP1-9		// T0 <- minimal exponent
 	blt	a3,t0,_asm_atanf_0	// go to small value
 
 	// convert to signed exponent
 	addi	a3,a3,-FLOAT_EXP1	// subtract exponent bias
 
 	// infinity or big value
-	li	t0,9			// TI <- maximal exponent
+	li	t0,9			// T0 <- maximal exponent
 	bgt	a3,t0,_asm_atanf_inf	// go to big value
 
 	// result addition = 0 -> T1
@@ -5125,7 +5125,7 @@ _asm_atanf_0:
 	sw	t2,4(sp)		// save T2 (flag 0=atan(), 1=acotan())
 	sw	t3,8(sp)		// save T3 (flag 0=radians, 1=degrees)
 	sw	a3,12(sp)		// save A3 (unsigned exponent)
-	_asm_rad2deg			// convert radians to degrees
+	_asm_rad2degf			// convert radians to degrees
 	lw	a3,12(sp)		// restore A3 (unsigned exponent)
 	lw	t3,8(sp)		// restore T3 (flag 0=radians, 1=degrees)
 	lw	t2,4(sp)		// restore T2 (flag 0=atan(), 1=acotan())
@@ -5172,7 +5172,7 @@ _asm_atanf_inf:
 	// positive infinity - return x
 	beqz	t3,1f			// skip if radians (T3 = flag 0=radians, 1=degrees)
 	_asm_frec			// calculate 1/x
-	_asm_rad2deg			// convert radians to degrees
+	_asm_rad2degf			// convert radians to degrees
 	j	9f
 1:	_asm_frec			// calculate 1/x
 	j	9f
@@ -5188,7 +5188,7 @@ _asm_atanf_inf:
 	beqz	t3,1f			// skip if radians (T3 = flag 0=radians, 1=degrees)
 
 	_asm_frec			// calculate 1/x
-	_asm_rad2deg			// convert radians to degrees
+	_asm_rad2degf			// convert radians to degrees
 	j	2f
 
 1:	_asm_frec			// calculate 1/x
@@ -5210,7 +5210,7 @@ _asm_atanf_inf:
 	beqz	t3,1f			// skip if radians (T3 = flag 0=radians, 1=degrees)
 
 	_asm_frec			// calculate 1/x
-	_asm_rad2deg			// convert radians to degrees
+	_asm_rad2degf			// convert radians to degrees
 	j	2f
 
 1:	_asm_frec			// calculate 1/x

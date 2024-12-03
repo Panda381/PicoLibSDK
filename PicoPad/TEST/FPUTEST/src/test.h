@@ -55,7 +55,9 @@ INLINE double Test_QNanD()  { return Test_u64double(0x7ff8000000000000ULL); }	//
 INLINE double Test_IndD()   { return Test_u64double(0xfff8000000000000ULL); }	// -1.#IND
 INLINE double Test_PZeroD() { return Test_u64double(0x0000000000000000ULL); }	// +0.0
 INLINE double Test_MZeroD() { return Test_u64double(0x8000000000000000ULL); }	// -0.0
-INLINE double Test_P1D()    { return Test_u64double(0x3ff8000000000000ULL); }	// +1.0
+INLINE double Test_P1D()    { return Test_u64double(0x3ff0000000000000ULL); }	// +1.0
+INLINE double Test_PMaxD()  { return Test_u64double(0x7fefffffffffffffull); }	// max. valid positive number
+INLINE double Test_MMaxD()  { return Test_u64double(0xffefffffffffffffull); }	// max. valid negative number
 
 // extract signed exponent from the number
 int Test_GetExpF(float num);
@@ -490,3 +492,14 @@ void Test_conFF_exp10f();
 void Test_conFF_logf();
 void Test_conFF_log2f();
 void Test_conFF_log10f();
+
+// exp() constistency check
+void Test_conDD_exp();
+void Test_conDD_exp2();
+void Test_conDD_exp10();
+
+void Test_conDD_sqrt();
+
+void Test_conDD_log();
+void Test_conDD_log2();
+void Test_conDD_log10();

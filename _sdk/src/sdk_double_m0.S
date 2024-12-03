@@ -260,7 +260,7 @@ da_2:
 	// adjust exponent
 	subs	r2,#1		// eponent - 1
 	lsrs	r5,r1,#20	// get highest 12 bits of mantissa high, to check normalisation
-	beq	da_2		// not normalised yer, shift left one more time
+	beq	da_2		// not normalised yet, shift left one more time
 
 da_1:
 	// normalisation done, check rounding bit
@@ -543,7 +543,7 @@ wrapper_func __aeabi_dmul
 
 	lsls	r0,r6,#11	// R6 shift 11 bits left -> R0
 	lsrs	r2,r5,#21	// R5 shift 21 (=32-11) bits right -> R2
-	orrs	r0,r2		// assembler mantissa low -> R0
+	orrs	r0,r2		// assemble mantissa low -> R0
 
 	lsls	r5,#11		// shift sticky bits 11 bits left -> R5 (extra bits stay in R12)
 

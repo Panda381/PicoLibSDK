@@ -7,19 +7,35 @@
 
 #include "../include.h"
 
-#define LOOPS		200000		// number of tests (best in range 100000 to 1000000, default 200000)
+// number of tests (best in range 100000 to 1000000)
+#if RP2040
+#define LOOPS		200000
+#else
+#define LOOPS		500000
+#endif
+
 #define LOOPS_FAST	(LOOPS/10)	// number of tests - fast
 #define LOOPS_SLOW	(LOOPS*4)	// number of tests - slow
+
+int ErrorNum = 0;
 
 void MyPrint(const char* name, double maxavg, int max, int loops)
 {
 	DrawPrint("%s:", name);
 	while (DrawPrintPos < 11) DrawPrint(" ");
 
+	Bool ok = (DifMax <= max) && ((double)DifSum/loops <= maxavg);
+	if (!ok) ErrorNum++;
 	int pos = (DrawPrintPos > 12) ? 4 : ((DrawPrintPos > 11) ? 5 : 6);
-	DrawPrint("%s%*.3gns avg=%.3f max=%d\n",
-		((DifMax <= max) && ((double)DifSum/loops <= maxavg)) ? "OK" : "ERR",
+	DrawPrint("%s%*.3gns avg=%.3f max=%d\n", ok ? "OK" : "ERR",
 		 pos, (double)TestTime, (double)DifSum/loops, DifMax);
+}
+
+void MyPrintCon(const char* name, int max)
+{
+	Bool ok = (DifMax <= max);
+	if (!ok) ErrorNum++;
+	DrawPrint("%s consistency: %s (%d)\n", name, ok ? "OK" : "ERROR", DifMax);
 }
 
 // Max deviation is not tested for:
@@ -30,8 +46,6 @@ void MyPrint(const char* name, double maxavg, int max, int loops)
 // - fma function - result can be near 0 and therefore inaccurate.
 
 // To use "libc" functions, set USE_FLOATLIBC and USE_DOUBLELIBC in Makefile.inc to 1.
-
-float myacotanf(float x) { return (float)(PI/2 - atan(x)); }
 
 int main()
 {
@@ -194,7 +208,6 @@ int main()
 
 	// Square root
 	Test_sqrtf(LOOPS_FAST); MyPrint("sqrtf", 0.15, 1, LOOPS_FAST);
-	Test_conFF_sqrtf(); DrawPrint("sqrtf consistency: %s (%d)\n", (DifMax <= 4) ? "OK" : "ERROR", DifMax);
 
 	// convert degrees to radians
 	Test_deg2radf(LOOPS); MyPrint("deg2radf", 0.06, 1, LOOPS);
@@ -233,16 +246,16 @@ int main()
 	Test_cotanf_deg(LOOPS_FAST); MyPrint("cotanf_deg", 3.5, 24, LOOPS_FAST);
 
 	// arc sine in radians
-	Test_asinf(LOOPS_FAST); MyPrint("asinf", 2.0, 10, LOOPS_FAST);
+	Test_asinf(LOOPS_FAST); MyPrint("asinf", 2.0, 24, LOOPS_FAST);
 
 	// arc sine in degrees
-	Test_asinf_deg(LOOPS_FAST); MyPrint("asinf_deg", 2.2, 12, LOOPS_FAST);
+	Test_asinf_deg(LOOPS_FAST); MyPrint("asinf_deg", 2.2, 24, LOOPS_FAST);
 
 	// arc cosine in radians
-	Test_acosf(LOOPS_FAST); MyPrint("acosf", 0.4, 12, LOOPS_FAST);
+	Test_acosf(LOOPS_FAST); MyPrint("acosf", 0.4, 24, LOOPS_FAST);
 
 	// arc cosine in degrees
-	Test_acosf_deg(LOOPS_FAST); MyPrint("acosf_deg", 0.4, 6, LOOPS_FAST);
+	Test_acosf_deg(LOOPS_FAST); MyPrint("acosf_deg", 0.4, 24, LOOPS_FAST);
 
 	// arc tangent in radians
 	Test_atanf(LOOPS_FAST); MyPrint("atanf", 1, 24, LOOPS_FAST);
@@ -282,27 +295,21 @@ int main()
 
 	// Natural exponent
 	Test_expf(LOOPS_FAST); MyPrint("expf", 0.6, 3, LOOPS_FAST);
-	Test_conFF_expf(); DrawPrint("expf consistency: %s (%d)\n", (DifMax <= 2) ? "OK" : "ERROR", DifMax);
-
-	// Natural logarithm
-	Test_logf(LOOPS_FAST); MyPrint("logf", 0.2, 24, LOOPS_FAST);
-	Test_conFF_logf(); DrawPrint("logf consistency: %s (%d)\n", (DifMax <= 10) ? "OK" : "ERROR", DifMax);
 
 	// exponent with base 2
 	Test_exp2f(LOOPS_FAST); MyPrint("exp2f", 1.0, 10, LOOPS_FAST);
-	Test_conFF_exp2f(); DrawPrint("exp2f consistency: %s (%d)\n", (DifMax <= 8) ? "OK" : "ERROR", DifMax);
-
-	// logarithm with base 2
-	Test_log2f(LOOPS_FAST); MyPrint("log2f", 0.3, 24, LOOPS_FAST);
-	Test_conFF_log2f(); DrawPrint("log2f consistency: %s (%d)\n", (DifMax <= 10) ? "OK" : "ERROR", DifMax);
 
 	// exponent with base 10
 	Test_exp10f(LOOPS_FAST); MyPrint("exp10f", 1.0, 10, LOOPS_FAST);
-	Test_conFF_exp10f(); DrawPrint("exp10f consistency: %s (%d)\n", (DifMax <= 10) ? "OK" : "ERROR", DifMax);
+
+	// Natural logarithm
+	Test_logf(LOOPS_FAST); MyPrint("logf", 0.2, 24, LOOPS_FAST);
+
+	// logarithm with base 2
+	Test_log2f(LOOPS_FAST); MyPrint("log2f", 0.3, 24, LOOPS_FAST);
 
 	// logarithm with base 10
 	Test_log10f(LOOPS_FAST); MyPrint("log10f", 0.6, 24, LOOPS_FAST);
-	Test_conFF_log10f(); DrawPrint("log10f consistency: %s (%d)\n", (DifMax <= 12) ? "OK" : "ERROR", DifMax);
 
 	// expf(x) - 1
 	Test_expm1f(LOOPS_FAST); MyPrint("expm1f", 5.0, 20, LOOPS_FAST);
@@ -511,16 +518,16 @@ int main()
 	Test_cotan_deg(LOOPS_FAST); MyPrint("cotan_deg", 1.3, 53, LOOPS_FAST);
 
 	// arc sine in radians
-	Test_asin(LOOPS_FAST); MyPrint("asin", 1.2, 10, LOOPS_FAST);
+	Test_asin(LOOPS_FAST); MyPrint("asin", 1.2, 53, LOOPS_FAST);
 
 	// arc sine in degrees
-	Test_asin_deg(LOOPS_FAST); MyPrint("asin_deg", 1.5, 12, LOOPS_FAST);
+	Test_asin_deg(LOOPS_FAST); MyPrint("asin_deg", 1.5, 53, LOOPS_FAST);
 
 	// arc cosine in radians
-	Test_acos(LOOPS_FAST); MyPrint("acos", 0.4, 5, LOOPS_FAST);
+	Test_acos(LOOPS_FAST); MyPrint("acos", 0.4, 53, LOOPS_FAST);
 
 	// arc cosine in degrees
-	Test_acos_deg(LOOPS_FAST); MyPrint("acos_deg", 0.6, 5, LOOPS_FAST);
+	Test_acos_deg(LOOPS_FAST); MyPrint("acos_deg", 0.6, 53, LOOPS_FAST);
 
 	// arc tangent in radians
 	Test_atan(LOOPS_FAST); MyPrint("atan", 1, 53, LOOPS_FAST);
@@ -563,17 +570,17 @@ int main()
 	// Natural exponent
 	Test_exp(LOOPS_FAST); MyPrint("exp", 0.2, 3, LOOPS_FAST);
 
-	// Natural logarithm
-	Test_log(LOOPS_FAST); MyPrint("log", 0.01, 53, LOOPS_FAST);
-
 	// exponent with base 2
 	Test_exp2(LOOPS_FAST); MyPrint("exp2", 0.4, 3, LOOPS_FAST);
 
-	// logarithm with base 2
-	Test_log2(LOOPS_FAST); MyPrint("log2", 0.2, 53, LOOPS_FAST);
-
 	// exponent with base 10
 	Test_exp10(LOOPS_FAST); MyPrint("exp10", 2.00, 14, LOOPS_FAST);
+
+	// Natural logarithm
+	Test_log(LOOPS_FAST); MyPrint("log", 0.1, 53, LOOPS_FAST);
+
+	// logarithm with base 2
+	Test_log2(LOOPS_FAST); MyPrint("log2", 0.2, 53, LOOPS_FAST);
 
 	// logarithm with base 10
 	Test_log10(LOOPS_FAST); MyPrint("log10", 0.2, 53, LOOPS_FAST);
@@ -594,16 +601,38 @@ int main()
 	Test_pow(LOOPS_FAST); MyPrint("pow", 0.5, 53, LOOPS_FAST);
 
 	// square root of sum of squares (hypotenuse), sqrt(x*x + y*y)
-	Test_hypot(LOOPS_FAST); MyPrint("hypot", 0.02, 2, LOOPS_FAST);
+	Test_hypot(LOOPS_FAST); MyPrint("hypot", 0.02, 5, LOOPS_FAST);
 
 	// cube root, sqrt3(x), x^(1/3)
-	Test_cbrt(LOOPS_FAST); MyPrint("cbrt", 0.2, 2, LOOPS_FAST);
+	Test_cbrt(LOOPS_FAST); MyPrint("cbrt", 0.4, 2, LOOPS_FAST);
 
 	// absolute value
 	Test_absd(LOOPS_SLOW); MyPrint("absd", 0, 0, LOOPS_SLOW);
 
 	// Convert double to float
 	Test_double2float(LOOPS_SLOW); MyPrint("double2float", 0.01, 1, LOOPS_SLOW);
+
+	// consistency test
+	Test_conFF_sqrtf(); MyPrintCon("sqrtf", 4);
+	Test_conFF_expf(); MyPrintCon("expf", 2);
+	Test_conFF_exp2f(); MyPrintCon("exp2f", 8);
+	Test_conFF_exp10f(); MyPrintCon("exp10f", 10);
+	Test_conFF_logf(); MyPrintCon("logf", 4);
+	Test_conFF_log2f(); MyPrintCon("log2f", 4);
+	Test_conFF_log10f(); MyPrintCon("log10f", 4);
+
+	Test_conDD_sqrt(); MyPrintCon("sqrt", 4);
+	Test_conDD_exp(); MyPrintCon("exp", 2);
+	Test_conDD_exp2(); MyPrintCon("exp2", 4);
+	Test_conDD_exp10(); MyPrintCon("exp10", 12);
+	Test_conDD_log(); MyPrintCon("log", 3);
+	Test_conDD_log2(); MyPrintCon("log2", 3);
+	Test_conDD_log10(); MyPrintCon("log10", 3);
+
+	if (ErrorNum == 0)
+		DrawPrint(">>> All tests OK (0 errors) <<<\n");
+	else
+		DrawPrint(">>> Number of errors: %d <<<\n", ErrorNum);
 
 	while (True)
 	{

@@ -27,6 +27,8 @@ ASRC += ../../../_sdk/src/sdk_float_m33_sci_vfp.S
 endif
 
 ifeq (${CPUCLASS},RP2350RISCV)
+ASRC += ../../../_sdk/src/sdk_double_riscv.S
+ASRC += ../../../_sdk/src/sdk_double_riscv_sci.S
 ASRC += ../../../_sdk/src/sdk_float_riscv.S
 ASRC += ../../../_sdk/src/sdk_float_riscv_sci.S
 endif

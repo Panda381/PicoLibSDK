@@ -63,13 +63,13 @@
 //#define USE_REAL16		1		// 1 = use real16 numbers (3 digits, exp +-4)
 #define USE_REAL32		1		// 1 = use real32 numbers (float, 7 digits, exp +-38)
 //#define USE_REAL48		1		// 1 = use real48 numbers (11 digits, exp +-153)
-//#define USE_REAL64		1		// 1 = use real64 numbers (double, 16 digits, exp +-308)
+#define USE_REAL64		1		// 1 = use real64 numbers (double, 16 digits, exp +-308)
 //#define USE_REAL80		1		// 1 = use real80 numbers (19 digits, exp +-4932)
 //#define USE_REAL96		1		// 1 = use real96 numbers (25 digits, exp +-1233)
 #define USE_REAL128		1		// 1 = use real128 numbers (34 digits, exp +-4932)
 //#define USE_REAL160		1		// 1 = use real160 numbers (43 digits, exp +-9864)
 //#define USE_REAL192		1		// 1 = use real192 numbers (52 digits, exp +-19728)
-//#define USE_REAL256		1		// 1 = use real256 numbers (71 digits, exp +-78913)
+#define USE_REAL256		1		// 1 = use real256 numbers (71 digits, exp +-78913)
 //#define USE_REAL384		1		// 1 = use real384 numbers (109 digits, exp +-315652)
 //#define USE_REAL512		1		// 1 = use real512 numbers (147 digits, exp +-1262611)
 //#define USE_REAL768		1		// 1 = use real768 numbers (224 digits, exp +-5050445)
@@ -81,6 +81,13 @@
 //#define USE_REAL6144		1		// 1 = use real6144 numbers
 //#define USE_REAL8192		1		// 1 = use real8192 numbers
 //#define USE_REAL12288		1		// 1 = use real12288 numbers
+
+#define MAXCHEB_LN	1536		// max. REAL number supporting Chebyshev approximations of Ln()
+#define MAXCHEB_EXP	1536		// max. REAL number supporting Chebyshev approximations of Exp()
+#define MAXCHEB_SIN	1536		// max. REAL number supporting Chebyshev approximations of Sin()
+#define MAXCHEB_ASIN	1536		// max. REAL number supporting Chebyshev approximations of ASin()
+#define MAXCHEB_ATAN	1536		// max. REAL number supporting Chebyshev approximations of ATan()
+#define MAXCHEB_SQRT	1536		// max. REAL number supporting Chebyshev approximations of Sqrt()
 
 #include "../../../config_def.h"	// default configuration
 

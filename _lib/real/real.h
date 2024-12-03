@@ -189,7 +189,7 @@
 #define REALNAME(x)		Real128 ## x	// name of functions
 #define REAL_CONST		"const/const0128.h"
 #if USE_REAL192
-#define REALREF			real192		// reference number type (do not use real60, insufficient for ChebCoefRefExt)
+#define REALREF			real192		// reference number type (do not use real160, insufficient for ChebCoefRefExt)
 #define REALREFNAME(x)	Real192 ## x		// name of reference functions
 #endif
 #ifdef REAL_PATH

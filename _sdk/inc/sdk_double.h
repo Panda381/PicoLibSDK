@@ -19,11 +19,37 @@
 extern "C" {
 #endif
 
+#define DOUBLE_MANT_BITS	52		// number of bits of mantissa
+#define DOUBLE_MANT_BITS_H	20		// number of bits of mantissa in high u32
+#define DOUBLE_MANT_MASK	0x000fffffffffffffULL // mask of mantissa
+#define DOUBLE_MANT_MASK_H	0x000fffff	// mask of mantissa in high u32
+#define DOUBLE_EXP_BITS		11		// number of bits of exponent
+#define DOUBLE_EXP_MASK		0x7ff		// mask of exponent value
+#define DOUBLE_EXP_BIAS		0x3ff		// bias of exponent (= value 1.0)
+#define DOUBLE_EXP_INF		0x7ff		// exponent infinity (overflow)
+
 #if USE_DOUBLE		// use double support 1=in RAM, 2=in Flash
 
 #ifdef log2
 #undef log2 // defined in math.h: #define log2(x) (log (x) / _M_LN2)
 #endif
+
+typedef union { double f; u64 n; } tmp_double_u64;
+
+// retype number to double
+INLINE double u64double(u64 n) { tmp_double_u64 tmp; tmp.n = n; return tmp.f; }
+
+// retype double to number
+INLINE u64 doubleu64(double f) { tmp_double_u64 tmp; tmp.f = f; return tmp.n; }
+
+// get double exponent
+INLINE int doublegetexp(double f) { return (int)((doubleu64(f) << 1) >> (DOUBLE_MANT_BITS+1)); }
+
+// check if double is infinity
+INLINE Bool doubleisinf(double f) { return doublegetexp(f) == DOUBLE_EXP_INF; }
+
+// check if double is zero
+INLINE Bool doubleiszero(double f) { return doublegetexp(f) == 0; }
 
 // ==== common auxiliary functions, not in libc
 // sdk_double.c
@@ -123,11 +149,19 @@ double atan(double x);
 // arc tangent in degrees
 double atan_deg(double x);
 
+#if RISCV
+// arc cotangent in radians
+double acotan(double x);
+
+// arc cotangent in degrees
+double acotan_deg(double x);
+#else
 // arc cotangent in radians
 INLINE double acotan(double x) { return PI/2 - atan(x); }
 
 // arc cotangent in degrees
 INLINE double acotan_deg(double x) { return 90.0 - atan_deg(x); }
+#endif
 
 // arc tangent of y/x in degrees
 double atan2_deg(double y, double x);
@@ -517,22 +551,28 @@ double log(double x);
 // ==== basic arithmetic
 
 // Addition, x + y
-INLINE double dadd(double x, double y) { return x + y; }
+double dadd(double x, double y);
+//INLINE double dadd(double x, double y) { return x + y; }
 
 // Subtraction, x - y
-INLINE double dsub(double x, double y) { return x - y; }
+double dsub(double x, double y);
+//INLINE double dsub(double x, double y) { return x - y; }
 
 // Multiplication, x * y
-INLINE double dmul(double x, double y) { return x * y; }
+double dmul(double x, double y);
+//INLINE double dmul(double x, double y) { return x * y; }
 
 // Square, x^2 
-INLINE double dsqr(double x) { return x * x; }
+double dsqr(double x);
+//INLINE double dsqr(double x) { return x * x; }
 
 // Division, x / y
-INLINE double ddiv(double x, double y) { return x / y; }
+double ddiv(double x, double y);
+//INLINE double ddiv(double x, double y) { return x / y; }
 
 // Reciprocal 1 / x
-INLINE double drec(double x) { return 1.0 / x; }
+double drec(double x);
+//INLINE double drec(double x) { return 1.0 / x; }
 
 // ==== comparison
 

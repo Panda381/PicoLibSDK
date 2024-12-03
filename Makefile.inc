@@ -610,6 +610,51 @@ LDFLAGS+=-Wl,--wrap=__floatundisf
 endif
 endif
 
+# double float - RP2350-RISCV functions
+ifeq (${CPUCLASS},RP2350RISCV)
+ifneq (${USE_DOUBLELIBC},1)
+LDFLAGS+=-Wl,--wrap=__adddf3
+LDFLAGS+=-Wl,--wrap=__subdf3
+LDFLAGS+=-Wl,--wrap=__muldf3
+LDFLAGS+=-Wl,--wrap=__divdf3
+
+LDFLAGS+=-Wl,--wrap=sqrt
+
+LDFLAGS+=-Wl,--wrap=exp
+LDFLAGS+=-Wl,--wrap=exp2
+LDFLAGS+=-Wl,--wrap=exp10
+
+LDFLAGS+=-Wl,--wrap=log
+LDFLAGS+=-Wl,--wrap=log2
+LDFLAGS+=-Wl,--wrap=log10
+
+LDFLAGS+=-Wl,--wrap=sin
+LDFLAGS+=-Wl,--wrap=cos
+LDFLAGS+=-Wl,--wrap=sincos
+LDFLAGS+=-Wl,--wrap=tan
+LDFLAGS+=-Wl,--wrap=cotan
+
+LDFLAGS+=-Wl,--wrap=asin
+LDFLAGS+=-Wl,--wrap=acos
+LDFLAGS+=-Wl,--wrap=atan
+LDFLAGS+=-Wl,--wrap=acotan
+LDFLAGS+=-Wl,--wrap=atan2
+
+LDFLAGS+=-Wl,--wrap=sinh
+LDFLAGS+=-Wl,--wrap=cosh
+LDFLAGS+=-Wl,--wrap=tanh
+LDFLAGS+=-Wl,--wrap=asinh
+LDFLAGS+=-Wl,--wrap=acosh
+LDFLAGS+=-Wl,--wrap=atanh
+
+LDFLAGS+=-Wl,--wrap=powint
+LDFLAGS+=-Wl,--wrap=pow
+LDFLAGS+=-Wl,--wrap=hypot
+LDFLAGS+=-Wl,--wrap=cbrt
+
+endif
+endif
+
 # integer operations: sdk_divider.S
 ifeq (${CPUCLASS},RP2040)
 LDFLAGS+=-Wl,--wrap=__aeabi_idiv

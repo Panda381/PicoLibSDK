@@ -13,4 +13,5 @@
 #include "../../_display/minivga/minivga.h" // VGA display
 #include "../../_display/dvi/dvi.h" // DVI display
 #include "../../_display/dvivga/dvivga.h" // DVI+VGA display
+#include "../../_display/st7789/st7789.h" // ST7789 display
 #include "../../_lib/inc/lib_draw.h" // drawing to TFT and VGA display buffer

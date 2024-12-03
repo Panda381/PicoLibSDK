@@ -29,10 +29,12 @@
 extern "C" {
 #endif
 
-#define FLOAT_EXP_BITS	11		// number of bits of exponent
-#define FLOAT_EXP_MAX	0xff		// max. value of exponent (= infinity flag)
-#define FLOAT_EXP_SHIFT	23		// shift of exponent
-#define FLOAT_EXP_BIAS	127		// bias of exponent (= value 1.0)
+#define FLOAT_MANT_BITS		23		// number of bits of mantissa
+#define FLOAT_MANT_MASK		0x007fffff	// mask of mantissa
+#define FLOAT_EXP_BITS		8		// number of bits of exponent
+#define FLOAT_EXP_MASK		0xff		// mask of exponent value
+#define FLOAT_EXP_BIAS		127		// bias of exponent (= value 1.0)
+#define FLOAT_EXP_INF		0xff		// exponent infinity (overflow)
 
 #if USE_FLOAT		// use float support 1=in RAM, 2=in Flash
 
@@ -40,6 +42,23 @@ extern "C" {
 // initialize floating-point service
 void FloatInit();
 #endif // RP2040
+
+typedef union { float f; u32 n; } tmp_float_u32;
+
+// retype u32 to float
+INLINE float u32float(u32 n) { tmp_float_u32 tmp; tmp.n = n; return tmp.f; }
+
+// retype float to number
+INLINE u32 floatu32(float f) { tmp_float_u32 tmp; tmp.f = f; return tmp.n; }
+
+// get float exponent
+INLINE int floatgetexp(float f) { return (int)((floatu32(f) << 1) >> (FLOAT_MANT_BITS+1)); }
+
+// check if float is infinity
+INLINE Bool floatisinf(float f) { return floatgetexp(f) == FLOAT_EXP_INF; }
+
+// check if float is zero
+INLINE Bool floatiszero(float f) { return floatgetexp(f) == 0; }
 
 // ==== common auxiliary functions, not in libc
 // sdk_float.c
@@ -383,6 +402,19 @@ float logf(float x);
 
 // ==== basic arithmetic
 
+#if USE_M33_VFP	// 1=enable VFP floating point instructions on RP2350-ARM, 0=emulate with DCP coprocessor
+// Addition, x + y
+INLINE float fadd(float x, float y) { return x+y; }
+
+// Subtraction, x - y
+INLINE float fsub(float x, float y) { return x-y; }
+
+// Multiplication, x * y
+INLINE float fmul(float x, float y) { return x*y; }
+
+// Division, x / y
+INLINE float fdiv(float x, float y) { return x/y; }
+#else // USE_M33_VFP
 // Addition, x + y
 float fadd(float x, float y);
 
@@ -392,17 +424,18 @@ float fsub(float x, float y);
 // Multiplication, x * y
 float fmul(float x, float y);
 
+// Division, x / y
+float fdiv(float x, float y);
+#endif // USE_M33_VFP
+
 // Multiply by unsigned integer u16, x * n
 //INLINE float fmulu16(float x, u16 n) { return x * n; }
 
-// Square, x^2 
-INLINE float fsqr(float x) { return x * x; }
-
-// Division, x / y
-float fdiv(float x, float y);
-
 // Divide by unsigned integer u16, x / n
 //INLINE float fdivu16(float x, u16 n) { return x / n; }
+
+// Square, x^2 
+INLINE float fsqr(float x) { return x * x; }
 
 // Reciprocal 1 / x
 INLINE float frec(float x) { return 1.0f / x; }

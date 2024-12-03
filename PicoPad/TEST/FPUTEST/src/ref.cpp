@@ -989,7 +989,7 @@ float Ref_sqrtf(float x)
 
 double Ref_sqrt(double x)
 {
-#if USE_FLOATLIBC || RISCV
+#if USE_DOUBLELIBC
 	if (x < 0) return Test_QNanF();
 #else
 	if (x < 0) return Test_IndD();
@@ -1242,7 +1242,7 @@ float Ref_cotanf(float x)
 
 double Ref_cotan(double x)
 {
-	if (Test_IsOverD(x) || Test_IsZeroF(x)) return 1/tan(x); // inf is undefined
+	if (Test_IsOverD(x) || Test_IsZeroD(x)) return 1/tan(x); // inf is undefined
 	REAL t;
 	REALNAME(FromDouble)(&t, x);
 	REALNAME(CoTan)(&t);
@@ -1263,7 +1263,7 @@ float Ref_cotanf_deg(float x)
 
 double Ref_cotan_deg(double x)
 {
-	if (Test_IsOverD(x) || Test_IsZeroF(x)) return 1/tan(x); // inf is undefined
+	if (Test_IsOverD(x) || Test_IsZeroD(x)) return 1/tan(x); // inf is undefined
 	REAL t;
 	REALNAME(FromDouble)(&t, x);
 	Unit = UNIT_DEG;
@@ -1397,6 +1397,7 @@ double Ref_atan_deg(double x)
 // arc cotangent in radians
 float Ref_acotanf(float x)
 {
+	if (!Test_IsNegF(x) && (Test_GetExpF(x) > FLOAT_EXP1+FLOAT_MANTBITS/2)) return 1/x;
 	REAL t;
 	REALNAME(FromFloat)(&t, x);
 	REALNAME(ACoTan)(&t);
@@ -1405,6 +1406,7 @@ float Ref_acotanf(float x)
 
 double Ref_acotan(double x)
 {
+	if (!Test_IsNegD(x) && (Test_GetExpD(x) > DOUBLE_EXP1+DOUBLE_MANTBITS/2)) return 1/x;
 	REAL t;
 	REALNAME(FromDouble)(&t, x);
 	REALNAME(ACoTan)(&t);
@@ -1414,6 +1416,7 @@ double Ref_acotan(double x)
 // arc cotangent in degrees
 float Ref_acotanf_deg(float x)
 {
+	if (!Test_IsNegF(x) && (Test_GetExpF(x) > FLOAT_EXP1+FLOAT_MANTBITS/2)) return rad2degf(1/x);
 	REAL t;
 	REALNAME(FromFloat)(&t, x);
 	REALNAME(ACoTan)(&t);
@@ -1424,6 +1427,7 @@ float Ref_acotanf_deg(float x)
 
 double Ref_acotan_deg(double x)
 {
+	if (!Test_IsNegD(x) && (Test_GetExpD(x) > DOUBLE_EXP1+DOUBLE_MANTBITS/2)) return rad2deg(1/x);
 	REAL t;
 	REALNAME(FromDouble)(&t, x);
 	REALNAME(ACoTan)(&t);
