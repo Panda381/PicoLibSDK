@@ -68,7 +68,9 @@ Auto generated configuration:
 extern "C" {
 #endif
 
+#ifndef MINIVGA_IRQTIME
 #define MINIVGA_IRQTIME		0	// debug flag - measure delta time of VGA service
+#endif
 // Measured: IN=1 us, OUT=31 us
 
 // frame buffer

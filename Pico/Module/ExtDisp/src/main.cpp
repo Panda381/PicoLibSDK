@@ -342,7 +342,7 @@ int main()
 #endif
 
 	// draw rainbow gradient
-	for (y; y < HEIGHT; y++) GenGrad(&FrameBuf[y*WIDTH], WIDTH);
+	for (y = 0; y < HEIGHT; y++) GenGrad(&FrameBuf[y*WIDTH], WIDTH);
 
 	// print setup
 //	printf("CLK_SYS=%dMHz\n", ClockGetHz(CLK_SYS)/1000000);
