@@ -227,7 +227,11 @@ typedef struct {
 	io32	result;		// 0x1C: result of frequency measurement
 } fc_hw_t;
 
+#if RP2040
 #define fc_hw ((fc_hw_t*)(CLOCKS_BASE + 0x80))
+#else
+#define fc_hw ((fc_hw_t*)(CLOCKS_BASE + 0x8C))
+#endif
 
 STATIC_ASSERT(sizeof(fc_hw_t) == 0x20, "Incorrect fc_hw_t!");
 
