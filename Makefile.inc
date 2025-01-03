@@ -706,7 +706,7 @@ SZ = ${COMP}size
 ifeq (${OS},Windows_NT)
 UF = ../../../_tools/elf2uf2.exe
 else
-UF = ../../../_tools/elf2uf2
+UF = ../../../_tools/elf2uf2/elf2uf2
 endif
 
 # uf2 family_id
