@@ -55,7 +55,7 @@ if [[ -e "${TARGET}".bin ]]; then rm "${TARGET}".bin; fi
 
 # Compile
 echo "Device: $DEVICE"
-make all
+make -j$(nproc) all
 
 # If you want to see all error messages, compile using this command:
 # make all > err.txt
