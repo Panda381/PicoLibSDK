@@ -161,7 +161,11 @@ void Core1Exec(pCore1Fnc entry)
 		0,		// synchronization
 		0,		// synchronization
 		1,		// command to start data sequence
+#if RISCV
+		(u32)GetVTOR()|1, // address of vector table (shared with core 0) ... set vector mode
+#else
 		(u32)GetVTOR(),	// address of vector table (shared with core 0)
+#endif
 		(u32)sp,	// stack pointer
 		(u32)Core1Trampoline};	// execute trampoline function
 

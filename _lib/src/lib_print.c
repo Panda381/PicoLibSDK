@@ -1086,7 +1086,7 @@ u32 MemPrintArg(char* buf, u32 max, const char* fmt, va_list args)
 	u32 n = StreamPrintArg(&wstr, &rstr, args);
 
 	// terminating 0
-	if (wstr.pos < wstr.size) buf[wstr.pos] = 0;
+	if (max > 0) buf[wstr.pos] = 0;
 
 	return n;
 }
