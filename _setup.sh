@@ -84,7 +84,7 @@ case "$1" in
      *) 
 	export DEVICE="picopad10"
 	export DEVCLASS="picopad"
-	export DEVDIR="!PicoPad20"
+	export DEVDIR="!PicoPad10"
 	;;
 esac
 
