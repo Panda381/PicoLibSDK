@@ -8,6 +8,7 @@ rem (e.g. from the DEMO\HELLOW\c.bat).
 rem ------------------------------------------------
 rem Edit this line to setup path to GCC-ARM compiler
 rem ------------------------------------------------
+rem using this here makes recursive path appending
 rem set PATH=..\..\_tools;C:\ARM10\bin;%PATH%
 
 rem ----------------------------------------------------------------------
