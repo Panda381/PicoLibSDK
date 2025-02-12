@@ -116,7 +116,17 @@ int SndOff; // sound sample offset
 // main function
 int main(int argc, char* argv[])
 {
+	BOOL BMPISBAT = TRUE;
 	int i, j;
+
+	if (argc > 1) {
+		for (i=1; i < argc; i++) {
+			if (strcmp("--bmpisnotbat", argv[i]) == 0) {
+				BMPISBAT = FALSE;
+				break;
+			}
+		}
+	}
 
 	if ((sizeof(_bmpBITMAPFILEHEADER) != 14) ||
 		(sizeof(_bmpBITMAPINFOHEADER) != 40))
@@ -255,10 +265,19 @@ int main(int argc, char* argv[])
 		}
 
 		// write image data (even image: even pixels, odd image: odd pixels)
-		if (fwrite(ImgData, 1, WIDTH*HEIGHT, fout) != WIDTH*HEIGHT)
-		{
-			printf("\nError write to output file " OUTFILE "\n");
-			return 1;
+		if (BMPISBAT) {
+			if (fwrite(ImgData, 1, WIDTH*HEIGHT, fout) != WIDTH*HEIGHT)
+			{
+				printf("\nError write to output file " OUTFILE "\n");
+				return 1;
+			}
+		} else {
+			for (j = WIDTH*HEIGHT-WIDTH; j >= 0; j -= WIDTH) {
+				if (fwrite(&ImgData[j], 1, WIDTH, fout) != WIDTH) {
+					printf("\nError write slice to output file " OUTFILE "\n");
+					return 1;
+				}
+			}
 		}
 
 		// write sound sample
