@@ -177,7 +177,7 @@ int main(int argc, char* argv[])
 		(fmt->nSamplesPerSec != 22050) || // check rate
 		(fmt->wBitsPerSample != 8)) // check bits per sample
 	{
-		printf("Incorrect format of input file %s,\n", argv[1]);
+		printf("Incorrect format of input file %s,\n", SOUNDFILE);
 		printf("  must be PCM mono 8-bit 22050Hz.\n");
 		return 1;
 	}
