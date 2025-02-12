@@ -33,10 +33,8 @@ typedef unsigned char u8;
 typedef signed short s16;
 typedef unsigned short u16;
 
-typedef signed long int s32;		// on 64-bit system use "signed int"
-typedef unsigned long int u32;		// on 64-bit system use "unsigned int"
-//typedef signed int s32;
-//typedef unsigned int u32;
+typedef signed int s32;		// On 32-bit and 64-bit systems are int 32 bit
+typedef unsigned int u32;	// On 32-bit and 64-bit systems are unsigned int 32 bit
 
 typedef unsigned int BOOL;
 #define TRUE  1
