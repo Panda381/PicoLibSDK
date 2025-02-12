@@ -117,6 +117,7 @@ int SndOff; // sound sample offset
 int main(int argc, char* argv[])
 {
 	BOOL BMPISBAT = TRUE;
+	int processed_frames = 0;
 	int i, j;
 
 	if (argc > 1) {
@@ -214,7 +215,13 @@ int main(int argc, char* argv[])
 
 		// open image file
 		f = fopen(Filename, "rb");
-		if (f == NULL) break;
+		if (f == NULL) {
+			if (i == 0) {
+				continue;
+			} else {
+				break;
+			}
+		}
 
 		// read image file
 		int size2 = (int)fread(Img, 1, IMGSIZE, f);
@@ -293,13 +300,14 @@ int main(int argc, char* argv[])
 		*/
 		if (SndOff > SndNum) SndOff = SndNum;
 
+		processed_frames++;
 		printf(".");
 	}
 
 	// close output file
 	fclose(fout);
 
-	printf("\nProcessed %d frames\n", i);
+	printf("\nProcessed %d frames\n", processed_frames);
 
 	return 0;
 }
