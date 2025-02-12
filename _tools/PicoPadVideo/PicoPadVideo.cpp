@@ -20,7 +20,7 @@
 //#define SOUNDSAMP_DEL (FPS / (SOUNDRATE - SOUNDRATE/FPS*FPS)) // number of frames to delete 1 sound sample (= 2)
 #define SOUNDFILE "SOUND.wav"
 #define OUTFILE "VIDEO.VID"
-#define BMPFILE "BMP\\%06d.bmp"
+#define BMPFILE "BMP/%06d.bmp"
 #define WIDTH 160 // image width
 #define HEIGHT 240 // image height
 #define IMGSIZE (WIDTH*HEIGHT + 4*256 + 54 + 1000) // input image size + reserve (= 40474)
