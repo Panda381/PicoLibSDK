@@ -84,28 +84,28 @@ void DeviceTerm()
 #if USE_PICOINOMINI
 
 // set LED ON (inx = LED index LED?)
-void LedOn(u8 inx)
+void NOFLASH(LedOn)(u8 inx)
 {
 	if (inx == LED1) UserLedState = True;
 	if (inx == LED2) GPIO_Out1(LED_PIN);
 }
 
 // set LED OFF (inx = LED index LED?)
-void LedOff(u8 inx)
+void NOFLASH(LedOff)(u8 inx)
 {
 	if (inx == LED1) UserLedState = False;
 	if (inx == LED2) GPIO_Out0(LED_PIN);
 }
 
 // flip LED (inx = LED index LED?)
-void LedFlip(u8 inx)
+void NOFLASH(LedFlip)(u8 inx)
 {
 	if (inx == LED1) UserLedState = !UserLedState;
 	if (inx == LED2) GPIO_Flip(LED_PIN);
 }
 
 // set LED (inx = LED index LED?)
-void LedSet(u8 inx, u8 val)
+void NOFLASH(LedSet)(u8 inx, u8 val)
 {
 	if (val == 0) LedOff(inx); else LedOn(inx);
 }
@@ -113,25 +113,25 @@ void LedSet(u8 inx, u8 val)
 #else // USE_PICOINOMINI
 
 // set LED ON (inx = LED index LED?)
-void LedOn(u8 inx)
+void NOFLASH(LedOn)(u8 inx)
 {
 	if (inx == LED1) GPIO_Out1(LED_PIN);
 }
 
 // set LED OFF (inx = LED index LED?)
-void LedOff(u8 inx)
+void NOFLASH(LedOff)(u8 inx)
 {
 	if (inx == LED1) GPIO_Out0(LED_PIN);
 }
 
 // flip LED (inx = LED index LED?)
-void LedFlip(u8 inx)
+void NOFLASH(LedFlip)(u8 inx)
 {
 	if (inx == LED1) GPIO_Flip(LED_PIN);
 }
 
 // set LED (inx = LED index LED?)
-void LedSet(u8 inx, u8 val)
+void NOFLASH(LedSet)(u8 inx, u8 val)
 {
 	if (val == 0) LedOff(inx); else LedOn(inx);
 }

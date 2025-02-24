@@ -439,6 +439,15 @@ INLINE void GPIO_NoPull(int pin) { RegClr(GPIO_PAD(pin), B2|B3); }
 INLINE void GPIO_NoPull_hw(io32* hw) { RegClr(hw, B2|B3); }
 
 // set pull down (default state; pin = 0..31 or 0..49, including SWCLK and SWD)
+// RP2350-A2 errata RP2350-E9:
+//  Description:
+//   If pad is set as input and voltage is within undefine range between VIL and VIH,
+//   then pull-down will not pull voltage low, because leakage current will hold at 2V.
+//  Workaround 1:
+//   Use external pull-down 8.2 kOhm.
+//  Workaroung 2:
+//   Disabling input will reset the leakage. To read pulled-down input state, enable
+//   input immediately before reading GPIO_InEnable(), and then re-disable GPIO_InDisable().
 INLINE void GPIO_PullDown(int pin) { RegMask(GPIO_PAD(pin), B2, B2|B3); }
 INLINE void GPIO_PullDown_hw(io32* hw) { RegMask(hw, B2, B2|B3); }
 

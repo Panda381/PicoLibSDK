@@ -9,7 +9,7 @@
 //                                   Includes
 // ----------------------------------------------------------------------------
 
-#include "../../../includes.h"	// all includes
+#include INCLUDES_H		// all includes
 
 #include "src/fixed.h"		// fixed point number
 #include "src/big.h"		// big fixed point number

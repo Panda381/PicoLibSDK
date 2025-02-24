@@ -32,9 +32,8 @@ typedef signed char s8;
 typedef unsigned char u8;
 typedef signed short s16;
 typedef unsigned short u16;
-
-typedef signed int s32;		// On 32-bit and 64-bit systems are int 32 bit
-typedef unsigned int u32;	// On 32-bit and 64-bit systems are unsigned int 32 bit
+typedef signed int s32;
+typedef unsigned int u32;
 
 typedef unsigned int BOOL;
 #define TRUE  1
@@ -203,12 +202,12 @@ int main(int argc, char* argv[])
 
 		// open image file
 		f = fopen(Filename, "rb");
-		if (f == NULL) {
-			if (i == 0) {
+		if (f == NULL)
+		{
+			if (i == 0)
 				continue;
-			} else {
+			else
 				break;
-			}
 		}
 
 		// read image file
@@ -260,16 +259,21 @@ int main(int argc, char* argv[])
 		}
 
 		// write image data (even image: even pixels, odd image: odd pixels)
-		if (bmi->biHeight < 0) {
+		if (bmi->biHeight < 0)
+		{
 			if (fwrite(ImgData, 1, WIDTH*HEIGHT, fout) != WIDTH*HEIGHT)
 			{
 				printf("\nError write to output file " OUTFILE "\n");
 				return 1;
 			}
-		} else {
-			for (j = WIDTH*HEIGHT-WIDTH; j >= 0; j -= WIDTH) {
-				if (fwrite(&ImgData[j], 1, WIDTH, fout) != WIDTH) {
-					printf("\nError write slice to output file " OUTFILE "\n");
+		}
+		else
+		{
+			for (j = WIDTH*HEIGHT-WIDTH; j >= 0; j -= WIDTH)
+			{
+				if (fwrite(&ImgData[j], 1, WIDTH, fout) != WIDTH)
+				{
+					printf("\nError write to output file " OUTFILE "\n");
 					return 1;
 				}
 			}
@@ -299,3 +303,4 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
+

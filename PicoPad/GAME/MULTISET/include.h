@@ -12,7 +12,7 @@
 #ifndef _MAIN_INCLUDE_H
 #define _MAIN_INCLUDE_H
 
-#include "../../../includes.h"	// all includes
+#include INCLUDES_H		// all includes
 
 // games
 namespace namespace_ants { int main(); }

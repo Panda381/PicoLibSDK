@@ -9,7 +9,7 @@
 //                                   Includes
 // ----------------------------------------------------------------------------
 
-#include "../../../includes.h"	// all includes
+#include INCLUDES_H		// all includes
 
 #include "grabber.pio.h"	// SPI grabber
 #include "src/main.h"		// main code

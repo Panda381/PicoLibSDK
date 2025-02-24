@@ -21,6 +21,72 @@
 # Setup Flash memory (usually RP2040: 0x200000, RP2350: 0x400000)
 #    FLASHSIZE=0x200000
 
+# Path to root directory from the project directory (without trailing '/' delimiter)
+ifeq ($(PICO_ROOT_PATH),)
+PICO_ROOT_PATH = ../../..
+endif
+
+# Path to PicoLibSDK _boot2 directory (without trailing '/' delimiter)
+ifeq ($(PICOLIBSDK_BOOT2_DIR),)
+PICOLIBSDK_BOOT2_DIR = ${PICO_ROOT_PATH}/_boot2
+endif
+
+# Path to PicoLibSDK _devices directory (without trailing '/' delimiter)
+ifeq ($(PICOLIBSDK_DEVICES_DIR),)
+PICOLIBSDK_DEVICES_DIR = ${PICO_ROOT_PATH}/_devices
+endif
+
+# Path to PicoLibSDK _display directory (without trailing '/' delimiter)
+ifeq ($(PICOLIBSDK_DISPLAY_DIR),)
+PICOLIBSDK_DISPLAY_DIR = ${PICO_ROOT_PATH}/_display
+endif
+
+# Path to PicoLibSDK _font directory (without trailing '/' delimiter)
+ifeq ($(PICOLIBSDK_FONT_DIR),)
+PICOLIBSDK_FONT_DIR = ${PICO_ROOT_PATH}/_font
+endif
+
+# Path to PicoLibSDK _lib directory (without trailing '/' delimiter)
+ifeq ($(PICOLIBSDK_LIB_DIR),)
+PICOLIBSDK_LIB_DIR = ${PICO_ROOT_PATH}/_lib
+endif
+
+# Path to PicoLibSDK _loader directory (without trailing '/' delimiter)
+ifeq ($(PICOLIBSDK_LOADER_DIR),)
+PICOLIBSDK_LOADER_DIR = ${PICO_ROOT_PATH}/_loader
+endif
+
+# Path to PicoLibSDK _sdk directory (without trailing '/' delimiter)
+ifeq ($(PICOLIBSDK_SDK_DIR),)
+PICOLIBSDK_SDK_DIR = ${PICO_ROOT_PATH}/_sdk
+endif
+
+# Path to PicoLibSDK _tools directory (without trailing '/' delimiter)
+ifeq ($(PICOLIBSDK_TOOLS_DIR),)
+PICOLIBSDK_TOOLS_DIR = ${PICO_ROOT_PATH}/_tools
+endif
+
+# C code define path to root directory
+DEFINE += -D PICO_ROOT_PATH=${PICO_ROOT_PATH}
+
+# C code define path to _display directory
+DEFINE += -D PICOLIBSDK_DISPLAY_DIR=${PICOLIBSDK_DISPLAY_DIR}
+
+# C code define path to _font directory
+DEFINE += -D PICOLIBSDK_FONT_DIR=${PICOLIBSDK_FONT_DIR}
+
+# C code define path to _lib directory
+DEFINE += -D PICOLIBSDK_LIB_DIR=${PICOLIBSDK_LIB_DIR}
+
+# C code define path to _sdk directory
+DEFINE += -D PICOLIBSDK_SDK_DIR=${PICOLIBSDK_SDK_DIR}
+
+# C code define include base "includes.h" file
+DEFINE += -D INCLUDES_H=\"${PICO_ROOT_PATH}/includes.h\"
+
+# C code define include base "config_def.h" file
+DEFINE += -D CONFIG_DEF_H=\"${PICO_ROOT_PATH}/config_def.h\"
+
 ##############################################################################
 
 # Debug configuration flag: 1=use float from libc, 0=use optimised float
@@ -44,8 +110,11 @@ endif
 ##############################################################################
 # Input files
 
+# Do not include stdio.h file
+DEFINE += -D _STDIO_H_
+
 # Device class
-include ../../../_devices/${DEVCLASS}/_makefile.inc
+include ${PICOLIBSDK_DEVICES_DIR}/${DEVCLASS}/_makefile.inc
 
 # MCU base setup
 ifeq (${MCU},RP2040)
@@ -78,16 +147,19 @@ endif
 endif
 
 # SDK
-include ../../../_sdk/_makefile.inc
+include ${PICOLIBSDK_SDK_DIR}/_makefile.inc
 
 # Libraries
-include ../../../_lib/_makefile.inc
+include ${PICOLIBSDK_LIB_DIR}/_makefile.inc
 
 # fonts
-include ../../../_font/_makefile.inc
+include ${PICOLIBSDK_FONT_DIR}/_makefile.inc
+
+# Displays
+include ${PICOLIBSDK_DISPLAY_DIR}/_makefile.inc
 
 # Includes
-IPATH += -I. -I../../../_sdk/
+IPATH += -I. -I${PICOLIBSDK_SDK_DIR}/
 
 # ASM source files
 ifeq (${MEMMAP},noflash)
@@ -95,13 +167,13 @@ ifeq (${MEMMAP},noflash)
 DEFINE += -D NO_FLASH=1 -D PICO_NO_FLASH=1
 else
 ifeq (${TARGET},LOADER)
-ASRC += ../../../_boot2/boot2_w25q080_${CPUCLASS}_bin.S
+ASRC += ${PICOLIBSDK_BOOT2_DIR}/boot2_w25q080_${CPUCLASS}_bin.S
 DEFINE += -D BOOT3_LOADER=1
 else
 ifeq (${DEVCLASS},pico)
-ASRC += ../../../_boot2/boot2_w25q080_${CPUCLASS}_bin.S
+ASRC += ${PICOLIBSDK_BOOT2_DIR}/boot2_w25q080_${CPUCLASS}_bin.S
 else
-ASRC += ../../../_loader/loader_${DEVICE}.S
+ASRC += ${PICOLIBSDK_LOADER_DIR}/loader_${DEVICE}.S
 endif
 endif
 endif
@@ -129,15 +201,15 @@ DEFINE += -D RAMSIZE=${RAMSIZE}
 ifeq (${CPUCLASS},RP2040)
 
 ifeq (${TARGET},LOADER)
-LDSCRIPT = ../../../memmap_rp2040_boot.ld
+LDSCRIPT = ${PICO_ROOT_PATH}/memmap_rp2040_boot.ld
 else
 ifeq (${MEMMAP},noflash)
-LDSCRIPT = ../../../memmap_rp2040_noflash.ld
+LDSCRIPT = ${PICO_ROOT_PATH}/memmap_rp2040_noflash.ld
 else
 ifeq (${DEVCLASS},pico)
-LDSCRIPT = ../../../memmap_rp2040_default.ld
+LDSCRIPT = ${PICO_ROOT_PATH}/memmap_rp2040_default.ld
 else
-LDSCRIPT = ../../../memmap_rp2040_app.ld
+LDSCRIPT = ${PICO_ROOT_PATH}/memmap_rp2040_app.ld
 endif
 endif
 endif
@@ -147,15 +219,15 @@ else
 ifeq (${CPUCLASS},RP2350RISCV)
 
 ifeq (${TARGET},LOADER)
-LDSCRIPT = ../../../memmap_rp2350riscv_boot.ld
+LDSCRIPT = ${PICO_ROOT_PATH}/memmap_rp2350riscv_boot.ld
 else
 ifeq (${MEMMAP},noflash)
-LDSCRIPT = ../../../memmap_rp2350riscv_noflash.ld
+LDSCRIPT = ${PICO_ROOT_PATH}/memmap_rp2350riscv_noflash.ld
 else
 ifeq (${DEVCLASS},pico)
-LDSCRIPT = ../../../memmap_rp2350riscv_default.ld
+LDSCRIPT = ${PICO_ROOT_PATH}/memmap_rp2350riscv_default.ld
 else
-LDSCRIPT = ../../../memmap_rp2350riscv_app.ld
+LDSCRIPT = ${PICO_ROOT_PATH}/memmap_rp2350riscv_app.ld
 endif
 endif
 endif
@@ -163,15 +235,15 @@ endif
 else
 
 ifeq (${TARGET},LOADER)
-LDSCRIPT = ../../../memmap_rp2350_boot.ld
+LDSCRIPT = ${PICO_ROOT_PATH}/memmap_rp2350_boot.ld
 else
 ifeq (${MEMMAP},noflash)
-LDSCRIPT = ../../../memmap_rp2350_noflash.ld
+LDSCRIPT = ${PICO_ROOT_PATH}/memmap_rp2350_noflash.ld
 else
 ifeq (${DEVCLASS},pico)
-LDSCRIPT = ../../../memmap_rp2350_default.ld
+LDSCRIPT = ${PICO_ROOT_PATH}/memmap_rp2350_default.ld
 else
-LDSCRIPT = ../../../memmap_rp2350_app.ld
+LDSCRIPT = ${PICO_ROOT_PATH}/memmap_rp2350_app.ld
 endif
 endif
 endif
@@ -704,9 +776,9 @@ SZ = ${COMP}size
 
 # uf2
 ifeq (${OS},Windows_NT)
-UF = ../../../_tools/elf2uf2.exe
+UF = ${PICOLIBSDK_TOOLS_DIR}/elf2uf2.exe
 else
-UF = ../../../_tools/elf2uf2/elf2uf2
+UF = ${PICOLIBSDK_TOOLS_DIR}/elf2uf2/elf2uf2
 endif
 
 # uf2 family_id
@@ -736,8 +808,8 @@ ALLOBJ = $(addprefix $(TEMP)/, $(addsuffix .o, $(ALLBASE)))
 # Clear temporary directory (use "make clean")
 
 clean:
-	@../../../_tools/rm -rf $(TEMP)
-	@../../../_tools/rm -f ./$(TARGET).bin ./$(TARGET).hex ./$(TARGET).lst ./$(TARGET).map ./$(TARGET).sym ./$(TARGET).siz ./$(TARGET).uf2
+	@${PICOLIBSDK_TOOLS_DIR}/rm -rf $(TEMP)
+	@${PICOLIBSDK_TOOLS_DIR}/rm -f ./$(TARGET).bin ./$(TARGET).hex ./$(TARGET).lst ./$(TARGET).map ./$(TARGET).sym ./$(TARGET).siz ./$(TARGET).uf2
 
 ##############################################################################
 # Compile all (use "make all")
@@ -749,7 +821,7 @@ all: createdirs elf bin hex lst sym siz uf2
 
 createdirs:
 ifeq (${OS},Windows_NT)
-	@../../../_tools/mkdir.exe -p $(TEMP)
+	@${PICOLIBSDK_TOOLS_DIR}/mkdir.exe -p $(TEMP)
 else
 	@mkdir -p $(TEMP)
 endif

@@ -1,0 +1,15 @@
+^YFast Raytracing^0
+
+Demo - 3D pattern
+       generation by ray
+       tracing method
+
+Only DVI output supported!
+
+Demo uses both CPU cores.
+
+^WY^0 ....... quit
+
+Support USB keyboard:
+A->Ctrl, B->Alt, X->Shift,
+Y->Esc

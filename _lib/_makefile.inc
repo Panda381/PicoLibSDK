@@ -1,54 +1,58 @@
-CSRC += ../../../_lib/src/lib_alarm.c
-CSRC += ../../../_lib/src/lib_calendar.c
-CSRC += ../../../_lib/src/lib_calendar64.c
-CSRC += ../../../_lib/src/lib_canvas.c
-CSRC += ../../../_lib/src/lib_color.c
-CSRC += ../../../_lib/src/lib_config.c
-CSRC += ../../../_lib/src/lib_crc.c
-CSRC += ../../../_lib/src/lib_decnum.c
-CSRC += ../../../_lib/src/lib_draw.c
-CSRC += ../../../_lib/src/lib_escpkt.c
-CSRC += ../../../_lib/src/lib_event.c
-CSRC += ../../../_lib/src/lib_fat.c
-CSRC += ../../../_lib/src/lib_filesel.c
-CSRC += ../../../_lib/src/lib_list.c
-CSRC += ../../../_lib/src/lib_malloc.c
-CSRC += ../../../_lib/src/lib_mat2d.c
-CSRC += ../../../_lib/src/lib_miniring.c
-CSRC += ../../../_lib/src/lib_print.c
-CSRC += ../../../_lib/src/lib_pwmsnd.c
-CSRC += ../../../_lib/src/lib_rand.c
-CSRC += ../../../_lib/src/lib_rect.c
-CSRC += ../../../_lib/src/lib_ring.c
-CSRC += ../../../_lib/src/lib_ringrx.c
-CSRC += ../../../_lib/src/lib_ringtx.c
-CSRC += ../../../_lib/src/lib_sd.c
-CSRC += ../../../_lib/src/lib_stream.c
-CSRC += ../../../_lib/src/lib_text.c
-CSRC += ../../../_lib/src/lib_textlist.c
-CSRC += ../../../_lib/src/lib_textnum.c
-CSRC += ../../../_lib/src/lib_tprint.c
-CSRC += ../../../_lib/src/lib_tree.c
-CSRC += ../../../_lib/src/lib_video.c
 
-#CSRC += ../../../_lib/3d_src/lib_d3fixed.c
-#CSRC += ../../../_lib/3d_src/lib_d3mat.c
-#CSRC += ../../../_lib/3d_src/lib_d3obj.c
-#CSRC += ../../../_lib/3d_src/lib_d3vect.c
-#CSRC += ../../../_lib/3d_src/lib_d3world.c
+ifeq (${OS},Windows_NT)
+CSRC += ${PICOLIBSDK_LIB_DIR}/lib.c
+else
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_alarm.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_calendar.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_calendar64.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_canvas.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_color.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_config.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_crc.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_decnum.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_draw.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_drawcan.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_drawcan1.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_drawcan2.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_drawcan3.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_drawcan4.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_drawcan6.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_drawcan8.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_drawcan12.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_drawcan16.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_escpkt.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_event.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_fat.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_filesel.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_list.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_malloc.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_mat2d.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_miniring.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_print.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_pwmsnd.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_rand.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_rect.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_ring.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_ringrx.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_ringtx.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_sd.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_stream.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_text.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_textlist.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_textnum.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_tprint.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_tree.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_video.c
 
-CSRC += ../../../_lib/emu/emu.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/emu/emu.c
 
-# C big integers
-CSRC += ../../../_lib/bigint/bigint.c
-CSRC += ../../../_lib/bigint/bernoulli.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/bigint/bigint.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/bigint/bernoulli.c
 
-# C real numbers
-CSRC += ../../../_lib/real/real.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/real/real.c
+endif
 
 # ASM sdk
 ifeq (${CPUCLASS},RP2040)
-ASRC += ../../../_lib/src/vga_blitkey.S
+ASRC += ${PICOLIBSDK_LIB_DIR}/src/vga_blitkey.S
 endif
-
-#ASRC += ../../../_lib/3d_src/lib_d3fixed_asm.S

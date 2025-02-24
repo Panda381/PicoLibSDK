@@ -278,10 +278,18 @@ void PowMan_WakeAllOff(void)
 }
 
 // set voltage VREG_VOLTAGE_*
+// - OR required value with VREG_VOLTAGE_UNLOCK flag, to enable unlock higher voltages than 1.30V
 void VregSetVoltage(int vreg)
 {
 	// enable VREG setup
 	PowMan_SetBits(&powman_hw->vreg_ctrl, B13); // UNLOCK
+
+	// unlock high voltages
+	if ((vreg & VREG_VOLTAGE_UNLOCK) != 0)
+		PowMan_SetBits(&powman_hw->vreg_ctrl, B8); // UNLOCK
+	else
+		PowMan_ClrBits(&powman_hw->vreg_ctrl, B8); // LOCK
+	vreg &= 0x1f;
 
 	// wait prior change
 	VregWait();

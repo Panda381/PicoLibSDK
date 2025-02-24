@@ -226,7 +226,10 @@ void PowMan_WakeAllOff(void);
 #define VREG_VOLTAGE_DEF	VREG_VOLTAGE_1_10	// default voltage after power up
 #define VREG_VOLTAGE_MAX	VREG_VOLTAGE_1_30	// maximum voltage
 
+#define VREG_VOLTAGE_UNLOCK	B8	// OR required value with this flag, to enable unlock higher voltages than 1.30V
+
 // set voltage VREG_VOLTAGE_*
+// - OR required value with VREG_VOLTAGE_UNLOCK flag, to enable unlock higher voltages than 1.30V
 void VregSetVoltage(int vreg);
 
 // get voltage VREG_VOLTAGE_*

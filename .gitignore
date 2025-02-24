@@ -1,10 +1,7 @@
 *.o
 *.elf
 *.hex
-*.lst
 *.map
 *.siz
 *.sym
-*.bin
-*.uf2
 err.txt

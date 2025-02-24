@@ -18,16 +18,9 @@
 
 #if USE_HSTX && !RP2040		// use HSTX (sdk_hstx.c, sdk_hstx.h)
 
-#ifndef _SDK_HSTX_H
-#define _SDK_HSTX_H
-
 #include "../sdk_addressmap.h"		// Register address offsets
 #include "../inc/sdk_gpio.h"
 #include "../inc/sdk_hstx.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define HSTX_GPIO_FIRST	12	// first GPIO pin with HSTX (bit 0)
 #define HSTX_GPIO_LAST	19	// last GPIO pin with HSTX (bit 7)
@@ -71,11 +64,5 @@ void HSTX_InitGPIOMask(u32 mask)
 		if ((mask & BIT(pin)) != 0) HSTX_InitGPIO(pin);
 	}
 }
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif // _SDK_HSTX_H
 
 #endif // USE_HSTX

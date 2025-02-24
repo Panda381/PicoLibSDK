@@ -17,7 +17,7 @@
 #include "../../global.h"	// globals
 #include "../inc/sdk_fatal.h"
 #include "../inc/sdk_irq.h"
-#include "../../_display/display.h"
+#include "../../_display/_include.h"
 #include "../../_lib/inc/lib_print.h"
 #include "../../_lib/inc/lib_draw.h"
 #include "../../_lib/inc/lib_text.h"

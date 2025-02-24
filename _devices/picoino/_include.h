@@ -8,7 +8,7 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#include "../../_display/minivga/minivga.h" // miniVGA display
+#include "../../_display/_include.h" // displays
 #include "../../_lib/inc/lib_draw.h" // drawing to display buffer
 #include "../../_lib/inc/lib_pwmsnd.h" // PWM sound
 #include "picoino_bat.h"	// battery

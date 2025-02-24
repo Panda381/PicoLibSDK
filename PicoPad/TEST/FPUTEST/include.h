@@ -9,7 +9,7 @@
 //                                   Includes
 // ----------------------------------------------------------------------------
 
-#include "../../../includes.h"	// all includes
+#include INCLUDES_H		// all includes
 
 #define CHECK_FULLRANGE	0		// 1 = check full range (incl. inf), 0 = check precision and speed
 

@@ -99,7 +99,7 @@ void NOFLASH(QMI_FlashQspi)(int clkdiv)
 	qmi->direct_csr = B6 | (6 << 22) | (oldcsr & (B7+B30+B31)); // restore old state of auto_CS1n and RXdelay
 
 	// setup timing: clkdiv = 2, rxdelay = 2, cooldown = 1
-	qmi->m[0].timing = FLASHQSPI_CLKDIV_DEF | (2 << 8) | (1 << 30);
+	qmi->m[0].timing = clkdiv /*FLASHQSPI_CLKDIV_DEF*/ | (2 << 8) | (1 << 30);
 
 	// setup read command: prefix = 0xEB, suffix = 0xA0
         qmi->m[0].rcmd = CMD_READ | (MODE_CONTINUOUS_READ << 8);

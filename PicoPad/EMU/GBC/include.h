@@ -9,7 +9,7 @@
 //                                   Includes
 // ----------------------------------------------------------------------------
 
-#include "../../../includes.h"	// all includes
+#include INCLUDES_H		// all includes
 
 typedef unsigned int uint_fast8_t;
 typedef unsigned int uint_fast16_t;

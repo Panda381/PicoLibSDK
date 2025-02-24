@@ -20,5 +20,8 @@ CSRC += src/main.c
 # C++ source files
 SRC +=
 
+# Path to root directory from the project directory (without trailing '/' delimiter)
+PICO_ROOT_PATH = ../../..
+
 # Makefile includes
-include ../../../Makefile.inc
+include ${PICO_ROOT_PATH}/Makefile.inc

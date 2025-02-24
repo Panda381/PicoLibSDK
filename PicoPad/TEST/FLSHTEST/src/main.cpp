@@ -54,7 +54,7 @@ void TestSpeed(u32 f)
 int main()
 {
 	// set maximum voltage
-	// - enables overlocking up to 310 MHz
+	// - enables overclocking up to 310 MHz
 	VregSetVoltage(VREG_VOLTAGE_1_30);
 
 	// test 125 MHz

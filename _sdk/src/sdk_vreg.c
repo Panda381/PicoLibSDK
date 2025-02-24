@@ -23,6 +23,7 @@
 // set voltage VREG_VOLTAGE_*
 void VregSetVoltage(int vreg)
 {
+	vreg &= 0x0f;
 	RegMask(VREG_CTRL, (u32)vreg << 4, B4+B5+B6+B7);
 }
 

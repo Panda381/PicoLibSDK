@@ -30,22 +30,24 @@ extern "C" {
 #define LED_NUM		2	// number of LEDs
 
 // GPIO with LED
-extern const u8 LedGpioTab[LED_NUM];
+// - Do not use 'const' for faster access
+extern u8 LedGpioTab[LED_NUM];
 
 // GPIO invert flag
-extern const Bool LedGpioTabInv[LED_NUM];
+// - Do not use 'const' for faster access
+extern Bool LedGpioTabInv[LED_NUM];
 
 // set LED ON (inx = LED index LED?_INX)
-void LedOn(u8 inx);
+void NOFLASH(LedOn)(u8 inx);
 
 // set LED OFF (inx = LED index LED?_INX)
-void LedOff(u8 inx);
+void NOFLASH(LedOff)(u8 inx);
 
 // flip LED (inx = LED index LED?_INX)
-void LedFlip(u8 inx);
+void NOFLASH(LedFlip)(u8 inx);
 
 // set LED (inx = LED index LED?)
-void LedSet(u8 inx, u8 val);
+void NOFLASH(LedSet)(u8 inx, u8 val);
 
 // initialize LEDs
 void LedInit();

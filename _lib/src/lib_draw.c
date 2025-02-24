@@ -253,7 +253,7 @@ void DrawRectInv(int x, int y, int w, int h)
 			d++;
 		}
 
-		// store last even pixel
+		// invert last even pixel
 		if (i > 0) INVPIXEL4_EVEN(d);
 
 		// shift buffer address
@@ -536,7 +536,7 @@ void DrawLineClip(int x1, int y1, int x2, int y2, COLTYPE col, int xmin, int xma
 			if (p > 0)
 			{
 				d += ddy;
-				y1 += sy;;
+				y1 += sy;
 				p -= dx;
 			}
 			p += m;

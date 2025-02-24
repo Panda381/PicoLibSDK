@@ -73,5 +73,5 @@ How to convert video to PicoPad format of video:
    - Run the PicoPadVideo program. It requires file "SOUND.wav" in its
      current folder and images in "BMP" subfolder, with resolution 160x240
      pixels, paletted BMP with 256 palettes, flip row order, names with
-     6 digits, starting with name 000000.bmp. Is will output result file
+     6 digits, starting with name 000000.bmp. It will output result file
      to the name VIDEO.VID. You can rename output file as you wish.

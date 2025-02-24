@@ -22,19 +22,21 @@
 #include "picopad_led.h"
 
 // GPIO with LED
-const u8 LedGpioTab[LED_NUM] = {
+// - Do not use 'const' for faster access
+u8 LedGpioTab[LED_NUM] = {
 	LED1_PIN,	// LED1 inverted, blue, on right
 	LED2_PIN,	// default internal LED pin, on Pico board
 };
 
 // GPIO invert flag
-const Bool LedGpioTabInv[LED_NUM] = {
+// - Do not use 'const' for faster access
+Bool LedGpioTabInv[LED_NUM] = {
 	True,		// LED1 inverted, blue, on right
 	False,		// default internal LED pin, on Pico board
 };
 
 // set LED ON (inx = LED index LED?)
-void LedOn(u8 inx)
+void NOFLASH(LedOn)(u8 inx)
 {
 #if USE_PICOPADVGA
 	if (LedGpioTabInv[inx])
@@ -45,7 +47,7 @@ void LedOn(u8 inx)
 }
 
 // set LED OFF (inx = LED index LED?)
-void LedOff(u8 inx)
+void NOFLASH(LedOff)(u8 inx)
 {
 #if USE_PICOPADVGA
 	if (LedGpioTabInv[inx])
@@ -56,13 +58,13 @@ void LedOff(u8 inx)
 }
 
 // flip LED (inx = LED index LED?)
-void LedFlip(u8 inx)
+void NOFLASH(LedFlip)(u8 inx)
 {
 	GPIO_Flip(LedGpioTab[inx]);
 }
 
 // set LED (inx = LED index LED?)
-void LedSet(u8 inx, u8 val)
+void NOFLASH(LedSet)(u8 inx, u8 val)
 {
 	if (val == 0) LedOff(inx); else LedOn(inx);
 }

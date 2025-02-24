@@ -24,6 +24,9 @@
 #include "../inc/sdk_gpio.h"
 #include "../inc/sdk_ticks.h"
 #include "../inc/sdk_timer.h"
+#include "../inc/sdk_vreg.h"
+#include "../inc/sdk_powman.h"
+#include "../inc/sdk_flash.h"
 
 // current clock frequency in Hz (clock lines and clock generators)
 u32 CurrentFreq[CLK_SRC_NUM];
@@ -441,6 +444,73 @@ void ClockPllSysFreq(u32 freq)
 
 	// setup PLL generator
 	PllSetFreq(PLL_SYS, freq);
+
+	// reconnect CLK_SYS back to PLL_SYS
+	ClockSetup(CLK_SYS, CLK_PLL_SYS, 0, 0);
+}
+
+// get recommended flash divider by system clock in kHz
+int GetClkDivBySysClock(u32 freq)
+{
+#if RP2040
+	if (freq >= 300000) return 6;
+	return 4;
+#else
+	if (freq >= 500000) return 6;
+	if (freq >= 400000) return 5;
+	if (freq >= 300000) return 4;
+	if (freq >= 200000) return 3;
+	return 2;
+#endif
+}
+
+// get recommended voltage by system clock in kHz (return VREG_VOLTAGE_1_10 .. VREG_VOLTAGE_1_30)
+int GetVoltageBySysClock(u32 freq)
+{
+#if !RP2040 && USE_VREG_LOCKED		// 1=enable vreg locked values > 1.30V from function GetVoltageBySysClock() of RP2350
+	if (freq >= 530000) return VREG_VOLTAGE_1_70 | VREG_VOLTAGE_UNLOCK;
+	if (freq >= 500000) return VREG_VOLTAGE_1_65 | VREG_VOLTAGE_UNLOCK;
+	if (freq >= 470000) return VREG_VOLTAGE_1_60 | VREG_VOLTAGE_UNLOCK;
+	if (freq >= 440000) return VREG_VOLTAGE_1_50 | VREG_VOLTAGE_UNLOCK;
+	if (freq >= 410000) return VREG_VOLTAGE_1_40 | VREG_VOLTAGE_UNLOCK;
+	if (freq >= 380000) return VREG_VOLTAGE_1_35 | VREG_VOLTAGE_UNLOCK;
+#endif
+	if (freq >= 340000) return VREG_VOLTAGE_1_30;
+	if (freq >= 300000) return VREG_VOLTAGE_1_25;
+	if (freq >= 250000) return VREG_VOLTAGE_1_20;
+	if (freq >= 200000) return VREG_VOLTAGE_1_15;
+	return VREG_VOLTAGE_1_10;
+}
+
+// set system clock PLL to new frequency in kHz and auto-set system voltage and flash divider (dependent clocks are not updated)
+//   freq ... required frequency in [kHz]
+void ClockPllSysFreqVolt(u32 freq)
+{
+	// get current frequency in kHz
+	u32 old = ClockGetHz(CLK_PLL_SYS)/1000;
+
+	// check current frequency
+	if (freq == old) return;
+
+	// temporary reconnect CLK_SYS to PLL_USB
+	ClockSetup(CLK_SYS, CLK_PLL_USB, 0, 0);
+
+	// raise system clock
+	if (freq > old)
+	{
+		FlashInit(GetClkDivBySysClock(freq));
+		VregSetVoltage(GetVoltageBySysClock(freq));
+	}
+
+	// setup PLL generator
+	PllSetFreq(PLL_SYS, freq);
+
+	// lower system clock
+	if (freq < old)
+	{
+		FlashInit(GetClkDivBySysClock(freq));
+		VregSetVoltage(GetVoltageBySysClock(freq));
+	}
 
 	// reconnect CLK_SYS back to PLL_SYS
 	ClockSetup(CLK_SYS, CLK_PLL_SYS, 0, 0);

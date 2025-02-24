@@ -9,6 +9,6 @@
 //                                   Includes
 // ----------------------------------------------------------------------------
 
-#include "../../../includes.h"	// all includes
+#include INCLUDES_H		// all includes
 
 #include "src/main.h"		// main code

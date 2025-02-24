@@ -17,5 +17,8 @@ SRC += src/emu_nes_msg.cpp
 SRC += src/emu_nes_menu.cpp
 SRC += src/program.cpp
 
+# Path to root directory from the project directory (without trailing '/' delimiter)
+PICO_ROOT_PATH = ../../..
+
 # Makefile includes
-include ../../../Makefile.inc
+include ${PICO_ROOT_PATH}/Makefile.inc

@@ -1,5 +1,7 @@
 This folder contains display drivers:
 
+disphstx ... output to DVI (HDMI) and VGA display via HSTX RP2350 interface
+
 dvi ... output to DVI (HDMI) with frame buffer
 
 minivga ... output to VGA monitor with frame buffer

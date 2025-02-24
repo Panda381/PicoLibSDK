@@ -17,6 +17,8 @@
 #define FONTW		8		// width of system font
 #define FONTH		8		// height of system font
 
+#define USE_BIGINT	1		// use Big Integers (bigint.c, bigint.h)
+
 //#define USE_DRAW_STDIO	1		// use DRAW stdio (DrawPrint function)
 //#define USE_USB_STDIO		1		// use USB stdio (UsbPrint function)
 //#define USE_UART_STDIO	1		// use UART stdio (UartPrint function)
@@ -52,6 +54,6 @@
 //#define USE_REAL8192		1		// 1 = use real8192 numbers
 //#define USE_REAL12288		1		// 1 = use real12288 numbers
 
-#include "../../../config_def.h"	// default configuration
+#include CONFIG_DEF_H				// default configuration
 
 #endif // _CONFIG_H

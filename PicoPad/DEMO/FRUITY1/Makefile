@@ -41,5 +41,8 @@ SRC += snd/028.cpp
 SRC += snd/029.cpp
 SRC += snd/030.cpp
 
+# Path to root directory from the project directory (without trailing '/' delimiter)
+PICO_ROOT_PATH = ../../..
+
 # Makefile includes
-include ../../../Makefile.inc
+include ${PICO_ROOT_PATH}/Makefile.inc

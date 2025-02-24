@@ -26,5 +26,8 @@ SRC += snd/machinegun.cpp
 SRC += snd/silverrocket.cpp
 SRC += snd/sonar.cpp
 
+# Path to root directory from the project directory (without trailing '/' delimiter)
+PICO_ROOT_PATH = ../../..
+
 # Makefile includes
-include ../../../Makefile.inc
+include ${PICO_ROOT_PATH}/Makefile.inc

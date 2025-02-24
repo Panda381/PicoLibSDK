@@ -116,6 +116,6 @@
 
 //#define USE_USB_STDIO		1		// use USB stdio (UsbPrint function)
 
-#include "../../../config_def.h"	// default configuration
+#include CONFIG_DEF_H				// default configuration
 
 #endif // _CONFIG_H

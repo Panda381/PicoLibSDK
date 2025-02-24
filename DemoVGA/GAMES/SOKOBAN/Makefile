@@ -35,5 +35,8 @@ SRC += img/tiles28.cpp
 SRC += img/tiles32.cpp
 SRC += snd/yippee.cpp
 
+# Path to root directory from the project directory (without trailing '/' delimiter)
+PICO_ROOT_PATH = ../../..
+
 # Makefile includes
-include ../../../Makefile.inc
+include ${PICO_ROOT_PATH}/Makefile.inc

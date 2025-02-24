@@ -370,3 +370,8 @@
 #define BAT_PIN		29		// input from battery
 #define BAT_ADC		ADC_MUX_GPIO29	// ADC input
 #define BAT_MUL		3		// voltage multiplier
+
+
+#if USE_DISPHSTX		// 1=use HSTX Display driver
+#include "../../_display/disphstx/_config.h"
+#endif

@@ -349,6 +349,16 @@ void ClockPllSysSetup(int fbdiv, int div1, int div2);
 //   freq ... required frequency in [kHz]
 void ClockPllSysFreq(u32 freq);
 
+// get recommended flash divider by system clock in kHz
+int GetClkDivBySysClock(u32 freq);
+
+// get recommended voltage by system clock in kHz (return VREG_VOLTAGE_1_10 .. VREG_VOLTAGE_1_30)
+int GetVoltageBySysClock(u32 freq);
+
+// set system clock PLL to new frequency in kHz and auto-set system voltage and flash divider (dependent clocks are not updated)
+//   freq ... required frequency in [kHz]
+void ClockPllSysFreqVolt(u32 freq);
+
 #endif // USE_PLL	// use PLL phase-locked loop (sdk_pll.c, sdk_pll.h)
 
 // precise measure frequency of clock CLK_REF..CLK_GPIN1 (CLK_PLL_OPCG) with result in Hz

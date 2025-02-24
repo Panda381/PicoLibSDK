@@ -89,6 +89,6 @@
 #define MAXCHEB_ATAN	1536		// max. REAL number supporting Chebyshev approximations of ATan()
 #define MAXCHEB_SQRT	1536		// max. REAL number supporting Chebyshev approximations of Sqrt()
 
-#include "../../../config_def.h"	// default configuration
+#include CONFIG_DEF_H				// default configuration
 
 #endif // _CONFIG_H

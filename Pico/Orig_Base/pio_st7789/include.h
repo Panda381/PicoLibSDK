@@ -9,7 +9,7 @@
 //                                   Includes
 // ----------------------------------------------------------------------------
 
-#include "../../../includes.h"	// all includes
+#include INCLUDES_H		// all includes
 
 #include "st7789_lcd.pio.h"
 #include "src/raspberry_256x256_rgb565.h"

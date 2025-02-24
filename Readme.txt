@@ -1,9 +1,9 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico, RP2040 and RP2350
 ==========================================================================
-SDK Programmer's Guide, Version 2.03, December 2024
+SDK Programmer's Guide, Version 2.04, February 2025
 
-Copyright (c) 2023-2024 Miroslav Nemecek
+Copyright (c) 2023-2025 Miroslav Nemecek
 
 Panda38@seznam.cz
 hardyplotter2@gmail.com
@@ -510,6 +510,7 @@ _tools - support programs:
 	- DviTms - generator of DVI TMDS 16-bit 2-symbol table
 	- HidComp - compiler and decompiler of HID descriptors
 	- PicoPadImg - converting BMP images to PicoPad format
+	- PicoPadImg2 - converting BMP images to DispHSTX format
 	- PicoPadLoaderBin - export boot3 loader to C source code
 	- PicoPadLoaderCrc - calculate (and set) application checksum
 	- PicoPadVideo - video converter to PicoPad/Picoino format
@@ -837,6 +838,8 @@ History of versions
 10/27/2024 version 2.01: Fast float library for RISC-V Hazard3 core.
 11/05/2024 version 2.02: NES Emulator
 12/03/2024 version 2.03: Fast double library for RISC-V Hazard3 core.
+02/24/2025 version 2.04: DispHSTX library, DrawCan library, faster compilation,
+	configurable compilation paths
 
 
 Missing and @TODO

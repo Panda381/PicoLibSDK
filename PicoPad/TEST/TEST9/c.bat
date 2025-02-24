@@ -1,6 +1,8 @@
 @echo off
 rem Compilation...
 
+echo --- Wait, this compilation is very long! ---
+
 set TARGET=TEST9
 set GRPDIR=TEST
 set MEMMAP=

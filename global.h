@@ -17,7 +17,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-#define SDK_VER		203	// SDK library version in hundredths
+#define SDK_VER		204	// SDK library version in hundredths
 
 // ----------------------------------------------------------------------------
 //                               Attributes
@@ -50,6 +50,9 @@
 // fast function optimization
 #define FASTCODE __attribute__ ((optimize("-Ofast")))
 
+// small function optimization
+#define SMALLCODE __attribute__ ((optimize("-Os")))
+
 // wrapper function (to replace standard library function)
 #define WRAPPER_FUNC(x) __wrap_ ## x
 
@@ -72,7 +75,9 @@
 #define MIN(val1,val2) ( ((val1)<(val2)) ? (val1) : (val2) )
 
 // default LED pin on Raspberry Pico
+#ifndef LED_PIN
 #define LED_PIN 25
+#endif
 
 // compile-time check
 #ifdef __cplusplus
@@ -110,19 +115,55 @@ typedef unsigned long long int u64;
 typedef unsigned int uint;
 
 // original-SDK base types
+#ifndef _INT8_T_DECLARED
 typedef s8 int8_t;
-typedef u8 uint8_t;
-typedef s16 int16_t;
-typedef u16 uint16_t;
-typedef s32 int32_t;
-typedef u32 uint32_t;
-typedef s64 int64_t;
-typedef u64 uint64_t;
+#define _INT8_T_DECLARED
+#endif
 
+#ifndef _UINT8_T_DECLARED
+typedef u8 uint8_t;
+#define	_UINT8_T_DECLARED
+#endif
+
+#ifndef _INT16_T_DECLARED
+typedef s16 int16_t;
+#define	_INT16_T_DECLARED
+#endif
+
+#ifndef _UINT16_T_DECLARED
+typedef u16 uint16_t;
+#define	_UINT16_T_DECLARED
+#endif
+
+#ifndef _INT32_T_DECLARED
+typedef s32 int32_t;
+#define	_INT32_T_DECLARED
+#endif
+
+#ifndef _UINT32_T_DECLARED
+typedef u32 uint32_t;
+#define	_UINT32_T_DECLARED
+#endif
+
+#ifndef _INT64_T_DECLARED
+typedef s64 int64_t;
+#define	_INT64_T_DECLARED
+#endif
+
+#ifndef _UINT64_T_DECLARED
+typedef u64 uint64_t;
+#define	_UINT64_T_DECLARED
+#endif
+
+#ifndef _UINTPTR_T_DECLARED
 typedef unsigned long uintptr_t;
+#define _UINTPTR_T_DECLARED
+#endif
+
+#ifndef _INTPTR_T_DECLARED
 typedef long intptr_t;
-//typedef __uintptr_t uintptr_t;
-//typedef __intptr_t intptr_t;
+#define _INTPTR_T_DECLARED
+#endif
 
 // optimised Bool
 typedef unsigned char Bool;
@@ -370,6 +411,8 @@ extern const u8* __data_end__; // end of initialize .data section
 //                 Colors (must be used after "config.h")
 // ----------------------------------------------------------------------------
 
+#if !USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+
 // 4-bit color YRGB1111
 #if COLBITS == 4
 
@@ -439,6 +482,8 @@ extern const u8* __data_end__; // end of initialize .data section
 #define COL_ORANGE	COLOR(255,127,  0)
 
 #endif // COLBITS
+
+#endif // !USE_DRAWCAN
 
 #define COL_PRINT_DEF	COL_GRAY		// default console print color
 

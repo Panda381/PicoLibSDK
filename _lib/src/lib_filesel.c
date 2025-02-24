@@ -18,7 +18,7 @@
 
 #if USE_FILESEL		// use file selection (lib_filesel.c, lib_filesel.h)
 
-#include "../../_display/display.h"	// display interface (colors)
+#include "../../_display/_include.h"	// display interface (colors)
 #include "../../_devices/key.h"		// key interface
 
 #include "../../_sdk/inc/sdk_timer.h"

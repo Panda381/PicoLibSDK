@@ -1,0 +1,4 @@
+CPU OverClock
+
+Check overclock limit of the CPU at 1.30V.
+Checking flash memory CRC and double calculations.

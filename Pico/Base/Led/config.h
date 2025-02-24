@@ -51,6 +51,6 @@
 //#define USE_REAL8192		1		// 1 = use real8192 numbers
 //#define USE_REAL12288		1		// 1 = use real12288 numbers
 
-#include "../../../config_def.h"	// default configuration
+#include CONFIG_DEF_H				// default configuration
 
 #endif // _CONFIG_H

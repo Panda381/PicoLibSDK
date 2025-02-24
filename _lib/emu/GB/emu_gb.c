@@ -18,7 +18,7 @@
 
 #include "../../../_sdk/inc/sdk_timer.h"
 #include "../../../_font/_include.h"
-#include "../../../_display/display.h"
+#include "../../../_display/_include.h"
 #include "../../inc/lib_text.h"
 #include "../../inc/lib_filesel.h"
 #include "../../inc/lib_alarm.h"
@@ -33,7 +33,6 @@
 #include "../../../_sdk/inc/sdk_flash.h"
 #include "../../inc/lib_draw.h"
 #include "../../inc/lib_rand.h"
-#include "../../../_display/display.h"
 */
 
 // current CPU

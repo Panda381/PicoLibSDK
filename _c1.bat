@@ -1,5 +1,9 @@
 @echo off
+
 rem Compilation... Compile one project (one output UF2 file)
+
+rem In order to compile from any directory, the %~dp0 parameter
+rem is used instead of the relative path ..\..\..\ .
 
 rem First command-line parameter (%1) of this batch contains device name (e.g. picopad10).
 rem This batch is called from 2nd-level subdirectory, base directory of the project
@@ -37,7 +41,7 @@ rem This command is located in _setup.bat file.
 rem    set DEVDIR=!PicoPad
 
 rem Setup parameters DEVICE, DEVCLASS and DEVDIR (%1 = device name)
-call ..\..\..\_setup.bat %1
+call %~dp0_setup.bat %1
 
 rem Check if target name "LOADER" is used in other directory than root.
 rem We need it to detect compilation of boot loader in makefile.
@@ -53,9 +57,10 @@ if exist %TARGET%.bin del %TARGET%.bin
 
 rem Compile
 echo Device: %DEVICE%
-..\..\..\_tools\make.exe all
+%~dp0_tools\make.exe all
+
 rem If you want to see all error messages, compile using this command:
-rem ..\..\..\_tools\make.exe all 2> err.txt
+rem %~dp0_tools\make.exe all 2> err.txt
 
 rem Check compilation result
 if errorlevel 1 goto err
@@ -70,13 +75,13 @@ rem Calculate CRC to check by boot loader (skip if compiling boot loader)
 if "%TARGET%"=="LOADER" goto skipcrc
 if "%DEVCLASS%"=="pico" goto skipcrc
 if "%MEMMAP%"=="noflash" goto skipcrc
-..\..\..\_tools\PicoPadLoaderCrc\LoaderCrc.exe %TARGET%.bin %TARGET%.uf2
+%~dp0_tools\PicoPadLoaderCrc\LoaderCrc.exe %TARGET%.bin %TARGET%.uf2
 if errorlevel 1 goto err
 
 :skipcrc
 rem Copy UF2 file to destination folder with image of SD card
-if not exist ..\..\..\%DEVDIR%\%GRPDIR%\*.UF2 md ..\..\..\%DEVDIR%\%GRPDIR%
-copy /b %TARGET%.uf2 ..\..\..\%DEVDIR%\%GRPDIR%\%TARGET%.UF2 > nul
+if not exist %~dp0%DEVDIR%\%GRPDIR%\*.UF2 md %~dp0%DEVDIR%\%GRPDIR%
+copy /b %TARGET%.uf2 %~dp0%DEVDIR%\%GRPDIR%\%TARGET%.UF2 > nul
 goto end
 
 :err

@@ -44,16 +44,16 @@ void DeviceTerm();
 #endif // USE_PICOINOMINI
 
 // set LED ON (inx = LED index LED?)
-void LedOn(u8 inx);
+void NOFLASH(LedOn)(u8 inx);
 
 // set LED OFF (inx = LED index LED?)
-void LedOff(u8 inx);
+void NOFLASH(LedOff)(u8 inx);
 
 // flip LED (inx = LED index LED?)
-void LedFlip(u8 inx);
+void NOFLASH(LedFlip)(u8 inx);
 
 // set LED (inx = LED index LED?)
-void LedSet(u8 inx, u8 val);
+void NOFLASH(LedSet)(u8 inx, u8 val);
 
 #ifdef __cplusplus
 }

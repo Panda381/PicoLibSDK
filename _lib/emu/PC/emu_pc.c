@@ -26,7 +26,7 @@
 #include "../../inc/lib_text.h"
 #include "../../inc/lib_rand.h"
 #include "../../inc/lib_pwmsnd.h"
-#include "../../../_display/display.h"
+#include "../../../_display/_include.h"
 #include "../../../_sdk/usb_inc/sdk_usb_hid.h"
 #include "../../../_sdk/usb_inc/sdk_usb_host_hid.h"
 

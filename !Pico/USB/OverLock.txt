@@ -1,4 +1,0 @@
-CPU Overlock
-
-Check overlock limit of the CPU at 1.30V.
-Checking flash memory CRC and double calculations.

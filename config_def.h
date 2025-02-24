@@ -351,6 +351,10 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #define USE_USB_HOST_VENDOR	0		// use USB VENDOR Vendor specific device (host)
 #endif
 
+#ifndef USE_VREG_LOCKED
+#define USE_VREG_LOCKED		0		// 1=enable vreg locked values > 1.30V from function GetVoltageBySysClock() of RP2350
+#endif
+
 #ifndef USE_WATCHDOG
 #define USE_WATCHDOG	1		// use Watchdog timer (sdk_watchdog.c, sdk_watchdog.h)
 #endif
@@ -395,8 +399,16 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #define USE_DECNUM	1		// use DecNum (decnum.c, decnum.h)
 #endif
 
+#ifndef USE_DISPHSTX
+#define USE_DISPHSTX	0		// 1=use HSTX Display driver
+#endif
+
 #ifndef USE_DRAW
 #define USE_DRAW	0		// use drawing to frame buffer (lib_draw.c, lib_draw.h)
+#endif
+
+#ifndef USE_DRAWCAN
+#define USE_DRAWCAN	0		// use drawing canvas (lib_drawcan*.c, lib_drawcan*.h)
 #endif
 
 #ifndef USE_ESCPKT
@@ -562,7 +574,7 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 // ----------------------------------------------------------------------------
 
 #ifndef USE_BIGINT
-#define USE_BIGINT	1		// use Big Integers (bigint.c, bigint.h)
+#define USE_BIGINT	0 //1		// use Big Integers (bigint.c, bigint.h)
 #endif
 
 #ifndef BIGINT_BERN_NUM

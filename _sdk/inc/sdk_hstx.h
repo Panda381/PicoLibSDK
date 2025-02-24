@@ -33,6 +33,13 @@ extern "C" {
 #define HSTX_GPIO_LAST	19	// last GPIO pin with HSTX (bit 7)
 #define HSTX_GPIO_NUM	8	// number of GPIO pins with HSTX
 
+// HSTX commands (4 bits << 12)
+#define HSTX_CMD_RAW		(0x0u << 12)	// write raw data
+#define HSTX_CMD_RAW_REPEAT	(0x1u << 12)	// write raw data repeated
+#define HSTX_CMD_TMDS		(0x2u << 12)	// write TMDS mark
+#define HSTX_CMD_TMDS_REPEAT	(0x3u << 12)	// write TMDS mark repeated
+#define HSTX_CMD_NOP		(0xfu << 12)	// no operation
+
 // HSTX control interface
 typedef struct {
 	io32	csr;		// 0x00: HSTX Control Register

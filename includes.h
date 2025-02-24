@@ -24,7 +24,9 @@
 #include "_lib/_include.h"		// library includes
 
 // big interers
+#if USE_BIGINT
 #include "_lib/bigint/bigint.h"		// big integers
+#endif
 
 // real numbers
 #if USE_REAL	// use real numbers

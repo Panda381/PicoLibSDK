@@ -1,0 +1,6 @@
+^YCPU Overclock^0
+
+Check overclock
+limits of the CPU.
+
+^WY^0 ....... quit

@@ -10,5 +10,8 @@ SRC += img/rpi8.cpp
 SRC += img/peter8.cpp
 SRC += src/main.cpp
 
+# Path to root directory from the project directory (without trailing '/' delimiter)
+PICO_ROOT_PATH = ../../..
+
 # Makefile includes
-include ../../../Makefile.inc
+include ${PICO_ROOT_PATH}/Makefile.inc

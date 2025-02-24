@@ -10,6 +10,7 @@ and more. The programs are compiled in MS Visual Studio 2005.
 - elf2uf2 - convert ELF file to UF2 file
 - HidComp - compiler and decompiler of HID descriptors
 - PicoPadImg - converting BMP images to PicoPad format
+- PicoPadImg2 - converting BMP images to DispHSTX format
 - PicoPadLoaderBin - export boot3 loader to C source code
 - PicoPadLoaderCrc - calculate (and set) application checksum
 - PicoPadVideo - video converter to PicoPad/Picoino format
