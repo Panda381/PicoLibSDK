@@ -14,7 +14,7 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN	&& USE_DRAWCAN2		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #ifndef _LIB_DRAWCAN2_H
 #define _LIB_DRAWCAN2_H
@@ -40,8 +40,10 @@ INLINE u8* Draw2Buf() { return pDrawCan2->buf; }
 // convert RGB888 color to 2-bit pixel color Y2
 u16 Draw2ColRgb(u8 r, u8 g, u8 b);
 
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 // random 2-bit pixel color Y2
 u16 Draw2ColRand();
+#endif
 
 // 2-bit colors, format Y2 (components are 0..255, levels 0, 85, 170, 255)
 #define COLOR2(r,g,b)	( ((r)+(g)+(b)) / 210 )
@@ -502,8 +504,10 @@ void Draw2BlitSubs(int xd, int yd, const void* src, int xs, int ys, int w, int h
 void DrawCan2GetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 void Draw2GetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 // drawing function interface
 extern const sDrawCanFnc DrawCan2Fnc;
+#endif
 
 #ifdef __cplusplus
 }

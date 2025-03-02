@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico, RP2040 and RP2350
 ==========================================================================
-SDK Programmer's Guide, Version 2.04, February 2025
+SDK Programmer's Guide, Version 2.05, March 2025
 
 Copyright (c) 2023-2025 Miroslav Nemecek
 
@@ -52,7 +52,7 @@ compatibility. What you can find in the PicoLibSDK library:
   calculation method - Ln, Exp, Sqrt, Sin, Cos, Tan, arcus, hyperbolic functions
   and many more. Linear factorials with accurate and fast calculation.
 
-- Display drivers: Prepared support of TFT and VGA display with resolution
+- Display drivers: Prepared support of TFT, VGA and HDMI display with resolution
   320x240 up to 800x600, with 4, 8, 15 or 16 bits output.
 
 - Devices: Support of Picoino/PicoinoMini with 8-bit QVGA display, DemoVGA with
@@ -838,8 +838,9 @@ History of versions
 10/27/2024 version 2.01: Fast float library for RISC-V Hazard3 core.
 11/05/2024 version 2.02: NES Emulator
 12/03/2024 version 2.03: Fast double library for RISC-V Hazard3 core.
-02/24/2025 version 2.04: DispHSTX library, DrawCan library, faster compilation,
+02/24/2025 version 2.04: DispHSTX library v1.00, DrawCan library, faster compilation,
 	configurable compilation paths
+03/02/2025 version 2.05: Build of DispHSTX v1.01 library for Raspberry PicoSDK
 
 
 Missing and @TODO

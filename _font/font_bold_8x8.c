@@ -1,4 +1,9 @@
+// Note: The following 2 switches are not yet defined in the PicoLibSDK at this point, so the global.h file is included.
+#if USE_DISPHSTX && DISPHSTX_PICOSDK	// 0=use PicoLibSDK library, 1=use PicoSDK original Raspberry SDK library
+#include "disphstx_picolibsk.h"
+#else
 #include "../global.h"
+#endif
 
 // format: 1-bit pixel graphics
 // image width: 2048 pixels

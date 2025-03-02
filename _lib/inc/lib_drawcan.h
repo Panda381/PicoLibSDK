@@ -14,7 +14,7 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN 		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #ifndef _LIB_DRAWCAN_H
 #define _LIB_DRAWCAN_H
@@ -34,26 +34,50 @@ extern "C" {
 // drawing canvas format
 enum {
 	DRAWCAN_FORMAT_NONE = 0,	// invalid format
+
+#if USE_DRAWCAN1		// 1=use DrawCan1 1-bit functions, if use drawing canvas
 	DRAWCAN_FORMAT_1,		// 1-bit per pixel Y1 (8 pixels per byte, MSB first pixel, LSB last pixel)
 					//	[7654 3210]
+#endif
+
+#if USE_DRAWCAN2		// 1=use DrawCan2 2-bit functions, if use drawing canvas
 	DRAWCAN_FORMAT_2,		// 2-bits per pixel Y2 (4 pixels per byte, MSB first pixel, LSB last pixel)
 					//	[3322 1100]
+#endif
+
+#if USE_DRAWCAN3		// 1=use DrawCan3 3-bit functions, if use drawing canvas
 	DRAWCAN_FORMAT_3,		// 3-bits per pixel at format RGB111 (10 pixels per 32-bit word, LSB fist pixel, MSB last pixel)
 					//	[xx99 9888 7776 6655 5444 3332 2211 1000]
+#endif
+
+#if USE_DRAWCAN4		// 1=use DrawCan4 4-bit functions, if use drawing canvas
 	DRAWCAN_FORMAT_4,		// 4-bits per pixel at format YRGB1111 (2 pixels per byte, MSB first pixel, LSB last pixel)
 					//	[1111 0000]
+#endif
+
+#if USE_DRAWCAN6		// 1=use DrawCan6 6-bit functions, if use drawing canvas
 	DRAWCAN_FORMAT_6,		// 6-bits per pixel at format RGB222 (5 pixels per 32-bit word, LSB fist pixel, MSB last pixel)
 					//	[xx44 4444 3333 3322 2222 1111 1100 0000]
+#endif
+
+#if USE_DRAWCAN8		// 1=use DrawCan8 8-bit functions, if use drawing canvas
 	DRAWCAN_FORMAT_8,		// 8-bits per pixel at format RGB332 (1 pixel per byte)
 					//	[RRRGGGBB]
+#endif
+
+#if USE_DRAWCAN12		// 1=use DrawCan12 12-bit functions, if use drawing canvas
 	DRAWCAN_FORMAT_12,		// 12-bits per pixel at format RGB222 (8 pixels per three 32-bit words, or 2 pixels per 3 bytes, LSB fist pixel, MSB last pixel)
 					//	[2222 2222 1111 1111 1111 0000 0000 0000]
 					//	[5555 4444 4444 4444 3333 3333 3333 2222]
 					//	[7777 7777 7777 6666 6666 6666 5555 5555]
+#endif
+
+#if USE_DRAWCAN16		// 1=use DrawCan15/16 15/16-bit functions, if use drawing canvas
 	DRAWCAN_FORMAT_15,		// 15-bits per pixel at format RGB555 (1 pixel per 2 bytes, bit 15 is ignored)
 					//	[.RRRRRGGGGGBBBBB]
 	DRAWCAN_FORMAT_16,		// 16-bits per pixel at format RGB565 (1 pixel per 2 bytes)
 					//	[RRRRRGGGGGGBBBBB]
+#endif
 
 	DRAWCAN_FORMAT_NUM
 };
@@ -109,6 +133,8 @@ extern sDrawCan DrawCan;
 // current global drawing canvas
 extern sDrawCan* pDrawCan;
 
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
+
 // set default drawing canvas
 void SetDrawCan(sDrawCan* can);
 
@@ -116,6 +142,8 @@ void SetDrawCan(sDrawCan* can);
 INLINE int DrawWidth() { return pDrawCan->w; }
 INLINE int DrawHeight() { return pDrawCan->h; }
 INLINE u8* DrawBuf() { return pDrawCan->buf; }
+
+#endif // USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 
 // draw round (filled circle), ring or filled ellipse quarters
 #define	DRAWCAN_ROUND_NOTOP	B0		// hide top part of the round
@@ -201,6 +229,8 @@ void DrawCanSelFont8x8Italic(sDrawCan* can);	// italic, height 8 lines
 void DrawCanSelFont8x8Thin(sDrawCan* can);	// thin font, height 8 lines
 void DrawCanSelFont5x8(sDrawCan* can);		// tiny font, width 5 pixels, height 8 lines
 
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
+
 void DrawSelFont(const u8* font, u8 fontw, u8 fonth);
 
 void DrawSelFont8x8();			// sans-serif bold, height 8 lines
@@ -217,6 +247,15 @@ void DrawSelFont8x8IbmThin();		// IBM charset thin font, height 8 lines
 void DrawSelFont8x8Italic();		// italic, height 8 lines
 void DrawSelFont8x8Thin();		// thin font, height 8 lines
 void DrawSelFont5x8();			// tiny font, width 5 pixels, height 8 lines
+
+// For backward compatibility with Draw version 1
+INLINE void SelFont5x8() { DrawSelFont5x8(); }
+INLINE void SelFont6x8() { DrawSelFont6x8(); }
+INLINE void SelFont8x8() { DrawSelFont8x8(); }
+INLINE void SelFont8x14() { DrawSelFont8x14(); }
+INLINE void SelFont8x16() { DrawSelFont8x16(); }
+
+#endif // USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 
 // drawing function interface
 typedef int (*fDrawPitch)(int w);
@@ -444,6 +483,8 @@ typedef struct sDrawCanFnc_ {
 	const u16		col_brown;		// brown color
 } sDrawCanFnc;
 
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
+
 // list of drawing function interfaces
 extern const sDrawCanFnc* DrawCanFncList[DRAWCAN_FORMAT_NUM];
 
@@ -553,7 +594,11 @@ void DrawFrame_Fast(int x, int y, int w, int h, u16 col_light, u16 col_dark);
 
 // Draw 1-pixel frame (checks clipping limits; negative dimensions flip frame)
 void DrawCanFrame(sDrawCan* can, int x, int y, int w, int h, u16 col_light, u16 col_dark);
-void DrawFrame(int x, int y, int w, int h, u16 col_light, u16 col_dark);
+
+// For backward compatibility with Draw version 1
+//void DrawFrame(int x, int y, int w, int h, u16 col_light, u16 col_dark);
+void DrawFrame3D(int x, int y, int w, int h, u16 col_light, u16 col_dark);
+INLINE void DrawFrame(int x, int y, int w, int h, u16 col) { DrawFrame3D(x, y, w, h, col, col); }
 
 // Draw 1-pixel frame inverted (does not check clipping limits; dimensions must be > 0)
 void DrawCanFrameInv_Fast(sDrawCan* can, int x, int y, int w, int h);
@@ -578,6 +623,9 @@ void DrawFrameWInv_Fast(int x, int y, int w, int h, int thick);
 // Draw thick frame inverted (checks clipping limits; negative dimensions flip frame)
 void DrawCanFrameWInv(sDrawCan* can, int x, int y, int w, int h, int thick);
 void DrawFrameWInv(int x, int y, int w, int h, int thick);
+
+// For backward compatibility with Draw version 1
+INLINE void DrawFrameInvW(int x, int y, int w, int h, int thick) { DrawFrameWInv(x, y, w, h, thick); }
 
 // ----- Draw line
 
@@ -638,6 +686,9 @@ void DrawLineWInv_Fast(int x1, int y1, int x2, int y2, int thick);
 void DrawCanLineWInv(sDrawCan* can, int x1, int y1, int x2, int y2, int thick);
 void DrawLineWInv(int x1, int y1, int x2, int y2, int thick);
 
+// For backward compatibility with Draw version 1
+INLINE void DrawLineInvW(int x1, int y1, int x2, int y2, int w, Bool round) { DrawLineWInv(x1, y1, x2, y2, w); }
+
 // ----- Draw round (filled circle)
 
 //  d ... diameter of the round (radius = d/2)
@@ -651,6 +702,10 @@ void DrawRound_Fast(int x, int y, int d, u16 col, u8 mask);
 void DrawCanRound(sDrawCan* can, int x, int y, int d, u16 col, u8 mask);
 void DrawRound(int x, int y, int d, u16 col, u8 mask);
 
+// For backward compatibility with Draw version 1
+// Draw filled circle
+INLINE void DrawFillCircle(int x0, int y0, int r, u16 col) { DrawRound(x0, y0, r*2, col, DRAWCAN_ROUND_ALL); }
+
 // Draw round inverted (does not check clipping limits; diameter must be > 0)
 void DrawCanRoundInv_Fast(sDrawCan* can, int x, int y, int d, u8 mask);
 void DrawRoundInv_Fast(int x, int y, int d, u8 mask);
@@ -658,6 +713,9 @@ void DrawRoundInv_Fast(int x, int y, int d, u8 mask);
 // Draw round inverted (checks clipping limits)
 void DrawCanRoundInv(sDrawCan* can, int x, int y, int d, u8 mask);
 void DrawRoundInv(int x, int y, int d, u8 mask);
+
+// For backward compatibility with Draw version 1
+INLINE void DrawFillCircleInv(int x, int y, int r) { DrawRoundInv(x, y, r*2, DRAWCAN_ROUND_ALL); }
 
 // ----- Draw circle
 //  d ... diameter of the circle (radius = d/2)
@@ -669,7 +727,11 @@ void DrawCircle_Fast(int x, int y, int d, u16 col, u8 mask);
 
 // Draw circle or arc (checks clipping limits)
 void DrawCanCircle(sDrawCan* can, int x, int y, int d, u16 col, u8 mask);
-void DrawCircle(int x, int y, int d, u16 col, u8 mask);
+
+// For backward compatibility with Draw version 1
+//void DrawCircle(int x, int y, int d, u16 col, u8 mask);
+void DrawCircleArc(int x, int y, int d, u16 col, u8 mask);
+INLINE void DrawCircle(int x, int y, int r, u16 col) { DrawCircleArc(x, y, r*2, col, DRAWCAN_CIRCLE_ALL); }
 
 // Draw circle or arc inverted (does not check clipping limits)
 void DrawCanCircleInv_Fast(sDrawCan* can, int x, int y, int d, u8 mask);
@@ -677,7 +739,11 @@ void DrawCircleInv_Fast(int x, int y, int d, u8 mask);
 
 // Draw circle or arc inverted (checks clipping limits)
 void DrawCanCircleInv(sDrawCan* can, int x, int y, int d, u8 mask);
-void DrawCircleInv(int x, int y, int d, u8 mask);
+
+// For backward compatibility with Draw version 1
+//void DrawCircleInv(int x, int y, int d, u8 mask);
+void DrawCircleArcInv(int x, int y, int d, u8 mask);
+INLINE void DrawCircleInv(int x, int y, int r) { DrawCircleArcInv(x, y, r*2, DRAWCAN_CIRCLE_ALL); }
 
 // ----- Draw ring
 //  d ... outer diameter of the ring (outer radius = d/2)
@@ -690,7 +756,11 @@ void DrawRing_Fast(int x, int y, int d, int din, u16 col, u8 mask);
 
 // Draw ring (checks clipping limits)
 void DrawCanRing(sDrawCan* can, int x, int y, int d, int din, u16 col, u8 mask);
-void DrawRing(int x, int y, int d, int din, u16 col, u8 mask);
+
+// For backward compatibility with Draw version 1
+//void DrawRing(int x, int y, int d, int din, u16 col, u8 mask);
+void DrawRingMask(int x, int y, int d, int din, u16 col, u8 mask);
+INLINE void DrawRing(int x, int y, int rin, int rout, u16 col) { DrawRingMask(x, y, rout*2, rin*2, col, DRAWCAN_ROUND_ALL); }
 
 // Draw ring inverted (does not check clipping limits)
 void DrawCanRingInv_Fast(sDrawCan* can, int x, int y, int d, int din, u8 mask);
@@ -698,7 +768,11 @@ void DrawRingInv_Fast(int x, int y, int d, int din, u8 mask);
 
 // Draw ring inverted (checks clipping limits)
 void DrawCanRingInv(sDrawCan* can, int x, int y, int d, int din, u8 mask);
-void DrawRingInv(int x, int y, int d, int din, u8 mask);
+
+// For backward compatibility with Draw version 1
+//void DrawRingInv(int x, int y, int d, int din, u8 mask);
+void DrawRingInvMask(int x, int y, int d, int din, u8 mask);
+INLINE void DrawRingInv(int x, int y, int rin, int rout) { DrawRingInvMask(x, y, rout*2, rin*2, DRAWCAN_ROUND_ALL); }
 
 // ----- Draw triangle
 
@@ -734,7 +808,14 @@ void DrawChar_Fast(char ch, int x, int y, u16 col, int scalex, int scaley);
 
 // Draw character with transparent background (checks clipping limits)
 void DrawCanChar(sDrawCan* can, char ch, int x, int y, u16 col, int scalex, int scaley);
-void DrawChar(char ch, int x, int y, u16 col, int scalex, int scaley);
+
+// For backward compatibility with Draw version 1
+//void DrawChar(char ch, int x, int y, u16 col, int scalex, int scaley);
+void DrawCharSize(char ch, int x, int y, u16 col, int scalex, int scaley);
+INLINE void DrawChar(char ch, int x, int y, u16 col) { DrawCharSize(ch, x, y, col, 1, 1); }
+INLINE void DrawCharH(char ch, int x, int y, u16 col) { DrawCharSize(ch, x, y, col, 1, 2); }
+INLINE void DrawCharW(char ch, int x, int y, u16 col) { DrawCharSize(ch, x, y, col, 2, 1); }
+INLINE void DrawChar2(char ch, int x, int y, u16 col) { DrawCharSize(ch, x, y, col, 2, 2); }
 
 // Draw character with background (does not check clipping limits)
 void DrawCanCharBg_Fast(sDrawCan* can, char ch, int x, int y, u16 col, u16 bgcol, int scalex, int scaley);
@@ -742,7 +823,15 @@ void DrawCharBg_Fast(char ch, int x, int y, u16 col, u16 bgcol, int scalex, int 
 
 // Draw character with background (checks clipping limits)
 void DrawCanCharBg(sDrawCan* can, char ch, int x, int y, u16 col, u16 bgcol, int scalex, int scaley);
-void DrawCharBg(char ch, int x, int y, u16 col, u16 bgcol, int scalex, int scaley);
+
+// For backward compatibility with Draw version 1
+//void DrawCharBg(char ch, int x, int y, u16 col, u16 bgcol, int scalex, int scaley);
+void DrawCharBgSize(char ch, int x, int y, u16 col, u16 bgcol, int scalex, int scaley);
+INLINE void DrawCharBg(char ch, int x, int y, u16 col, u16 bgcol) { DrawCharBgSize(ch, x, y, col, bgcol, 1, 1); }
+INLINE void DrawCharBgH(char ch, int x, int y, u16 col, u16 bgcol) { DrawCharBgSize(ch, x, y, col, bgcol, 1, 2); }
+INLINE void DrawCharBgW(char ch, int x, int y, u16 col, u16 bgcol) { DrawCharBgSize(ch, x, y, col, bgcol, 2, 1); }
+INLINE void DrawCharBg2(char ch, int x, int y, u16 col, u16 bgcol) { DrawCharBgSize(ch, x, y, col, bgcol, 2, 2); }
+INLINE void DrawCharBg4(char ch, int x, int y, u16 col, u16 bgcol) { DrawCharBgSize(ch, x, y, col, bgcol, 4, 4); }
 
 // Draw character inverted (does not check clipping limits)
 void DrawCanCharInv_Fast(sDrawCan* can, char ch, int x, int y, int scalex, int scaley);
@@ -763,7 +852,14 @@ void DrawText_Fast(const char* text, int len, int x, int y, u16 col, int scalex,
 
 // Draw text with transparent background (checks clipping limits)
 void DrawCanText(sDrawCan* can, const char* text, int len, int x, int y, u16 col, int scalex, int scaley);
-void DrawText(const char* text, int len, int x, int y, u16 col, int scalex, int scaley);
+
+// For backward compatibility with Draw version 1
+//void DrawText(const char* text, int len, int x, int y, u16 col, int scalex, int scaley);
+void DrawTextSize(const char* text, int len, int x, int y, u16 col, int scalex, int scaley);
+INLINE void DrawText(const char* text, int x, int y, u16 col) { DrawTextSize(text, -1, x, y, col, 1, 1); }
+INLINE void DrawTextH(const char* text, int x, int y, u16 col) { DrawTextSize(text, -1, x, y, col, 1, 2); }
+INLINE void DrawTextW(const char* text, int x, int y, u16 col) { DrawTextSize(text, -1, x, y, col, 2, 1); }
+INLINE void DrawText2(const char* text, int x, int y, u16 col) { DrawTextSize(text, -1, x, y, col, 2, 2); }
 
 // Draw text with background (does not check clipping limits)
 void DrawCanTextBg_Fast(sDrawCan* can, const char* text, int len, int x, int y, u16 col, u16 bgcol, int scalex, int scaley);
@@ -771,7 +867,15 @@ void DrawTextBg_Fast(const char* text, int len, int x, int y, u16 col, u16 bgcol
 
 // Draw text with background (checks clipping limits)
 void DrawCanTextBg(sDrawCan* can, const char* text, int len, int x, int y, u16 col, u16 bgcol, int scalex, int scaley);
-void DrawTextBg(const char* text, int len, int x, int y, u16 col, u16 bgcol, int scalex, int scaley);
+
+// For backward compatibility with Draw version 1
+//void DrawTextBg(const char* text, int len, int x, int y, u16 col, u16 bgcol, int scalex, int scaley);
+void DrawTextBgSize(const char* text, int len, int x, int y, u16 col, u16 bgcol, int scalex, int scaley);
+INLINE void DrawTextBg(const char* text, int x, int y, u16 col, u16 bgcol) { DrawTextBgSize(text, -1, x, y, col, bgcol, 1, 1); }
+INLINE void DrawTextBgH(const char* text, int x, int y, u16 col, u16 bgcol) { DrawTextBgSize(text, -1, x, y, col, bgcol, 1, 2); }
+INLINE void DrawTextBgW(const char* text, int x, int y, u16 col, u16 bgcol) { DrawTextBgSize(text, -1, x, y, col, bgcol, 2, 1); }
+INLINE void DrawTextBg2(const char* text, int x, int y, u16 col, u16 bgcol) { DrawTextBgSize(text, -1, x, y, col, bgcol, 2, 2); }
+INLINE void DrawTextBg4(const char* text, int x, int y, u16 col, u16 bgcol) { DrawTextBgSize(text, -1, x, y, col, bgcol, 4, 4); }
 
 // Draw text inverted (does not check clipping limits)
 void DrawCanTextInv_Fast(sDrawCan* can, const char* text, int len, int x, int y, int scalex, int scaley);
@@ -837,7 +941,11 @@ void DrawFillEllipseInv(int x, int y, int dx, int dy, u8 mask);
 
 // Draw image with the same format as destination
 void DrawCanImg(sDrawCan* can, int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs);
-void DrawImg(int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs);
+
+// For backward compatibility with Draw version 1
+//void DrawImg(int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs);
+void DrawImg2(int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs);
+INLINE void DrawImg(const void* src, int xs, int ys, int xd, int yd, int w, int h, int ws) { DrawImg2(xd, yd, src, xs, ys, w, h, DrawPitch(ws)); }
 
 // Draw image inverted with the same format as destination
 void DrawCanImgInv(sDrawCan* can, int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs);
@@ -845,16 +953,23 @@ void DrawImgInv(int xd, int yd, const void* src, int xs, int ys, int w, int h, i
 
 // Draw transparent image with the same format as destination
 void DrawCanBlit(sDrawCan* can, int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs, u16 col);
-void DrawBlit(int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs, u16 col);
+
+// For backward compatibility with Draw version 1
+//void DrawBlit(int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs, u16 col);
+void DrawBlit2(int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs, u16 col);
+INLINE void DrawBlit(const void* src, int xs, int ys, int xd, int yd, int w, int h, int ws, u16 col) { DrawBlit2(xd, yd, src, xs, ys, w, h, DrawPitch(ws), col); }
 
 // Draw transparent image inverted with the same format as destination
 void DrawCanBlitInv(sDrawCan* can, int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs, u16 col);
 void DrawBlitInv(int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs, u16 col);
 
 // Draw transparent image with the same format as destination, with substitute color
-// - This function is here only for compatibility, and is replaced by the DrawCanBlit/DrawBlit function
 void DrawCanBlitSubs(sDrawCan* can, int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs, u16 col, u16 fnd, u16 subs);
+
+// For backward compatibility with Draw version 1
+//void DrawBlitSubs(int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs, u16 col, u16 fnd, u16 subs);
 void DrawBlitSubs(int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs, u16 col, u16 fnd, u16 subs);
+INLINE void DrawBlitSubst(const void* src, int xs, int ys, int xd, int yd, int w, int h, int ws, u16 col, u16 fnd, u16 subst) { DrawBlitSubs(xd, yd, src, xs, ys, w, h, DrawPitch(ws), col, fnd, subst); }
 
 // Get image from canvas to buffer
 //  can ... source canvas
@@ -867,7 +982,11 @@ void DrawBlitSubs(int xd, int yd, const void* src, int xs, int ys, int w, int h,
 //  yd ... destination Y coordinate
 //  wbd ... pitch of destination buffer (length of line in bytes)
 void DrawCanGetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
-void DrawGetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
+
+// For backward compatibility with Draw version 1
+//void DrawGetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
+void DrawGetImg2(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
+INLINE void DrawGetImg(void* dst, int x, int y, int w, int h) { DrawGetImg2(x, y, w, h, dst, 0, 0, DrawPitch(w)); }
 
 // ----- Colors
 
@@ -989,6 +1108,8 @@ u16 DrawColOrange();
 u16 DrawCanColBrown(sDrawCan* can);	// brown color
 u16 DrawColBrown();
 #define COL_BROWN DrawColBrown()
+
+#endif // USE_DRAWCAN0
 
 #ifdef __cplusplus
 }

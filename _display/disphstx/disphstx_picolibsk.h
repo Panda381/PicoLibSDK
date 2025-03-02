@@ -39,9 +39,37 @@
 extern "C" {
 #endif
 
+#include <stdio.h>
+#include "pico/stdlib.h"
+#include "pico/multicore.h"
+#include "hardware/timer.h"
+#include "hardware/gpio.h"
+#include "hardware/dma.h"
+#include "hardware/vreg.h"
+#include "hardware/pll.h"
+#include "hardware/clocks.h"
+
+#include "hardware/structs/hstx_ctrl.h"
+#include "hardware/structs/hstx_fifo.h"
+#include "hardware/structs/resets.h"
+#include "hardware/structs/qmi.h"
+
+#include <stdlib.h>
+#include <string.h>
+
 // ========================================================
 //                          Misc
 // ========================================================
+
+// base types
+typedef signed char s8;
+typedef unsigned char u8;
+typedef signed short s16;		// on 8-bit system use "signed int"
+typedef unsigned short u16;		// on 8-bit system use "unsigned int"
+typedef signed long int s32;		// on 64-bit system use "signed int"
+typedef unsigned long int u32;		// on 64-bit system use "unsigned int"
+typedef signed long long int s64;
+typedef unsigned long long int u64;
 
 // bit position
 #define	B0 (1<<0)
@@ -84,8 +112,17 @@ typedef unsigned char Bool;
 #define True 1
 #define False 0
 
+// NULL
+#ifndef NULL
+#ifdef __cplusplus
+#define NULL 0
+#else
+#define NULL ((void*)0)
+#endif
+#endif
+
 // request to use inline
-#define INLINE __attribute__((always_inline)) inline
+#define INLINE __attribute__((always_inline)) inline static
 
 // avoid to use inline
 #define NOINLINE __attribute__((noinline))
@@ -99,6 +136,13 @@ typedef unsigned char Bool;
 // align array to 4-bytes
 #define ALIGNED __attribute__((aligned(4)))
 
+// compile-time check
+#ifdef __cplusplus
+#define STATIC_ASSERT(c, msg) static_assert((c), msg)
+#else
+#define STATIC_ASSERT(c, msg) _Static_assert((c), msg)
+#endif
+
 // IO u32
 typedef volatile u32 io32;
 
@@ -108,9 +152,21 @@ typedef volatile u32 io32;
 // Clear bits of IRQ array
 #define RISCV_IRQARRAY_CLR(csr, index, data) (riscv_clear_csr(csr, (index) | ((u32)(data) << 16)))
 
-#define RVCSR_MTVEC_OFFSET	0x305	// machine trap-handler base address 'mtvec'
-#define RVCSR_MEIEA_OFFSET	0xbe0	// external interrupt enable array
-#define RVCSR_MEIFA_OFFSET	0xbe2	// external interrupt force array
+#ifndef PLL_KHZ
+#if RP2040
+#define PLL_KHZ		125000		// PLL system frequency in kHz (default 125000 kHz)
+#else // RP2350
+#define PLL_KHZ		150000		// PLL system frequency in kHz (default 150000 kHz)
+#endif
+#endif
+
+#if !RISCV
+#define USE_GPIOCOPROC  1		// 1=use GPIO coprocessor (lib_gpiocoproc*.c, lib_gpiocoproc*.h)
+#endif
+
+#define FONT			FontBold8x8	// default system font
+#define FONTW			8		// width of system font
+#define FONTH			8		// height of system font
 
 // wait for delay in [us] (max. 71 minutes, 4'294'967'295 us)
 INLINE void WaitUs(u32 us) { busy_wait_us(us); }
@@ -134,6 +190,17 @@ INLINE void dmb(void)
 	__asm volatile (" dmb\n" ::: "memory");
 #endif
 }
+
+// data synchronization barrier
+INLINE void dsb(void)
+{
+#if RISCV
+	__asm volatile (" fence rw, rw\n" ::: "memory");
+#else // ARM
+	__asm volatile (" dsb\n" ::: "memory");
+#endif
+}
+
 
 // instruction synchronization barrier
 INLINE void isb(void)
@@ -216,7 +283,7 @@ INLINE Bool ResetPeripheryDoneMask(u32 mask) { return (~*RESETS_DONE & mask) == 
 INLINE Bool ResetPeripheryDone(int peri) { return ResetPeripheryDoneMask(BIT(peri)); }
 
 // stop resetting periphery specified by the mask RESET_* and wait
-void ResetPeripheryOffWaitMask(u32 mask)
+INLINE void ResetPeripheryOffWaitMask(u32 mask)
 {
 	ResetPeripheryOffMask(mask);  // stop resetting periphery
 	while (!ResetPeripheryDoneMask(mask)) {} // wait periphery to be done
@@ -224,7 +291,7 @@ void ResetPeripheryOffWaitMask(u32 mask)
 
 // hard reset periphery (and wait to be accessed again)
 //  Takes 0.5 us.
-void ResetPeripheryMask(u32 mask)
+INLINE void ResetPeripheryMask(u32 mask)
 {
 	ResetPeripheryOnMask(mask);  // start resetting periphery
 	ResetPeripheryOffWaitMask(mask); // stop resetting periphery and wait
@@ -247,6 +314,9 @@ INLINE void GPIO_Flip(int pin) { gpio_xor_mask(BIT(pin)); }
 
 // GPIO pin functions
 #define GPIO_FNC_HSTX	0	// HSTX (only pins 12..19)
+#define GPIO_FNC_SIO	5	// SIO (GPIO digital function)
+
+typedef u64 gpio_mask_t;		// 64-bit pin mask
 
 // pin control hardware registers
 #define GPIO_CTRL(pin) ((volatile u32*)(IO_BANK0_BASE+(pin)*8+4)) // GPIO pin control, pin = 0..29 or 0..47
@@ -275,7 +345,7 @@ void GPIO_Fnc(int pin, int fnc);
 
 // set GPIO function GPIO_FNC_* with mask (bit '1' to set function of this pin)
 // To use pin mask in range (first..last), use function PinRangeMask.
-void GPIO_FncMask(u32 mask, int fnc);
+void GPIO_FncMask(gpio_mask_t mask, int fnc);
 
 // range mask - returns bits set to '1' on range 'first' to 'last' (RangeMask(7,14) returns 0x7F80)
 INLINE u32 RangeMask(int first, int last) { return (~(((u32)-1) << (last+1))) & (((u32)-1) << first); }
@@ -288,7 +358,7 @@ INLINE void GPIO_Reset(int pin) { gpio_deinit(pin); }
 
 // reset GPIO pins masked (return to reset state)
 // To use pin mask in range (first..last), use function PinRangeMask.
-void GPIO_ResetMask(u32 mask);
+void GPIO_ResetMask(gpio_mask_t mask);
 
 #define GPIO_PAD(pin) ((volatile u32*)(PADS_BANK0_BASE+(pin)*4+4)) // GPIO pad control register, pin = 0..31 or 0..49 (including SWCLK and SWD)
 
@@ -304,6 +374,63 @@ INLINE void GPIO_NoPull(int pin) { hw_clear_bits(GPIO_PAD(pin), B2|B3); }
 // set output strength to 8 mA (pin = 0..31 or 0..49, including SWCLK and SWD)
 INLINE void GPIO_Drive8mA(int pin) { hw_write_masked(GPIO_PAD(pin), B5, B4|B5); }
 
+// Clear GPIO 64-bit output enable; operation: sio_hw->gpio_oe_clr = mask.L; sio_hw->gpio_hi_oe_clr = mask.H;
+INLINE void GPIOC_OeClrAll(u64 mask) { __asm volatile (" mcrr p0, #3, %0, %1, c4\n" : : "r" (mask & 0xffffffff), "r" (mask >> 32)); }
+
+// Clear GPIO 64-bit output; operation: sio_hw->gpio_clr = mask.L; sio_hw->gpio_hi_clr = mask.H;
+INLINE void GPIOC_OutClrAll(u64 mask) { __asm volatile (" mcrr p0, #3, %0, %1, c0\n" : : "r" (mask & 0xffffffff), "r" (mask >> 32)); }
+
+// Get GPIO input 64-bit; operation: return sio_hw->gpio_in | (sio_hw->gpio_hi_in << 32);
+INLINE u64 GPIOC_InAll(void)
+{
+	u32 resH, resL;
+	__asm volatile (" mrrc p0, #0, %0, %1, c8\n" : "=r" (resL), "=r" (resH));
+	return ((u64)resH << 32) | resL;
+}
+
+// initialize GPIO pin base function masked (bit '1' = initialize this pin)
+// To use pin mask in range (first..last), use function PinRangeMask.
+void GPIO_InitMask(gpio_mask_t mask);
+// set input direction of pins masked
+// To use pin mask in range (first..last), use function PinRangeMask.
+INLINE void GPIO_DirInMask(gpio_mask_t mask)
+{
+#if RP2040
+	sio_hw->gpio_oe_clr = mask;
+#elif USE_GPIOCOPROC	// use GPIO coprocessor (only RP2350 ARM; sdk_gpio_coproc.h)
+	GPIOC_OeClrAll(mask);
+#else
+	sio_hw->gpio_oe_clr = (u32)mask;
+	sio_hw->gpio_hi_oe_clr = (u32)(mask >> 32);
+#endif
+}
+
+// clear output pins masked
+// To use pin mask in range (first..last), use function PinRangeMask.
+INLINE void GPIO_ClrMask(gpio_mask_t mask)
+{
+#if RP2040
+	sio_hw->gpio_clr = mask;
+#elif USE_GPIOCOPROC	// use GPIO coprocessor (only RP2350 ARM; sdk_gpio_coproc.h)
+	GPIOC_OutClrAll(mask);
+#else
+	sio_hw->gpio_clr = (u32)mask;
+	sio_hw->gpio_hi_clr = (u32)(mask >> 32);
+#endif
+}
+
+// get all input pins
+INLINE gpio_mask_t GPIO_InAll()
+{
+#if RP2040
+	return sio_hw->gpio_in;
+#elif USE_GPIOCOPROC	// use GPIO coprocessor (only RP2350 ARM; sdk_gpio_coproc.h)
+	return GPIOC_InAll();
+#else
+	return sio_hw->gpio_in | ((u64)sio_hw->gpio_hi_in << 32);
+#endif
+}
+
 // ========================================================
 //                       IRQ
 // ========================================================
@@ -312,18 +439,13 @@ INLINE void GPIO_Drive8mA(int pin) { hw_write_masked(GPIO_PAD(pin), B5, B4|B5); 
 
 #define SCB_VTOR	((volatile u32*)(PPB_BASE + 0xED08))	// Vector Table Offset Register
 
+#define IRQ_PRIO_REALTIME	0	// highest priority - real-time time-critical interrupts
+
 // get address of interrupt vector table of this CPU core
 #if RISCV
 INLINE irq_handler_t* GetVTOR(void) { return (irq_handler_t*)(_riscv_read_csr(0x305) & ~0x3u); } // RVCSR_MTVEC_OFFSET (clear MODE bits 0 and 1)
 #else
 INLINE irq_handler_t* GetVTOR(void) { return (irq_handler_t*)*SCB_VTOR; }
-#endif
-
-// index of first IRQ
-#if RISCV
-#define VTABLE_FIRST_IRQ	26	// RISCV
-#else
-#define VTABLE_FIRST_IRQ	16	// ARM
 #endif
 
 // set interrupt service handler (irq = interrupt request indice IRQ_*, negative exception numbers can also be used)
@@ -416,22 +538,22 @@ INLINE void NVIC_IRQPrio(int irq, u8 prio) {}
 void DMA_Config(int dma, const volatile void* src, volatile void* dst, u32 count, u32 ctrl);
 
 // set DMA read address, without trigger
-INLINE void DMA_SetRead(int dma, const volatile void* addr) { dma_hw->ch[dma]->read_addr = (u32)addr; }
+INLINE void DMA_SetRead(int dma, const volatile void* addr) { dma_hw->ch[dma].read_addr = (u32)addr; }
 
 // set DMA read address, with trigger
-INLINE void DMA_SetReadTrig(int dma, const volatile void* addr) { cb(); dma_hw->ch[dma]->al3_read_addr_trig = (u32)addr; }
+INLINE void DMA_SetReadTrig(int dma, const volatile void* addr) { cb(); dma_hw->ch[dma].al3_read_addr_trig = (u32)addr; }
 
 // set DMA write address, without trigger
-INLINE void DMA_SetWrite(int dma, volatile void* addr) { dma_hw->ch[dma]->write_addr = (u32)addr; }
+INLINE void DMA_SetWrite(int dma, volatile void* addr) { dma_hw->ch[dma].write_addr = (u32)addr; }
 
 // set DMA transfer count, without trigger
 //  Count can be max. 0x0fffffff (268'435'455).
 //  Count can be combined with flags DMA_COUNT_TRIGGER or DMA_COUNT_ENDLESS.
 //  Count is number of transfers, not number of bytes.
-INLINE void DMA_SetCount(int dma, u32 count) { dma_hw->ch[dma]->transfer_count = count; }
+INLINE void DMA_SetCount(int dma, u32 count) { dma_hw->ch[dma].transfer_count = count; }
 
 // set DMA control register, without trigger
-INLINE void DMA_SetCtrl(int dma, u32 ctrl) { dma_hw->ch[dma]->al1_ctrl = ctrl; }
+INLINE void DMA_SetCtrl(int dma, u32 ctrl) { dma_hw->ch[dma].al1_ctrl = ctrl; }
 
 // clear DMA interrupt request IRQ_DMA_0..IRQ_DMA_3
 INLINE void DMA_IRQ1Clear(int dma) { dma_hw->ints1 = BIT(dma); cb(); }
@@ -444,8 +566,12 @@ INLINE void DMA_IRQ1EnableMask(u32 mask) { hw_set_bits(&dma_hw->inte1, mask); }
 INLINE void DMA_IRQ1DisableMask(u32 mask) { hw_clear_bits(&dma_hw->inte1, mask); }
 INLINE void DMA_IRQ1Disable(int dma) { DMA_IRQ1DisableMask(BIT(dma)); }
 
+// enable interrupt from DMA channel for IRQ_DMA_0..IRQ_DMA_3
+
+INLINE void DMA_IRQ1Enable(int dma) { DMA_IRQ1EnableMask(BIT(dma)); }
+
 // disable DMA channel (pause - transfer will be paused but not aborted, busy will stay active)
-INLINE void DMA_Disable(int dma) { hw_clear_bits(&dma_hw->ch[dma]->al1_ctrl, DMA_CTRL_EN); }
+INLINE void DMA_Disable(int dma) { hw_clear_bits(&dma_hw->ch[dma].al1_ctrl, DMA_CTRL_EN); }
 
 // abort DMA transfer
 INLINE void DMA_Abort(int dma) { dma_channel_abort(dma); }
@@ -470,6 +596,9 @@ INLINE void DMA_Abort(int dma) { dma_channel_abort(dma); }
 
 // set bits of power manager register with password
 INLINE void PowMan_SetBits(volatile u32* reg, u32 val) { hw_set_bits(reg, POWMAN_PASSWORD | val); }
+
+// clear bits of power manager register with password
+INLINE void PowMan_ClrBits(volatile u32* reg, u32 val) { hw_clear_bits(reg, POWMAN_PASSWORD | val); }
 
 // write 16-bit value to power manager register with password
 INLINE void PowMan_Write(volatile u32* reg, u32 val) { *reg = POWMAN_PASSWORD | val; }
@@ -567,8 +696,20 @@ void ClockPllSysFreqVolt(u32 freq);
 // initialize Flash interface (clkdiv = clock divider, must be even number, FLASHQSPI_CLKDIV_DEF=2 is default) (must be run from RAM)
 //   Supported devices: Winbond W25Q080, W25Q16JV, AT25SF081, S25FL132K0
 //   Raspberry Pico cointains W25Q16JVUXIQ, Raspberry Pico 2 cointains W25Q32RVXHJQ
-void NOFLASH(QMI_InitFlash)(int clkdiv);
-INLINE void FlashInit(int clkdiv) { QMI_InitFlash(clkdiv); }
+INLINE void FlashInit(int clkdiv) { qmi_hw->m[0].timing = clkdiv | (2 << 8) | (1 << 30); }
+
+INLINE u32 Clz(u32 val)
+{
+	u32 res;
+	__asm volatile (" clz %0,%1\n" : "=r" (res) : "r" (val));
+	return res;
+}
+
+// get bit order of value (logarithm, returns position of highest bit + 1: 1..32, 0=no bit)
+INLINE u32 Order(u32 val) { return 32 - Clz(val); }
+
+// get mask of value (0x123 returns 0x1FF)
+INLINE u32 Mask(u32 val) { return ((u32)-1) >> Clz(val); }
 
 #ifdef __cplusplus
 }

@@ -14,13 +14,25 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN && USE_DRAWCAN16	// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #ifndef _LIB_DRAWCAN16_H
 #define _LIB_DRAWCAN16_H
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#if USE_DRAWCAN4
+int Draw4Pitch(int w);
+#else
+INLINE int Draw4Pitch(int w) { return ((w + 1)/2 + 3) & ~3; }
+#endif
+
+#if USE_DRAWCAN8
+int Draw8Pitch(int w);
+#else
+INLINE int Draw8Pitch(int w) { return (w + 3) & ~3; }
 #endif
 
 // default drawing canvas for 15-bit and 16-bit format
@@ -48,14 +60,18 @@ INLINE u8* Draw16Buf() { return pDrawCan16->buf; }
 // convert RGB888 color to 15-bit pixel color RGB555
 u16 Draw15ColRgb(u8 r, u8 g, u8 b);
 
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 // random 15-bit pixel color RGB555
 u16 Draw15ColRand();
+#endif
 
 // convert RGB888 color to 16-bit pixel color RGB565
 u16 Draw16ColRgb(u8 r, u8 g, u8 b);
 
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 // random 16-bit pixel color RGB565
 u16 Draw16ColRand();
+#endif
 
 // 15-bit colors, format RGB555 (components are 0..255)
 #define COLOR15(r,g,b)	((u16)( (((r)&0xf8)<<7) | (((g)&0xf8)<<2) | (((b)&0xf8)>>3) ))
@@ -796,6 +812,9 @@ void Draw16Img12(int xd, int yd, const void* src, int xs, int ys, int w, int h, 
 void DrawCan16Img8(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, int xs, int ys, int w, int h, int wbs);
 void Draw16Img8(int xd, int yd, const void* src, const u16* pal, int xs, int ys, int w, int h, int wbs);
 
+// For backward compatibility with Draw version 1
+INLINE void DrawImgPal(const u8* src, const u16* pal, int xs, int ys, int xd, int yd, int w, int h, int ws) { Draw16Img8(xd, yd, src, pal, xs, ys, w, h, Draw8Pitch(ws)); }
+
 // Draw 6-bit palleted image to 16-bit destination canvas
 void DrawCan16Img6(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, int xs, int ys, int w, int h, int wbs);
 void Draw16Img6(int xd, int yd, const void* src, const u16* pal, int xs, int ys, int w, int h, int wbs);
@@ -803,6 +822,9 @@ void Draw16Img6(int xd, int yd, const void* src, const u16* pal, int xs, int ys,
 // Draw 4-bit palleted image to 16-bit destination canvas
 void DrawCan16Img4(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, int xs, int ys, int w, int h, int wbs);
 void Draw16Img4(int xd, int yd, const void* src, const u16* pal, int xs, int ys, int w, int h, int wbs);
+
+// For backward compatibility with Draw version 1
+INLINE void DrawImg4Pal(const u8* src, const u16* pal, int xs, int ys, int xd, int yd, int w, int h, int ws) { Draw16Img4(xd, yd, src, pal, xs, ys, w, h, Draw4Pitch(ws)); }
 
 // Draw 3-bit palleted image to 16-bit destination canvas
 void DrawCan16Img3(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, int xs, int ys, int w, int h, int wbs);
@@ -823,24 +845,30 @@ void DrawCan16Blit12(sDrawCan* can, int xd, int yd, const void* src, u16 col, in
 void Draw16Blit12(int xd, int yd, const void* src, u16 col, int xs, int ys, int w, int h, int wbs);
 
 // Draw 8-bit palleted image transparent to 16-bit destination canvas
-void DrawCan16Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
-void Draw16Blit8(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
+void DrawCan16Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
+void Draw16Blit8(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
+
+// For backward compatibility with Draw version 1
+INLINE void DrawBlitPal(const u8* src, const u16* pal, int xs, int ys, int xd, int yd, int w, int h, int ws, u16 col) { Draw16Blit8(xd, ys, src, pal, col, xs, ys, w, h, Draw8Pitch(ws)); }
 
 // Draw 6-bit palleted image transparent to 16-bit destination canvas
-void DrawCan16Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
-void Draw16Blit6(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
+void DrawCan16Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
+void Draw16Blit6(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
 
 // Draw 4-bit palleted image transparent to 16-bit destination canvas
-void DrawCan16Blit4(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
-void Draw16Blit4(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
+void DrawCan16Blit4(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
+void Draw16Blit4(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
+
+// For backward compatibility with Draw version 1
+INLINE void DrawBlit4Pal(const u8* src, const u16* pal, int xs, int ys, int xd, int yd, int w, int h, int ws, u16 col) { Draw16Blit4(xd, yd, src, pal, col, xs, ys, w, h, Draw4Pitch(ws)); }
 
 // Draw 3-bit palleted image transparent to 16-bit destination canvas
-void DrawCan16Blit3(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
-void Draw16Blit3(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
+void DrawCan16Blit3(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
+void Draw16Blit3(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
 
 // Draw 2-bit palleted image transparent to 16-bit destination canvas
-void DrawCan16Blit2(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
-void Draw16Blit2(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
+void DrawCan16Blit2(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
+void Draw16Blit2(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
 
 // Draw 1-bit image transparent with specific colors to 16-bit destination canvas
 //  col ... color of non-transparent pixel with value '1'
@@ -894,24 +922,24 @@ void DrawCan15Blit12(sDrawCan* can, int xd, int yd, const void* src, u16 col, in
 void Draw15Blit12(int xd, int yd, const void* src, u16 col, int xs, int ys, int w, int h, int wbs);
 
 // Draw 8-bit palleted image transparent to 15-bit destination canvas
-void DrawCan15Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
-void Draw15Blit8(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
+void DrawCan15Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
+void Draw15Blit8(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
 
 // Draw 6-bit palleted image transparent to 15-bit destination canvas
-void DrawCan15Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
-void Draw15Blit6(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
+void DrawCan15Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
+void Draw15Blit6(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
 
 // Draw 4-bit palleted image transparent to 15-bit destination canvas
-void DrawCan15Blit4(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
-void Draw15Blit4(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
+void DrawCan15Blit4(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
+void Draw15Blit4(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
 
 // Draw 3-bit palleted image transparent to 15-bit destination canvas
-void DrawCan15Blit3(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
-void Draw15Blit3(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
+void DrawCan15Blit3(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
+void Draw15Blit3(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
 
 // Draw 2-bit palleted image transparent to 15-bit destination canvas
-void DrawCan15Blit2(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
-void Draw15Blit2(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs);
+void DrawCan15Blit2(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
+void Draw15Blit2(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
 
 // Draw 1-bit image transparent with specific colors to 15-bit destination canvas
 //  col ... color of non-transparent pixel with value '1'
@@ -919,9 +947,11 @@ void DrawCan15Blit1(sDrawCan* can, int xd, int yd, const void* src, u16 col, int
 #define DrawCan15Blit1 DrawCan16Blit1
 void Draw15Blit1(int xd, int yd, const void* src, u16 col, int xs, int ys, int w, int h, int wbs);
 
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 // drawing function interface
 extern const sDrawCanFnc DrawCan16Fnc;
 extern const sDrawCanFnc DrawCan15Fnc;
+#endif
 
 #ifdef __cplusplus
 }

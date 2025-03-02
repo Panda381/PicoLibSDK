@@ -408,7 +408,43 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #endif
 
 #ifndef USE_DRAWCAN
-#define USE_DRAWCAN	0		// use drawing canvas (lib_drawcan*.c, lib_drawcan*.h)
+#define USE_DRAWCAN	0		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
+#endif
+
+#ifndef USE_DRAWCAN0
+#define USE_DRAWCAN0	1		// 1=use DrawCan common functions, if use drawing canvas
+#endif
+
+#ifndef USE_DRAWCAN1
+#define USE_DRAWCAN1	1		// 1=use DrawCan1 1-bit functions, if use drawing canvas
+#endif
+
+#ifndef USE_DRAWCAN2
+#define USE_DRAWCAN2	1		// 1=use DrawCan2 2-bit functions, if use drawing canvas
+#endif
+
+#ifndef USE_DRAWCAN3
+#define USE_DRAWCAN3	1		// 1=use DrawCan3 3-bit functions, if use drawing canvas
+#endif
+
+#ifndef USE_DRAWCAN4
+#define USE_DRAWCAN4	1		// 1=use DrawCan4 4-bit functions, if use drawing canvas
+#endif
+
+#ifndef USE_DRAWCAN6
+#define USE_DRAWCAN6	1		// 1=use DrawCan6 6-bit functions, if use drawing canvas
+#endif
+
+#ifndef USE_DRAWCAN8
+#define USE_DRAWCAN8	1		// 1=use DrawCan8 8-bit functions, if use drawing canvas
+#endif
+
+#ifndef USE_DRAWCAN12
+#define USE_DRAWCAN12	1		// 1=use DrawCan12 12-bit functions, if use drawing canvas
+#endif
+
+#ifndef USE_DRAWCAN16
+#define USE_DRAWCAN16	1		// 1=use DrawCan15/16 15/16-bit functions, if use drawing canvas
 #endif
 
 #ifndef USE_ESCPKT
@@ -819,11 +855,11 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #endif
 
 #ifndef UART_STDIO_TX
-#define UART_STDIO_TX		0	// UART stdio TX GPIO pin
+#define UART_STDIO_TX		0	// UART stdio TX GPIO pin (function mode UART or AUX is auto-selected)
 #endif
 
 #ifndef UART_STDIO_RX
-#define UART_STDIO_RX		1	// UART stdio RX GPIO pin
+#define UART_STDIO_RX		1	// UART stdio RX GPIO pin (function mode UART or AUX is auto-selected)
 #endif
 
 #ifndef UART_STDIO_TXBUF
@@ -916,8 +952,9 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 // DMA temporary channel to calculate CRC and memory copy/fill.
 //  CPU0 uses DMA channel 11, CPU1 uses DMA channel 10, so functions can be used
 //  simultaneously, without collision. However, they cannot be used simultaneously in an interrupt.
+// DMA channels 14 and 15 use DispHSTX controller.
 #ifndef DMA_TEMP_CHAN
-#define DMA_TEMP_CHAN()	(DMA_CHANNELS - 1 - CpuID())
+#define DMA_TEMP_CHAN()	(11 - CpuID())
 #endif
 
 #ifndef ROSC_MHZ

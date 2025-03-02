@@ -14,7 +14,7 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN && USE_DRAWCAN4		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #ifndef _LIB_DRAWCAN4_H
 #define _LIB_DRAWCAN4_H
@@ -40,8 +40,10 @@ INLINE u8* Draw4Buf() { return pDrawCan4->buf; }
 // convert RGB888 color to 4-bit pixel color YRGB1111
 u16 Draw4ColRgb(u8 r, u8 g, u8 b);
 
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 // random 4-bit pixel color YRGB1111
 u16 Draw4ColRand();
+#endif
 
 // 4-bit colors, format YRGB1111 (components are 0..255)
 #define COLOR4(r,g,b) ( ( ((r)>127)&&((r)<192)&&((g)>127)&&((g)<192)&&((b)>127)&&((b)<192) ) ? 0x07 : \
@@ -513,8 +515,10 @@ void Draw4BlitSubs(int xd, int yd, const void* src, int xs, int ys, int w, int h
 void DrawCan4GetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 void Draw4GetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 // drawing function interface
 extern const sDrawCanFnc DrawCan4Fnc;
+#endif
 
 #ifdef __cplusplus
 }

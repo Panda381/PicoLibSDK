@@ -62,6 +62,8 @@ GPIO19 ... VSYNC, R=47 ohm
 
 // PicoSDK interface, if the PicoLibSDK library is used
 #include "disphstx_picolibsk.h"
+#include "../../_lib/_include.h"
+#include "../../_font/_include.h"
 
 #else // DISPHSTX_PICOSDK
 
@@ -79,6 +81,13 @@ GPIO19 ... VSYNC, R=47 ohm
 #include "../../_sdk/inc/sdk_powman.h"
 #include "../../_lib/inc/lib_malloc.h"
 #include "../../_lib/inc/lib_drawcan.h"
+#include "../../_lib/inc/lib_drawcan1.h"
+#include "../../_lib/inc/lib_drawcan2.h"
+#include "../../_lib/inc/lib_drawcan3.h"
+#include "../../_lib/inc/lib_drawcan4.h"
+#include "../../_lib/inc/lib_drawcan6.h"
+#include "../../_lib/inc/lib_drawcan8.h"
+#include "../../_lib/inc/lib_drawcan12.h"
 #include "../../_lib/inc/lib_drawcan16.h"
 //#include "../../_lib/inc/lib_print.h"
 

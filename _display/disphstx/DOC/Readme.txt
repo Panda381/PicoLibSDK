@@ -1,6 +1,6 @@
 DispHSTX - DVI (HDMI) and VGA display driver for Pico2 RP2350, using HSTX peripheral
 ====================================================================================
-Version 1.00, February 2025
+Version 1.01, March 2025
 
 Copyright (c) 2023-2025 Miroslav Nemecek
 
@@ -10,16 +10,6 @@ https://github.com/Panda381/DispHSTX
 https://www.breatharian.eu/hw/disphstx/index_en.html
 https://github.com/pajenicko/picopad
 https://picopad.eu/en/
-
-
-
-*****************************************************************************
-
-This version does not yet support compilation for the original Raspberry SDK
-(only PicoLibSDK now) - it is in the preparation for the next version.
-
-*****************************************************************************
-
 
 
 Basic description
@@ -42,7 +32,7 @@ microcontroller used. It is usually possible to achieve a resolution of up to
 1440x600 pixels.
 
 DispHSTX is built on the PicoLibSDK library, but interface to original
-Raspberry SDK library is ready too.
+Raspberry PicoSDK library is ready too.
 
 
 License
@@ -125,3 +115,4 @@ or disabling unused image formats. See the "Configuration" chapter for details.
 History of versions
 -------------------
 02/24/2025 version 1.00
+03/02/2025 version 1.01, Raspberry PicoSDK library build

@@ -18,7 +18,7 @@
 #define DISPHSTX_DVI_PINOUT	1		// DVI predefined pinout: 0=DVI breakout board, 1=order D2+..CLK-, 2=order CLK-..D2+
 //#define DISPHSTX_DISP_SEL	20		// >=0 GPIO pin with display selection switch, -1=do not use display selection switch
 
-#define DISPHSTX_USE_VGA	0		// 1=use VGA support (0=or only DVI) ... VGA is not supported, it is too slow for this purpose
+//#define DISPHSTX_USE_VGA	1		// 1=use VGA support (0=or only DVI) ... VGA is not supported, it is too slow for this purpose
 
 #define DISPHSTX_USEPLL		1		// 1 = use separate PLL_SYS for HSTX generator (sys_clk will use PLL_USB)
 

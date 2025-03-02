@@ -14,9 +14,14 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#include "../../global.h"	// globals
+// Note: The following 2 switches are not yet defined in the PicoLibSDK at this point, so the global.h file is included.
+#if USE_DISPHSTX && DISPHSTX_PICOSDK	// 0=use PicoLibSDK library, 1=use PicoSDK original Raspberry SDK library
+#include "disphstx_picolibsk.h"
+#else
+#include "../../global.h"
+#endif
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN	&& USE_DRAWCAN16	// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #include "../../_font/_include.h"
 #include "../inc/lib_text.h"
@@ -64,7 +69,8 @@ sDrawCan DrawCan15 = {
 	.font = FONT,			// const u8* font;	// pointer to current font (256 characters in cells of width 8 pixels, 1-bit format)
 
 	// drawing functions interfaces
-	.drawfnc = &DrawCan15Fnc,	// const struct sDrawCanFnc_* drawfnc; // drawing functions
+	// - Don't set the pointer to the function table, it would increase the size of the Loader
+	.drawfnc = NULL, //&DrawCan15Fnc,	// const struct sDrawCanFnc_* drawfnc; // drawing functions
 };
 
 // default drawing canvas for 16-bit format
@@ -107,7 +113,8 @@ sDrawCan DrawCan16 = {
 	.font = FONT,			// const u8* font;	// pointer to current font (256 characters in cells of width 8 pixels, 1-bit format)
 
 	// drawing functions interfaces
-	.drawfnc = &DrawCan16Fnc,	// const struct sDrawCanFnc_* drawfnc; // drawing functions
+	// - Don't set the pointer to the function table, it would increase the size of the Loader
+	.drawfnc = NULL, //&DrawCan16Fnc,	// const struct sDrawCanFnc_* drawfnc; // drawing functions
 };
 
 // current drawing canvas for 15-bit format
@@ -152,11 +159,13 @@ u16 Draw15ColRgb(u8 r, u8 g, u8 b) { return COLOR15(r, g, b); }
 // convert RGB888 color to 16-bit pixel color RGB565
 u16 Draw16ColRgb(u8 r, u8 g, u8 b) { return COLOR16(r, g, b); }
 
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 // random 15-bit pixel color RGB555
 u16 Draw15ColRand() { return COL15_RANDOM; }
 
 // random 16-bit pixel color RGB565
 u16 Draw16ColRand() { return COL16_RANDOM; }
+#endif
 
 // ----------------------------------------------------------------------------
 //                            Clear canvas
@@ -5900,7 +5909,7 @@ void DrawCan16Blit12(sDrawCan* can, int xd, int yd, const void* src, u16 col, in
 void Draw16Blit12(int xd, int yd, const void* src, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan16Blit12(pDrawCan16, xd, yd, src, col, xs, ys, w, h, wbs); }
 
 // Draw 8-bit palleted image transparent to 16-bit destination canvas
-void DrawCan16Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs)
+void DrawCan16Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs)
 {
 	// width of source image
 	int ws = wbs;
@@ -5922,13 +5931,13 @@ void DrawCan16Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 	int i;
 	wbd -= w;
 	wbs -= w;
-	u8 c;
+	u16 c;
 	for (; h > 0; h--)
 	{
 		for (i = w; i > 0; i--)
 		{
-			c = *s;
-			if (c != col) *d = pal[c];
+			c = pal[*s];
+			if (c != col) *d = c;
 			d++;
 			s++;
 		}
@@ -5936,10 +5945,10 @@ void DrawCan16Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 		s += wbs;
 	}
 }
-void Draw16Blit8(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs) { DrawCan16Blit8(pDrawCan16, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
+void Draw16Blit8(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan16Blit8(pDrawCan16, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
 
 // Draw 6-bit palleted image transparent to 16-bit destination canvas
-void DrawCan16Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs)
+void DrawCan16Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs)
 {
 	// width of source image
 	int ws = wbs*5/4;
@@ -5964,7 +5973,7 @@ void DrawCan16Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 	int i;
 	wbd -= w;
 	wbs /= 4;
-	u8 c;
+	u16 c;
 	int xxs;
 	for (; h > 0; h--)
 	{
@@ -5972,24 +5981,24 @@ void DrawCan16Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 		s = s0;
 		for (i = w; i > 0; i--)
 		{
-			c = (u8)((*s >> xxs) & 0x3f);
+			c = pal[(*s >> xxs) & 0x3f];
 			xxs += 6;
 			if (xxs == 30)
 			{
 				xxs = 0;
 				s++;
 			}
-			if (c != col) *d = pal[c];
+			if (c != col) *d = c;
 			d++;
 		}
 		d += wbd;
 		s0 += wbs;
 	}
 }
-void Draw16Blit6(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs) { DrawCan16Blit6(pDrawCan16, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
+void Draw16Blit6(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan16Blit6(pDrawCan16, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
 
 // Draw 4-bit palleted image transparent to 16-bit destination canvas
-void DrawCan16Blit4(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs)
+void DrawCan16Blit4(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs)
 {
 	// width of source image
 	int ws = wbs*2;
@@ -6011,7 +6020,7 @@ void DrawCan16Blit4(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 	// copy image
 	int i;
 	wbd -= w;
-	u8 c;
+	u16 c;
 	int xxs;
 	for (; h > 0; h--)
 	{
@@ -6021,25 +6030,25 @@ void DrawCan16Blit4(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 		{
 			if ((xxs & 1) == 0)
 			{
-				c = GETPIXEL4_EVEN(s);
+				c = pal[GETPIXEL4_EVEN(s)];
 			}
 			else
 			{
-				c = GETPIXEL4_ODD(s);
+				c = pal[GETPIXEL4_ODD(s)];
 				s++;
 			}
 			xxs++;
-			if (c != col) *d = pal[c];
+			if (c != col) *d = c;
 			d++;
 		}
 		d += wbd;
 		s0 += wbs;
 	}
 }
-void Draw16Blit4(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs) { DrawCan16Blit4(pDrawCan16, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
+void Draw16Blit4(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan16Blit4(pDrawCan16, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
 
 // Draw 3-bit palleted image transparent to 16-bit destination canvas
-void DrawCan16Blit3(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs)
+void DrawCan16Blit3(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs)
 {
 	// width of source image
 	int ws = wbs*10/4;
@@ -6064,7 +6073,7 @@ void DrawCan16Blit3(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 	int i;
 	wbd -= w;
 	wbs /= 4;
-	u8 c;
+	u16 c;
 	int xxs;
 	for (; h > 0; h--)
 	{
@@ -6072,24 +6081,24 @@ void DrawCan16Blit3(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 		s = s0;
 		for (i = w; i > 0; i--)
 		{
-			c = (u8)((*s >> xxs) & 0x07);
+			c = pal[(*s >> xxs) & 0x07];
 			xxs += 3;
 			if (xxs == 30)
 			{
 				xxs = 0;
 				s++;
 			}
-			if (c != col) *d = pal[c];
+			if (c != col) *d = c;
 			d++;
 		}
 		d += wbd;
 		s0 += wbs;
 	}
 }
-void Draw16Blit3(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs) { DrawCan16Blit3(pDrawCan16, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
+void Draw16Blit3(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan16Blit3(pDrawCan16, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
 
 // Draw 2-bit palleted image transparent to 16-bit destination canvas
-void DrawCan16Blit2(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs)
+void DrawCan16Blit2(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs)
 {
 	// width of source image
 	int ws = wbs*4;
@@ -6113,7 +6122,7 @@ void DrawCan16Blit2(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 	// copy image
 	int i;
 	wbd -= w;
-	u8 c;
+	u16 c;
 	int xxs;
 	for (; h > 0; h--)
 	{
@@ -6121,21 +6130,21 @@ void DrawCan16Blit2(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 		s = s0;
 		for (i = w; i > 0; i--)
 		{
-			c = (u8)((*s >> xxs) & 0x03);
+			c = pal[(*s >> xxs) & 0x03];
 			xxs -= 2;
 			if (xxs < 0)
 			{
 				xxs = 6;
 				s++;
 			}
-			if (c != col) *d = pal[c];
+			if (c != col) *d = c;
 			d++;
 		}
 		d += wbd;
 		s0 += wbs;
 	}
 }
-void Draw16Blit2(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs) { DrawCan16Blit2(pDrawCan16, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
+void Draw16Blit2(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan16Blit2(pDrawCan16, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
 
 // Draw 1-bit image transparent with specific colors to 16-bit destination canvas
 //  col ... color of non-transparent pixel with value '1'
@@ -6535,7 +6544,8 @@ void DrawCan15Blit12(sDrawCan* can, int xd, int yd, const void* src, u16 col, in
 				s += 3;
 			}
 			xxs++;
-			if (c != col) *d = COL12TO15(c);
+			c = COL12TO16(c);
+			if (c != col) *d = COL16TO15(c);
 			d++;
 		}
 		d += wbd;
@@ -6545,7 +6555,7 @@ void DrawCan15Blit12(sDrawCan* can, int xd, int yd, const void* src, u16 col, in
 void Draw15Blit12(int xd, int yd, const void* src, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan15Blit12(pDrawCan15, xd, yd, src, col, xs, ys, w, h, wbs); }
 
 // Draw 8-bit palleted image transparent to 15-bit destination canvas
-void DrawCan15Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs)
+void DrawCan15Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs)
 {
 	// width of source image
 	int ws = wbs;
@@ -6567,13 +6577,13 @@ void DrawCan15Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 	int i;
 	wbd -= w;
 	wbs -= w;
-	u8 c;
+	u16 c;
 	for (; h > 0; h--)
 	{
 		for (i = w; i > 0; i--)
 		{
-			c = *s;
-			if (c != col) *d = COL16TO15(pal[c]);
+			c = pal[*s];
+			if (c != col) *d = COL16TO15(c);
 			d++;
 			s++;
 		}
@@ -6581,10 +6591,10 @@ void DrawCan15Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 		s += wbs;
 	}
 }
-void Draw15Blit8(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs) { DrawCan15Blit8(pDrawCan15, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
+void Draw15Blit8(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan15Blit8(pDrawCan15, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
 
 // Draw 6-bit palleted image transparent to 15-bit destination canvas
-void DrawCan15Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs)
+void DrawCan15Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs)
 {
 	// width of source image
 	int ws = wbs*5/4;
@@ -6609,7 +6619,7 @@ void DrawCan15Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 	int i;
 	wbd -= w;
 	wbs /= 4;
-	u8 c;
+	u16 c;
 	int xxs;
 	for (; h > 0; h--)
 	{
@@ -6617,24 +6627,24 @@ void DrawCan15Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 		s = s0;
 		for (i = w; i > 0; i--)
 		{
-			c = (u8)((*s >> xxs) & 0x3f);
+			c = pal[(*s >> xxs) & 0x3f];
 			xxs += 6;
 			if (xxs == 30)
 			{
 				xxs = 0;
 				s++;
 			}
-			if (c != col) *d = COL16TO15(pal[c]);
+			if (c != col) *d = COL16TO15(c);
 			d++;
 		}
 		d += wbd;
 		s0 += wbs;
 	}
 }
-void Draw15Blit6(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs) { DrawCan15Blit6(pDrawCan15, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
+void Draw15Blit6(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan15Blit6(pDrawCan15, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
 
 // Draw 4-bit palleted image transparent to 15-bit destination canvas
-void DrawCan15Blit4(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs)
+void DrawCan15Blit4(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs)
 {
 	// width of source image
 	int ws = wbs*2;
@@ -6656,7 +6666,7 @@ void DrawCan15Blit4(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 	// copy image
 	int i;
 	wbd -= w;
-	u8 c;
+	u16 c;
 	int xxs;
 	for (; h > 0; h--)
 	{
@@ -6674,17 +6684,18 @@ void DrawCan15Blit4(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 				s++;
 			}
 			xxs++;
-			if (c != col) *d = COL16TO15(pal[c]);
+			c = pal[c];
+			if (c != col) *d = COL16TO15(c);
 			d++;
 		}
 		d += wbd;
 		s0 += wbs;
 	}
 }
-void Draw15Blit4(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs) { DrawCan15Blit4(pDrawCan15, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
+void Draw15Blit4(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan15Blit4(pDrawCan15, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
 
 // Draw 3-bit palleted image transparent to 15-bit destination canvas
-void DrawCan15Blit3(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs)
+void DrawCan15Blit3(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs)
 {
 	// width of source image
 	int ws = wbs*10/4;
@@ -6709,7 +6720,7 @@ void DrawCan15Blit3(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 	int i;
 	wbd -= w;
 	wbs /= 4;
-	u8 c;
+	u16 c;
 	int xxs;
 	for (; h > 0; h--)
 	{
@@ -6717,24 +6728,24 @@ void DrawCan15Blit3(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 		s = s0;
 		for (i = w; i > 0; i--)
 		{
-			c = (u8)((*s >> xxs) & 0x07);
+			c = pal[(*s >> xxs) & 0x07];
 			xxs += 3;
 			if (xxs == 30)
 			{
 				xxs = 0;
 				s++;
 			}
-			if (c != col) *d = COL16TO15(pal[c]);
+			if (c != col) *d = COL16TO15(c);
 			d++;
 		}
 		d += wbd;
 		s0 += wbs;
 	}
 }
-void Draw15Blit3(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs) { DrawCan15Blit3(pDrawCan15, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
+void Draw15Blit3(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan15Blit3(pDrawCan15, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
 
 // Draw 2-bit palleted image transparent to 15-bit destination canvas
-void DrawCan15Blit2(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs)
+void DrawCan15Blit2(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs)
 {
 	// width of source image
 	int ws = wbs*4;
@@ -6758,7 +6769,7 @@ void DrawCan15Blit2(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 	// copy image
 	int i;
 	wbd -= w;
-	u8 c;
+	u16 c;
 	int xxs;
 	for (; h > 0; h--)
 	{
@@ -6766,27 +6777,29 @@ void DrawCan15Blit2(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 		s = s0;
 		for (i = w; i > 0; i--)
 		{
-			c = (u8)((*s >> xxs) & 0x03);
+			c = pal[(*s >> xxs) & 0x03];
 			xxs -= 2;
 			if (xxs < 0)
 			{
 				xxs = 6;
 				s++;
 			}
-			if (c != col) *d = COL16TO15(pal[c]);
+			if (c != col) *d = COL16TO15(c);
 			d++;
 		}
 		d += wbd;
 		s0 += wbs;
 	}
 }
-void Draw15Blit2(int xd, int yd, const void* src, const u16* pal, u8 col, int xs, int ys, int w, int h, int wbs) { DrawCan15Blit2(pDrawCan15, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
+void Draw15Blit2(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan15Blit2(pDrawCan15, xd, yd, src, pal, col, xs, ys, w, h, wbs); }
 
 // Draw 1-bit image transparent with specific colors to 15-bit destination canvas
 //  col ... color of non-transparent pixel with value '1'
 void Draw15Blit1(int xd, int yd, const void* src, u16 col, int xs, int ys, int w, int h, int wbs) { DrawCan15Blit1(pDrawCan15, xd, yd, src, col, xs, ys, w, h, wbs); }
 
 #undef DRAWCAN_IMGLIMIT
+
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 
 // drawing function interface 16-bit
 const sDrawCanFnc DrawCan16Fnc = {
@@ -6895,7 +6908,9 @@ const sDrawCanFnc DrawCan16Fnc = {
 	.pDrawCanGetImg		= DrawCan16GetImg,		// Get image from canvas to buffer
 	// colors
 	.pColRgb		= Draw16ColRgb,			// convert RGB888 color to pixel color
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 	.pColRand		= Draw16ColRand,		// random color
+#endif
 	.col_black		= COL16_BLACK,			// black color
 	.col_blue		= COL16_BLUE,			// blue color
 	.col_green		= COL16_GREEN,			// green color
@@ -7032,7 +7047,9 @@ const sDrawCanFnc DrawCan15Fnc = {
 	.pDrawCanGetImg		= DrawCan15GetImg,		// Get image from canvas to buffer
 	// colors
 	.pColRgb		= Draw15ColRgb,			// convert RGB888 color to pixel color
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 	.pColRand		= Draw15ColRand,		// random color
+#endif
 	.col_black		= COL15_BLACK,			// black color
 	.col_blue		= COL15_BLUE,			// blue color
 	.col_green		= COL15_GREEN,			// green color
@@ -7061,5 +7078,7 @@ const sDrawCanFnc DrawCan15Fnc = {
 	.col_orange		= COL15_ORANGE,			// orange color
 	.col_brown		= COL15_BROWN,			// brown color
 };
+
+#endif // USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 
 #endif // USE_DRAWCAN

@@ -15,7 +15,12 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#include "../../global.h"	// globals
+// Note: The following 2 switches are not yet defined in the PicoLibSDK at this point, so the global.h file is included.
+#if USE_DISPHSTX && DISPHSTX_PICOSDK	// 0=use PicoLibSDK library, 1=use PicoSDK original Raspberry SDK library
+#include "disphstx_picolibsk.h"
+#else
+#include "../../global.h"
+#endif
 
 #if USE_DISPHSTX		// 1=use HSTX Display driver
 
@@ -331,15 +336,24 @@ slot_regap:
 	if ((hdbl == 1) && (colbits != 12))		// use single-pixel mode
 	{
 		walign = DISPHSTX_WALIGN_32;		// 32-bit width align
+
+#if DISPHSTX_USE_FORMAT_3
 		if (format == DISPHSTX_FORMAT_3) // 3 bits per pixel must be aligned to 10 pixels
 		{
 			if ((w % 10) != 0) return DISPHSTX_ERR_ALIGN; // align error
 		}
-		else if (format == DISPHSTX_FORMAT_6) // 6 bits per pixel must be aligned to 5 pixels
+		else
+#endif
+
+#if DISPHSTX_USE_FORMAT_6
+		if (format == DISPHSTX_FORMAT_6) // 6 bits per pixel must be aligned to 5 pixels
 		{
 			if ((w % 5) != 0) return DISPHSTX_ERR_ALIGN; // align error
 		}
-		else if ((w & (pixword-1)) != 0)	// if not 32-bit width align
+		else
+#endif
+
+		if ((w & (pixword-1)) != 0)	// if not 32-bit width align
 		{
 			walign = DISPHSTX_WALIGN_16;	// 16-bit width align
 			if ((w & (pixhalf-1)) != 0)	// if not 16-bit width align
@@ -641,14 +655,115 @@ int DispHstxVModeInitSimple(sDispHstxVModeState* vmode, const sDispHstxVModeTime
 	res = DispHstxVModeAddSlot(vmode, hdbl, vdbl, -1, format, buf, -1, pal, DispHstxDefVgaPal, font, fonth, 0, 0);
 	if (res != DISPHSTX_ERR_OK) return res;
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN 	// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 	sDispHstxVSlot* slot = &vmode->strip[0].slot[0];
 	if (slot->vcolor.graphmode)
 	{
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 		DispHstxLinkCan(slot, &DrawCan);
 		pDrawCan = &DrawCan;
-	}
 #endif
+
+		switch (slot->format)
+		{
+#if USE_DRAWCAN1 && (DISPHSTX_USE_FORMAT_1 || DISPHSTX_USE_FORMAT_1_PAL) // 1=use DrawCan1 1-bit functions, if use drawing canvas
+#if DISPHSTX_USE_FORMAT_1
+		case DISPHSTX_FORMAT_1:
+#endif
+#if DISPHSTX_USE_FORMAT_1_PAL
+		case DISPHSTX_FORMAT_1_PAL:
+#endif
+			DispHstxLinkCan(slot, &DrawCan1);
+			pDrawCan1 = &DrawCan1;
+			break;
+#endif
+
+#if USE_DRAWCAN2 && (DISPHSTX_USE_FORMAT_2 || DISPHSTX_USE_FORMAT_2_PAL) // 1=use DrawCan2 2-bit functions, if use drawing canvas
+#if DISPHSTX_USE_FORMAT_2
+		case DISPHSTX_FORMAT_2:
+#endif
+#if DISPHSTX_USE_FORMAT_2_PAL
+		case DISPHSTX_FORMAT_2_PAL:
+#endif
+			DispHstxLinkCan(slot, &DrawCan2);
+			pDrawCan2 = &DrawCan2;
+			break;
+#endif
+
+#if USE_DRAWCAN3 && (DISPHSTX_USE_FORMAT_3 || DISPHSTX_USE_FORMAT_3_PAL) // 1=use DrawCan3 3-bit functions, if use drawing canvas
+#if DISPHSTX_USE_FORMAT_3
+		case DISPHSTX_FORMAT_3:
+#endif
+#if DISPHSTX_USE_FORMAT_3_PAL
+		case DISPHSTX_FORMAT_3_PAL:
+#endif
+			DispHstxLinkCan(slot, &DrawCan3);
+			pDrawCan3 = &DrawCan3;
+			break;
+#endif
+
+#if USE_DRAWCAN4 && (DISPHSTX_USE_FORMAT_4 || DISPHSTX_USE_FORMAT_4_PAL) // 1=use DrawCan4 4-bit functions, if use drawing canvas
+#if DISPHSTX_USE_FORMAT_4
+		case DISPHSTX_FORMAT_4:
+#endif
+#if DISPHSTX_USE_FORMAT_4_PAL
+		case DISPHSTX_FORMAT_4_PAL:
+#endif
+			DispHstxLinkCan(slot, &DrawCan4);
+			pDrawCan4 = &DrawCan4;
+			break;
+#endif
+
+#if USE_DRAWCAN6 && (DISPHSTX_USE_FORMAT_6 || DISPHSTX_USE_FORMAT_6_PAL) // 1=use DrawCan6 6-bit functions, if use drawing canvas
+#if DISPHSTX_USE_FORMAT_6
+		case DISPHSTX_FORMAT_6:
+#endif
+#if DISPHSTX_USE_FORMAT_6_PAL
+		case DISPHSTX_FORMAT_6_PAL:
+#endif
+			DispHstxLinkCan(slot, &DrawCan6);
+			pDrawCan6 = &DrawCan6;
+			break;
+#endif
+
+#if USE_DRAWCAN8 && (DISPHSTX_USE_FORMAT_8 || DISPHSTX_USE_FORMAT_8_PAL) // 1=use DrawCan8 8-bit functions, if use drawing canvas
+#if DISPHSTX_USE_FORMAT_8
+		case DISPHSTX_FORMAT_8:
+#endif
+#if DISPHSTX_USE_FORMAT_8_PAL
+		case DISPHSTX_FORMAT_8_PAL:
+#endif
+			DispHstxLinkCan(slot, &DrawCan8);
+			pDrawCan8 = &DrawCan8;
+			break;
+#endif
+
+#if USE_DRAWCAN12 && DISPHSTX_USE_FORMAT_12 // 1=use DrawCan12 12-bit functions, if use drawing canvas
+		case DISPHSTX_FORMAT_12:
+			DispHstxLinkCan(slot, &DrawCan12);
+			pDrawCan12 = &DrawCan12;
+			break;
+#endif
+
+#if USE_DRAWCAN16 && DISPHSTX_USE_FORMAT_15 // 1=use DrawCan15/16 15/16-bit functions, if use drawing canvas
+		case DISPHSTX_FORMAT_15:
+			DispHstxLinkCan(slot, &DrawCan15);
+			pDrawCan15 = &DrawCan15;
+			break;
+#endif
+
+#if USE_DRAWCAN16 && DISPHSTX_USE_FORMAT_16 // 1=use DrawCan15/16 15/16-bit functions, if use drawing canvas
+		case DISPHSTX_FORMAT_16:
+			DispHstxLinkCan(slot, &DrawCan16);
+			pDrawCan16 = &DrawCan16;
+			break;
+#endif
+
+		default:
+			break;
+		}
+	}
+#endif // USE_DRAWCAN
 	return res;
 }
 
@@ -666,6 +781,9 @@ int DispHstxVModeInitSimple(sDispHstxVModeState* vmode, const sDispHstxVModeTime
 // Returns error code DISPHSTX_ERR_* (0=all OK)
 int DispHstxVModeStartSimple(int dispmode, void* buf, int vmodeinx, int hdbl, int vdbl, int format)
 {
+	// forbidden format
+	if (format == DISPHSTX_FORMAT_NONE) return DISPHSTX_ERR_FORMAT;
+
 	// auto-detect display mode
 	if (dispmode == DISPHSTX_DISPMODE_NONE)
 	{
@@ -755,7 +873,7 @@ void DispHstxPrePrepare(sDispHstxVModeState* v)
 	}
 }
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 // link slot to drawing canvas (fill-up canvas entries)
 // Supported graphics formats and their mapping to canvas format:
 //	DISPHSTX_FORMAT_1	-> DRAWCAN_FORMAT_1
@@ -777,56 +895,98 @@ void DispHstxLinkCan(const sDispHstxVSlot* slot, sDrawCan* can)
 {
 	switch (slot->format)
 	{
+#if USE_DRAWCAN1 && (DISPHSTX_USE_FORMAT_1 || DISPHSTX_USE_FORMAT_1_PAL) // 1=use DrawCan1 1-bit functions, if use drawing canvas
+#if DISPHSTX_USE_FORMAT_1
 	case DISPHSTX_FORMAT_1:
+#endif
+#if DISPHSTX_USE_FORMAT_1_PAL
 	case DISPHSTX_FORMAT_1_PAL:
+#endif
 		can->format = DRAWCAN_FORMAT_1;
 		can->colbit = 1;
 		break;
+#endif
 
+#if USE_DRAWCAN2 && (DISPHSTX_USE_FORMAT_2 || DISPHSTX_USE_FORMAT_2_PAL) // 1=use DrawCan2 2-bit functions, if use drawing canvas
+#if DISPHSTX_USE_FORMAT_2
 	case DISPHSTX_FORMAT_2:
+#endif
+#if DISPHSTX_USE_FORMAT_2_PAL
 	case DISPHSTX_FORMAT_2_PAL:
+#endif
 		can->format = DRAWCAN_FORMAT_2;
 		can->colbit = 2;
 		break;
+#endif
 
+#if USE_DRAWCAN3 && (DISPHSTX_USE_FORMAT_3 || DISPHSTX_USE_FORMAT_3_PAL) // 1=use DrawCan3 3-bit functions, if use drawing canvas
+#if DISPHSTX_USE_FORMAT_3
 	case DISPHSTX_FORMAT_3:
+#endif
+#if DISPHSTX_USE_FORMAT_3_PAL
 	case DISPHSTX_FORMAT_3_PAL:
+#endif
 		can->format = DRAWCAN_FORMAT_3;
 		can->colbit = 3;
 		break;
+#endif
 
+#if USE_DRAWCAN4 && (DISPHSTX_USE_FORMAT_4 || DISPHSTX_USE_FORMAT_4_PAL) // 1=use DrawCan4 4-bit functions, if use drawing canvas
+#if DISPHSTX_USE_FORMAT_4
 	case DISPHSTX_FORMAT_4:
+#endif
+#if DISPHSTX_USE_FORMAT_4_PAL
 	case DISPHSTX_FORMAT_4_PAL:
+#endif
 		can->format = DRAWCAN_FORMAT_4;
 		can->colbit = 4;
 		break;
+#endif
 
+#if USE_DRAWCAN6 && (DISPHSTX_USE_FORMAT_6 || DISPHSTX_USE_FORMAT_6_PAL) // 1=use DrawCan6 6-bit functions, if use drawing canvas
+#if DISPHSTX_USE_FORMAT_6
 	case DISPHSTX_FORMAT_6:
+#endif
+#if DISPHSTX_USE_FORMAT_6_PAL
 	case DISPHSTX_FORMAT_6_PAL:
+#endif
 		can->format = DRAWCAN_FORMAT_6;
 		can->colbit = 6;
 		break;
+#endif
 
+#if USE_DRAWCAN8 && (DISPHSTX_USE_FORMAT_8 || DISPHSTX_USE_FORMAT_8_PAL) // 1=use DrawCan8 8-bit functions, if use drawing canvas
+#if DISPHSTX_USE_FORMAT_8
 	case DISPHSTX_FORMAT_8:
+#endif
+#if DISPHSTX_USE_FORMAT_8_PAL
 	case DISPHSTX_FORMAT_8_PAL:
+#endif
 		can->format = DRAWCAN_FORMAT_8;
 		can->colbit = 8;
 		break;
+#endif
 
+#if USE_DRAWCAN12 && DISPHSTX_USE_FORMAT_12 // 1=use DrawCan12 12-bit functions, if use drawing canvas
 	case DISPHSTX_FORMAT_12:
 		can->format = DRAWCAN_FORMAT_12;
 		can->colbit = 12;
 		break;
+#endif
 
+#if USE_DRAWCAN16 && DISPHSTX_USE_FORMAT_15 // 1=use DrawCan15/16 15/16-bit functions, if use drawing canvas
 	case DISPHSTX_FORMAT_15:
 		can->format = DRAWCAN_FORMAT_15;
 		can->colbit = 15;
 		break;
+#endif
 
+#if USE_DRAWCAN16 && DISPHSTX_USE_FORMAT_16 // 1=use DrawCan15/16 15/16-bit functions, if use drawing canvas
 	case DISPHSTX_FORMAT_16:
 		can->format = DRAWCAN_FORMAT_16;
 		can->colbit = 16;
 		break;
+#endif
 
 	default:
 		return;
@@ -861,7 +1021,11 @@ void DispHstxLinkCan(const sDispHstxVSlot* slot, sDrawCan* can)
 	
 	can->buf = (u8*)slot->buf;
 	can->font = FONT;
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 	can->drawfnc = DrawCanFncList[can->format];
+#else
+	can->drawfnc = NULL;
+#endif
 }
 #endif
 
@@ -922,7 +1086,7 @@ void DispHstxSelDispMode(int dispmode, sDispHstxVModeState* vmode)
 
 	// setup CLK_HSTX to PLL_SYS
 #if DISPHSTX_PICOSDK
-	clock_configure(clk_hstx, clksrc_pll_sys, vmode->vtime.sysclk/clkdiv, vmode->vtime.sysclk/clkdiv);
+	clock_configure(clk_hstx, CLOCKS_CLK_SYS_CTRL_SRC_VALUE_CLKSRC_CLK_SYS_AUX, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS, vmode->vtime.sysclk*1000/clkdiv, vmode->vtime.sysclk*1000/clkdiv);
 #else
 	ClockSetup(CLK_HSTX, CLK_PLL_SYS, 0, 0);
 #endif
@@ -934,7 +1098,7 @@ void DispHstxSelDispMode(int dispmode, sDispHstxVModeState* vmode)
 
 	// setup CLK_HSTX
 #if DISPHSTX_PICOSDK
-	clock_configure(clk_hstx, clksrc_pll_sys, vmode->vtime.sysclk*1000/clkdiv, vmode->vtime.sysclk*1000);
+	clock_configure(clk_hstx, CLOCKS_CLK_SYS_CTRL_SRC_VALUE_CLKSRC_CLK_SYS_AUX, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS, vmode->vtime.sysclk*1000/clkdiv, vmode->vtime.sysclk*1000);
 #else
 	ClockSetup(CLK_HSTX, CLK_PLL_SYS, vmode->vtime.sysclk*1000/clkdiv, vmode->vtime.sysclk*1000);
 #endif
@@ -953,13 +1117,14 @@ void DispHstxSelDispMode(int dispmode, sDispHstxVModeState* vmode)
 
 // exchange video mode, without terminating current mode
 // - HSTX DVI/VGA mode must be started using DispHstxDviStart()/DispHstxVgaStart()
+// - VGA palettes must be re-generated (use DispHstxVgaPal2())
 void DispHstxExchange(sDispHstxVModeState* vmode)
 {
 #if DISPHSTX_USE_DVI		// 1=use DVI (HDMI) support (0=or only VGA)
 	if (DispHstxDispMode == DISPHSTX_DISPMODE_DVI)
 	{
 		DispHstxDviPrepare(vmode);
-		DispHstxWaitVSync();
+//		DispHstxWaitVSync();
 		DispHstxDviExchange(vmode);
 	}
 #endif
@@ -968,7 +1133,7 @@ void DispHstxExchange(sDispHstxVModeState* vmode)
 	if (DispHstxDispMode == DISPHSTX_DISPMODE_VGA)
 	{
 		DispHstxVgaPrepare(vmode);
-		DispHstxWaitVSync();
+//		DispHstxWaitVSync();
 		DispHstxVgaExchange(vmode);
 	}
 #endif

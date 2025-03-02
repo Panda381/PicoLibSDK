@@ -14,9 +14,14 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#include "../../global.h"	// globals
+// Note: The following 2 switches are not yet defined in the PicoLibSDK at this point, so the global.h file is included.
+#if USE_DISPHSTX && DISPHSTX_PICOSDK	// 0=use PicoLibSDK library, 1=use PicoSDK original Raspberry SDK library
+#include "disphstx_picolibsk.h"
+#else
+#include "../../global.h"
+#endif
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN	&& USE_DRAWCAN1		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #include "../../_font/_include.h"
 #include "../inc/lib_text.h"
@@ -64,7 +69,8 @@ sDrawCan DrawCan1 = {
 	.font = FONT,			// const u8* font;	// pointer to current font (256 characters in cells of width 8 pixels, 1-bit format)
 
 	// drawing functions interfaces
-	.drawfnc = &DrawCan1Fnc,	// const struct sDrawCanFnc_* drawfnc; // drawing functions
+	// - Don't set the pointer to the function table, it would increase the size of the Loader
+	.drawfnc = NULL, //&DrawCan1Fnc,	// const struct sDrawCanFnc_* drawfnc; // drawing functions
 };
 
 // current drawing canvas for 1-bit format
@@ -82,8 +88,10 @@ int Draw1MaxWidth(int pitch) { return pitch*8; }
 // convert RGB888 color to 1-bit pixel color Y1
 u16 Draw1ColRgb(u8 r, u8 g, u8 b) { return COLOR1(r,g,b); }
 
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 // random 1-bit pixel color Y1
 u16 Draw1ColRand() { return COL1_RANDOM; }
+#endif
 
 // ----------------------------------------------------------------------------
 //                            Clear canvas
@@ -5535,6 +5543,8 @@ void Draw1GetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wb
 
 #undef DRAWCAN_IMGLIMIT
 
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
+
 // drawing function interface
 const sDrawCanFnc DrawCan1Fnc = {
 	.pDrawPitch		= Draw1Pitch,			// calculate pitch of graphics line from image width
@@ -5642,7 +5652,9 @@ const sDrawCanFnc DrawCan1Fnc = {
 	.pDrawCanGetImg		= DrawCan1GetImg,		// Get image from canvas to buffer
 	// colors
 	.pColRgb		= Draw1ColRgb,			// convert RGB888 color to pixel color
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 	.pColRand		= Draw1ColRand,			// random color
+#endif
 	.col_black		= COL1_BLACK,			// black color
 	.col_blue		= COL1_BLACK,			// blue color
 	.col_green		= COL1_WHITE,			// green color
@@ -5671,5 +5683,7 @@ const sDrawCanFnc DrawCan1Fnc = {
 	.col_orange		= COL1_WHITE,			// orange color
 	.col_brown		= COL1_WHITE,			// brown color
 };
+
+#endif // USE_DRAWCAN0
 
 #endif // USE_DRAWCAN

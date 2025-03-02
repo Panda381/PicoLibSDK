@@ -14,18 +14,12 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-
-
-
-// =======================================================================================
-//
-//  The content of this file is only a prepared outline, not yet functional - do not use!
-//
-// =======================================================================================
-
-
-
-#include "../../global.h"	// globals
+// Note: The following 2 switches are not yet defined in the PicoLibSDK at this point, so the global.h file is included.
+#if USE_DISPHSTX && DISPHSTX_PICOSDK	// 0=use PicoLibSDK library, 1=use PicoSDK original Raspberry SDK library
+#include "disphstx_picolibsk.h"
+#else
+#include "../../global.h"
+#endif
 
 #if USE_DISPHSTX && DISPHSTX_PICOSDK
 
@@ -70,6 +64,16 @@ void GPIO_ResetMask(gpio_mask_t mask)
 		if ((mask & 1) != 0) GPIO_Reset(i);
 		mask >>= 1;
 	}
+}
+
+// initialize GPIO pin base function masked (bit '1' to initialize this pin)
+// To use pin mask in range (first..last), use function RangeMask.
+void GPIO_InitMask(gpio_mask_t mask)
+{
+	GPIO_ResetMask(mask);		// reset pins
+	GPIO_DirInMask(mask);		// disable output
+	GPIO_ClrMask(mask);		// set output to LOW
+	GPIO_FncMask(mask, GPIO_FNC_SIO); // set function, reset overrides, reset pad setup
 }
 
 // set DMA config, without trigger
@@ -306,13 +310,13 @@ u32 PllSetFreq(int pll, u32 freq)
 void ClockPllSysFreqVolt(u32 freq)
 {
 	// get current frequency in kHz
-	u32 old = configured_freq[clk_sys]/1000;
+	u32 old = clock_get_hz(clk_sys)/1000;
 
 	// check current frequency
 	if (freq == old) return;
 
 	// temporary reconnect CLK_SYS to PLL_USB
-	clock_configure(clk_sys, clksrc_pll_usb, 0, 48000000, 48000000);
+	clock_configure(clk_sys, CLOCKS_CLK_SYS_CTRL_SRC_VALUE_CLKSRC_CLK_SYS_AUX, CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB, 48000000, 48000000);
 
 	// raise system clock
 	if (freq > old)
@@ -332,7 +336,7 @@ void ClockPllSysFreqVolt(u32 freq)
 	}
 
 	// reconnect CLK_SYS back to PLL_SYS
-	clock_configure(clk_sys, clksrc_pll_sys, 0, freq*1000, freq*1000);
+	clock_configure(clk_sys, CLOCKS_CLK_SYS_CTRL_SRC_VALUE_CLKSRC_CLK_SYS_AUX, CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS, freq*1000, freq*1000);
 }
 
 #endif // USE_DISPHSTX && DISPHSTX_PICOSDK

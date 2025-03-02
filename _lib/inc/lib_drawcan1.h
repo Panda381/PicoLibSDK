@@ -14,7 +14,7 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN && USE_DRAWCAN1		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #ifndef _LIB_DRAWCAN1_H
 #define _LIB_DRAWCAN1_H
@@ -40,8 +40,10 @@ INLINE u8* Draw1Buf() { return pDrawCan1->buf; }
 // convert RGB888 color to 1-bit pixel color Y1
 u16 Draw1ColRgb(u8 r, u8 g, u8 b);
 
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 // random 1-bit pixel color Y1
 u16 Draw1ColRand();
+#endif
 
 // 1-bit colors, format Y1 (components are 0..255, levels 0, 255)
 #define COLOR1(r,g,b)	( ((r)+(g)+(b)) / 384 )
@@ -494,8 +496,10 @@ void Draw1BlitSubs(int xd, int yd, const void* src, int xs, int ys, int w, int h
 void DrawCan1GetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 void Draw1GetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 // drawing function interface
 extern const sDrawCanFnc DrawCan1Fnc;
+#endif
 
 #ifdef __cplusplus
 }

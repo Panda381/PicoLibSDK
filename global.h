@@ -17,7 +17,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-#define SDK_VER		204	// SDK library version in hundredths
+#define SDK_VER		205	// SDK library version in hundredths
 
 // ----------------------------------------------------------------------------
 //                               Attributes
@@ -411,7 +411,7 @@ extern const u8* __data_end__; // end of initialize .data section
 //                 Colors (must be used after "config.h")
 // ----------------------------------------------------------------------------
 
-#if !USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if !USE_DRAWCAN		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 // 4-bit color YRGB1111
 #if COLBITS == 4

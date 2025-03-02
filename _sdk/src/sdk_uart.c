@@ -329,8 +329,8 @@ NOINLINE u32 UART_Print(int uart, const char* fmt, ...)
 
 #if USE_UART_STDIO
 //#define UART_STDIO_PORT	0	// UART stdio port 0 or 1
-//#define UART_STDIO_TX		0	// UART stdio TX GPIO pin
-//#define UART_STDIO_RX		1	// UART stdio RX GPIO pin
+//#define UART_STDIO_TX		0	// UART stdio TX GPIO pin (function mode UART or AUX is auto-selected)
+//#define UART_STDIO_RX		1	// UART stdio RX GPIO pin (function mode UART or AUX is auto-selected)
 //#define UART_STDIO_TXBUF	128	// size of transmit ring buffer of UART stdio
 //#define UART_STDIO_RXBUF	128	// size of receive ring buffer of UART stdio
 //#define UART_STDIO_TXSPIN	28	// transmitter spinlock 0..31 (-1 = not used)
@@ -451,8 +451,13 @@ void UartStdioInit(void)
 	UART_InitDef(UART_STDIO_PORT);
 
 	// set TX and RX pins
+#if RP2040
 	GPIO_Fnc(UART_STDIO_TX, GPIO_FNC_UART);
 	GPIO_Fnc(UART_STDIO_RX, GPIO_FNC_UART);
+#else
+	GPIO_Fnc(UART_STDIO_TX, (((UART_STDIO_TX) & B1) == 0) ? GPIO_FNC_UART : GPIO_FNC_AUX);
+	GPIO_Fnc(UART_STDIO_RX, (((UART_STDIO_RX) & B1) == 0) ? GPIO_FNC_UART : GPIO_FNC_AUX);
+#endif
 
 	// set UART handler
 	SetHandler(IRQ_UART0 + UART_STDIO_PORT, UartStdioHandler);

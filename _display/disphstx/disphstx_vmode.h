@@ -17,7 +17,7 @@
 
 #if USE_DISPHSTX		// 1=use HSTX Display driver
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 #include "../../_lib/inc/lib_drawcan.h"
 #endif
 
@@ -324,6 +324,7 @@ void DispHstxVModeInitTime(sDispHstxVModeState* vmode, const sDispHstxVModeTime*
 #define DISPHSTX_ERR_PATDIM		14	// pattern format requires dimension in pitch and fonth parameters
 #define DISPHSTX_ERR_ATTRBUF		15	// memory error creating attribute buffer
 #define DISPHSTX_ERR_PITCHALIGN		16	// pitch must be aligned to 32-bit word
+#define DISPHSTX_ERR_FORMAT		17	// format is not supported
 
 // add empty videomode strip to videomode state descriptor
 //  vmode ... videomode state descriptor (must not currently be used)
@@ -405,7 +406,7 @@ int DispHstxVModeStartSimple(int dispmode, void* buf, int vmodeinx, int hdbl, in
 // - adds missing slots
 void DispHstxPrePrepare(sDispHstxVModeState* v);
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 // link slot to drawing canvas (fill-up canvas entries)
 // Supported graphics formats and their mapping to canvas format:
 //	DISPHSTX_FORMAT_1	-> DRAWCAN_FORMAT_1
@@ -436,6 +437,7 @@ void DispHstxSelDispMode(int dispmode, sDispHstxVModeState* vmode);
 
 // exchange video mode, without terminating current mode
 // - HSTX DVI/VGA mode must be started using DispHstxDviStart()/DispHstxVgaStart()
+// - VGA palettes must be re-generated (use DispHstxVgaPal2())
 void DispHstxExchange(sDispHstxVModeState* vmode);
 
 // re-select display mode with old videomode

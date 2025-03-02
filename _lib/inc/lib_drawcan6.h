@@ -14,7 +14,7 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN	&& USE_DRAWCAN6		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #ifndef _LIB_DRAWCAN6_H
 #define _LIB_DRAWCAN6_H
@@ -40,8 +40,10 @@ INLINE u8* Draw6Buf() { return pDrawCan6->buf; }
 // convert RGB888 color to 6-bit pixel color RGB222
 u16 Draw6ColRgb(u8 r, u8 g, u8 b);
 
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 // random 6-bit pixel color RGB222
 u16 Draw6ColRand();
+#endif
 
 // 6-bit colors, format RGB222 (components are 0..255)
 #define COLOR6(r,g,b)	((u8)( (((r)&0xc0)>>2) | (((g)&0xc0)>>4) | (((b)&0xc0)>>6) ))
@@ -523,8 +525,10 @@ void Draw6BlitSubs(int xd, int yd, const void* src, int xs, int ys, int w, int h
 void DrawCan6GetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 void Draw6GetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 // drawing function interface
 extern const sDrawCanFnc DrawCan6Fnc;
+#endif
 
 #ifdef __cplusplus
 }

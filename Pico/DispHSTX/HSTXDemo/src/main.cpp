@@ -27,9 +27,9 @@
 void DispVModeInfo()
 {
 	// Draw border marks (to check image clipping)
-	DrawTextBg("[*]", -1, 0, 0, COL_WHITE, COL_BLACK, 1, 1);			// left-top mark
-	DrawTextBg("[*]", -1, pDrawCan->w - 3*8, 0, COL_WHITE, COL_BLACK, 1, 1);	// right-top mark
-	DrawTextBg("[*]", -1, pDrawCan->w - 3*8, pDrawCan->h - 16, COL_WHITE, COL_BLACK, 1, 1); // right-bottom mark
+	DrawTextBg("[*]", 0, 0, COL_WHITE, COL_BLACK);			// left-top mark
+	DrawTextBg("[*]", pDrawCan->w - 3*8, 0, COL_WHITE, COL_BLACK);	// right-top mark
+	DrawTextBg("[*]", pDrawCan->w - 3*8, pDrawCan->h - 16, COL_WHITE, COL_BLACK); // right-bottom mark
 
 	// Draw videomode info
 	char tt[100];
@@ -38,11 +38,11 @@ void DispVModeInfo()
 		pDrawCan->w, pDrawCan->h, pDrawCan->colbit,			// videomode size and bits
 		(ClockGetHz(CLK_SYS)+500000)/1000000,				// system clock
 		pDrawCan->wb * pDrawCan->h);					// memory size
-	DrawTextBg(tt, -1, 0, pDrawCan->h-2*16, COL_GREEN, COL_BLACK, 1, 1);
+	DrawTextBg(tt, 0, pDrawCan->h-2*16, COL_GREEN, COL_BLACK);
 
 	MemPrint(tt, 100, "vreg=%.2fV clkdiv=%d tmp=%d`C",
 		VregVoltageFloat(), FlashClkDiv(), (int)(ADC_Temp()+0.5));
-	DrawTextBg(tt, -1, 0, pDrawCan->h-1*16, COL_GREEN, COL_BLACK, 1, 1);
+	DrawTextBg(tt, 0, pDrawCan->h-1*16, COL_GREEN, COL_BLACK);
 }
 #endif
 
@@ -68,7 +68,7 @@ int main()
 
 		// draw text message
 		const char msg[] = "Hello DispHSTX!";
-		DrawText(msg, -1, (DrawWidth() - StrLen(msg)*8*3)/2, (DrawHeight() - 16*4)/2, COL_YELLOW, 3, 4);
+		DrawTextSize(msg, -1, (DrawWidth() - StrLen(msg)*8*3)/2, (DrawHeight() - 16*4)/2, COL_YELLOW, 3, 4);
 
 #if DISPVMODEINFO	// 1=display videomode info (debug)
 		// Display videomode info (debug)
@@ -81,7 +81,7 @@ int main()
 	// ==== Draw image
 
 		// draw logo image
-		DrawImg(0, 0, ImgLogo, 0, 0, 640, 480, 640);
+		DrawImg(ImgLogo, 0, 0, 0, 0, 640, 480, 640);
 
 #if DISPVMODEINFO	// 1=display videomode info (debug)
 		// Display videomode info (debug)
@@ -115,19 +115,19 @@ int main()
 			RAND(); DrawRound(x, y, w, col, RandU8());
 
 			// Draw circle
-			RAND(); DrawCircle(x, y, w, col, RandU8());
+			RAND(); DrawCircleArc(x, y, w, col, RandU8());
 
 			// Draw ring
-			RAND(); DrawRing(x, y, w, h, col, RandU8());
+			RAND(); DrawRingMask(x, y, w, h, col, RandU8());
 
 			// Draw triangle
 			RAND(); DrawTriangle(x, y, x+w-50, y+h-50, x+h-50, y+w-50, col);
 
 			// Draw character
-			RAND(); DrawChar(RandU8(), x, y, col, RandU8MinMax(1,2), RandU8MinMax(1,2));
+			RAND(); DrawCharSize(RandU8(), x, y, col, RandU8MinMax(1,2), RandU8MinMax(1,2));
 
 			// Draw text
-			RAND(); DrawText("DispHSTX", 8, x, y, col, 1, 1);
+			RAND(); DrawText("DispHSTX", x, y, col);
 
 			// Draw ellipse
 			RAND(); DrawEllipse(x, y, w, h, col, RandU8());

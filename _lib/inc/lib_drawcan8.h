@@ -14,7 +14,7 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN && USE_DRAWCAN8		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #ifndef _LIB_DRAWCAN8_H
 #define _LIB_DRAWCAN8_H
@@ -40,8 +40,10 @@ INLINE u8* Draw8Buf() { return pDrawCan8->buf; }
 // convert RGB888 color to 8-bit pixel color RGB332
 u16 Draw8ColRgb(u8 r, u8 g, u8 b);
 
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 // random 8-bit pixel color RGB332
 u16 Draw8ColRand();
+#endif
 
 // 8-bit colors, format RGB332 (components are 0..255)
 #define COLOR8(r,g,b)	((u8)( ((r)&0xe0) | (((g)&0xe0)>>3) | (((b)&0xc0)>>6) ))
@@ -523,8 +525,10 @@ void Draw8BlitSubs(int xd, int yd, const void* src, int xs, int ys, int w, int h
 void DrawCan8GetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 void Draw8GetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 // drawing function interface
 extern const sDrawCanFnc DrawCan8Fnc;
+#endif
 
 #ifdef __cplusplus
 }

@@ -18,8 +18,7 @@ int FASTCODE NOFLASH(main)()
 #endif
 
 	// initialize display mode 320x240
-	// - Only DVI output is supported, as VGA rendering is too slow for this purpose.
-	DispVMode320x240x16(DISPHSTX_DISPMODE_DVI, FrameBuf);
+	DispVMode320x240x16(0, FrameBuf);
 
 	float a = 0.2f;
 	float b = 0.8f;
@@ -69,7 +68,7 @@ int FASTCODE NOFLASH(main)()
 		// FPS
 		t2 = Time();
 		MemPrint(buf, 20, "%.2f ", 1000000.0/(t2-t));
-		DrawTextBg(buf, -1, 0, 0, COL_WHITE, COL_BLACK, 1, 1);
+		DrawTextBg(buf, 0, 0, COL_WHITE, COL_BLACK);
 //		WaitMs(100);
 		t = Time();
 		}

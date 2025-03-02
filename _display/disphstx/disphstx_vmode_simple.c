@@ -15,11 +15,53 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#include "../../global.h"	// globals
+// Note: The following 2 switches are not yet defined in the PicoLibSDK at this point, so the global.h file is included.
+#if USE_DISPHSTX && DISPHSTX_PICOSDK	// 0=use PicoLibSDK library, 1=use PicoSDK original Raspberry SDK library
+#include "disphstx_picolibsk.h"
+#else
+#include "../../global.h"
+#endif
 
 #if USE_DISPHSTX		// 1=use HSTX Display driver
 
 #include "disphstx.h"
+
+// Alternate definitions so we don't have to condition each row separately. 
+#if !DISPHSTX_USE_FORMAT_1_PAL
+#define DISPHSTX_FORMAT_1_PAL	DISPHSTX_FORMAT_NONE
+#endif
+
+#if !DISPHSTX_USE_FORMAT_2_PAL
+#define DISPHSTX_FORMAT_2_PAL	DISPHSTX_FORMAT_NONE
+#endif
+
+#if !DISPHSTX_USE_FORMAT_3_PAL
+#define DISPHSTX_FORMAT_3_PAL	DISPHSTX_FORMAT_NONE
+#endif
+
+#if !DISPHSTX_USE_FORMAT_4_PAL
+#define DISPHSTX_FORMAT_4_PAL	DISPHSTX_FORMAT_NONE
+#endif
+
+#if !DISPHSTX_USE_FORMAT_6_PAL
+#define DISPHSTX_FORMAT_6_PAL	DISPHSTX_FORMAT_NONE
+#endif
+
+#if !DISPHSTX_USE_FORMAT_8
+#define DISPHSTX_FORMAT_8	DISPHSTX_FORMAT_NONE
+#endif
+
+#if !DISPHSTX_USE_FORMAT_12
+#define DISPHSTX_FORMAT_12	DISPHSTX_FORMAT_NONE
+#endif
+
+#if !DISPHSTX_USE_FORMAT_15
+#define DISPHSTX_FORMAT_15	DISPHSTX_FORMAT_NONE
+#endif
+
+#if !DISPHSTX_USE_FORMAT_16
+#define DISPHSTX_FORMAT_16	DISPHSTX_FORMAT_NONE
+#endif
 
 // Start simple display graphics videomodes, supported by the DrawCan drawing library
 //  dispmode ... display mode DISPHSTX_DISPMODE_DVI or DISPHSTX_DISPMODE_VGA, set to DISPHSTX_DISPMODE_NONE or 0 to auto-detect display mode selection

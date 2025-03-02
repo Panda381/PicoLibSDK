@@ -14,9 +14,14 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#include "../../global.h"	// globals
+// Note: The following 2 switches are not yet defined in the PicoLibSDK at this point, so the global.h file is included.
+#if USE_DISPHSTX && DISPHSTX_PICOSDK	// 0=use PicoLibSDK library, 1=use PicoSDK original Raspberry SDK library
+#include "disphstx_picolibsk.h"
+#else
+#include "../../global.h"
+#endif
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN	&& USE_DRAWCAN12	// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #include "../../_font/_include.h"
 #include "../inc/lib_text.h"
@@ -64,7 +69,8 @@ sDrawCan DrawCan12 = {
 	.font = FONT,			// const u8* font;	// pointer to current font (256 characters in cells of width 8 pixels, 1-bit format)
 
 	// drawing functions interfaces
-	.drawfnc = &DrawCan12Fnc,	// const struct sDrawCanFnc_* drawfnc; // drawing functions
+	// - Don't set the pointer to the function table, it would increase the size of the Loader
+	.drawfnc = NULL, // &DrawCan12Fnc,	// const struct sDrawCanFnc_* drawfnc; // drawing functions
 };
 
 // current drawing canvas for 12-bit format
@@ -82,8 +88,10 @@ int Draw12MaxWidth(int pitch) { return pitch*2/3; }
 // convert RGB888 color to 12-bit pixel color RGB444
 u16 Draw12ColRgb(u8 r, u8 g, u8 b) { return COLOR12(r, g, b); }
 
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 // random 12-bit pixel color RGB444
 u16 Draw12ColRand() { return COL12_RANDOM; }
+#endif
 
 // ----------------------------------------------------------------------------
 //                            Clear canvas
@@ -5336,6 +5344,8 @@ void Draw12GetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int w
 
 #undef DRAWCAN_IMGLIMIT
 
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
+
 // drawing function interface
 const sDrawCanFnc DrawCan12Fnc = {
 	.pDrawPitch		= Draw12Pitch,			// calculate pitch of graphics line from image width
@@ -5443,7 +5453,9 @@ const sDrawCanFnc DrawCan12Fnc = {
 	.pDrawCanGetImg		= DrawCan12GetImg,		// Get image from canvas to buffer
 	// colors
 	.pColRgb		= Draw12ColRgb,			// convert RGB888 color to pixel color
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 	.pColRand		= Draw12ColRand,		// random color
+#endif
 	.col_black		= COL12_BLACK,			// black color
 	.col_blue		= COL12_BLUE,			// blue color
 	.col_green		= COL12_GREEN,			// green color
@@ -5472,5 +5484,7 @@ const sDrawCanFnc DrawCan12Fnc = {
 	.col_orange		= COL12_ORANGE,			// orange color
 	.col_brown		= COL12_BROWN,			// brown color
 };
+
+#endif // USE_DRAWCAN0
 
 #endif // USE_DRAWCAN

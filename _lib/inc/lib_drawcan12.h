@@ -14,7 +14,7 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#if USE_DRAWCAN		// use drawing canvas (lib_drawcan*.c, lib_drawcan.h)
+#if USE_DRAWCAN	&& USE_DRAWCAN12	// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #ifndef _LIB_DRAWCAN12_H
 #define _LIB_DRAWCAN12_H
@@ -40,8 +40,10 @@ INLINE u8* Draw12Buf() { return pDrawCan12->buf; }
 // convert RGB888 color to 12-bit pixel color RGB444
 u16 Draw12ColRgb(u8 r, u8 g, u8 b);
 
+#if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)
 // random 12-bit pixel color RGB444
 u16 Draw12ColRand();
+#endif
 
 // 12-bit colors, format RGB444 (components are 0..255)
 #define COLOR12(r,g,b)	((u16)( (((r)&0xf0)<<4) | ((g)&0xf0) | (((b)&0xf0)>>4) ))
@@ -523,8 +525,10 @@ void Draw12BlitSubs(int xd, int yd, const void* src, int xs, int ys, int w, int 
 void DrawCan12GetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 void Draw12GetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 // drawing function interface
 extern const sDrawCanFnc DrawCan12Fnc;
+#endif
 
 #ifdef __cplusplus
 }
