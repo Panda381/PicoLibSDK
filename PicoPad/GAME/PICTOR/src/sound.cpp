@@ -30,18 +30,18 @@ const u8* SndSamp[SND_NUM] = {
 };
 
 const int SndLen[SND_NUM] = {
-	count_of(Music1Snd)*2,
-	count_of(Music2Snd)*2,
-	count_of(Music3Snd)*2,
-	count_of(Music4Snd)*2,
-	count_of(Music5Snd)*2,
-	count_of(Music6Snd)*2,
-	count_of(Music7Snd)*2,
-	count_of(Music8Snd)*2,
-	count_of(Music9Snd)*2,
-	count_of(Music10Snd)*2,
-	count_of(Music11Snd)*2,
-	count_of(Music12Snd)*2,
+	count_of(Music1Snd),
+	count_of(Music2Snd),
+	count_of(Music3Snd),
+	count_of(Music4Snd),
+	count_of(Music5Snd),
+	count_of(Music6Snd),
+	count_of(Music7Snd),
+	count_of(Music8Snd),
+	count_of(Music9Snd),
+	count_of(Music10Snd),
+	count_of(Music11Snd),
+	count_of(Music12Snd),
 };
 
 // play music
@@ -51,7 +51,7 @@ void MusicStart()
 		// output PWM sound (sound must be PCM 8-bit mono 22050Hz)
 		//  chan = channel 0..
 		//  snd = pointer to sound
-		//  len = length of sound in number of samples (for ADPCM number of samples = 2 * number of bytes)
+		//  size = length of sound in bytes
 		//  rep = True to repeat sample
 		//  speed = relative speed (1=normal; SNDFORM_ADPCM must have speed = 1)
 		//  volume = volume (1=normal)

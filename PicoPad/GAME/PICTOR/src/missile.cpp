@@ -10,19 +10,19 @@
 // actor missile templates
 const sMissileTemp MissileTemp[ACT_NUM] = {
 	// pal			img		sound		soundlen,		w		wall		h		trans			phasenum	reload	hits		bounce
-	{ ShurikenImg_Pal,	ShurikenImg,	SwingSnd,	2*count_of(SwingSnd),	SHURIKEN_W,	SHURIKEN_WALL,	SHURIKEN_H,	SHURIKEN_TRANS,		4,		30,	10,		True,	},
-	{ SeedImg_Pal,		SeedImg,	MinigunSnd,	2*count_of(MinigunSnd),	SEED_W,		SEED_WALL,	SEED_H,		SEED_TRANS,		1,		6,	10,		True,	},
-	{ BerryImg_Pal,		BerryImg,	GunSnd,		2*count_of(GunSnd),	BERRY_W,	BERRY_WALL,	BERRY_H,	BERRY_TRANS,		1,		13,	10,		True,	},
-	{ SandballImg_Pal,	SandballImg,	NoiseSnd,	2*count_of(NoiseSnd),	SANDBALL_W,	SANDBALL_WALL,	SANDBALL_H,	SANDBALL_TRANS,		2,		8,	10,		False,	},
-	{ FlashImg_Pal,		FlashImg,	ElectricitySnd,	2*count_of(ElectricitySnd), FLASH_W,	FLASH_WALL,	FLASH_H,	FLASH_TRANS,		2,		16,	1,		False,	},
-	{ CrystalImg_Pal,	CrystalImg,	GlassSnd,	2*count_of(GlassSnd), 	CRYSTAL_W,	CRYSTAL_WALL,	CRYSTAL_H,	CRYSTAL_TRANS,		1,		20,	2,		True,	},
-	{ FireImg_Pal,		FireImg,	FlameSnd,	2*count_of(FlameSnd), 	FIRE_W,		FIRE_WALL,	FIRE_H,		FIRE_TRANS,		4,		22,	2,		False,	},
-	{ ScreamImg_Pal,	ScreamImg,	ScreamingSnd,	2*count_of(ScreamingSnd), SCREAM_W,	SCREAM_WALL,	SCREAM_H,	SCREAM_TRANS,		1,		25,	3,		True,	},
-	{ LaserImg_Pal,		LaserImg,	LaserSnd,	2*count_of(LaserSnd), 	LASER_W,	LASER_WALL,	LASER_H,	LASER_TRANS,		1,		4,	1,		False,	},
-	{ PhaserImg_Pal,	PhaserImg,	PhaserSnd,	2*count_of(PhaserSnd), 	PHASER_W,	PHASER_WALL,	PHASER_H,	PHASER_TRANS,		1,		4,	1,		False,	},
-	{ RocketImg_Pal,	RocketImg,	RocketSnd,	2*count_of(RocketSnd), 	ROCKET_W,	ROCKET_WALL,	ROCKET_H,	ROCKET_TRANS,		2,		4,	1,		True,	},
-	{ SugarbombImg_Pal,	SugarbombImg,	ThrowSnd,	2*count_of(ThrowSnd), 	SUGAR_W,	SUGAR_WALL,	SUGAR_H,	SUGAR_TRANS,		4,		22,	1,		True,	},
-	{ SpiralImg_Pal,	SpiralImg,	BlackholeSnd,	2*count_of(BlackholeSnd), SPIRAL_W,	SPIRAL_WALL,	SPIRAL_H,	SPIRAL_TRANS,		6,		20,	10,		True,	},
+	{ ShurikenImg_Pal,	ShurikenImg,	SwingSnd,	count_of(SwingSnd),	SHURIKEN_W,	SHURIKEN_WALL,	SHURIKEN_H,	SHURIKEN_TRANS,		4,		30,	10,		True,	},
+	{ SeedImg_Pal,		SeedImg,	MinigunSnd,	count_of(MinigunSnd),	SEED_W,		SEED_WALL,	SEED_H,		SEED_TRANS,		1,		6,	10,		True,	},
+	{ BerryImg_Pal,		BerryImg,	GunSnd,		count_of(GunSnd),	BERRY_W,	BERRY_WALL,	BERRY_H,	BERRY_TRANS,		1,		13,	10,		True,	},
+	{ SandballImg_Pal,	SandballImg,	NoiseSnd,	count_of(NoiseSnd),	SANDBALL_W,	SANDBALL_WALL,	SANDBALL_H,	SANDBALL_TRANS,		2,		8,	10,		False,	},
+	{ FlashImg_Pal,		FlashImg,	ElectricitySnd,	count_of(ElectricitySnd), FLASH_W,	FLASH_WALL,	FLASH_H,	FLASH_TRANS,		2,		16,	1,		False,	},
+	{ CrystalImg_Pal,	CrystalImg,	GlassSnd,	count_of(GlassSnd), 	CRYSTAL_W,	CRYSTAL_WALL,	CRYSTAL_H,	CRYSTAL_TRANS,		1,		20,	2,		True,	},
+	{ FireImg_Pal,		FireImg,	FlameSnd,	count_of(FlameSnd), 	FIRE_W,		FIRE_WALL,	FIRE_H,		FIRE_TRANS,		4,		22,	2,		False,	},
+	{ ScreamImg_Pal,	ScreamImg,	ScreamingSnd,	count_of(ScreamingSnd), SCREAM_W,	SCREAM_WALL,	SCREAM_H,	SCREAM_TRANS,		1,		25,	3,		True,	},
+	{ LaserImg_Pal,		LaserImg,	LaserSnd,	count_of(LaserSnd), 	LASER_W,	LASER_WALL,	LASER_H,	LASER_TRANS,		1,		4,	1,		False,	},
+	{ PhaserImg_Pal,	PhaserImg,	PhaserSnd,	count_of(PhaserSnd), 	PHASER_W,	PHASER_WALL,	PHASER_H,	PHASER_TRANS,		1,		4,	1,		False,	},
+	{ RocketImg_Pal,	RocketImg,	RocketSnd,	count_of(RocketSnd), 	ROCKET_W,	ROCKET_WALL,	ROCKET_H,	ROCKET_TRANS,		2,		4,	1,		True,	},
+	{ SugarbombImg_Pal,	SugarbombImg,	ThrowSnd,	count_of(ThrowSnd), 	SUGAR_W,	SUGAR_WALL,	SUGAR_H,	SUGAR_TRANS,		4,		22,	1,		True,	},
+	{ SpiralImg_Pal,	SpiralImg,	BlackholeSnd,	count_of(BlackholeSnd), SPIRAL_W,	SPIRAL_WALL,	SPIRAL_H,	SPIRAL_TRANS,		6,		20,	10,		True,	},
 };
 
 // actor missile list

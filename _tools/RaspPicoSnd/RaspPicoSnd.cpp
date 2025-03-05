@@ -1,5 +1,5 @@
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040
-// Copyright (c) 2023 Miroslav Nemecek, Panda38@seznam.cz, hardyplotter2@gmail.com
+// Copyright (c) 2023-2025 Miroslav Nemecek, Panda38@seznam.cz, hardyplotter2@gmail.com
 // 	https://github.com/Panda381/PicoLibSDK
 //	https://www.breatharian.eu/hw/picolibsdk/index_en.html
 //	https://github.com/pajenicko/picopad
@@ -7,8 +7,6 @@
 // License:
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
-
-// Sound must be in format: PCM, mono, 8-bit unsigned with middle at 128, sound rate 22050 Hz
 
 #include <stdio.h>
 #include <malloc.h>
@@ -21,12 +19,12 @@ typedef unsigned char u8;
 typedef signed short s16;
 typedef unsigned short u16;
 typedef unsigned short WORD;
-typedef signed long int s32;		// on 64-bit system use "signed int"
-typedef unsigned long int u32;		// on 64-bit system use "unsigned int"
-typedef unsigned long int DWORD;	// on 64-bit system use "unsigned int"
-//typedef signed int s32;
-//typedef unsigned int u32;
-//typedef unsigned int DWORN;
+//typedef signed long int s32;		// on 64-bit system use "signed int"
+//typedef unsigned long int u32;		// on 64-bit system use "unsigned int"
+//typedef unsigned long int DWORD;	// on 64-bit system use "unsigned int"
+typedef signed int s32;
+typedef unsigned int u32;
+typedef unsigned int DWORD;
 
 typedef unsigned int BOOL;
 #define TRUE  1
@@ -143,17 +141,17 @@ int main(int argc, char* argv[])
 		(memcmp(fmt->tFormatIdent, "WAVEfmt ", 8) != 0) || // check "WAVEfmt " header
 		(memcmp(data->tDataIdent, "data", 4) != 0) || // check "data" header
 		((fmt->wFormatTag != 1) && (fmt->wFormatTag != 17)) || // check PCM of ADPCM format
-		(fmt->nChannels != 1) || // check mono
-		(fmt->nSamplesPerSec != 22050) || // check rate
-		((fmt->wBitsPerSample != 8) && (fmt->wBitsPerSample != 4))) // check bits per sample
+//		(fmt->nChannels != 1) || // check mono
+//		(fmt->nSamplesPerSec != 22050) || // check rate
+		((fmt->wBitsPerSample != 16) && (fmt->wBitsPerSample != 8) && (fmt->wBitsPerSample != 4))) // check bits per sample
 	{
 		printf("Incorrect format of input file %s,\n", argv[1]);
-		printf("  must be PCM mono 8-bit 22050Hz\n");
-		printf("  or IMA ADPCM mono 4-bit 22050Hz.\n");
+		printf("  must be PCM 8-bit or 16-bit\n");
+		printf("  or IMA ADPCM 4-bit.\n");
 		return 1;
 	}
 	u8* s = (u8*)&data[1]; // start of sound data
-	int n = data->nDataSize; // number of samples
+	int n = data->nDataSize; // data size
 
 // === save output file
 
@@ -165,18 +163,40 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	// save header
-	fprintf(f, "#include \"include.h\"\n\n");
+	// header
+	fprintf(f, "#include \"../include.h\"\n\n");
 	if (fmt->wFormatTag == 17)
 	{
-		fprintf(f, "// sound format: Intel IMA ADPCM mono 4-bit 22050Hz\n");
-		if (fmt->nFormatSize >= 20)
-			fprintf(f, "const u16 %s_SampBlock = %d; // number of samples per block\n\n",
-				argv[3], (&fmt->wBitsPerSample)[2]);
+		fprintf(f, "// sound format: Intel IMA ADPCM %s 4-bit %dHz\n",
+			(fmt->nChannels == 1) ? "mono" : "stereo", fmt->nSamplesPerSec);
 	}
 	else
-		fprintf(f, "// sound format: PCM mono 8-bit 22050Hz\n");
-	fprintf(f, "const u8 %s[%d] = {", argv[3], n);
+	{
+		fprintf(f, "// sound format: PCM %s %d-bit %dHz\n",
+			(fmt->nChannels == 1) ? "mono" : "stereo", fmt->wBitsPerSample, fmt->nSamplesPerSec);
+	}
+
+	// sound format
+	fprintf(f, "// sound format = %s\n", 
+		(fmt->wBitsPerSample == 4) ?
+			((fmt->nChannels == 1) ? "SNDFORM_ADPCM" : "SNDFORM_ADPCM_S") :
+			((fmt->wBitsPerSample == 8) ?
+				((fmt->nChannels == 1) ? "SNDFORM_PCM" : "SNDFORM_PCM_S") :
+				((fmt->nChannels == 1) ? "SNDFORM_PCM16" : "SNDFORM_PCM16_S")));
+
+	// relative sound speed
+	fprintf(f, "// sound speed relative to 22050Hz = %.5ff\n", (double)fmt->nSamplesPerSec/22050);
+
+	// ADPCM samples per block
+	if (fmt->wFormatTag == 17)
+	{
+		if (fmt->nFormatSize >= 20)
+			fprintf(f, "const u16 %s_SampBlock = %d; // number of samples per block\n",
+				argv[3], (&fmt->wBitsPerSample)[2]);
+	}
+
+	// data header
+	fprintf(f, "const u8 %s[%d] __attribute__ ((aligned(4))) = {", argv[3], n);
 
 	// load sound
 	for (i = 0; i < n; i++)

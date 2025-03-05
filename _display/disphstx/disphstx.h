@@ -80,6 +80,7 @@ GPIO19 ... VSYNC, R=47 ohm
 #include "../../_sdk/inc/sdk_timer.h"
 #include "../../_sdk/inc/sdk_powman.h"
 #include "../../_lib/inc/lib_malloc.h"
+#include "../../_lib/inc/lib_pwmsnd.h"
 #include "../../_lib/inc/lib_drawcan.h"
 #include "../../_lib/inc/lib_drawcan1.h"
 #include "../../_lib/inc/lib_drawcan2.h"

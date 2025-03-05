@@ -371,7 +371,7 @@ void EnemyHit()
 						{
 							// sound of suck
 							if (SoundMode != SOUNDMODE_OFF) PlaySoundChan(SOUNDCHAN_ENEMYHIT,
-								Blackhole2Snd, 2*count_of(Blackhole2Snd), False, 1, 1, SNDFORM_ADPCM, IMA_SAMPBLOCK);
+								Blackhole2Snd, count_of(Blackhole2Snd), False, 1, 1, SNDFORM_ADPCM, IMA_SAMPBLOCK);
 						}
 						else
 						{
@@ -406,7 +406,7 @@ void EnemyHit()
 
 							// sound of explosion
 							if (SoundMode != SOUNDMODE_OFF) PlaySoundChan(SOUNDCHAN_ENEMYHIT,
-								EnemyHitSnd, 2*count_of(EnemyHitSnd), False, 1, 1, SNDFORM_ADPCM, IMA_SAMPBLOCK);
+								EnemyHitSnd, count_of(EnemyHitSnd), False, 1, 1, SNDFORM_ADPCM, IMA_SAMPBLOCK);
 						}
 
 						// destroy missile
@@ -447,7 +447,7 @@ void EnemyHit()
 
 							// sound of suck
 							if (SoundMode != SOUNDMODE_OFF) PlaySoundChan(SOUNDCHAN_ENEMYHIT,
-								Blackhole2Snd, 2*count_of(Blackhole2Snd), False, 1, 1, SNDFORM_ADPCM, IMA_SAMPBLOCK);
+								Blackhole2Snd, count_of(Blackhole2Snd), False, 1, 1, SNDFORM_ADPCM, IMA_SAMPBLOCK);
 						}
 					}
 

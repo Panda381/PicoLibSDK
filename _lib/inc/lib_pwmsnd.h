@@ -14,11 +14,11 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-// Sounds are at format 8-bit unsigned (middle at 128), 22050 samples per second, mono
-// PWM cycle is 256: TOP = 255
-// Required PWM clock: 22050*256 = 5644800 Hz
+// #define USE_PWMSND		4		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
+// #define PWMSND_GPIO		20		// PWM sound output GPIO pin (left or single channel)
+// #define PWMSND_GPIO_R	21		// PWM sound output GPIO pin (right channel; -1 = not used, only single channel is used)
 
-// ... GP19 ... MOSI + sound output (PWM1 B)
+// Default sound format: 8-bit unsigned (middle at 128), 22050 samples per second, mono
 
 #ifndef _LIB_PWMSND_H
 #define _LIB_PWMSND_H
@@ -26,36 +26,71 @@
 #include "../../_sdk/inc/sdk_cpu.h"
 #include "../../_sdk/inc/sdk_pwm.h"
 
-#define PWMSND_SLICE	PWM_GPIOTOSLICE(PWMSND_GPIO) // PWM slice index
-#define PWMSND_CHAN	PWM_GPIOTOCHAN(PWMSND_GPIO) // PWM channel index
+#ifndef PWMSND_GPIO_R
+#define PWMSND_GPIO_R	-1	// PWM sound output GPIO pin (right channel; -1 = not used, only single channel is used)
+#endif
+
+#define PWMSND_SLICE	PWM_GPIOTOSLICE(PWMSND_GPIO) // PWM slice index, left or single channel
+#define PWMSND_CHAN	PWM_GPIOTOCHAN(PWMSND_GPIO) // PWM channel index, left or single channel
+
+#define PWMSND_SLICE_R	PWM_GPIOTOSLICE(PWMSND_GPIO_R) // PWM slice index, right channel ... must be on the same slice as left channel
+#define PWMSND_CHAN_R	PWM_GPIOTOCHAN(PWMSND_GPIO_R) // PWM channel index, right channel
 
 // global sound OFF
 extern volatile Bool GlobalSoundOff;
 
 #if USE_PWMSND		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
 
+// both channels must be on the same PWM slice
+#if PWMSND_GPIO_R >= 0
+#if PWMSND_SLICE != PWMSND_SLICE_R
+#error Both PWM sound channels must be on the same PWM slice!
+#endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define SOUNDRATE	22050	// sound rate [Hz]
-#define PWMSND_TOP	255	// PWM top (period = PWMSND_TOP + 1 = 256)
-#define PWMSND_CLOCK	(SOUNDRATE*(PWMSND_TOP+1)) // PWM clock (= 22050*256 = 5644800)
+#define SOUNDRATE	22050	// reference sound rate [Hz]
+#define PWMSND_BITS	11	// number of bits per PWM sample (= 2048) (... + 1 bit with time dithering)
+#define PWMSND_TOP	((1<<PWMSND_BITS)-1)	// PWM top (period = PWMSND_TOP + 1 = 2048)
+#define PWMSND_CLOCK	(SOUNDRATE*(PWMSND_TOP+1)) // default PWM clock (= 22050*2048 = 45158400)
 
-#define SNDFRAC	10	// number of fraction bits
-#define SNDINT (1<<SNDFRAC) // integer part of sound fraction (= 1024)
+#define SNDFRAC	10		// number of fraction bits
+#define SNDINT (1<<SNDFRAC)	// integer part of sound fraction (= 1024)
+
+// predefined sound speeds
+#define SNDSPEED_8K	((float)8000/SOUNDRATE)		//  8000 Hz (= 0.36281f)
+#define SNDSPEED_11K	((float)11025/SOUNDRATE)	// 11025 Hz (= 0.50000f)
+#define SNDSPEED_12K	((float)12000/SOUNDRATE)	// 12000 Hz (= 0.54422f)
+#define SNDSPEED_16K	((float)16000/SOUNDRATE)	// 16000 Hz (= 0.72562f)
+#define SNDSPEED_22K	((float)22050/SOUNDRATE)	// 22050 Hz (= 1.00000f)
+#define SNDSPEED_24K	((float)24000/SOUNDRATE)	// 24000 Hz (= 1.08844f)
+#define SNDSPEED_32K	((float)32000/SOUNDRATE)	// 32000 Hz (= 1.45125f)
+#define SNDSPEED_44K	((float)44100/SOUNDRATE)	// 44100 Hz (= 2.00000f)
+#define SNDSPEED_48K	((float)48000/SOUNDRATE)	// 48000 Hz (= 2.17687f)
 
 // sound formats
-#define SNDFORM_PCM	0	// no compression
-#define SNDFORM_ADPCM	1	// IMA ADPCM
+#define SNDFORM_PCM	0	// no compression, 8-bits unsigned per sample (middle at 128), recommended sample rate 22050 Hz
+#define SNDFORM_ADPCM	1	// IMA ADPCM, 4-bit compression, recommended sample rate 16000 Hz (speed = 0.726
+#define SNDFORM_PCM16	2	// no compression, 16-bits signed per sample (middle at 0), recommended sample rate 32000 Hz
+
+#define SNDFORM_STEREO	B6	// add this flag to the sound format - stereo 2 channels
+
+#define SNDFORM_PCM_S	(SNDFORM_PCM|SNDFORM_STEREO) 	// 8-bits unsigned per sample, stereo
+#define SNDFORM_ADPCM_S	(SNDFORM_ADPCM|SNDFORM_STEREO) 	// IMA ADPCM, 4-bit compression, stereo
+#define SNDFORM_PCM16_S	(SNDFORM_PCM16|SNDFORM_STEREO)	// 16-bits signed per sample, stereo
 
 // PWM sound channel
 typedef struct {
 	// current sound
-	const u8*	snd;		// pointer to current playing sound
+	const u8*	snd;		// pointer to current playing sound (4-bit, 8-bit or 16-bit format)
 	volatile int	cnt;		// counter of current playing sound (<= 0 if no sound)
-	int		inc;		// increment of the pointer
-	volatile int	acc;		// accumulator of the pointer
+	volatile int	acc;		// accumulator of the pointer * SNDINT
+	// speed
+	int		inc;		// increment of the pointer * SNDINT
+	float		speed;		// initial sound speed (relative to 22050 Hz)
 	// next sound
 	const u8*	next;		// pointer to next sound to play repeated sound
 	int		nextcnt;	// counter of next sound (0 = no repeated sound)
@@ -65,69 +100,121 @@ typedef struct {
 	// IMA ADPCM
 	s16		sampblock;	// number of samples per block (0 = no preamble)
 	s16		sampcnt;	// counter of samples per block (0 = end of block)
+	s16		oldval[2];	// old value
+	s16		prevval[2];	// previous value (current value)
 	u8		form;		// sound format SNDFORM_*
-	s8		stepinx;	// step index
-	s16		prevval;	// previous value
+	s8		stepinx[2];	// step index
 	Bool		odd;		// odd sub-sample
-	u8		subsample;	// save sub-sample
+	u8		byte4;		// counter of 4-byte
+	u8		subsample[2];	// save sub-sample
 } sPwmSnd;
 
 // PWM sound channels
 extern sPwmSnd PwmSound[USE_PWMSND];
 
-// initialize PWM sound output (must be re-initialized after changing CLK_SYS system clock)
+// initialize PWM sound output (needs not be re-initialized after changing CLK_SYS system clock,
+// but if playing any sound, SpeedSoundUpdate() should be called to update speed of current sounds).
 void PWMSndInit();
 
 // terminate PWM sound output
 void PWMSndTerm();
 
 // stop playing sound
-void StopSoundChan(u8 chan);
+void StopSoundChan(int chan);
+
+// stop playing sound of channel 0
 void StopSound();
+
+// stop playing sounds of all channels
 void StopAllSound();
 
-// output PWM sound (sound must be PCM 8-bit mono 22050Hz)
+// Convert length of sound in bytes to number of samples
+//  size = length of sound in number of bytes (use sizeof(array))
+//  form = sound format SNDFORM_* (4-bit, 8-bit, 16-bit, mono or stereo)
+// Returns length of sound in samples (or double-samples for stereo)
+int SoundByteToLen(int size, int form);
+
+// play sound
 //  chan = channel 0..
 //  snd = pointer to sound
-//  len = length of sound in number of samples (for ADPCM number of samples = 2 * number of bytes)
+//  size = length of sound in number of bytes (use sizeof(array))
 //  rep = True to repeat sample
-//  speed = relative speed (1=normal; SNDFORM_ADPCM must have speed = 1)
+//  speed = speed relative to sample rate 22050 Hz (1=normal, you can use constants SNDSPEED_*)
 //  volume = volume (1=normal)
-//  form = sound format SNDFORM_*
-//  ext = format extended data (ADPCM: number of samples per block)
-void PlaySoundChan(u8 chan, const u8* snd, int len, Bool rep, float speed, float volume, u8 form, int ext);
-void PlaySound(const u8* snd, int len);
-#define PLAYSOUND(snd) PlaySound((snd), count_of(snd))
+//  form = sound format SNDFORM_* (4-bit, 8-bit, 16-bit, mono or stereo)
+//  ext = format extended data (ADPCM: number of samples per block, see WAV file)
+void PlaySoundChan(int chan, const void* snd, int size, Bool rep, float speed, float volume, int form, int ext);
 
-// output PWM sound repeated
-void PlaySoundRep(const u8* snd, int len);
-#define PLAYSOUNDREP(snd) PlaySoundRep((snd), count_of(snd))
+// play sound at channel 0, format SNDFORM_PCM: 8-bit 22050 Hz mono
+//  snd = pointer to sound in format SNDFORM_PCM: 8-bit 22050 Hz mono
+//  size = length of sound in number of bytes (use sizeof(array))
+void PlaySound(const void* snd, int size);
+#define PLAYSOUND(snd) PlaySound((snd), sizeof(snd))
 
-// play ADPCM sound (len = number of samples = number of bytes * 2)
-void PlayADPCMChan(u8 chan, const u8* snd, int len, int sampblock);
-INLINE void PlayADPCM(const u8* snd, int len, int sampblock) { PlayADPCMChan(0, snd, len, sampblock); }
-#define PLAYADPCM(snd, sampblock) PlayADPCM((snd), count_of(snd)*2, (sampblock))
+// play sound at channel 0 repeated, format SNDFORM_PCM: 8-bit 22050 Hz mono
+//  snd = pointer to sound in format SNDFORM_PCM: 8-bit 22050 Hz mono
+//  size = length of sound in number of bytes (use sizeof(array))
+void PlaySoundRep(const void* snd, int size);
+#define PLAYSOUNDREP(snd) PlaySoundRep((snd), sizeof(snd))
 
-// play ADPCM sound repeated (len = number of samples = number of bytes * 2)
-void PlayADPCMRepChan(u8 chan, const u8* snd, int len, int sampblock);
-INLINE void PlayADPCMRep(const u8* snd, int len, int sampblock) { PlayADPCMRepChan(0, snd, len, sampblock); }
-#define PLAYADPCMREP(snd, sampblock) PlayADPCMRep((snd), count_of(snd)*2, (sampblock))
+// play ADPCM sound, format SNDFORM_ADPCM: 4-bit 22050 Hz mono
+//  chan = channel 0..
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+//  sampblock = number of samples per block (see WAV file)
+void PlayADPCMChan(int chan, const void* snd, int size, int sampblock);
 
-// update sound speed (1=normal speed; SNDFORM_ADPCM must have speed = 1)
-void SpeedSoundChan(u8 chan, float speed);
+// play ADPCM sound at channel 0, format SNDFORM_ADPCM: 4-bit 22050 Hz mono
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+//  sampblock = number of samples per block (see WAV file)
+void PlayADPCM(const void* snd, int size, int sampblock);
+#define PLAYADPCM(snd, sampblock) PlayADPCM((snd), sizeof(snd), (sampblock))
+
+// play ADPCM sound repeated, format SNDFORM_ADPCM: 4-bit 22050 Hz mono
+//  chan = channel 0..
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+//  sampblock = number of samples per block (see WAV file)
+void PlayADPCMRepChan(int chan, const void* snd, int size, int sampblock);
+
+// play ADPCM sound at channel 0 repeated, format SNDFORM_ADPCM: 4-bit 22050 Hz mono
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+//  sampblock = number of samples per block (see WAV file)
+void PlayADPCMRep(const void* snd, int len, int sampblock);
+#define PLAYADPCMREP(snd, sampblock) PlayADPCMRep((snd), sizeof(snd), (sampblock))
+
+// update sound speed (1=normal speed)
+void SpeedSoundChan(int chan, float speed);
+
+// update sound speed of channel 0 (1=normal speed)
 void SpeedSound(float speed);
 
+// update all sound speeds after changing system clock
+void SpeedSoundUpdate();
+
 // update sound volume (1=normal volume)
-void VolumeSoundChan(u8 chan, float volume);
+void VolumeSoundChan(int chan, float volume);
+
+// update sound volume of channel 0 (1=normal volume)
 void VolumeSound(float volume);
 
-// check if playing sound
-Bool PlayingSoundChan(u8 chan);
+// check if sound is playing
+Bool PlayingSoundChan(int chan);
+
+// check if sound of channel 0 is playing
 Bool PlayingSound();
 
-// set next repeated sound
-void SetNextSoundChan(u8 chan, const u8* snd, int len);
-void SetNextSound(const u8* snd, int len);
+// set next repeated sound in the same format
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+void SetNextSoundChan(int chan, const void* snd, int size);
+
+// set next repeated sound of channel 0 in the same format
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+void SetNextSound(const void* snd, int size);
 
 // global sound set OFF
 void GlobalSoundSetOff();

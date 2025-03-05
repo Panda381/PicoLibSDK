@@ -113,7 +113,7 @@ void BonusCollect()
 
 			// sound
 			if (SoundMode != SOUNDMODE_OFF)
-				PlaySoundChan(SOUNDCHAN_ACTORHIT, ZingSnd, 2*count_of(ZingSnd), False, 1, 1, SNDFORM_ADPCM, IMA_SAMPBLOCK);
+				PlaySoundChan(SOUNDCHAN_ACTORHIT, ZingSnd, count_of(ZingSnd), False, 1, 1, SNDFORM_ADPCM, IMA_SAMPBLOCK);
 
 			if ((BonusInx >= BONUS_COLFIRST) && (BonusInx <= BONUS_COLLAST))
 			{
@@ -130,7 +130,7 @@ void BonusCollect()
 					}
 
 					if (SoundMode != SOUNDMODE_OFF)
-						PlaySoundChan(SOUNDCHAN_ACTORHIT, BigbonusSnd, 2*count_of(BigbonusSnd), False, 1, 1, SNDFORM_ADPCM, IMA_SAMPBLOCK);
+						PlaySoundChan(SOUNDCHAN_ACTORHIT, BigbonusSnd, count_of(BigbonusSnd), False, 1, 1, SNDFORM_ADPCM, IMA_SAMPBLOCK);
 					WaitMs(1000);
 
 					BonusMask = 0;

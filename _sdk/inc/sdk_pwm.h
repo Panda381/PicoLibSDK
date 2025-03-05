@@ -291,6 +291,10 @@ INLINE u16 PWM_GetCount_hw(pwm_slice_hw_t* hw) { return (u16)(hw->ctr & 0xffff);
 INLINE void PWM_Comp(int pwm, int chan, u16 cmp) { RegMask(PWM_CC(pwm), (u32)cmp << (chan*16), 0xffff << (chan*16)); }
 INLINE void PWM_Comp_hw(pwm_slice_hw_t* hw, int chan, u16 cmp) { RegMask(&hw->cc, (u32)cmp << (chan*16), 0xffff << (chan*16)); }
 
+// set compare value of both output channels (cmp is 16-bit value)
+INLINE void PWM_Comp2(int pwm, u16 cmp_a, u16 cmp_b) { *PWM_CC(pwm) = cmp_a | (cmp_b << 16); }
+INLINE void PWM_Comp2_hw(pwm_slice_hw_t* hw, u16 cmp_a, u16 cmp_b) { hw->cc = cmp_a | (cmp_b << 16); }
+
 // get compare value of output channel PWM_CHAN_*
 INLINE u16 PWM_GetComp(int pwm, int chan) { return (u16)(*PWM_CC(pwm) >> (chan*16)); }
 INLINE u16 PWM_GetComp_hw(const pwm_slice_hw_t* hw, int chan) { return (u16)(hw->cc >> (chan*16)); }

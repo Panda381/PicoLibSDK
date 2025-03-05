@@ -24,11 +24,15 @@ volatile Bool GlobalSoundOff = False;
 #if USE_PWMSND		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
 
 #include "../../_sdk/inc/sdk_irq.h"
+#include "../../_sdk/inc/sdk_clocks.h"
 #include "../inc/lib_pwmsnd.h"
 #include "../inc/lib_config.h"
 
 // PWM sound channels
 sPwmSnd PwmSound[USE_PWMSND];
+
+// time dithering
+int PwmSoundDither = 0;
 
 // IMA ADPCM tables
 #define ADPCM_MINVAL	-32768		// IMA ADPCM minimal value
@@ -66,117 +70,412 @@ void PWMSndIrq()
 	PWM_IntClear(PWMSND_SLICE);
 
 	// default sample if no sound		
-	int samp = 128*SNDINT;
+	int samp = SNDINT*PWMSND_TOP/2;
+#if PWMSND_GPIO_R >= 0
+	int sampR = samp;
+#endif
 
-	// check if sound is playing
+	// loop sound channels
 	sPwmSnd* s = PwmSound;
-	int ch;
+	int i, ch, k, k2, kk;
 	for (ch = 0; ch < USE_PWMSND; ch++)
 	{
 		// get sound counter (<= 0 if no sound)
 		int cnt = s->cnt;
 		if (cnt > 0)
 		{
-			// get next sample
+			// prepare pointer to the sample
 			const u8* snd = s->snd;
 			int acc = s->acc;
 
-			// PCM format
+			// PCM 8-bit format mono
 			u8 form = s->form;
 			if (form == SNDFORM_PCM)
 			{
-				samp += (int)(*snd - 128) * s->vol;
+				// get next sample, interpolate with next value
+				k = ((int)*snd - 128);
+				if (cnt <= 1)
+					kk = k;
+				else
+					kk = ((int)snd[1] - 128);
+				k = kk*acc + k*(SNDINT - acc);
+				k *= s->vol;
+				k >>= 8 - PWMSND_BITS + SNDFRAC;
+
+				samp += k;
+#if PWMSND_GPIO_R >= 0
+				sampR += k;
+#endif
 
 				// increment pointer accumulator
 				acc = acc + s->inc;
-				int i = acc >> SNDFRAC; // whole increment
+				i = acc >> SNDFRAC; // whole increment
 				snd += i; // shift sound pointer
 				cnt -= i; // shift sound counter
-				acc &= (SNDINT-1); // clear low invalid bits
+				acc &= (SNDINT-1); // clear high bits
 			}
 
-			// ADPCM format
+			// PCM 8-bit format stereo
+			else if (form == SNDFORM_PCM_S)
+			{
+				// get next sample L and R, interpolate with next value
+				k = ((int)snd[0] - 128);
+				if (cnt <= 1)
+					kk = k;
+				else
+					kk = ((int)snd[2] - 128);
+				k = kk*acc + k*(SNDINT - acc);
+				k *= s->vol;
+				k >>= 8 - PWMSND_BITS + SNDFRAC;
+
+				k2 = ((int)snd[1] - 128);
+				if (cnt <= 1)
+					kk = k;
+				else
+					kk = ((int)snd[3] - 128);
+				k2 = kk*acc + k2*(SNDINT - acc);
+				k2 *= s->vol;
+				k2 >>= 8 - PWMSND_BITS + SNDFRAC;
+
+#if PWMSND_GPIO_R >= 0
+				samp += k;
+				sampR += k2;
+#else
+				samp += (k+k2) >> 1;
+#endif
+
+				// increment pointer accumulator
+				acc = acc + s->inc;
+				i = acc >> SNDFRAC; // whole increment
+				snd += i*2; // shift sound pointer
+				cnt -= i; // shift sound counter
+				acc &= (SNDINT-1); // clear high bits
+			}
+
+			// PCM 16-bit format mono
+			else if (form == SNDFORM_PCM16)
+			{
+				// get next sample, interpolate with next value
+				k = (u8)snd[0] + ((int)(s8)snd[1] << 8);
+				if (cnt <= 1)
+					kk = k;
+				else
+					kk = (u8)snd[2] + ((int)(s8)snd[3] << 8);
+				k = kk*acc + k*(SNDINT - acc);
+				k >>= SNDFRAC;
+				k *= s->vol;
+				k >>= 16 - PWMSND_BITS;
+
+				samp += k;
+#if PWMSND_GPIO_R >= 0
+				sampR += k;
+#endif
+
+				// increment pointer accumulator
+				acc = acc + s->inc;
+				i = acc >> SNDFRAC; // whole increment
+				snd += i*2; // shift sound pointer
+				cnt -= i; // shift sound counter
+				acc &= (SNDINT-1); // clear high bits
+			}
+
+			// PCM 16-bit format stereo
+			else if (form == SNDFORM_PCM16_S)
+			{
+				// get next sample L and R, interpolate with next value
+				k = (u8)snd[0] + ((int)(s8)snd[1] << 8);
+				if (cnt <= 1)
+					kk = k;
+				else
+					kk = (u8)snd[4] + ((int)(s8)snd[5] << 8);
+				k = kk*acc + k*(SNDINT - acc);
+				k >>= SNDFRAC;
+				k *= s->vol;
+				k >>= 16 - PWMSND_BITS;
+
+				k2 = (u8)snd[2] + ((int)(s8)snd[3] << 8);
+				if (cnt <= 1)
+					kk = k2;
+				else
+					kk = (u8)snd[6] + ((int)(s8)snd[7] << 8);
+				k2 = kk*acc + k2*(SNDINT - acc);
+				k2 >>= SNDFRAC;
+				k2 *= s->vol;
+				k2 >>= 16 - PWMSND_BITS;
+
+#if PWMSND_GPIO_R >= 0
+				samp += k;
+				sampR += k2;
+#else
+				samp += (k+k2) >> 1;
+#endif
+
+				// increment pointer accumulator
+				acc = acc + s->inc;
+				i = acc >> SNDFRAC; // whole increment
+				snd += i*4; // shift sound pointer
+				cnt -= i; // shift sound counter
+				acc &= (SNDINT-1); // clear high bits
+			}
+
+			// ADPCM format mono
 			else if (form == SNDFORM_ADPCM)
 			{
 				int val;
 
-				// preamble block
-				if (s->sampcnt <= 0)
+				// prepare increment counter
+				acc = acc + s->inc;
+				i = acc >> SNDFRAC; // whole increment
+				acc &= (SNDINT-1); // clear high bits
+
+				if (i > 0)
 				{
-					// get current value from block header
-					val = (s16)(snd[0] + snd[1]*256);
-					s->prevval = (s16)val;
-
-					// get current index from block header
-					s->stepinx = snd[2];
-					snd += 4;
-
-					// set counter of samples per block
-					s->sampcnt = s->sampblock;
-					s->odd = False; // odd sub-sample
-
-					cnt -= 8; // sample count correction (= 4 bytes)
-				}
-				else
-				{
-					// get next sample
-					u8 delta;
-					if (s->odd) // odd sub-sample (higher 4 bits)
-						delta = (u8)(s->subsample >> 4);
-					else // even sub-sample (lower 4 bits)
-					{
-						delta = *snd++;
-						s->subsample = delta;
-						delta &= 0x0f;
-					}
-					cnt--; // sample counter
-					s->odd = !s->odd; // flag of odd sub-sample
-
-					// get step size
-					s8 stepinx = s->stepinx;
-					s16 step = ADPCM_StepSize[stepinx];
-
-					// shift step index
-					stepinx += ADPCM_TabInx[delta];
-
-					// limit step index
-					if ((uint)stepinx >= (uint)ADPCM_STEPS)
-					{
-						if (stepinx < 0)
-							stepinx = 0;
-						else
-							stepinx = ADPCM_STEPS - 1;
-					}
-					s->stepinx = stepinx;
-
-					// get next difference
-					s16 dif = step >> 3;
-					if ((delta & B0) != 0) dif += step >> 2;
-					if ((delta & B1) != 0) dif += step >> 1;
-					if ((delta & B2) != 0) dif += step ;
-					if ((delta & B3) != 0) dif = -dif; // sign correction
-
-					// add difference to previous value
-					val = s->prevval + dif;
-					if (val > ADPCM_MAXVAL) val = ADPCM_MAXVAL;
-					if (val < ADPCM_MINVAL) val = ADPCM_MINVAL;
-					s->prevval = (s16)val;
+					s->oldval[0] = s->prevval[0];
 				}
 
-				// sample counter
-				s->sampcnt--;
+				// skip to next valid value
+				for (; i > 0; i--)
+				{
+					// preamble block
+					if (s->sampcnt <= 0)
+					{
+						// get current value from block header
+						val = (s16)(snd[0] + snd[1]*256);
+						s->prevval[0] = (s16)val;
 
-				// add value to output
-				samp += (val >> 8) * s->vol;
+						// get current index from block header
+						s->stepinx[0] = snd[2];
+						snd += 4;
+
+						// set counter of samples per block
+						s->sampcnt = s->sampblock;
+						s->odd = False; // odd sub-sample
+
+						cnt -= 8; // sample count correction (= 4 bytes)
+					}
+					else
+					{
+						// get next sample delta
+						u8 delta;
+						if (s->odd) // odd sub-sample (higher 4 bits)
+							delta = (u8)(s->subsample[0] >> 4);
+						else // even sub-sample (lower 4 bits)
+						{
+							delta = *snd++;
+							s->subsample[0] = delta;
+							delta &= 0x0f;
+						}
+						cnt--; // sample counter
+						s->odd = !s->odd; // flag of odd sub-sample
+
+						// get step size
+						s8 stepinx = s->stepinx[0];
+						s16 step = ADPCM_StepSize[stepinx];
+
+						// shift step index
+						stepinx += ADPCM_TabInx[delta];
+
+						// limit step index
+						if ((uint)stepinx >= (uint)ADPCM_STEPS)
+						{
+							if (stepinx < 0)
+								stepinx = 0;
+							else
+								stepinx = ADPCM_STEPS - 1;
+						}
+						s->stepinx[0] = stepinx;
+
+						// get next difference
+						s16 dif = step >> 3;
+						if ((delta & B0) != 0) dif += step >> 2;
+						if ((delta & B1) != 0) dif += step >> 1;
+						if ((delta & B2) != 0) dif += step ;
+						if ((delta & B3) != 0) dif = -dif; // sign correction
+
+						// add difference to previous value
+						val = s->prevval[0] + dif;
+						if (val > ADPCM_MAXVAL) val = ADPCM_MAXVAL;
+						if (val < ADPCM_MINVAL) val = ADPCM_MINVAL;
+						s->prevval[0] = (s16)val;
+					}
+
+					// sample counter
+					s->sampcnt--;
+					if (cnt <= 0) break;
+				}
+
+				// add value to output, interpolate
+				k = s->prevval[0]*acc + s->oldval[0]*(SNDINT - acc);
+				k >>= SNDFRAC;
+				k *= s->vol;
+				k >>= 16 - PWMSND_BITS;
+				samp += k;
+#if PWMSND_GPIO_R >= 0
+				sampR += k;
+#endif
+			}
+
+			// ADPCM format stereo
+			else if (form == SNDFORM_ADPCM_S)
+			{
+				int val, val2;
+
+				// prepare increment counter
+				acc = acc + s->inc;
+				i = acc >> SNDFRAC; // whole increment
+				acc &= (SNDINT-1); // clear high bits
+
+				if (i > 0)
+				{
+					s->oldval[0] = s->prevval[0];
+					s->oldval[1] = s->prevval[1];
+				}
+
+				// skip to next valid value
+				for (; i > 0; i--)
+				{
+					// preamble block
+					if (s->sampcnt <= 0)
+					{
+						// get current value from block header
+						val = (s16)(snd[0] + snd[1]*256);
+						s->prevval[0] = (s16)val;
+
+						val2 = (s16)(snd[4] + snd[5]*256);
+						s->prevval[1] = (s16)val2;
+
+						// get current index from block header
+						s->stepinx[0] = snd[2];
+						s->stepinx[1] = snd[6];
+						snd += 8;
+
+						// set counter of samples per block
+						s->sampcnt = s->sampblock;
+						s->odd = False; // odd sub-sample
+						s->byte4 = 0;	// counter of 4-byte
+
+						cnt -= 8; // sample count correction (= 8 bytes)
+					}
+					else
+					{
+						// get next sample delta
+						u8 delta, delta2;
+						if (s->odd) // odd sub-sample (higher 4 bits)
+						{
+							delta = (u8)(s->subsample[0] >> 4);
+							delta2 = (u8)(s->subsample[1] >> 4);
+						}
+						else // even sub-sample (lower 4 bits)
+						{
+							delta = snd[0];
+							s->subsample[0] = delta;
+							delta &= 0x0f;
+
+							delta2 = snd[4];
+							s->subsample[1] = delta2;
+							delta2 &= 0x0f;
+
+							snd++;
+							s->byte4++;
+							if (s->byte4 >= 4)
+							{
+								s->byte4 = 0;
+								snd += 4; // skip right channel
+							}
+						}
+						cnt--; // sample counter
+						s->odd = !s->odd; // flag of odd sub-sample
+
+						// get step size
+						s8 stepinx = s->stepinx[0];
+						s16 step = ADPCM_StepSize[stepinx];
+
+						s8 stepinx2 = s->stepinx[1];
+						s16 step2 = ADPCM_StepSize[stepinx2];
+
+						// shift step index
+						stepinx += ADPCM_TabInx[delta];
+						stepinx2 += ADPCM_TabInx[delta2];
+
+						// limit step index
+						if ((uint)stepinx >= (uint)ADPCM_STEPS)
+						{
+							if (stepinx < 0)
+								stepinx = 0;
+							else
+								stepinx = ADPCM_STEPS - 1;
+						}
+						s->stepinx[0] = stepinx;
+
+						if ((uint)stepinx2 >= (uint)ADPCM_STEPS)
+						{
+							if (stepinx2 < 0)
+								stepinx2 = 0;
+							else
+								stepinx2 = ADPCM_STEPS - 1;
+						}
+						s->stepinx[1] = stepinx2;
+
+						// get next difference
+						s16 dif = step >> 3;
+						if ((delta & B0) != 0) dif += step >> 2;
+						if ((delta & B1) != 0) dif += step >> 1;
+						if ((delta & B2) != 0) dif += step ;
+						if ((delta & B3) != 0) dif = -dif; // sign correction
+
+						s16 dif2 = step2 >> 3;
+						if ((delta2 & B0) != 0) dif2 += step2 >> 2;
+						if ((delta2 & B1) != 0) dif2 += step2 >> 1;
+						if ((delta2 & B2) != 0) dif2 += step2 ;
+						if ((delta2 & B3) != 0) dif2 = -dif2; // sign correction
+
+						// add difference to previous value
+						val = s->prevval[0] + dif;
+						if (val > ADPCM_MAXVAL) val = ADPCM_MAXVAL;
+						if (val < ADPCM_MINVAL) val = ADPCM_MINVAL;
+						s->prevval[0] = (s16)val;
+
+						val2 = s->prevval[1] + dif2;
+						if (val2 > ADPCM_MAXVAL) val2 = ADPCM_MAXVAL;
+						if (val2 < ADPCM_MINVAL) val2 = ADPCM_MINVAL;
+						s->prevval[1] = (s16)val2;
+					}
+
+					// sample counter
+					s->sampcnt--;
+					if (cnt <= 0) break;
+				}
+
+				// add value to output, interpolate
+				k = s->prevval[0]*acc + s->oldval[0]*(SNDINT - acc);
+				k >>= SNDFRAC;
+				k *= s->vol;
+				k >>= 16 - PWMSND_BITS;
+
+				k2 = s->prevval[1]*acc + s->oldval[1]*(SNDINT - acc);
+				k2 >>= SNDFRAC;
+				k2 *= s->vol;
+				k2 >>= 16 - PWMSND_BITS;
+
+#if PWMSND_GPIO_R >= 0
+				samp += k;
+				sampR += k2;
+#else
+				samp += (k + k2) >> 1;
+#endif
 			}
 
 			// repeated sample
 			if (cnt <= 0) // end of sound?
 			{
 				s->sampcnt = 0; // reset counter of samples per block
-				s->stepinx = 0; // step index
-				s->prevval = 0; // previous value
+				s->stepinx[0] = 0; // step index L
+				s->stepinx[1] = 0; // step index R
+				s->prevval[0] = 0; // previous value L
+				s->prevval[1] = 0; // previous value R
 				s->odd = False; // odd sub-sample
+				s->oldval[0] = 0; // old value L
+				s->oldval[1] = 0; // old value R
 				cnt = s->nextcnt; // counter of next sound
 				acc = 0; // reset accumulator
 				snd = s->next; // pointer to next sound
@@ -192,16 +491,38 @@ void PWMSndIrq()
 		s++;
 	}
 
+	// time dithering
+	int di = PwmSoundDither;
+	di ^= 1;
+	PwmSoundDither = di;
+	di *= SNDINT/2;
+	di += SNDINT/4;
+	samp += di;
+#if PWMSND_GPIO_R >= 0
+	sampR += di;
+#endif
+
 	// limit sound sample
 	samp >>= SNDFRAC;
 	if (samp < 0) samp = 0;
-	if (samp > 255) samp = 255;
+	if (samp > PWMSND_TOP) samp = PWMSND_TOP;
+
+#if PWMSND_GPIO_R >= 0
+	sampR >>= SNDFRAC;
+	if (sampR < 0) sampR = 0;
+	if (sampR > PWMSND_TOP) sampR = PWMSND_TOP;
+#endif
 
 	// write PWM sample
-	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, (u8)samp);
+#if PWMSND_GPIO_R >= 0
+	PWM_Comp2(PWMSND_SLICE, samp, sampR);
+#else
+	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, samp);
+#endif
 }
 
-// initialize PWM sound output (must be re-initialized after changing CLK_SYS system clock)
+// initialize PWM sound output (needs not be re-initialized after changing CLK_SYS system clock,
+// but if playing any sound, SpeedSoundUpdate() should be called to update speed of current sounds).
 void PWMSndInit()
 {
 	// sound is OFF
@@ -211,7 +532,12 @@ void PWMSndInit()
 	PWM_Reset(PWMSND_SLICE);
 
 	// set GPIO function to PWM
+#if PWMSND_GPIO_R >= 0
+	PWM_GpioInit(PWMSND_GPIO_R);
+//	GPIO_Drive12mA(PWMSND_GPIO_R);
+#endif
 	PWM_GpioInit(PWMSND_GPIO);
+//	GPIO_Drive12mA(PWMSND_GPIO);
 
 	// clear descriptors
 	int i;
@@ -221,16 +547,21 @@ void PWMSndInit()
 	SetHandler(IRQ_PWM_WRAP, PWMSndIrq);
 	NVIC_IRQEnable(IRQ_PWM_WRAP);
 
-	// set clock divider
-	//  125 MHz: 125000000/5644800 = 22.144, INT=22, FRAC=2,
-	//     real sample rate = 125000000/(22+2/16)/256 = 22069Hz
-	PWM_Clock(PWMSND_SLICE, PWMSND_CLOCK);
+	// set clock divider to 1.00
+	PWM_ClkDiv(PWMSND_SLICE, 0x010);
 
-	// set period to 256 cycles
+	// set period to top cycles
 	PWM_Top(PWMSND_SLICE, PWMSND_TOP);
 
 	// write default PWM sample
-	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, 128);
+#if PWMSND_GPIO_R >= 0
+	PWM_Comp2(PWMSND_SLICE, PWMSND_TOP/2, PWMSND_TOP/2);
+#else
+	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, PWMSND_TOP/2);
+#endif
+
+	// reset time dithering
+	PwmSoundDither = 0;
 
 	// enable PWM (will be enabled on 1st using of some sound to avoid speaker noise)
 //	PWM_Enable(PWMSND_SLICE);
@@ -255,40 +586,73 @@ void PWMSndTerm()
 	PWM_Reset(PWMSND_SLICE);
 
 	// set GPIO function to default
-	GPIO_Init(PWMSND_GPIO);
+	GPIO_Reset(PWMSND_GPIO);
 }
 
 // stop playing sound
-void StopSoundChan(u8 chan)
+void StopSoundChan(int chan)
 {
 	dmb();
 	PwmSound[chan].cnt = 0;
 	dmb();
 }
 
+// stop playing sound of channel 0
 void StopSound()
 {
 	StopSoundChan(0);
 }
 
+// stop playing sounds of all channels
 void StopAllSound()
 {
 	int i;
 	for (i = 0; i < USE_PWMSND; i++) StopSoundChan(i);
 }
 
-// output PWM sound (sound must be PCM 8-bit mono 22050Hz)
+// Convert length of sound in bytes to number of samples
+//  size = length of sound in bytes (use sizeof(array))
+//  form = sound format SNDFORM_* (4-bit, 8-bit, 16-bit, mono or stereo)
+// Returns length of sound in samples (or double-samples for stereo)
+int SoundByteToLen(int size, int form)
+{
+	switch(form)
+	{
+	// 8-bits unsigned per sample, stereo
+	// 16-bits signed per sample, mono
+	case SNDFORM_PCM_S:
+	case SNDFORM_PCM16: return size/2;
+
+	// IMA ADPCM, 4-bit compression, mono
+	case SNDFORM_ADPCM: return size*2;
+
+	// 16-bits signed per sample, stereo
+	case SNDFORM_PCM16_S: return size/4;
+
+	// 8-bits unsigned per sample, mono
+	// IMA ADPCM, 4-bit compression, stereo
+	case SNDFORM_PCM:
+	case SNDFORM_ADPCM_S:
+	default: return size;
+	}
+}
+
+// play sound
 //  chan = channel 0..
 //  snd = pointer to sound
-//  len = length of sound in number of samples (for ADPCM number of samples = 2 * number of bytes)
+//  size = length of sound in number of bytes (use sizeof(array))
 //  rep = True to repeat sample
-//  speed = relative speed (1=normal; SNDFORM_ADPCM must have speed = 1)
+//  speed = speed relative to sample rate 22050 Hz (1=normal)
 //  volume = volume (1=normal)
-//  form = sound format SNDFORM_*
-//  ext = format extended data (ADPCM: number of samples per block)
-void PlaySoundChan(u8 chan, const u8* snd, int len, Bool rep, float speed, float volume, u8 form, int ext)
+//  form = sound format SNDFORM_* (4-bit, 8-bit, 16-bit, mono or stereo)
+//  ext = format extended data (ADPCM: number of samples per block, see WAV file)
+void PlaySoundChan(int chan, const void* snd, int size, Bool rep, float speed, float volume, int form, int ext)
 {
+	// global sound is OFF
 	if (GlobalSoundOff) return;
+
+	// convert sound size to the length
+	int len = SoundByteToLen(size, form);
 
 	// prepare volume
 #if USE_CONFIG			// use device configuration (lib_config.c, lib_config.h)
@@ -297,21 +661,24 @@ void PlaySoundChan(u8 chan, const u8* snd, int len, Bool rep, float speed, float
 	int v = (int)(SNDINT * volume + 0.5f);
 #endif
 
-	// prepare speed increment
-	if (form == SNDFORM_ADPCM) speed = 1.0f; // ADPCM must have speed = 1.0
-	int sinc = (int)(SNDINT * speed + 0.5f); // sample increment
-
 	// stop playing sound
 	StopSoundChan(chan);
 
 	// pointer to sound channel
 	sPwmSnd* s = &PwmSound[chan];
 
+	// system speed
+	float speed0 = (float)PWMSND_CLOCK/CurrentFreq[CLK_SYS];
+	s->speed = speed;
+
+	// prepare speed increment
+	int sinc = (int)(SNDINT * speed * speed0 + 0.5f); // sample increment
+
 	// repeated sound
 	s->nextcnt = 0;
 	if (rep)
 	{
-		s->next = snd;
+		s->next = (const u8*)snd;
 		s->nextcnt = len;
 	}
 
@@ -326,13 +693,17 @@ void PlaySoundChan(u8 chan, const u8* snd, int len, Bool rep, float speed, float
 	// prepare sound format
 	s->sampblock = (s16)ext; // number of samples per block
 	s->sampcnt = 0; // counter of samples per block
-	s->form = form; // sound format
-	s->stepinx = 0; // step index
-	s->prevval = 0; // previous value
+	s->form = (u8)form; // sound format
+	s->stepinx[0] = 0; // step index L
+	s->stepinx[1] = 0; // step index R
+	s->prevval[0] = 0; // previous value L
+	s->prevval[1] = 0; // previous value R
 	s->odd = False; // odd sub-sample
+	s->oldval[0] = 0; // old value L
+	s->oldval[1] = 0; // old value R
 
 	// start current sound
-	s->snd = snd;
+	s->snd = (const u8*)snd;
 	dmb();
 	s->cnt = len;
 	dmb();
@@ -341,42 +712,87 @@ void PlaySoundChan(u8 chan, const u8* snd, int len, Bool rep, float speed, float
 	PWM_Enable(PWMSND_SLICE);
 }
 
-void PlaySound(const u8* snd, int len)
+// play sound at channel 0, format SNDFORM_PCM: 8-bit 22050 Hz mono
+//  snd = pointer to sound in format SNDFORM_PCM: 8-bit 22050 Hz mono
+//  size = length of sound in number of bytes (use sizeof(array))
+void PlaySound(const void* snd, int size)
 {
-	PlaySoundChan(0, snd, len, False, 1, 1, SNDFORM_PCM, 0);
+	PlaySoundChan(0, snd, size, False, 1, 1, SNDFORM_PCM, 0);
 }
 
-// output PWM sound repeated
-void PlaySoundRep(const u8* snd, int len)
+// play sound at channel 0 repeated, format SNDFORM_PCM: 8-bit 22050 Hz mono
+//  snd = pointer to sound in format SNDFORM_PCM: 8-bit 22050 Hz mono
+//  size = length of sound in number of bytes (use sizeof(array))
+void PlaySoundRep(const void* snd, int size)
 {
-	PlaySoundChan(0, snd, len, True, 1, 1, SNDFORM_PCM, 0);
+	PlaySoundChan(0, snd, size, True, 1, 1, SNDFORM_PCM, 0);
 }
 
-// play ADPCM sound (len = number of samples = number of bytes * 2)
-void PlayADPCMChan(u8 chan, const u8* snd, int len, int sampblock)
+// play ADPCM sound, format SNDFORM_ADPCM: 4-bit 22050 Hz mono
+//  chan = channel 0..
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+//  sampblock = number of samples per block (see WAV file)
+void PlayADPCMChan(int chan, const void* snd, int size, int sampblock)
 {
-	PlaySoundChan(chan, snd, len, False, 1, 1, SNDFORM_ADPCM, sampblock);
+	PlaySoundChan(chan, snd, size, False, 1, 1, SNDFORM_ADPCM, sampblock);
 }
 
-// play ADPCM sound repeated (len = number of samples = number of bytes * 2)
-void PlayADPCMRepChan(u8 chan, const u8* snd, int len, int sampblock)
+// play ADPCM sound at channel 0, format SNDFORM_ADPCM: 4-bit 22050 Hz mono
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+//  sampblock = number of samples per block (see WAV file)
+void PlayADPCM(const void* snd, int size, int sampblock)
 {
-	PlaySoundChan(chan, snd, len, True, 1, 1, SNDFORM_ADPCM, sampblock);
+	PlayADPCMChan(0, snd, size, sampblock);
 }
 
-// update sound speed (1=normal speed; SNDFORM_ADPCM must have speed = 1)
-void SpeedSoundChan(u8 chan, float speed)
+// play ADPCM sound repeated, format SNDFORM_ADPCM: 4-bit 22050 Hz mono
+//  chan = channel 0..
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+//  sampblock = number of samples per block (see WAV file)
+void PlayADPCMRepChan(int chan, const void* snd, int size, int sampblock)
 {
-	PwmSound[chan].inc = (int)(SNDINT * speed + 0.5f);
+	PlaySoundChan(chan, snd, size, True, 1, 1, SNDFORM_ADPCM, sampblock);
 }
 
+// play ADPCM sound at channel 0 repeated, format SNDFORM_ADPCM: 4-bit 22050 Hz mono
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+//  sampblock = number of samples per block (see WAV file)
+void PlayADPCMRep(const void* snd, int size, int sampblock)
+{
+	PlayADPCMRepChan(0, snd, size, sampblock);
+}
+
+// update sound speed (1=normal speed)
+void SpeedSoundChan(int chan, float speed)
+{
+	float speed0 = (float)PWMSND_CLOCK/CurrentFreq[CLK_SYS];
+	PwmSound[chan].speed = speed;
+	PwmSound[chan].inc = (int)(SNDINT * speed * speed0 + 0.5f);
+}
+
+// update sound speed of channel 0 (1=normal speed)
 void SpeedSound(float speed)
 {
 	SpeedSoundChan(0, speed);
 }
 
+// update all sound speeds after changing system clock
+void SpeedSoundUpdate()
+{
+	float speed0 = (float)PWMSND_CLOCK/CurrentFreq[CLK_SYS];
+	int i;
+	for (i = 0; i < USE_PWMSND; i++)
+	{
+		PwmSound[i].inc = (int)(SNDINT * PwmSound[i].speed * speed0 + 0.5f);
+	}
+}
+
 // update sound volume (1=normal volume)
-void VolumeSoundChan(u8 chan, float volume)
+void VolumeSoundChan(int chan, float volume)
 {
 	sPwmSnd* s = &PwmSound[chan];
 	s->vol0 = volume;
@@ -387,13 +803,14 @@ void VolumeSoundChan(u8 chan, float volume)
 #endif
 }
 
+// update sound volume of channel 0 (1=normal volume)
 void VolumeSound(float volume)
 {
 	VolumeSoundChan(0, volume);
 }
 
-// check if playing sound
-Bool PlayingSoundChan(u8 chan)
+// check if sound is playing
+Bool PlayingSoundChan(int chan)
 {
 	if (GlobalSoundOff) return False;
 
@@ -401,6 +818,7 @@ Bool PlayingSoundChan(u8 chan)
 	return s->cnt > 0;
 }
 
+// check if sound of channel 0 is playing
 Bool PlayingSound()
 {
 	if (GlobalSoundOff) return False;
@@ -408,13 +826,18 @@ Bool PlayingSound()
 	return PlayingSoundChan(0);
 }
 
-// set next repeated sound
-void SetNextSoundChan(u8 chan, const u8* snd, int len)
+// set next repeated sound in the same format
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+void SetNextSoundChan(int chan, const void* snd, int size)
 {
 	sPwmSnd* s = &PwmSound[chan];
 
+	// convert sound size to the length
+	int len = SoundByteToLen(size, s->form);
+
 	// check if this sound is already next sound
-	if (PlayingSoundChan(chan) && (s->next == snd) && (s->nextcnt == len)) return;
+	if (PlayingSoundChan(chan) && ((const void*)s->next == snd) && (s->nextcnt == len)) return;
 
 	// disable next sound
 	s->nextcnt = 0;
@@ -424,25 +847,32 @@ void SetNextSoundChan(u8 chan, const u8* snd, int len)
 	if (s->cnt == 0)
 	{
 		s->sampcnt = 0; // counter of samples per block
-		s->stepinx = 0; // step index
-		s->prevval = 0; // previous value
+		s->stepinx[0] = 0; // step index L
+		s->stepinx[1] = 0; // step index R
+		s->prevval[0] = 0; // previous value L
+		s->prevval[1] = 0; // previous value R
 		s->odd = False; // odd sub-sample
+		s->oldval[0] = 0; // old value L
+		s->oldval[1] = 0; // old value R
 
-		s->snd = snd;
+		s->snd = (const u8*)snd;
 		dmb();
 		s->cnt = len;
 		dmb();
 	}
 
 	// set next sound
-	s->next = snd;
+	s->next = (const u8*)snd;
 	dmb();
 	s->nextcnt = len;
 }
 
-void SetNextSound(const u8* snd, int len)
+// set next repeated sound of channel 0 in the same format
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+void SetNextSound(const void* snd, int size)
 {
-	SetNextSoundChan(0, snd, len);
+	SetNextSoundChan(0, snd, size);
 }
 
 // global sound set OFF

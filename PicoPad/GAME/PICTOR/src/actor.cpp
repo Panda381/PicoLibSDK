@@ -51,7 +51,7 @@ void SetBlood(int x, int y)
 	BloodTime = BLOOD_TIME;
 
 	if (SoundMode != SOUNDMODE_OFF)
-		PlaySoundChan(SOUNDCHAN_ACTORHIT, FailSnd, 2*sizeof(FailSnd), False, 1, 1.0f, SNDFORM_ADPCM, IMA_SAMPBLOCK);
+		PlaySoundChan(SOUNDCHAN_ACTORHIT, FailSnd, sizeof(FailSnd), False, 1, 1.0f, SNDFORM_ADPCM, IMA_SAMPBLOCK);
 }
 
 // display blood

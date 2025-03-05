@@ -120,7 +120,7 @@ void NewLoop()
 	if (Mute)
 		StopSound();
 	else
-		PlayADPCMRep(LoopList[Loop], LoopLen[Loop]*2, IMA_SAMPBLOCK);
+		PlayADPCMRep(LoopList[Loop], LoopLen[Loop], IMA_SAMPBLOCK);
 }
 
 int main()

@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico, RP2040 and RP2350
 ==========================================================================
-SDK Programmer's Guide, Version 2.05, March 2025
+SDK Programmer's Guide, Version 2.06, March 2025
 
 Copyright (c) 2023-2025 Miroslav Nemecek
 
@@ -838,9 +838,12 @@ History of versions
 10/27/2024 version 2.01: Fast float library for RISC-V Hazard3 core.
 11/05/2024 version 2.02: NES Emulator
 12/03/2024 version 2.03: Fast double library for RISC-V Hazard3 core.
-02/24/2025 version 2.04: DispHSTX library v1.00, DrawCan library, faster compilation,
-	configurable compilation paths
+02/24/2025 version 2.04: DispHSTX library v1.00, DrawCan library, faster
+	compilation, configurable compilation paths
 03/02/2025 version 2.05: Build of DispHSTX v1.01 library for Raspberry PicoSDK
+03/05/2025 version 2.06: PWMSnd update - higher quality audio output, less
+	noise, higher PWM output sample rate, 12-bit output, stereo and 16-bit
+	format support
 
 
 Missing and @TODO

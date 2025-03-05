@@ -1113,6 +1113,11 @@ void DispHstxSelDispMode(int dispmode, sDispHstxVModeState* vmode)
 #if DISPHSTX_USE_VGA		// 1=use VGA support (0=or only DVI)
 	if (dispmode == DISPHSTX_DISPMODE_VGA) DispHstxVgaStart();
 #endif
+
+#if USE_PWMSND		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
+	// update all sound speeds after changing system clock
+	SpeedSoundUpdate();
+#endif
 }
 
 // exchange video mode, without terminating current mode
