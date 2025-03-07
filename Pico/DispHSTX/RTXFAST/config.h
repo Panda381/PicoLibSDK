@@ -8,6 +8,16 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#define USE_DRAWCAN0    1
+#define USE_DRAWCAN1    1
+#define USE_DRAWCAN2    1
+#define USE_DRAWCAN3    1
+#define USE_DRAWCAN4    1
+#define USE_DRAWCAN6    1
+#define USE_DRAWCAN8    1
+#define USE_DRAWCAN12   1
+#define USE_DRAWCAN16   1
+
 // *********
 // At this place you can specify the switches and settings you want
 // to change from the default configuration in config_def.h.
@@ -15,7 +25,7 @@
 
 #define USE_DISPHSTX		1		// 1=use HSTX Display driver
 #define USE_DRAWCAN		1		// use drawing canvas (lib_drawcan*.c, lib_drawcan*.h)
-#define DISPHSTX_DVI_PINOUT	1		// DVI predefined pinout: 0=DVI breakout board, 1=order D2+..CLK-, 2=order CLK-..D2+
+//#define DISPHSTX_DVI_PINOUT	0		// DVI predefined pinout: 0=DVI breakout board, 1=order D2+..CLK-, 2=order CLK-..D2+
 //#define DISPHSTX_DISP_SEL	20		// >=0 GPIO pin with display selection switch, -1=do not use display selection switch
 
 //#define DISPHSTX_USE_VGA	1		// 1=use VGA support (0=or only DVI) ... VGA is not supported, it is too slow for this purpose
