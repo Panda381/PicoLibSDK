@@ -337,6 +337,13 @@ void ClockPllSysFreqVolt(u32 freq)
 
 	// reconnect CLK_SYS back to PLL_SYS
 	clock_configure(clk_sys, CLOCKS_CLK_SYS_CTRL_SRC_VALUE_CLKSRC_CLK_SYS_AUX, CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS, freq*1000, freq*1000);
+
+	// re-init peripheral clock
+	u32 f = clock_get_hz(clk_sys);
+	if (f < 200*MHZ)
+		clock_configure_undivided(clk_peri, 0, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS, f);
+	else
+		clock_configure(clk_peri, 0, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS, f, SYS_CLK_HZ);
 }
 
 #endif // USE_DISPHSTX && DISPHSTX_PICOSDK
