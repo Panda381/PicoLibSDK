@@ -16,7 +16,7 @@ const char PrivImg[] = "COLBOOK.BMP";	// private image (do not list nor edit)
 // image file
 typedef struct {
 	char	name[12+1];	// image file name
-	u8	namelen;	// lengt of file name
+	u8	namelen;	// length of file name
 } sImgFile;
 
 // list of image files

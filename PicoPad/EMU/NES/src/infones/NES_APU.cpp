@@ -1014,7 +1014,7 @@ typedef struct {
 } sApuSnd;
 */
 
-#define NES_APU_FRAME_STEP	7456		// lengt of frame step in number of CPU clock cycles
+#define NES_APU_FRAME_STEP	7456		// length of frame step in number of CPU clock cycles
 
 // set frame interrupt dissable flag
 //  - controlled from the CPU emulator rather than from the sound hardware

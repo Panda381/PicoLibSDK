@@ -487,6 +487,10 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #define USE_MINIRING	1		// use Mini-Ring buffer (lib_miniring.c, lib_miniring.h)
 #endif
 
+#ifndef USE_MP3
+#define USE_MP3		0		// use MP3 decoder (lib_mp3*.c, lib_mp3*.h)
+#endif
+
 #ifndef USE_PRINT
 #define USE_PRINT	1		// use Formatted print (lib_print.c, lib_print.h)
 #endif

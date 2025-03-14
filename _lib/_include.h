@@ -137,6 +137,9 @@
 #endif
 
 
+#if USE_MP3
+#include "mp3/lib_mp3.h"		// MP3 decoder
+#endif
 
 
 #if USE_EMU

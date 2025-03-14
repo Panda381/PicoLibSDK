@@ -17,7 +17,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-#define SDK_VER		206	// SDK library version in hundredths
+#define SDK_VER		207	// SDK library version in hundredths
 
 // ----------------------------------------------------------------------------
 //                               Attributes
@@ -166,6 +166,19 @@ typedef long intptr_t;
 #endif
 
 // optimised Bool
+//  Note: Why is a Bool type of boolean variable used? Two types of boolean variables
+//  are commonly used. In Windows notation, a boolean variable is called BOOL with
+//  the values TRUE and FALSE. It is based on the C language, where the boolean value
+//  FALSE is considered to be the zero value of an integer number, and TRUE is
+//  considered to be a non-zero value. This type of logical variable requires a variable
+//  of size int, that is, typically 32 bits. In C++, the bool logical variable was
+//  introduced with the values true and false. It is a bit variable with a typical size
+//  of 1 byte and values of 0 and 1. The bool variable is more memory efficient than the
+//  BOOL type, but it is more demanding for the processor - it requires permanent
+//  conversion of the result of operations to the value 0 or 1. The Bool type variable
+//  is an optimal compromise between the two methods. It uses a variable of size 1 byte,
+//  treats a value of False as a zero value and a non-zero value as True. This method is
+//  memory-efficient while being fast and efficient for the processor.
 typedef unsigned char Bool;
 #define True 1
 #define False 0

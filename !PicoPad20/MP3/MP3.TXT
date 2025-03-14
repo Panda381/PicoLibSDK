@@ -1,0 +1,15 @@
+^YMP3 Player^0 - Speaker
+
+^WLEFT^0 ........ left/-10 sec
+^WRIGHT^0 ...... right/+10 sec
+^WUP^0 ............... up/+vol
+^WDOWN^0 ........... down/-vol
+^WA^0 .......... play/previous
+^WB^0 .......... play_all/next
+^WX^0 ............. info+pause
+^WY^0 .............. back/quit
+More sample MP3s on web page
+www.breatharian.eu/hw/picolibsdk
+Support USB keyboard:
+A->Ctrl, B->Alt, X->Shift,
+Y->Esc

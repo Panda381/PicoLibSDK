@@ -96,6 +96,10 @@
 #include "src/lib_miniring.c"
 #endif
 
+#if USE_MP3
+#include "mp3/lib_mp3.c"
+#endif
+
 #if USE_PRINT
 #include "src/lib_print.c"
 #endif

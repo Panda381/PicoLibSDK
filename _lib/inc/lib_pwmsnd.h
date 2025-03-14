@@ -82,6 +82,11 @@ extern "C" {
 #define SNDFORM_ADPCM_S	(SNDFORM_ADPCM|SNDFORM_STEREO) 	// IMA ADPCM, 4-bit compression, stereo
 #define SNDFORM_PCM16_S	(SNDFORM_PCM16|SNDFORM_STEREO)	// 16-bits signed per sample, stereo
 
+// repeat mode
+#define SNDREPEAT_NO		0	// no repeat (or use False)
+#define SNDREPEAT_REPEAT	1	// repeat sound (or use True)
+#define SNDREPEAT_STREAM	2	// streaming sound
+
 // PWM sound channel
 typedef struct {
 	// current sound
@@ -94,6 +99,9 @@ typedef struct {
 	// next sound
 	const u8*	next;		// pointer to next sound to play repeated sound
 	int		nextcnt;	// counter of next sound (0 = no repeated sound)
+	Bool		stream;		// use streaming sound
+	Bool		useirq;		// use streaming IRQ (set this entry manually, after calling PlaySoundChan() function)
+	u8		irq;		// streaming IRQ (set this entry manually, after calling PlaySoundChan() function)
 	// volume
 	int		vol;		// sound volume (SNDINT = normal = 1024)
 	float		vol0;		// initial sound volume (1.0 = normal)
@@ -108,6 +116,16 @@ typedef struct {
 	u8		byte4;		// counter of 4-byte
 	u8		subsample[2];	// save sub-sample
 } sPwmSnd;
+
+// PWM sound output pins (default set to PWMSND_GPIO and PWMSND_GPIO_R)
+// - Must be initialized before calling PWMSndInit().
+// - Set PWMSndGpioR to -1 to use mono output to PWMSndGpio.
+// - Both PWM sound channels L+R must be on the same PWM slice.
+extern int PWMSndGpio, PWMSndGpioR;
+extern int PWMSndChan;
+extern int PWMSndChanR;
+extern int PWMSndSlice;
+extern Bool PWMSndWasInit;
 
 // PWM sound channels
 extern sPwmSnd PwmSound[USE_PWMSND];
@@ -138,12 +156,13 @@ int SoundByteToLen(int size, int form);
 //  chan = channel 0..
 //  snd = pointer to sound
 //  size = length of sound in number of bytes (use sizeof(array))
-//  rep = True to repeat sample
+//  rep = repeat mode SNDREPEAT_*
 //  speed = speed relative to sample rate 22050 Hz (1=normal, you can use constants SNDSPEED_*)
 //  volume = volume (1=normal)
 //  form = sound format SNDFORM_* (4-bit, 8-bit, 16-bit, mono or stereo)
 //  ext = format extended data (ADPCM: number of samples per block, see WAV file)
-void PlaySoundChan(int chan, const void* snd, int size, Bool rep, float speed, float volume, int form, int ext);
+// If want to use streaming mode with IRQ, set the 'useirq' and 'irq' entries manually, after calling PlaySoundChan() function.
+void PlaySoundChan(int chan, const void* snd, int size, int rep, float speed, float volume, int form, int ext);
 
 // play sound at channel 0, format SNDFORM_PCM: 8-bit 22050 Hz mono
 //  snd = pointer to sound in format SNDFORM_PCM: 8-bit 22050 Hz mono
@@ -215,6 +234,14 @@ void SetNextSoundChan(int chan, const void* snd, int size);
 //  snd = pointer to sound
 //  size = length of sound in number of bytes (use sizeof(array))
 void SetNextSound(const void* snd, int size);
+
+// check if streaming buffer is empty
+Bool SoundStreamIsEmpty(int chan);
+
+// set next streaming buffer
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+void SoundStreamSetNext(int chan, const void* snd, int size);
 
 // global sound set OFF
 void GlobalSoundSetOff();

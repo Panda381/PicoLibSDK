@@ -14,7 +14,7 @@
 // video file
 typedef struct {
 	char	name[12+1];	// video file name
-	u8	namelen;	// lengt of file name
+	u8	namelen;	// length of file name
 	int	len;		// length in seconds
 } sVideoFile;
 

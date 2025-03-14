@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico, RP2040 and RP2350
 ==========================================================================
-SDK Programmer's Guide, Version 2.06, March 2025
+SDK Programmer's Guide, Version 2.07, March 2025
 
 Copyright (c) 2023-2025 Miroslav Nemecek
 
@@ -39,7 +39,7 @@ compatibility. What you can find in the PicoLibSDK library:
   linked list, memory allocator, 2D transformation matrix, mini-ring buffer,
   formatted print, PWM sound output with ADPCM, random generator, rectangle,
   ring buffer, DMA ring buffer, SD card, streams, text strings, text list, text
-  print, tree list, VGA drawing, video player.
+  print, tree list, VGA drawing, video player, MP3 player.
 
 - USB library: multiplayer mini-port, CDC device and host - serial communication,
   HID device and host - including external keyboard and mouse.
@@ -844,6 +844,7 @@ History of versions
 03/05/2025 version 2.06: PWMSnd update - higher quality audio output, less
 	noise, higher PWM output sample rate, 12-bit output, stereo and 16-bit
 	format support
+03/14/2025 version 2.07: MP3 decoder and player
 
 
 Missing and @TODO
@@ -853,6 +854,5 @@ SDK supports that are missing in the library and are needed @TODO:
 - bluetooth and wifi
 - more USB drivers (audio, bluetooth, dfu, midi, msc, net, tmc, video)
 - DDS compression image format, JPG compression
-- MP3 compression
 - 3D graphics support
 - encapsulation of text strings into C++ objects

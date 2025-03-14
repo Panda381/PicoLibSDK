@@ -28,6 +28,17 @@ volatile Bool GlobalSoundOff = False;
 #include "../inc/lib_pwmsnd.h"
 #include "../inc/lib_config.h"
 
+// PWM sound output pins (default set to PWMSND_GPIO and PWMSND_GPIO_R)
+// - Must be initialized before calling PWMSndInit().
+// - Set PWMSndGpioR to -1 to use mono output to PWMSndGpio.
+// - Both PWM sound channels L+R must be on the same PWM slice.
+int PWMSndGpio = PWMSND_GPIO;
+int PWMSndGpioR = PWMSND_GPIO_R;
+int PWMSndChan = PWM_GPIOTOCHAN(PWMSND_GPIO);
+int PWMSndChanR = PWM_GPIOTOCHAN(PWMSND_GPIO_R);
+int PWMSndSlice = PWM_GPIOTOSLICE(PWMSND_GPIO);
+Bool PWMSndWasInit = False;
+
 // PWM sound channels
 sPwmSnd PwmSound[USE_PWMSND];
 
@@ -67,13 +78,11 @@ const s16 ADPCM_StepSize[ADPCM_STEPS] =	// IMA ADPCM table of step sizes
 void PWMSndIrq()
 {
 	// clear interrupt request
-	PWM_IntClear(PWMSND_SLICE);
+	PWM_IntClear(PWMSndSlice);
 
 	// default sample if no sound		
 	int samp = SNDINT*PWMSND_TOP/2;
-#if PWMSND_GPIO_R >= 0
 	int sampR = samp;
-#endif
 
 	// loop sound channels
 	sPwmSnd* s = PwmSound;
@@ -87,6 +96,7 @@ void PWMSndIrq()
 			// prepare pointer to the sample
 			const u8* snd = s->snd;
 			int acc = s->acc;
+			int sndover = 0;
 
 			// PCM 8-bit format mono
 			u8 form = s->form;
@@ -103,15 +113,14 @@ void PWMSndIrq()
 				k >>= 8 - PWMSND_BITS + SNDFRAC;
 
 				samp += k;
-#if PWMSND_GPIO_R >= 0
 				sampR += k;
-#endif
 
 				// increment pointer accumulator
 				acc = acc + s->inc;
 				i = acc >> SNDFRAC; // whole increment
 				snd += i; // shift sound pointer
 				cnt -= i; // shift sound counter
+				sndover = -cnt; // overflow correction
 				acc &= (SNDINT-1); // clear high bits
 			}
 
@@ -137,18 +146,20 @@ void PWMSndIrq()
 				k2 *= s->vol;
 				k2 >>= 8 - PWMSND_BITS + SNDFRAC;
 
-#if PWMSND_GPIO_R >= 0
-				samp += k;
-				sampR += k2;
-#else
-				samp += (k+k2) >> 1;
-#endif
+				if (PWMSndGpioR >= 0)
+				{
+					samp += k;
+					sampR += k2;
+				}
+				else
+					samp += (k+k2) >> 1;
 
 				// increment pointer accumulator
 				acc = acc + s->inc;
 				i = acc >> SNDFRAC; // whole increment
 				snd += i*2; // shift sound pointer
 				cnt -= i; // shift sound counter
+				sndover = -2*cnt; // overflow correction
 				acc &= (SNDINT-1); // clear high bits
 			}
 
@@ -167,15 +178,14 @@ void PWMSndIrq()
 				k >>= 16 - PWMSND_BITS;
 
 				samp += k;
-#if PWMSND_GPIO_R >= 0
 				sampR += k;
-#endif
 
 				// increment pointer accumulator
 				acc = acc + s->inc;
 				i = acc >> SNDFRAC; // whole increment
 				snd += i*2; // shift sound pointer
 				cnt -= i; // shift sound counter
+				sndover = -2*cnt; // overflow correction
 				acc &= (SNDINT-1); // clear high bits
 			}
 
@@ -203,18 +213,20 @@ void PWMSndIrq()
 				k2 *= s->vol;
 				k2 >>= 16 - PWMSND_BITS;
 
-#if PWMSND_GPIO_R >= 0
-				samp += k;
-				sampR += k2;
-#else
-				samp += (k+k2) >> 1;
-#endif
+				if (PWMSndGpioR >= 0)
+				{
+					samp += k;
+					sampR += k2;
+				}
+				else
+					samp += (k+k2) >> 1;
 
 				// increment pointer accumulator
 				acc = acc + s->inc;
 				i = acc >> SNDFRAC; // whole increment
 				snd += i*4; // shift sound pointer
 				cnt -= i; // shift sound counter
+				sndover = -4*cnt; // overflow correction
 				acc &= (SNDINT-1); // clear high bits
 			}
 
@@ -301,7 +313,11 @@ void PWMSndIrq()
 
 					// sample counter
 					s->sampcnt--;
-					if (cnt <= 0) break;
+					if (cnt <= 0)
+					{
+						cnt = 0;
+						break;
+					}
 				}
 
 				// add value to output, interpolate
@@ -310,9 +326,7 @@ void PWMSndIrq()
 				k *= s->vol;
 				k >>= 16 - PWMSND_BITS;
 				samp += k;
-#if PWMSND_GPIO_R >= 0
 				sampR += k;
-#endif
 			}
 
 			// ADPCM format stereo
@@ -443,7 +457,11 @@ void PWMSndIrq()
 
 					// sample counter
 					s->sampcnt--;
-					if (cnt <= 0) break;
+					if (cnt <= 0)
+					{
+						cnt = 0;
+						break;
+					}
 				}
 
 				// add value to output, interpolate
@@ -457,12 +475,13 @@ void PWMSndIrq()
 				k2 *= s->vol;
 				k2 >>= 16 - PWMSND_BITS;
 
-#if PWMSND_GPIO_R >= 0
-				samp += k;
-				sampR += k2;
-#else
-				samp += (k + k2) >> 1;
-#endif
+				if (PWMSndGpioR >= 0)
+				{
+					samp += k;
+					sampR += k2;
+				}
+				else
+					samp += (k + k2) >> 1;
 			}
 
 			// repeated sample
@@ -476,9 +495,18 @@ void PWMSndIrq()
 				s->odd = False; // odd sub-sample
 				s->oldval[0] = 0; // old value L
 				s->oldval[1] = 0; // old value R
-				cnt = s->nextcnt; // counter of next sound
-				acc = 0; // reset accumulator
-				snd = s->next; // pointer to next sound
+				snd = s->next + sndover; // pointer to next sound
+				cnt += s->nextcnt; // counter of next sound
+				if (s->stream)
+				{
+					s->nextcnt = 0; // streaming
+					if (s->useirq)
+					{
+						// streaming IRQ
+						dmb();
+						NVIC_IRQForce(s->irq);
+					}
+				}
 			}
 
 			// save new pointer
@@ -498,27 +526,24 @@ void PWMSndIrq()
 	di *= SNDINT/2;
 	di += SNDINT/4;
 	samp += di;
-#if PWMSND_GPIO_R >= 0
 	sampR += di;
-#endif
 
 	// limit sound sample
 	samp >>= SNDFRAC;
 	if (samp < 0) samp = 0;
 	if (samp > PWMSND_TOP) samp = PWMSND_TOP;
 
-#if PWMSND_GPIO_R >= 0
-	sampR >>= SNDFRAC;
-	if (sampR < 0) sampR = 0;
-	if (sampR > PWMSND_TOP) sampR = PWMSND_TOP;
-#endif
+	if (PWMSndGpioR >= 0)
+	{
+		sampR >>= SNDFRAC;
+		if (sampR < 0) sampR = 0;
+		if (sampR > PWMSND_TOP) sampR = PWMSND_TOP;
 
-	// write PWM sample
-#if PWMSND_GPIO_R >= 0
-	PWM_Comp2(PWMSND_SLICE, samp, sampR);
-#else
-	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, samp);
-#endif
+		PWM_Comp(PWMSndSlice, PWMSndChanR, sampR);
+	}
+
+	// write PWM samples
+	PWM_Comp(PWMSndSlice, PWMSndChan, samp);
 }
 
 // initialize PWM sound output (needs not be re-initialized after changing CLK_SYS system clock,
@@ -528,16 +553,23 @@ void PWMSndInit()
 	// sound is OFF
 	if (GlobalSoundOff) return;
 
+	// prepare output channels
+	PWMSndChan = PWM_GpioToChan(PWMSndGpio);
+	PWMSndChanR = PWM_GpioToChan(PWMSndGpioR);
+	PWMSndSlice = PWM_GpioToSlice(PWMSndGpio);
+
 	// reset PWM to default state
-	PWM_Reset(PWMSND_SLICE);
+	PWM_Reset(PWMSndSlice);
 
 	// set GPIO function to PWM
-#if PWMSND_GPIO_R >= 0
-	PWM_GpioInit(PWMSND_GPIO_R);
-//	GPIO_Drive12mA(PWMSND_GPIO_R);
-#endif
-	PWM_GpioInit(PWMSND_GPIO);
-//	GPIO_Drive12mA(PWMSND_GPIO);
+	if (PWMSndGpioR >= 0)
+	{
+		PWM_GpioInit(PWMSndGpioR);
+//		GPIO_Drive12mA(PWMSndGpioR);
+	}
+
+	PWM_GpioInit(PWMSndGpio);
+//	GPIO_Drive12mA(PWMSndGpio);
 
 	// clear descriptors
 	int i;
@@ -548,45 +580,50 @@ void PWMSndInit()
 	NVIC_IRQEnable(IRQ_PWM_WRAP);
 
 	// set clock divider to 1.00
-	PWM_ClkDiv(PWMSND_SLICE, 0x010);
+	PWM_ClkDiv(PWMSndSlice, 0x010);
 
 	// set period to top cycles
-	PWM_Top(PWMSND_SLICE, PWMSND_TOP);
+	PWM_Top(PWMSndSlice, PWMSND_TOP);
 
 	// write default PWM sample
-#if PWMSND_GPIO_R >= 0
-	PWM_Comp2(PWMSND_SLICE, PWMSND_TOP/2, PWMSND_TOP/2);
-#else
-	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, PWMSND_TOP/2);
-#endif
+	if (PWMSndGpioR >= 0) PWM_Comp(PWMSndSlice, PWMSndChanR, PWMSND_TOP/2);
+	PWM_Comp(PWMSndSlice, PWMSndChan, PWMSND_TOP/2);
 
 	// reset time dithering
 	PwmSoundDither = 0;
 
 	// enable PWM (will be enabled on 1st using of some sound to avoid speaker noise)
-//	PWM_Enable(PWMSND_SLICE);
+//	PWM_Enable(PWMSndSlice);
 
 	// interrupt enable
-	PWM_IntEnable(PWMSND_SLICE);
+	PWM_IntEnable(PWMSndSlice);
+
+	// was initialized
+	PWMSndWasInit = True;
 }
 
 // terminate PWM sound output
 void PWMSndTerm()
 {
+	// was initialized
+	if (!PWMSndWasInit) return;
+	PWMSndWasInit = False;
+
 	// disable PWM
-	PWM_Disable(PWMSND_SLICE);
+	PWM_Disable(PWMSndSlice);
 
 	// interrupt disable
-	PWM_IntDisable(PWMSND_SLICE);
+	PWM_IntDisable(PWMSndSlice);
 
 	// clear interrupt request
-	PWM_IntClear(PWMSND_SLICE);
+	PWM_IntClear(PWMSndSlice);
 
 	// reset PWM to default state
-	PWM_Reset(PWMSND_SLICE);
+	PWM_Reset(PWMSndSlice);
 
 	// set GPIO function to default
-	GPIO_Reset(PWMSND_GPIO);
+	GPIO_Reset(PWMSndGpio);
+	if (PWMSndGpioR >= 0) GPIO_Reset(PWMSndGpioR);
 }
 
 // stop playing sound
@@ -641,12 +678,13 @@ int SoundByteToLen(int size, int form)
 //  chan = channel 0..
 //  snd = pointer to sound
 //  size = length of sound in number of bytes (use sizeof(array))
-//  rep = True to repeat sample
-//  speed = speed relative to sample rate 22050 Hz (1=normal)
+//  rep = repeat mode SNDREPEAT_*
+//  speed = speed relative to sample rate 22050 Hz (1=normal, you can use constants SNDSPEED_*)
 //  volume = volume (1=normal)
 //  form = sound format SNDFORM_* (4-bit, 8-bit, 16-bit, mono or stereo)
 //  ext = format extended data (ADPCM: number of samples per block, see WAV file)
-void PlaySoundChan(int chan, const void* snd, int size, Bool rep, float speed, float volume, int form, int ext)
+// If want to use streaming mode with IRQ, set the 'useirq' and 'irq' entries manually, after calling PlaySoundChan() function.
+void PlaySoundChan(int chan, const void* snd, int size, int rep, float speed, float volume, int form, int ext)
 {
 	// global sound is OFF
 	if (GlobalSoundOff) return;
@@ -676,11 +714,14 @@ void PlaySoundChan(int chan, const void* snd, int size, Bool rep, float speed, f
 
 	// repeated sound
 	s->nextcnt = 0;
-	if (rep)
+	if ((rep != SNDREPEAT_NO) && (rep != SNDREPEAT_STREAM))
 	{
 		s->next = (const u8*)snd;
 		s->nextcnt = len;
 	}
+	s->stream = (rep == SNDREPEAT_STREAM);
+	s->useirq = False;
+	s->irq = 0;
 
 	// sound speed
 	s->inc = sinc;
@@ -709,7 +750,7 @@ void PlaySoundChan(int chan, const void* snd, int size, Bool rep, float speed, f
 	dmb();
 
 	// enable PWM
-	PWM_Enable(PWMSND_SLICE);
+	PWM_Enable(PWMSndSlice);
 }
 
 // play sound at channel 0, format SNDFORM_PCM: 8-bit 22050 Hz mono
@@ -717,7 +758,7 @@ void PlaySoundChan(int chan, const void* snd, int size, Bool rep, float speed, f
 //  size = length of sound in number of bytes (use sizeof(array))
 void PlaySound(const void* snd, int size)
 {
-	PlaySoundChan(0, snd, size, False, 1, 1, SNDFORM_PCM, 0);
+	PlaySoundChan(0, snd, size, SNDREPEAT_NO, 1, 1, SNDFORM_PCM, 0);
 }
 
 // play sound at channel 0 repeated, format SNDFORM_PCM: 8-bit 22050 Hz mono
@@ -725,7 +766,7 @@ void PlaySound(const void* snd, int size)
 //  size = length of sound in number of bytes (use sizeof(array))
 void PlaySoundRep(const void* snd, int size)
 {
-	PlaySoundChan(0, snd, size, True, 1, 1, SNDFORM_PCM, 0);
+	PlaySoundChan(0, snd, size, SNDREPEAT_REPEAT, 1, 1, SNDFORM_PCM, 0);
 }
 
 // play ADPCM sound, format SNDFORM_ADPCM: 4-bit 22050 Hz mono
@@ -735,7 +776,7 @@ void PlaySoundRep(const void* snd, int size)
 //  sampblock = number of samples per block (see WAV file)
 void PlayADPCMChan(int chan, const void* snd, int size, int sampblock)
 {
-	PlaySoundChan(chan, snd, size, False, 1, 1, SNDFORM_ADPCM, sampblock);
+	PlaySoundChan(chan, snd, size, SNDREPEAT_NO, 1, 1, SNDFORM_ADPCM, sampblock);
 }
 
 // play ADPCM sound at channel 0, format SNDFORM_ADPCM: 4-bit 22050 Hz mono
@@ -754,7 +795,7 @@ void PlayADPCM(const void* snd, int size, int sampblock)
 //  sampblock = number of samples per block (see WAV file)
 void PlayADPCMRepChan(int chan, const void* snd, int size, int sampblock)
 {
-	PlaySoundChan(chan, snd, size, True, 1, 1, SNDFORM_ADPCM, sampblock);
+	PlaySoundChan(chan, snd, size, SNDREPEAT_REPEAT, 1, 1, SNDFORM_ADPCM, sampblock);
 }
 
 // play ADPCM sound at channel 0 repeated, format SNDFORM_ADPCM: 4-bit 22050 Hz mono
@@ -873,6 +914,61 @@ void SetNextSoundChan(int chan, const void* snd, int size)
 void SetNextSound(const void* snd, int size)
 {
 	SetNextSoundChan(0, snd, size);
+}
+
+// check if streaming buffer is empty
+Bool SoundStreamIsEmpty(int chan)
+{
+	sPwmSnd* s = &PwmSound[chan];
+	return s->nextcnt == 0;
+}
+
+// set next streaming buffer
+//  snd = pointer to sound
+//  size = length of sound in number of bytes (use sizeof(array))
+void SoundStreamSetNext(int chan, const void* snd, int size)
+{
+	sPwmSnd* s = &PwmSound[chan];
+
+	// convert sound size to the length
+	int len = SoundByteToLen(size, s->form);
+
+	// disable interrupt
+	IRQ_LOCK;
+
+	// start sound if not playing
+	if (s->cnt == 0)
+	{
+		s->sampcnt = 0; // counter of samples per block
+		s->stepinx[0] = 0; // step index L
+		s->stepinx[1] = 0; // step index R
+		s->prevval[0] = 0; // previous value L
+		s->prevval[1] = 0; // previous value R
+		s->odd = False; // odd sub-sample
+		s->oldval[0] = 0; // old value L
+		s->oldval[1] = 0; // old value R
+
+		s->snd = (const u8*)snd;
+		dmb();
+		s->cnt = len;
+		dmb();
+		s->nextcnt = 0;
+
+		// buffer is still hungry - request one more interrupt
+		dmb();
+		if (s->useirq) NVIC_IRQForce(s->irq);
+
+		IRQ_UNLOCK;
+		return;
+	}
+
+	// set next sound
+	s->next = (const u8*)snd;
+	dmb();
+	s->nextcnt = len;
+	dmb();
+
+	IRQ_UNLOCK;
 }
 
 // global sound set OFF
