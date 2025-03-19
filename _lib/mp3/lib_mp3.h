@@ -479,7 +479,7 @@ extern const char* MP3GenreList[MP3_GENRELIST_NUM];
 //  outbuf ... pointer to output buffer (must be aligned to u16 or better to u32; recommended size MP3PLAYER_OUTSIZE)
 //  outsize ... size of output buffer in bytes
 //  scan ... number of frames to scan file on open, -1=scan all file (count frames and length; recommended value is 100)
-// Returns error code MP3_ERR_* (MP3_ERR_OK = 0 if OK)
+// Returns error code MP3_ERR_* (ERR_MP3_NONE = 0 if OK)
 int MP3PlayerInit(sMP3Player* mp3, const char* filename, const u8* inbuf, int insize, u8* outbuf, int outsize, int scan);
 
 // Terminate MP3 player

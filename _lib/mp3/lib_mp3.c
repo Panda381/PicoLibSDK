@@ -442,7 +442,7 @@ void MP3Refill(sMP3Player* mp3)
 //  outbuf ... pointer to output buffer (must be aligned to u16 or better to u32; recommended size MP3PLAYER_OUTSIZE)
 //  outsize ... size of output buffer in bytes
 //  scan ... number of frames to scan file on open, -1=scan all file (count frames and length; recommended value is 100)
-// Returns error code MP3_ERR_* (MP3_ERR_OK = 0 if OK)
+// Returns error code MP3_ERR_* (ERR_MP3_NONE = 0 if OK)
 int MP3PlayerInit(sMP3Player* mp3, const char* filename, const u8* inbuf, int insize, u8* outbuf, int outsize, int scan)
 {
 	int i;
@@ -882,8 +882,8 @@ void MP3Tick(sMP3Player* mp3)
 	u8* outbuf = mp3->outbuf[bufinx];
 	if (outN == 0)
 	{
-		// end of sound (or drop-out > 1 second)
-		if ((Time() - mp3->droptime > 1000000) || (!mp3->rep && (mp3->pos >= mp3->frames - 5)))
+		// end of sound (or drop-out > 0.3 second)
+		if (Time() - mp3->droptime > 300000)
 		{
 			mp3->playing = False;
 			return;
@@ -893,7 +893,8 @@ void MP3Tick(sMP3Player* mp3)
 		outN = mp3->outsampmax*2;
 		memset(outbuf, 0, outN);
 	}
-	mp3->droptime = Time();
+	else
+		mp3->droptime = Time();
 
 #if MP3_CHECK_LOAD	// check MP3 load
 	// remaining ouput buffer
