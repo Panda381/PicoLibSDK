@@ -378,7 +378,7 @@ STATIC_ASSERT(ID3V1_SIZE == 128, "Incorrect ID3v1 size!");
 // MP3 player descriptor (size 28 KB)
 typedef struct {
 	// playing setup
-	u8		chan;				// PWMSnd channel to play
+	u8		chan;				// PWMSnd channel to play (255 = not defined yet)
 	Bool		rep;				// flag - repeat the sound
 	Bool		playing;			// sound is playing
 	u8		form;				// format SNDFORM_PCM16*
@@ -497,7 +497,7 @@ void MP3Poll(sMP3Player* mp3);
 void MP3Play(sMP3Player* mp3, int chan, Bool rep);
 
 // check if MP3 Player is plaing (Wait a few milliseconds after termination for the play buffers to empty)
-INLINE Bool MP3Playing(sMP3Player* mp3) { return mp3->playing; }
+INLINE Bool MP3Playing(sMP3Player* mp3) { return mp3->playing || PlayingSoundChan(mp3->chan); }
 
 // get total length in seconds
 INLINE int MP3GetTimeLen(sMP3Player* mp3) { return mp3->timelen; }

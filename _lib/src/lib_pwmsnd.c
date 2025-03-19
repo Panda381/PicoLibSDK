@@ -854,7 +854,7 @@ void VolumeSound(float volume)
 Bool PlayingSoundChan(int chan)
 {
 	if (GlobalSoundOff) return False;
-
+	if ((uint)chan >= (uint)USE_PWMSND) return False;
 	sPwmSnd* s = &PwmSound[chan];
 	return s->cnt > 0;
 }

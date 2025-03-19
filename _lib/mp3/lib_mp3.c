@@ -754,6 +754,7 @@ int MP3PlayerInit(sMP3Player* mp3, const char* filename, const u8* inbuf, int in
 	}
 
 	mp3->lastoutbuf = 0;
+	mp3->chan = 255;
 	mp3->playing = False;	// not playing
 	mp3->speed = (float)mp3->info.samprate/SOUNDRATE;
 	mp3->form = (mp3->info.nChans == 2) ? SNDFORM_PCM16_S : SNDFORM_PCM16;
@@ -882,8 +883,8 @@ void MP3Tick(sMP3Player* mp3)
 	u8* outbuf = mp3->outbuf[bufinx];
 	if (outN == 0)
 	{
-		// end of sound (or drop-out > 0.3 second)
-		if (Time() - mp3->droptime > 300000)
+		// end of sound (or drop-out > 0.5 second)
+		if (Time() - mp3->droptime > 500000)
 		{
 			mp3->playing = False;
 			return;
