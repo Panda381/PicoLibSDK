@@ -7,7 +7,7 @@ rem is used instead of the relative path ..\..\..\ .
 
 rem First command-line parameter (%1) of this batch contains device name (e.g. picopad10).
 rem This batch is called from 2nd-level subdirectory, base directory of the project
-rem (e.g. from the DEMO\HELLOW\c.bat).
+rem (e.g. from the DEMO\HELLO\c.bat).
 
 rem ------------------------------------------------
 rem Edit this line to setup path to GCC-ARM compiler
@@ -21,7 +21,7 @@ rem ----------------------------------------------------------------------
 
 rem Command to setup target project name (i.e. name of output file).
 rem This command is located in c.bat file. Name "LOADER" is reserved for boot loader.
-rem    set TARGET=HELLOW
+rem    set TARGET=HELLO
 
 rem Command to setup target group sub-directory (directory to which the program
 rem will be copied on the target SD card). This command is located in c.bat file.
