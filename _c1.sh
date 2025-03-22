@@ -2,7 +2,7 @@
 
 # Compilation... Compile one project (one output UF2 file)
 
-# rem In order to compile from any directory, the $(dirname "$0") parameter
+# rem In order to compile from any directory, the $(dirname "$0")/ parameter
 # rem is used instead of the relative path ../../../ .
 
 # First command-line parameter ($1) of this script contains device name (e.g. picopad10).
@@ -36,7 +36,7 @@
 
 # Setup parameters DEVICE, DEVCLASS and DEVDIR (%1 = device name)
 
-source $(dirname "$0")_setup.sh $1
+source $(dirname "$0")/_setup.sh $1
 
 # Check if target name "LOADER" is used in other directory than root.
 # We need it to detect compilation of boot loader in makefile.
@@ -70,26 +70,26 @@ cat $TARGET.siz
 # Calculate CRC to check by boot loader (skip if compiling boot loader)
 if [[ "${TARGET}" == "LOADER" ]]; then
   # Copy UF2 file to destination folder with image of SD card
-  if [[ ! -e $(dirname "$0")"${DEVDIR}"/"${GRPDIR}"/*.UF2 ]]; then mkdir $(dirname "$0")"${DEVDIR}"/"${GRPDIR}"; fi
-  cp "${TARGET}".uf2 $(dirname "$0")"${DEVDIR}"/"${GRPDIR}"/"${TARGET}".UF2 > null
+  if [[ ! -e $(dirname "$0")/"${DEVDIR}"/"${GRPDIR}"/*.UF2 ]]; then mkdir $(dirname "$0")/"${DEVDIR}"/"${GRPDIR}"; fi
+  cp "${TARGET}".uf2 $(dirname "$0")/"${DEVDIR}"/"${GRPDIR}"/"${TARGET}".UF2 > null
   exit 0
 fi
 
 if [[ "${DEVCLASS}" == "pico" ]]; then
   # Copy UF2 file to destination folder with image of SD card
-  if [[ ! -e $(dirname "$0")"${DEVDIR}"/"${GRPDIR}"/*.UF2 ]]; then mkdir $(dirname "$0")"${DEVDIR}"/"${GRPDIR}"; fi
-  cp "${TARGET}".uf2 $(dirname "$0")"${DEVDIR}"/"${GRPDIR}"/"${TARGET}".UF2 > null
+  if [[ ! -e $(dirname "$0")/"${DEVDIR}"/"${GRPDIR}"/*.UF2 ]]; then mkdir $(dirname "$0")/"${DEVDIR}"/"${GRPDIR}"; fi
+  cp "${TARGET}".uf2 $(dirname "$0")/"${DEVDIR}"/"${GRPDIR}"/"${TARGET}".UF2 > null
   exit 0
 fi
 
 if [[ "${MEMMAP}" == "noflash" ]]; then
   # Copy UF2 file to destination folder with image of SD card
-  if [[ ! -e $(dirname "$0")"${DEVDIR}"/"${GRPDIR}"/*.UF2 ]]; then mkdir $(dirname "$0")"${DEVDIR}"/"${GRPDIR}"; fi
-  cp "${TARGET}".uf2 $(dirname "$0")"${DEVDIR}"/"${GRPDIR}"/"${TARGET}".UF2 > null
+  if [[ ! -e $(dirname "$0")/"${DEVDIR}"/"${GRPDIR}"/*.UF2 ]]; then mkdir $(dirname "$0")/"${DEVDIR}"/"${GRPDIR}"; fi
+  cp "${TARGET}".uf2 $(dirname "$0")/"${DEVDIR}"/"${GRPDIR}"/"${TARGET}".UF2 > null
   exit 0
 fi
 
-$(dirname "$0")_tools/PicoPadLoaderCrc/LoaderCrc "${TARGET}".bin "${TARGET}".uf2
+$(dirname "$0")/_tools/PicoPadLoaderCrc/LoaderCrc "${TARGET}".bin "${TARGET}".uf2
 
 if [[ $? > 0 ]]; then echo "ERROR!"; exit 1; fi
 
