@@ -134,6 +134,9 @@ void WatchdogSetupReboot(u32 us, u32 pc, u32 sp)
 void KeyWaitNoPressed();
 #endif
 
+// Device terminate
+void DeviceTerm();
+
 // reset to boot loader
 void ResetToBootLoader()
 {
