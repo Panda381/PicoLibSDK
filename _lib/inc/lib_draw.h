@@ -495,15 +495,6 @@ void GenGrad(COLTYPE* dst, int w);
 
 #endif // COLBITS != 4
 
-// only for 16-bit color bits
-#if COLBITS == 16
-
-// blend 16-bit colors (level is 0=col1 to 16=col2)
-//  @TODO: Fast, but not precise (may be darker with missing lowest bit)
-COLTYPE BlendCol16(COLTYPE col1, COLTYPE col2, u8 level);
-
-#endif // COLBITS == 16
-
 // scroll screen one row up
 void DrawScroll();
 
@@ -571,6 +562,11 @@ NOINLINE u32 DrawPrint(const char* fmt, ...);
 
 #endif // USE_DRAW		// use drawing to frame buffer (lib_draw.c, lib_draw.h)
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // blend two 16-bit colors with ratio 50%+50%
 u16 FASTCODE NOFLASH(RGB16Blend50)(u16 col1, u16 col2);
 
@@ -582,3 +578,11 @@ u16 FASTCODE NOFLASH(RGB16Blend12)(u16 col1, u16 col2);
 
 // blend four 16-bit colors together
 u16 FASTCODE NOFLASH(RGB16Blend4)(u16 col1, u16 col2, u16 col3, u16 col4);
+
+// blend 16-bit colors (level is 0=col1 to 16=col2)
+//  @TODO: Fast, but not precise (may be darker with missing lowest bit)
+u16 BlendCol16(u16 col1, u16 col2, u8 level);
+
+#ifdef __cplusplus
+}
+#endif

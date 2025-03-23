@@ -142,6 +142,9 @@ void ResetToBootLoader()
 	KeyWaitNoPressed();
 #endif
 
+	// device terminate
+	DeviceTerm();
+
 	// set loader magic
 	watchdog_hw->scratch[4] = WATCHDOG_LOADER_MAGIC;
 

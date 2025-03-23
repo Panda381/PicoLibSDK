@@ -29,6 +29,14 @@
 #include "../inc/lib_drawcan.h"
 #include "../inc/lib_drawcan8.h"
 
+#ifndef WIDTH
+#define WIDTH		320		// display width
+#endif
+
+#ifndef HEIGHT
+#define HEIGHT		240		// display height
+#endif
+
 // default drawing canvas for 8-bit format
 sDrawCan DrawCan8 = {
 	// format
@@ -40,12 +48,21 @@ sDrawCan DrawCan8 = {
 	// font
 	.fontw = FONTW,			// u8	fontw;		// font width (number of pixels, max. 8)
 	.fonth = FONTH,			// u8	fonth;		// font height (number of lines)
+	.printinv = 0,			// u8	printinv;	// offset added to printed character (print characters 128 = inverted, 0 = normal)
+	.printsize = 0,			// u8	printsize;	// font size 0=normal, 1=double-height, 2=double-width, 3=double-size
 
 	// dimension
 	.w = WIDTH,			// s16	w;		// width
 	.h = HEIGHT,			// s16	h;		// height
 	.wb = (WIDTH+3)&~3,		// s16	wb;		// pitch (bytes between lines) - aligned to 4 bytes (u32)
 	.striph = HEIGHT,		// s16	striph;		// strip height (number of lines)
+
+	// print
+	.printposnum = WIDTH/FONTW,	// u16	printposnum;	// number of text positions per row (= w / fontw)
+	.printrownum = HEIGHT/FONTH,	// u16	printrownum;	// number of text rows (= h / fonth)
+	.printpos = 0,			// u16	printpos;	// console print character position
+	.printrow = 0,			// u16	printrow;	// console print character row
+	.printcol = COL8_WHITE,		// u16	printcol;	// console print color
 
 	// clipping
 	.basey = 0,			// s16	basey;		// base Y of buffer strip
@@ -64,6 +81,10 @@ sDrawCan DrawCan8 = {
 
 	// data buffer
 	.buf = NULL,			// u8*	buf;		// image data buffer
+	.frontbuf = NULL,		// u8*	fronbuf;	// front buffer, or NULL = use only one buffer
+
+	// last system time of auto update
+	.autoupdatelast = 0,		// u32	autoupdatelast;	// last system time of auto update
 
 	// font
 	.font = FONT,			// const u8* font;	// pointer to current font (256 characters in cells of width 8 pixels, 1-bit format)

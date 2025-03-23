@@ -48,21 +48,45 @@
 #include "src/lib_decnum.c"
 #endif
 
-#if USE_DRAW
 #include "src/lib_draw.c"
-#endif
+
 
 #if USE_DRAWCAN
 #include "src/lib_drawcan.c"
+
+#if USE_DRAWCAN1
 #include "src/lib_drawcan1.c"
+#endif
+
+#if USE_DRAWCAN2
 #include "src/lib_drawcan2.c"
+#endif
+
+#if USE_DRAWCAN3
 #include "src/lib_drawcan3.c"
+#endif
+
+#if USE_DRAWCAN4
 #include "src/lib_drawcan4.c"
+#endif
+
+#if USE_DRAWCAN6
 #include "src/lib_drawcan6.c"
+#endif
+
+#if USE_DRAWCAN8
 #include "src/lib_drawcan8.c"
+#endif
+
+#if USE_DRAWCAN12
 #include "src/lib_drawcan12.c"
+#endif
+
+#if USE_DRAWCAN16
 #include "src/lib_drawcan16.c"
 #endif
+#endif // USE_DRAWCAN
+
 
 #if USE_ESCPKT
 #include "src/lib_escpkt.c"
@@ -94,10 +118,6 @@
 
 #if USE_MINIRING
 #include "src/lib_miniring.c"
-#endif
-
-#if USE_MP3
-#include "mp3/lib_mp3.c"
 #endif
 
 #if USE_PRINT
@@ -160,6 +180,9 @@
 
 
 
+#if USE_MP3
+#include "mp3/lib_mp3.c"
+#endif
 #if USE_EMU
 #include "emu/emu.c"
 #endif

@@ -795,6 +795,7 @@ int MP3RefillOut(sMP3Player* mp3, int bufinx)
 	u8* outbuf = mp3->outbuf[bufinx]; // output buffer
 	const u8* buf = (const u8*)mp3->inbufptr; // pointer to data in input buffer
 	int bufN = mp3->inbufrem; // remaining data in input buffer
+	if ((mp3->filename == NULL) && mp3->rep) bufN -= mp3->framesizeavg; // repeat memory mode - trim last FadeOut frame
 	for (i = mp3->batch; i > 0; i--) // batch frames
 	{
 		// find sync word
@@ -805,8 +806,23 @@ int MP3RefillOut(sMP3Player* mp3, int bufinx)
 			{
 				// rewind pointers to the start of the buffer
 				buf = mp3->inbuf + mp3->frame0;
-				bufN = mp3->insize - mp3->frame0;
+				bufN = mp3->insize - mp3->frame0 - mp3->framesizeavg; // without last FrameOut frame
 				mp3->pos = 0; // reset current frame
+
+				// find new sync word
+				r = MP3FindSyncWord(buf, bufN); // find sync
+				if (r < 0) break;
+				buf +=  r; // shift pointer
+				bufN -= r; // decrease remaining data
+
+				// parse new frame info
+				r = MP3GetNextFrameInfo(mp3->mp3dec, &mp3->info, buf);
+				if ((r < 0) || (mp3->info.size > bufN)) break;
+
+				// decode first frame with FadeIn, and skip it
+				r = MP3Decode(mp3->mp3dec, &buf, &bufN, (s16*)&outbuf[outN], 0);
+				if (r < 0) break;
+				mp3->pos++; // increment current frame
 
 				// find new sync word
 				r = MP3FindSyncWord(buf, bufN); // find sync
@@ -826,7 +842,7 @@ int MP3RefillOut(sMP3Player* mp3, int bufinx)
 			{
 				// rewind pointers to the start of the buffer
 				buf = mp3->inbuf + mp3->frame0;
-				bufN = mp3->insize - mp3->frame0;
+				bufN = mp3->insize - mp3->frame0 - mp3->framesizeavg; // without last FrameOut frame
 				mp3->pos = 0; // reset current frame
 
 				// find new sync word
@@ -836,6 +852,21 @@ int MP3RefillOut(sMP3Player* mp3, int bufinx)
 				bufN -= r; // decrease remaining data
 
 				// parse new frame info
+				r = MP3GetNextFrameInfo(mp3->mp3dec, &mp3->info, buf);
+				if ((r < 0) || (mp3->info.size > bufN)) break;
+
+				// decode first frame with FadeIn, and skip it
+				r = MP3Decode(mp3->mp3dec, &buf, &bufN, (s16*)&outbuf[outN], 0);
+				if (r < 0) break;
+				mp3->pos++; // increment current frame
+
+				// find new sync word
+				r = MP3FindSyncWord(buf, bufN); // find sync
+				if (r < 0) break;
+				buf +=  r; // shift pointer
+				bufN -= r; // decrease remaining data
+
+				// parse frame info, to get output frame size
 				r = MP3GetNextFrameInfo(mp3->mp3dec, &mp3->info, buf);
 				if ((r < 0) || (mp3->info.size > bufN)) break;
 			}
@@ -851,6 +882,7 @@ int MP3RefillOut(sMP3Player* mp3, int bufinx)
 		// shift output data
 		outN += mp3->info.outputSamps*2;
 	}
+	if ((mp3->filename == NULL) && mp3->rep) bufN += mp3->framesizeavg; // repeat memory mode - return last FadeOut frame
 	mp3->inbufptr = buf; // new pointer to input data
 	mp3->inbufrem = bufN; // new remaining input data
 

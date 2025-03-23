@@ -418,7 +418,7 @@ typedef struct {
 	sMP3FrameInfo	info;				// MP3 frame info
 	int		bitrateavg;			// average bit rate
 	int		framesizeavg;			// average frame input size
-	int		sampnumavg;			// average output samples per frame
+	int		sampnumavg;			// average output samples per frame (L and R are counted as 2 samples)
 	int		outsampmax;			// max. number of output samples per one frame (L and R are counted as 2 samples)
 	int		sizemax;			// max. size of input frame in bytes
 	int		sampnum;			// total number of samples (L and R are counted as 2 samples)

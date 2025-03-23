@@ -14,6 +14,48 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#if USE_DRAWCAN		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
+
+// 16-bit colors, format RGB565 (components are 0..255)
+#define COLOR16(r,g,b)	((u16)( (((r)&0xf8)<<8) | (((g)&0xfc)<<3) | (((b)&0xf8)>>3) ))
+// - base colors
+#define COL16_BLACK	COLOR16(  0,  0,  0)
+#define COL16_BLUE	COLOR16(  0,  0,255)
+#define COL16_GREEN	COLOR16(  0,255,  0)
+#define COL16_CYAN	COLOR16(  0,255,255)
+#define COL16_RED	COLOR16(255,  0,  0)
+#define COL16_MAGENTA	COLOR16(255,  0,255)
+#define COL16_YELLOW	COLOR16(255,255,  0)
+#define COL16_WHITE	COLOR16(255,255,255)
+#define COL16_GRAY	COLOR16(128,128,128)
+// - dark colors
+#define COL16_DKBLUE	COLOR16(  0,  0,127)
+#define COL16_DKGREEN	COLOR16(  0,127,  0)
+#define COL16_DKCYAN	COLOR16(  0,127,127)
+#define COL16_DKRED	COLOR16(127,  0,  0)
+#define COL16_DKMAGENTA	COLOR16(127,  0,127)
+#define COL16_DKYELLOW	COLOR16(127,127,  0)
+#define COL16_DKWHITE	COLOR16(127,127,127)
+#define COL16_DKGRAY	COLOR16( 64, 64, 64)
+// - light colors
+#define COL16_LTBLUE	COLOR16(127,127,255)
+#define COL16_LTGREEN	COLOR16(127,255,127)
+#define COL16_LTCYAN	COLOR16(127,255,255)
+#define COL16_LTRED	COLOR16(255,127,127)
+#define COL16_LTMAGENTA	COLOR16(255,127,255)
+#define COL16_LTYELLOW	COLOR16(255,255,127)
+#define COL16_LTGRAY	COLOR16(192,192,192)
+// - special colors
+#define COL16_AZURE	COLOR16(  0,127,255)
+#define COL16_ORANGE	COLOR16(255,127,  0)
+#define COL16_BROWN	COLOR16(192, 96,  0)
+
+#define COL16_RANDOM	(RandU16())
+
+#endif // USE_DRAWCAN
+
+
+
 #if USE_DRAWCAN && USE_DRAWCAN16	// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #ifndef _LIB_DRAWCAN16_H
@@ -114,42 +156,6 @@ u16 Draw16ColRand();
 
 // convert 15-bit color RGB555 to 12-bit color RGB444
 #define COL15TO12(ccc) ( (((ccc) >> 1) & 0x00f) | (((ccc) >> 2) & 0x0f0) | (((ccc) >> 3) & 0xf00) )
-
-// 16-bit colors, format RGB565 (components are 0..255)
-#define COLOR16(r,g,b)	((u16)( (((r)&0xf8)<<8) | (((g)&0xfc)<<3) | (((b)&0xf8)>>3) ))
-// - base colors
-#define COL16_BLACK	COLOR16(  0,  0,  0)
-#define COL16_BLUE	COLOR16(  0,  0,255)
-#define COL16_GREEN	COLOR16(  0,255,  0)
-#define COL16_CYAN	COLOR16(  0,255,255)
-#define COL16_RED	COLOR16(255,  0,  0)
-#define COL16_MAGENTA	COLOR16(255,  0,255)
-#define COL16_YELLOW	COLOR16(255,255,  0)
-#define COL16_WHITE	COLOR16(255,255,255)
-#define COL16_GRAY	COLOR16(128,128,128)
-// - dark colors
-#define COL16_DKBLUE	COLOR16(  0,  0,127)
-#define COL16_DKGREEN	COLOR16(  0,127,  0)
-#define COL16_DKCYAN	COLOR16(  0,127,127)
-#define COL16_DKRED	COLOR16(127,  0,  0)
-#define COL16_DKMAGENTA	COLOR16(127,  0,127)
-#define COL16_DKYELLOW	COLOR16(127,127,  0)
-#define COL16_DKWHITE	COLOR16(127,127,127)
-#define COL16_DKGRAY	COLOR16( 64, 64, 64)
-// - light colors
-#define COL16_LTBLUE	COLOR16(127,127,255)
-#define COL16_LTGREEN	COLOR16(127,255,127)
-#define COL16_LTCYAN	COLOR16(127,255,255)
-#define COL16_LTRED	COLOR16(255,127,127)
-#define COL16_LTMAGENTA	COLOR16(255,127,255)
-#define COL16_LTYELLOW	COLOR16(255,255,127)
-#define COL16_LTGRAY	COLOR16(192,192,192)
-// - special colors
-#define COL16_AZURE	COLOR16(  0,127,255)
-#define COL16_ORANGE	COLOR16(255,127,  0)
-#define COL16_BROWN	COLOR16(192, 96,  0)
-
-#define COL16_RANDOM	(RandU16())
 
 // convert 12-bit color RGB444 to 16-bit color RGB565
 #define COL12TO16(ccc) ( (((ccc) & 0x00f) << 1) | (((ccc) & 0x0f0) << 3) | (((ccc) & 0xf00) << 4) )
@@ -849,7 +855,7 @@ void DrawCan16Blit8(sDrawCan* can, int xd, int yd, const void* src, const u16* p
 void Draw16Blit8(int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);
 
 // For backward compatibility with Draw version 1
-INLINE void DrawBlitPal(const u8* src, const u16* pal, int xs, int ys, int xd, int yd, int w, int h, int ws, u16 col) { Draw16Blit8(xd, ys, src, pal, col, xs, ys, w, h, Draw8Pitch(ws)); }
+INLINE void DrawBlitPal(const u8* src, const u16* pal, int xs, int ys, int xd, int yd, int w, int h, int ws, u16 col) { Draw16Blit8(xd, yd, src, pal, col, xs, ys, w, h, Draw8Pitch(ws)); }
 
 // Draw 6-bit palleted image transparent to 16-bit destination canvas
 void DrawCan16Blit6(sDrawCan* can, int xd, int yd, const void* src, const u16* pal, u16 col, int xs, int ys, int w, int h, int wbs);

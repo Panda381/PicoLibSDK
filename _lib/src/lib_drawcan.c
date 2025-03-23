@@ -24,7 +24,9 @@
 #if USE_DRAWCAN		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #include "../../_font/_include.h"
+#include "../../_sdk/inc/sdk_timer.h"
 #include "../inc/lib_rand.h"
+#include "../inc/lib_text.h"
 #include "../inc/lib_drawcan.h"
 #include "../inc/lib_drawcan1.h"
 #include "../inc/lib_drawcan2.h"
@@ -34,6 +36,15 @@
 #include "../inc/lib_drawcan8.h"
 #include "../inc/lib_drawcan12.h"
 #include "../inc/lib_drawcan16.h"
+#include "../inc/lib_print.h"
+
+#ifndef WIDTH
+#define WIDTH		320		// display width
+#endif
+
+#ifndef HEIGHT
+#define HEIGHT		240		// display height
+#endif
 
 // default drawing canvas
 sDrawCan DrawCan = {
@@ -51,12 +62,21 @@ sDrawCan DrawCan = {
 	// font
 	.fontw = FONTW,			// u8	fontw;		// font width (number of pixels, max. 8)
 	.fonth = FONTH,			// u8	fonth;		// font height (number of lines)
+	.printinv = 0,			// u8	printinv;	// offset added to printed character (print characters 128 = inverted, 0 = normal)
+	.printsize = 0,			// u8	printsize;	// font size 0=normal, 1=double-height, 2=double-width, 3=double-size
 
 	// dimension
 	.w = WIDTH,			// s16	w;		// width
 	.h = HEIGHT,			// s16	h;		// height
 	.wb = (WIDTH*2+3)&~3,		// s16	wb;		// pitch (bytes between lines) - aligned to 4 bytes (u32)
 	.striph = HEIGHT,		// s16	striph;		// strip height (number of lines)
+
+	// print
+	.printposnum = WIDTH/FONTW,	// u16	printposnum;	// number of text positions per row (= w / fontw)
+	.printrownum = HEIGHT/FONTH,	// u16	printrownum;	// number of text rows (= h / fonth)
+	.printpos = 0,			// u16	printpos;	// console print character position
+	.printrow = 0,			// u16	printrow;	// console print character row
+	.printcol = COL16_WHITE,	// u16	printcol;	// console print color
 
 	// clipping
 	.basey = 0,			// s16	basey;		// base Y of buffer strip
@@ -74,7 +94,11 @@ sDrawCan DrawCan = {
 	.dirtyy2 = HEIGHT,		// s16	dirtyy2;	// dirty window end Y
 
 	// data buffer
-	.buf = NULL,			// u8*	buf;		// image data buffer
+	.buf = NULL,			// u8*	buf;		// image data buffer (back buffer of front buffer)
+	.frontbuf = NULL,		// u8*	fronbuf;	// front buffer, or NULL = use only one buffer
+
+	// last system time of auto update
+	.autoupdatelast = 0,		// u32	autoupdatelast;	// last system time of auto update
 
 	// font
 	.font = FONT,			// const u8* font;	// pointer to current font (256 characters in cells of width 8 pixels, 1-bit format)
@@ -151,6 +175,7 @@ void DrawCanDirtyAll(sDrawCan* can)
 	can->dirtyy1 = can->clipy1;
 	can->dirtyy2 = can->clipy2;
 }
+void DispDirtyAll() { DrawCanDirtyAll(pDrawCan); }
 
 // set dirty none
 void DrawCanDirtyNone(sDrawCan* can)
@@ -249,6 +274,396 @@ Bool DrawCanRectClipped(sDrawCan* can, int x, int y, int w, int h)
 		(x+w <= can->clipx2) && (h > 0) && (y+h <= can->clipy2);
 }
 
+// Display update - transfer image from back buffer to front buffer
+// @TODO: So far there is only a simplified update where the whole buffer (without clipping) is transferred using DMA.
+void DrawCanUpdateAll(sDrawCan* can)
+{
+	// check if need update
+	if (can->frontbuf == NULL) return;
+
+	// copy buffer data (speed 2 us per 1 KB; update 320x240/16 = 150 KB = 300 us)
+#if DISPHSTX_PICOSDK	// 1=use Pico SDK
+	memcpy(can->frontbuf, can->buf, can->wb * can->h);
+#else
+	DMA_MemCopy(can->frontbuf, can->buf, can->wb * can->h);
+#endif
+
+	// dirty none
+	DrawCanDirtyNone(can);
+}
+
+void DispUpdateAll() { DrawCanUpdateAll(pDrawCan); }
+
+// update screen, if dirty
+void DrawCanUpdate(sDrawCan* can)
+{
+	if ((can->dirtyx1 >= can->dirtyx2) || (can->dirtyy1 >= can->dirtyy2)) return;
+	DrawCanUpdateAll(can);
+}
+void DispUpdate() { DrawCanUpdate(pDrawCan); }
+
+// auto update after delta time in [ms] of running program
+void DrawCanAutoUpdate(sDrawCan* can, u32 ms)
+{
+	// interval in [us]
+	u32 us = ms*1000;
+
+	// check interval from last update
+	u32 t = Time();
+	if ((u32)(t - can->autoupdatelast) >= us)
+	{
+		// update display
+		DrawCanUpdate(can);
+
+		// start measure new time interval of running program
+		can->autoupdatelast = t;
+	}
+}
+void DispAutoUpdate(u32 ms) { DrawCanAutoUpdate(pDrawCan, ms); }
+
+// scroll screen one row up
+void DrawCanScroll(sDrawCan* can)
+{
+	// drawing buffer
+	u8* buf = can->buf;
+
+	// size of one row (in bytes)
+	int rowsize = can->wb * can->fonth;
+
+	// move 1 row up
+#if DISPHSTX_PICOSDK	// 1=use Pico SDK
+	memmove(can->buf, can->buf + rowsize, can->wb * can->h - rowsize);
+#else
+	DMA_MemCopy(can->buf, can->buf + rowsize, can->wb * can->h - rowsize);
+#endif
+
+	// clear last row
+	can->drawfnc->pDrawCanRect_Fast(can, 0, can->h - can->fonth, can->w, can->fonth, pDrawCan->drawfnc->col_black);
+
+	// update all screen
+	DrawCanUpdateAll(can);
+}
+
+void DrawScroll() { DrawCanScroll(pDrawCan); }
+
+// console print character (without display update)
+//   Control characters:
+//     0x01 '\1' ^A ... set not-inverted text
+//     0x02 '\2' ^B ... set inverted text (shift character code by 0x80)
+//     0x03 '\3' ^C ... use normal-sized font (default)
+//     0x04 '\4' ^D ... use double-height font
+//     0x05 '\5' ^E ... use double-width font
+//     0x06 '\6' ^F ... use double-sized font
+//     0x07 '\a' ^G ... (bell) move cursor 1 position right (no print; uses width of normal-sized font)
+//     0x08 '\b' ^H ... (back space) move cursor 1 position left (no print; uses width of normal-sized font)
+//     0x09 '\t' ^I ... (tabulator) move cursor to next 8-character position, print spaces (uses width of normal-sized font)
+//     0x0A '\n' ^J ... (new line) move cursor to start of next row
+//     0x0B '\v' ^K ... (vertical tabulator) move cursor to start of previous row
+//     0x0C '\f' ^L ... (form feed) clear screen, reset cursor position and set default color
+//     0x0D '\r' ^M ... (carriage return) move cursor to start of current row
+//     0x10 '\20' ^P ... set gray text color (COL_GRAY, default)
+//     0x11 '\21' ^Q ... set blue text color (COL_AZURE)
+//     0x12 '\22' ^R ... set green text color (COL_GREEN)
+//     0x13 '\23' ^S ... set cyan text color (COL_CYAN)
+//     0x14 '\24' ^T ... set red text color (COL_RED)
+//     0x15 '\25' ^U ... set magenta text color (COL_MAGENTA)
+//     0x16 '\26' ^V ... set yellow text color (COL_YELLOW)
+//     0x17 '\27' ^W ... set white text color (COL_WHITE)
+void DrawCanPrintCharRaw(sDrawCan* can, char ch)
+{
+	switch ((u8)ch)
+	{
+	// printable characters
+	default:
+		if ((u8)ch < 32) break; // not printable character
+
+		// double-width or double-sized font
+		if (can->printsize >= 2)
+		{
+			if (can->printsize == 3)
+			{
+				if (can->printrow >= can->printrownum-1)
+				{
+					DrawCanScroll(can); // scroll screen one row up
+					can->printrow = can->printrownum-2;
+				}
+
+				// double-sized font
+				can->drawfnc->pDrawCanCharBg(can, (char)(ch + can->printinv), (int)can->printpos*can->fontw,
+					(int)can->printrow*can->fonth, can->printcol, can->drawfnc->col_black, 2, 2);
+			}
+			else
+				// double-width font
+				can->drawfnc->pDrawCanCharBg(can, (char)(ch + can->printinv), (int)can->printpos*can->fontw,
+					(int)can->printrow*can->fonth, can->printcol, can->drawfnc->col_black, 2, 1);
+
+			// move cursor 1 position right
+			can->printpos++;
+		}
+		else
+		{
+			if (can->printsize == 1)
+			{
+				if (can->printrow >= can->printrownum-1)
+				{
+					DrawCanScroll(can); // scroll screen one row up
+					can->printrow = can->printrownum-2;
+				}
+
+				// double-height font
+				can->drawfnc->pDrawCanCharBg(can, (char)(ch + can->printinv), (int)can->printpos*can->fontw,
+					(int)can->printrow*can->fonth, can->printcol, can->drawfnc->col_black, 1, 2);
+			}
+			else
+				// normal font size
+				can->drawfnc->pDrawCanCharBg(can, (char)(ch + can->printinv), (int)can->printpos*can->fontw,
+					(int)can->printrow*can->fonth, can->printcol, can->drawfnc->col_black, 1, 1);
+		}
+
+  // ! continue case 0x07 (move right)
+
+	// '\a' ... (bell) move cursor 1 position right (no print)
+	case 0x07:
+		can->printpos++;
+		if (can->printpos < can->printposnum) break;
+
+  // ! continue case 0x0A (new line)
+
+	// '\n' ... (new line) move cursor to start of next row
+	case 0x0A:
+		can->printpos = 0;
+		can->printrow++; // increase row
+		if (can->printrow >= can->printrownum)
+		{
+			DrawCanScroll(can); // scroll screen one row up
+			can->printrow = can->printrownum-1;
+		}
+
+		// double height
+		if ((can->printsize & 1) != 0)
+		{
+			can->printrow++; // increase row
+			if (can->printrow >= can->printrownum)
+			{
+				DrawCanScroll(can); // scroll screen one row up
+				can->printrow = can->printrownum-1;
+			}
+		}
+		break;
+
+	// 'x01' ... set not-inverted text
+	case 0x01:
+		can->printinv = 0;
+		break;
+
+	// 'x02' ... set inverted text (shift character code by 0x80)
+	case 0x02:
+		can->printinv = 128;
+		break;
+
+	// 'x03' ... use normal-sized font (default)
+	case 0x03:
+		can->printsize = 0; // fonf size: 0=normal, 1=double-height, 2=double-width, 3=double-size
+		break;
+
+	// 'x04' ... use double-height font
+	case 0x04:
+		can->printsize = 1; // fonf size: 0=normal, 1=double-height, 2=double-width, 3=double-size
+		break;
+
+	// 'x05' ... use double-width font
+	case 0x05:
+		can->printsize = 2; // fonf size: 0=normal, 1=double-height, 2=double-width, 3=double-size
+		break;
+
+	// 'x06' ... use double-sized font
+	case 0x06:
+		can->printsize = 3; // fonf size: 0=normal, 1=double-height, 2=double-width, 3=double-size
+		break;
+
+	// '\b' ... (back space) move cursor 1 position left (no print)
+	case 0x08:
+		if (can->printpos > 0) can->printpos--;
+		break;
+
+	// '\t' ... (tabulator) move cursor to next 8-character position, print spaces
+	case 0x09:
+		{
+			u8 oldsize = can->printsize; // save current font size
+			can->printsize = oldsize & 1; // change double-width or double-size to normal or double-height
+			do DrawCanPrintCharRaw(can, ' '); while ((can->printpos & 7) != 0); // print spaces
+			can->printsize = oldsize; // restore font size
+		}
+		break;		
+
+	// '\v' ... (vertical tabulator) move cursor to start of previous row
+	case 0x0B:
+		if (can->printrow > 0) can->printrow--; // decrease row
+		can->printpos = 0;
+		break;
+
+	// '\f' ... (form feed) clear screen, reset cursor position and set default color
+	case 0x0C:
+		can->drawfnc->pDrawCanClear(can); // clear screen
+		can->printpos = 0;  // console print character position
+		can->printrow = 0;  // console print character row
+		can->printinv = 0; // offset added to character (128 = print inverted characters)
+		can->printsize = 0; // fonf size: 0=normal, 1=double-width, 2=double-size
+		can->printcol = can->drawfnc->col_gray; // console print color
+		break;
+
+	// '\r' ... (carriage return) move cursor to start of current row
+	case 0x0D:
+		can->printpos = 0;
+		break;
+
+	// 'x10' ... set gray text color (COL_GRAY, normal color)
+	case 0x10:
+		can->printcol = can->drawfnc->col_gray;
+		break;
+
+	// 'x11' ... set blue text color (COL_AZURE)
+	case 0x11:
+		can->printcol = can->drawfnc->col_azure;
+		break;
+
+	// 'x12' ... set green text color (COL_GREEN)
+	case 0x12:
+		can->printcol = can->drawfnc->col_green;
+		break;
+
+	// 'x13' ... set cyan text color (COL_CYAN)
+	case 0x13:
+		can->printcol = can->drawfnc->col_cyan;
+		break;
+
+	// 'x14' ... set red text color (COL_RED)
+	case 0x14:
+		can->printcol = can->drawfnc->col_red;
+		break;
+
+	// 'x15' ... set magenta text color (COL_MAGENTA)
+	case 0x15:
+		can->printcol = can->drawfnc->col_magenta;
+		break;
+
+	// 'x16' ... set yellow text color (COL_YELLOW)
+	case 0x16:
+		can->printcol = can->drawfnc->col_yellow;
+		break;
+
+	// 'x17' ... set white text color (COL_WHITE)
+	case 0x17:
+		can->printcol = can->drawfnc->col_white;
+		break;
+	}
+}
+
+void DrawPrintCharRaw(char ch) { DrawCanPrintCharRaw(pDrawCan, ch); }
+
+// console print character (with display update; Control characters - see DrawPrintCharRaw)
+void DrawCanPrintChar(sDrawCan* can, char ch)
+{
+	DrawCanPrintCharRaw(can, ch);
+	DrawCanUpdate(can);
+}
+
+void DrawPrintChar(char ch) { DrawCanPrintChar(pDrawCan, ch); }
+
+// console print text (Control characters - see DrawPrintCharRaw)
+//  If text contains digit after hex numeric code of control character,
+//  split text to more parts: use "\4" "1" instead of "\41".
+void DrawCanPrintText(sDrawCan* can, const char* txt)
+{
+	char ch;
+	while ((ch = *txt++) != 0) DrawCanPrintCharRaw(can, ch);
+	DrawCanUpdate(can);
+}
+
+void DrawPrintText(const char* txt) { DrawCanPrintText(pDrawCan, txt); }
+
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
+// callback - write data to drawing console
+u32 StreamWriteDrawPrint(sStream* str, const void* buf, u32 num)
+{
+	u32 n = num;
+	const char* txt = (const char*)buf;
+	for (; n > 0; n--) DrawPrintCharRaw(*txt++);
+	return num;
+}
+
+// formatted print string to drawing console, with argument list (returns number of characters, without terminating 0)
+u32 DrawPrintArg(const char* fmt, va_list args)
+{
+	// write and read stream
+	sStream wstr, rstr;
+
+	// initialize stream to read from
+	StreamReadBufInit(&rstr, fmt, StrLen(fmt));
+
+	// initialize stream to write to
+	Stream0Init(&wstr); // initialize nul stream
+	wstr.write = StreamWriteDrawPrint; // write callback
+	
+	// print string
+	u32 num = StreamPrintArg(&wstr, &rstr, args);
+
+	// display update
+	if (num > 0) DispUpdate();
+	return num;
+}
+
+// formatted print string to drawing console, with variadic arguments (returns number of characters, without terminating 0)
+NOINLINE u32 DrawPrint(const char* fmt, ...)
+{
+	u32 n;
+	va_list args;
+	va_start(args, fmt);
+	n = DrawPrintArg(fmt, args);
+	va_end(args);
+	return n;
+}
+
+#endif // USE_STREAM
+
+/*
+DrawPrint test sample:
+
+	SelFont8x16(); // select font 8x16
+	DrawPrint(
+		"\f"					// clear screen (resolution: 40 characters x 15 rows)
+
+		"- invisible row scrolls up -\n"	// 0: this row will be scrolled-up
+
+		"Hello world?\b!\n"			// 1: first visible print, overprint "?" -> "!"
+
+		"First! row\r" "Second\n"		// 2: overprint "First! row" -> "Second row"
+
+		"\3normal \4height \5width \6sized\3\n"	// 3: double-height row with font of all 4 sizes
+		"\3font   \a\a\a\a\a\a\a\5font\3\n"	// 4: second half of previous double-height row
+
+		"non-invert \2invert\1 non-invert\n"	// 5: inverted text
+
+		"0123456701234567012345670123456701234567" // 6: print ruler 40 characters and move to next row (row is 40 columns width)
+		"\t123\t1234567\t12345678\tnext row\n"	// 7, 8: move to tab positions and move to next row after all
+
+		"\20 normal \21 blue \22 green \23 cyan \n" // 9: print colors
+		"\24 red \25 magenta \26 yellow \27 white \n" // 10:
+
+		"\2"
+		"\20 normal \21 blue \22 green \23 cyan \n" // 11: print colors inverted
+		"\24 red \25 magenta \26 yellow \27 white \n" // 12:
+
+		"\1\20"					// back to default state
+		"%d 0x%08x ALL OK\n"			// 13: print numbers 12345678, 0x12345678
+
+		"\nscrolling up",			// 14: this command scrolls screen up
+
+		12345678, 0x12345678
+	);
+*/
+
 // select font
 //  font ... pointer to current font (256 characters in cells of width 8 pixels, 1-bit format)
 //  fontw ... font width (number of pixels, max. 8)
@@ -258,6 +673,8 @@ void DrawCanSelFont(sDrawCan* can, const u8* font, u8 fontw, u8 fonth)
 	can->font = font;
 	can->fontw = fontw;
 	can->fonth = fonth;
+	can->printposnum = can->w / fontw;
+	can->printrownum = can->h / fonth;
 }
 
 void DrawCanSelFont8x8(sDrawCan* can)		{ DrawCanSelFont(can, FontBold8x8, 8, 8); }	// sans-serif bold, height 8 lines
@@ -309,6 +726,16 @@ void DrawClearCol(u16 col) { pDrawCan->drawfnc->pDrawCanClearCol(pDrawCan, col);
 // Clear canvas with black color
 void DrawCanClear(sDrawCan* can) { can->drawfnc->pDrawCanClear(can); }
 void DrawClear() { pDrawCan->drawfnc->pDrawCanClear(pDrawCan); }
+
+// Fast clear canvas with DMA
+void DrawCanClearFast(sDrawCan* can) { 
+#if DISPHSTX_PICOSDK	// 1=use Pico SDK
+	memset(can->buf, 0, can->wb * can->h);
+#else
+	DMA_MemFill(can->buf, 0, can->wb * can->h);
+#endif
+}
+void DrawClearFast() { DrawCanClearFast(pDrawCan); }
 
 // ----- Draw point
 

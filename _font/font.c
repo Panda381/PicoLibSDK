@@ -29,3 +29,5 @@
 #include "font_italic_8x8.c"
 #include "font_thin_8x8.c"
 #include "font_tiny_5x8.c"
+
+#include "font_bold_8x16_win1250.c"

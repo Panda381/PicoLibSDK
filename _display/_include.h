@@ -8,6 +8,9 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#ifndef _DISPLAY_INCLUDE_H
+#define _DISPLAY_INCLUDE_H
+
 #if USE_DISPHSTX
 #include "disphstx/disphstx.h"
 #endif
@@ -28,3 +31,4 @@
 #include "st7789/st7789.h"
 #endif
 
+#endif // _DISPLAY_INCLUDE_H

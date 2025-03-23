@@ -5,6 +5,8 @@
 //
 // ****************************************************************************
 
+#define DISP_FRAMEINFO	0	// 1=display MP3 frame info
+
 #include "../include.h"
 
 int Loop = 0; // current loop
@@ -36,26 +38,26 @@ const u8* LoopList[LOOP_NUM] = {
 
 // number of bytes of the loops
 const int LoopLen[LOOP_NUM] = {
-	count_of(Loop051Snd),
-	count_of(Loop052Snd),
-	count_of(Loop053Snd),
-	count_of(Loop054Snd),
-	count_of(Loop055Snd),
-	count_of(Loop056Snd),
-	count_of(Loop057Snd),
-	count_of(Loop058Snd),
-	count_of(Loop059Snd),
-	count_of(Loop060Snd),
-	count_of(Loop061Snd),
-	count_of(Loop062Snd),
-	count_of(Loop063Snd),
-	count_of(Loop064Snd),
-	count_of(Loop065Snd),
-	count_of(Loop066Snd),
-	count_of(Loop067Snd),
-	count_of(Loop068Snd),
-	count_of(Loop069Snd),
-	count_of(Loop070Snd),
+	sizeof(Loop051Snd),
+	sizeof(Loop052Snd),
+	sizeof(Loop053Snd),
+	sizeof(Loop054Snd),
+	sizeof(Loop055Snd),
+	sizeof(Loop056Snd),
+	sizeof(Loop057Snd),
+	sizeof(Loop058Snd),
+	sizeof(Loop059Snd),
+	sizeof(Loop060Snd),
+	sizeof(Loop061Snd),
+	sizeof(Loop062Snd),
+	sizeof(Loop063Snd),
+	sizeof(Loop064Snd),
+	sizeof(Loop065Snd),
+	sizeof(Loop066Snd),
+	sizeof(Loop067Snd),
+	sizeof(Loop068Snd),
+	sizeof(Loop069Snd),
+	sizeof(Loop070Snd),
 };
 
 // names of loops
@@ -82,6 +84,10 @@ const char* LoopName[LOOP_NUM] = {
 	"DanR-Taken",
 };
 
+// MP3 player
+sMP3Player MP3Player;
+u8 ALIGNED MP3PlayerOutBuf[MP3PLAYER_OUTSIZE];
+
 // start new loop
 void NewLoop()
 {
@@ -89,7 +95,7 @@ void NewLoop()
 	DrawClearCol(COL_WHITE);
 
 	// draw logo
-	DrawImg4Pal(LogoImg, LogoImg_Pal, 0, 0, (WIDTH - LOGO_W)/2, (HEIGHT - LOGO_H)/2, LOGO_W, LOGO_H, LOGO_W);
+	DrawImg(LogoImg, 0, 0, (WIDTH - LOGO_W)/2, (HEIGHT - LOGO_H)/2, LOGO_W, LOGO_H, LOGO_W_FULL);
 
 	// prepare loop number
 	int len0 = DecNum(DecNumBuf, Loop+LOOP_FIRST, 0);
@@ -116,15 +122,40 @@ void NewLoop()
 	// display update
 	DispUpdate();
 
-	// start playing loop
+	// start/stop playing loop
+	sMP3Player* mp3 = &MP3Player;
 	if (Mute)
-		StopSound();
+		MP3Stop(mp3);
 	else
-		PlayADPCMRep(LoopList[Loop], LoopLen[Loop], IMA_SAMPBLOCK);
+	{
+		int r = MP3PlayerInit(mp3, NULL, LoopList[Loop], LoopLen[Loop], MP3PlayerOutBuf, MP3PLAYER_OUTSIZE, -1);
+		if (r == ERR_MP3_NONE)
+		{
+			MP3Play(mp3, 0, True);
+
+#if DISP_FRAMEINFO	// display MP3 frame info
+			DrawRect(0, 0, WIDTH, 3*16, COL_BLUE);
+			char bf[70];
+			MemPrint(bf, 70, "FrameTime=%dus Frames=%d", mp3->frametime, mp3->frames);
+			DrawText(bf, 0, 0, COL_YELLOW);
+			MemPrint(bf, 70, "FrameIn=%dB FrameOut=%dB Size=%dB", mp3->framesizeavg, mp3->sampnumavg*2, LoopLen[Loop]);
+			DrawText(bf, 0, 16, COL_YELLOW);
+			MemPrint(bf, 70, "Bitrate=%dkbps SampRate=%dHz", mp3->bitrateavg/1000, mp3->info.samprate);
+			DrawText(bf, 0, 32, COL_YELLOW);
+			DispUpdate();
+#endif
+		}
+		else
+			Mute = True;
+	}
 }
 
 int main()
 {
+#if !USE_PICOPADNES		// use PicoPadNES device configuration
+	ClockPllSysFreqVolt(200000);
+#endif
+
 	Loop = 0;
 	NewLoop();
 
@@ -161,6 +192,17 @@ int main()
 			if (Loop >= LOOP_NUM) Loop = 0;
 			NewLoop();
 			break;
+		}
+
+		sMP3Player* mp3 = &MP3Player;
+		if (!Mute && MP3Playing(mp3))
+		{
+			MP3Poll(mp3);
+
+			int pos = mp3->pos * WIDTH / mp3->frames;
+			DrawRect(0, HEIGHT-4, pos, 4, COL_GREEN);
+			DrawRect(pos, HEIGHT-4, WIDTH - pos, 4, COL_BLACK);
+			DispUpdate();
 		}
 	}
 }

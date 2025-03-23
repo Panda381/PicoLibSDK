@@ -5165,75 +5165,6 @@ void GenGrad(COLTYPE* dst, int w)
 
 #endif // COLBITS == 8
 
-// only for 16-bit color bits
-#if COLBITS == 16
-
-// blend 16-bit colors (level is 0=col1 to 16=col2)
-//  @TODO: Fast, but not precise (may be darker with missing lowest bit)
-COLTYPE BlendCol16(COLTYPE col1, COLTYPE col2, u8 level)
-{
-#define VAL6(a) (((a) >> 4) & ~(B1|B2|B3|B4 |B7|B8|B9|B10 |B12|B13|B14|B15))
-#define VAL12(a) (((a) >> 3) & ~(B2|B3|B4 |B8|B9|B10 |B13|B14|B15))
-#define VAL25(a) (((a) >> 2) & ~(B3|B4 |B9|B10 |B14|B15))
-#define VAL50(a) (((a) >> 1) & ~(B4 |B10 |B15))
-
-	switch (level)
-	{
-	// 0%
-	case 0: return col1;
-
-	// 6%
-	case 1: return VAL50(col1)+VAL25(col1)+VAL12(col1)+VAL6(col1) + VAL6(col2);
-
-	// 12%
-	case 2: return VAL50(col1)+VAL25(col1)+VAL12(col1) + VAL12(col2);
-
-	// 18%
-	case 3: return VAL50(col1)+VAL25(col1)+VAL6(col1) + VAL12(col2)+VAL6(col2);
-
-	// 25%
-	case 4: return VAL50(col1)+VAL25(col1) + VAL25(col2);
-
-	// 31%
-	case 5: return VAL50(col1)+VAL12(col1)+VAL6(col1) + VAL25(col2)+VAL6(col2);
-
-	// 37%
-	case 6: return VAL50(col1)+VAL12(col1) + VAL25(col2)+VAL12(col2);
-
-	// 44%
-	case 7: return VAL50(col1)+VAL6(col1) + VAL25(col2)+VAL12(col2)+VAL6(col2);
-
-	// 50%
-	case 8: return VAL50(col1) + VAL50(col2);
-
-	// 56%
-	case 9: return VAL25(col1)+VAL12(col1)+VAL6(col1) + VAL50(col2)+VAL6(col2);
-
-	// 62%
-	case 10: return VAL25(col1)+VAL12(col1) + VAL50(col2)+VAL12(col2);
-
-	// 69%
-	case 11: return VAL25(col1)+VAL6(col1) + VAL50(col2)+VAL12(col2)+VAL6(col2);
-
-	// 75%
-	case 12: return VAL25(col1) + VAL50(col2)+VAL25(col2);
-
-	// 81%
-	case 13: return VAL12(col1)+VAL6(col1) + VAL50(col2)+VAL25(col2)+VAL6(col2);
-
-	// 87%
-	case 14: return VAL12(col1) + VAL50(col2)+VAL25(col2)+VAL12(col2);
-
-	// 94%
-	case 15: return VAL6(col1) + VAL50(col2)+VAL25(col2)+VAL12(col2)+VAL6(col2);
-
-	// 100%
-	default: return col2;
-	}
-}
-
-#endif // COLBITS == 16
-
 // scroll screen one row up
 void DrawScroll()
 {
@@ -5685,4 +5616,68 @@ u16 FASTCODE NOFLASH(RGB16Blend4)(u16 col1, u16 col2, u16 col3, u16 col4)
 	m = 0x07e0;
 	col |= (((col1 & m) + (col2 & m) + (col3 & m) + (col4 & m)) >> 2) & m; // blend green components
 	return (u16)col;
+}
+
+// blend 16-bit colors (level is 0=col1 to 16=col2)
+//  @TODO: Fast, but not precise (may be darker with missing lowest bit)
+u16 BlendCol16(u16 col1, u16 col2, u8 level)
+{
+#define VAL6(a) (((a) >> 4) & ~(B1|B2|B3|B4 |B7|B8|B9|B10 |B12|B13|B14|B15))
+#define VAL12(a) (((a) >> 3) & ~(B2|B3|B4 |B8|B9|B10 |B13|B14|B15))
+#define VAL25(a) (((a) >> 2) & ~(B3|B4 |B9|B10 |B14|B15))
+#define VAL50(a) (((a) >> 1) & ~(B4 |B10 |B15))
+
+	switch (level)
+	{
+	// 0%
+	case 0: return col1;
+
+	// 6%
+	case 1: return VAL50(col1)+VAL25(col1)+VAL12(col1)+VAL6(col1) + VAL6(col2);
+
+	// 12%
+	case 2: return VAL50(col1)+VAL25(col1)+VAL12(col1) + VAL12(col2);
+
+	// 18%
+	case 3: return VAL50(col1)+VAL25(col1)+VAL6(col1) + VAL12(col2)+VAL6(col2);
+
+	// 25%
+	case 4: return VAL50(col1)+VAL25(col1) + VAL25(col2);
+
+	// 31%
+	case 5: return VAL50(col1)+VAL12(col1)+VAL6(col1) + VAL25(col2)+VAL6(col2);
+
+	// 37%
+	case 6: return VAL50(col1)+VAL12(col1) + VAL25(col2)+VAL12(col2);
+
+	// 44%
+	case 7: return VAL50(col1)+VAL6(col1) + VAL25(col2)+VAL12(col2)+VAL6(col2);
+
+	// 50%
+	case 8: return VAL50(col1) + VAL50(col2);
+
+	// 56%
+	case 9: return VAL25(col1)+VAL12(col1)+VAL6(col1) + VAL50(col2)+VAL6(col2);
+
+	// 62%
+	case 10: return VAL25(col1)+VAL12(col1) + VAL50(col2)+VAL12(col2);
+
+	// 69%
+	case 11: return VAL25(col1)+VAL6(col1) + VAL50(col2)+VAL12(col2)+VAL6(col2);
+
+	// 75%
+	case 12: return VAL25(col1) + VAL50(col2)+VAL25(col2);
+
+	// 81%
+	case 13: return VAL12(col1)+VAL6(col1) + VAL50(col2)+VAL25(col2)+VAL6(col2);
+
+	// 87%
+	case 14: return VAL12(col1) + VAL50(col2)+VAL25(col2)+VAL12(col2);
+
+	// 94%
+	case 15: return VAL6(col1) + VAL50(col2)+VAL25(col2)+VAL12(col2)+VAL6(col2);
+
+	// 100%
+	default: return col2;
+	}
 }

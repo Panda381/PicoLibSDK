@@ -15,7 +15,9 @@ _RaspPicoImg	font_italic_8x8.bmp	font_italic_8x8.c	FontItalic8x8
 _RaspPicoImg	font_thin_8x8.bmp	font_thin_8x8.c		FontThin8x8
 _RaspPicoImg	font_tiny_5x8.bmp	font_tiny_5x8.c		FontTiny5x8
 
+_RaspPicoImg	font_bold_8x16_win1250.bmp	font_bold_8x16_win1250.c	FontBold8x16Win1250
+
 echo.
-echo ==== Change "include.h" to "../global.h" ! ====
+echo ==== Change "include.h" - see !info.txt ====
 echo.
 pause

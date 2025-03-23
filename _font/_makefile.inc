@@ -15,4 +15,6 @@ CSRC += ${PICOLIBSDK_FONT_DIR}/font_ibm_8x8.c
 CSRC += ${PICOLIBSDK_FONT_DIR}/font_italic_8x8.c
 CSRC += ${PICOLIBSDK_FONT_DIR}/font_thin_8x8.c
 CSRC += ${PICOLIBSDK_FONT_DIR}/font_tiny_5x8.c
+
+CSRC += ${PICOLIBSDK_FONT_DIR}/font_bold_8x16_win1250.c
 endif

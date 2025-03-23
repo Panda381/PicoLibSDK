@@ -8,6 +8,9 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
+#ifndef _SDK_INCLUDE_H
+#define _SDK_INCLUDE_H
+
 #include "sdk_addressmap.h"	// Register address offsets
 #include "sdk_dreq.h"		// DREQ data request channels
 #include "sdk_sftable.h"	// offsets of floating-point functions
@@ -180,3 +183,5 @@
 #include "usb_inc/sdk_usb_host_msc.h"	// USB Mass Storage Class (host)
 #include "usb_inc/sdk_usb_host_vendor.h" // USB Vendor Device Class (host)
 */
+
+#endif // _SDK_INCLUDE_H

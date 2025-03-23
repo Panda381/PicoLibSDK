@@ -23,14 +23,6 @@
 extern "C" {
 #endif
 
-#ifndef WIDTH
-#define WIDTH		320		// display width
-#endif
-
-#ifndef HEIGHT
-#define HEIGHT		240		// display height
-#endif
-
 // drawing canvas format
 enum {
 	DRAWCAN_FORMAT_NONE = 0,	// invalid format
@@ -95,12 +87,23 @@ typedef struct {
 	// font
 	u8	fontw;		// font width (number of pixels, max. 8)
 	u8	fonth;		// font height (number of lines)
+	u8	printinv;	// offset added to printed character (print characters 128 = inverted, 0 = normal)
+	u8	printsize;	// font size 0=normal, 1=double-height, 2=double-width, 3=double-size
 
 	// dimension
 	s16	w;		// width
 	s16	h;		// height
 	s16	wb;		// pitch (bytes between lines) - aligned to 4 bytes (u32)
 	s16	striph;		// strip height (number of lines)
+
+	// print
+	u16	printposnum;	// number of text positions per row (= w / fontw)
+	u16	printrownum;	// number of text rows (= h / fonth)
+	u16	printpos;	// console print character position
+	u16	printrow;	// console print character row
+	u16	printcol;	// console print color
+
+// @TODO: stripping back buffer is currently not supported
 
 	// clipping
 	s16	basey;		// base Y of buffer strip
@@ -118,7 +121,11 @@ typedef struct {
 	s16	dirtyy2;	// dirty window end Y
 
 	// data buffer
-	u8*	buf;		// image data buffer
+	u8*	buf;		// image data buffer (drawing buffer - back buffer or front buffer)
+	u8*	frontbuf;	// front buffer (display buffer), or NULL = use only one buffer
+
+	// last system time of auto update
+	u32	autoupdatelast;	// last system time of auto update
 
 	// font
 	const u8* font;		// pointer to current font (256 characters in cells of width 8 pixels, 1-bit format)
@@ -189,6 +196,7 @@ INLINE u8* DrawBuf() { return pDrawCan->buf; }
 
 // set dirty all frame buffer
 void DrawCanDirtyAll(sDrawCan* can);
+void DispDirtyAll();
 
 // set dirty none
 void DrawCanDirtyNone(sDrawCan* can);
@@ -207,6 +215,69 @@ void DrawCanDirtyRect(sDrawCan* can, int x, int y, int w, int h);
 
 // check if rectangle is clipped and if it is safe to use fast variant of the function
 Bool DrawCanRectClipped(sDrawCan* can, int x, int y, int w, int h);
+
+// Display update - transfer image from back buffer to front buffer
+// @TODO: So far there is only a simplified update where the whole buffer (without clipping) is transferred using DMA.
+void DrawCanUpdateAll(sDrawCan* can);
+void DispUpdateAll();
+
+// update screen, if dirty
+void DrawCanUpdate(sDrawCan* can);
+void DispUpdate();
+
+// auto update after delta time in [ms] of running program
+void DrawCanAutoUpdate(sDrawCan* can, u32 ms);
+void DispAutoUpdate(u32 ms);
+
+// scroll screen one row up
+void DrawCanScroll(sDrawCan* can);
+void DrawScroll();
+
+// console print character (without display update)
+//   Control characters:
+//     0x01 '\1' ^A ... set not-inverted text
+//     0x02 '\2' ^B ... set inverted text (shift character code by 0x80)
+//     0x03 '\3' ^C ... use normal-sized font (default)
+//     0x04 '\4' ^D ... use double-height font
+//     0x05 '\5' ^E ... use double-width font
+//     0x06 '\6' ^F ... use double-sized font
+//     0x07 '\a' ^G ... (bell) move cursor 1 position right (no print; uses width of normal-sized font)
+//     0x08 '\b' ^H ... (back space) move cursor 1 position left (no print; uses width of normal-sized font)
+//     0x09 '\t' ^I ... (tabulator) move cursor to next 8-character position, print spaces (uses width of normal-sized font)
+//     0x0A '\n' ^J ... (new line) move cursor to start of next row
+//     0x0B '\v' ^K ... (vertical tabulator) move cursor to start of previous row
+//     0x0C '\f' ^L ... (form feed) clear screen, reset cursor position and set default color
+//     0x0D '\r' ^M ... (carriage return) move cursor to start of current row
+//     0x10 '\20' ^P ... set gray text color (COL_GRAY, default)
+//     0x11 '\21' ^Q ... set blue text color (COL_AZURE)
+//     0x12 '\22' ^R ... set green text color (COL_GREEN)
+//     0x13 '\23' ^S ... set cyan text color (COL_CYAN)
+//     0x14 '\24' ^T ... set red text color (COL_RED)
+//     0x15 '\25' ^U ... set magenta text color (COL_MAGENTA)
+//     0x16 '\26' ^V ... set yellow text color (COL_YELLOW)
+//     0x17 '\27' ^W ... set white text color (COL_WHITE)
+void DrawCanPrintCharRaw(sDrawCan* can, char ch);
+void DrawPrintCharRaw(char ch);
+
+// console print character (with display update; Control characters - see DrawPrintCharRaw)
+void DrawCanPrintChar(sDrawCan* can, char ch);
+void DrawPrintChar(char ch);
+
+// console print text (Control characters - see DrawPrintCharRaw)
+//  If text contains digit after hex numeric code of control character,
+//  split text to more parts: use "\4" "1" instead of "\41".
+void DrawCanPrintText(sDrawCan* can, const char* txt);
+void DrawPrintText(const char* txt);
+
+#if USE_STREAM	// use Data stream (lib_stream.c, lib_stream.h)
+
+// formatted print string to drawing console, with argument list (returns number of characters, without terminating 0)
+u32 DrawPrintArg(const char* fmt, va_list args);
+
+// formatted print string to drawing console, with variadic arguments (returns number of characters, without terminating 0)
+NOINLINE u32 DrawPrint(const char* fmt, ...);
+
+#endif // USE_STREAM
 
 // select font
 //  font ... pointer to current font (256 characters in cells of width 8 pixels, 1-bit format)
@@ -503,6 +574,10 @@ void DrawClearCol(u16 col);
 // Clear canvas with black color
 void DrawCanClear(sDrawCan* can);
 void DrawClear();
+
+// Fast clear canvas with DMA
+void DrawCanClearFast(sDrawCan* can);
+void DrawClearFast();
 
 // ----- Draw point
 

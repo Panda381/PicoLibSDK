@@ -1,4 +1,36 @@
-List of music loops (format Intel IMA ADPCM 4-bit mono 22050 Hz):
+How to prepare sound loop in the CoolEdit editor:
+
+To ensure continuity of start and end of the loop, the loop length
+must be a multiple of the frame size. You can either use the MP3 player
+from the examples to find the frame size, or compile this program with
+the DISP_FRAMEINFO switch. You need a "FrameTime" entry indicating the
+frame interval in microseconds.
+
+Sample loops in this directory have format Bitrate=80kbps, Samprate=32kHz,
+Stereo, with FrameTime=36000us (36ms). You must adjust the track length to
+a multiple of 36ms.
+
+Example of the procedure in Cooledit:
+- The default track "3xOSC fun.wav" has a length of 8.807 seconds and a 44100 Hz stereo format.
+- Required new length of the track is: 8.807/0.036=244.64. Nearest integer=245 frames.
+  New length will be 245*0.036=8.820 seconds.
+- Use function Effects/Time-Pitch/Stretch, select Stretching mode "Resample".
+  Enter required new length 8.820 seconds.
+- Convert to target frequency 32000 Hz stereo, function Edit/Convert_Sample_Type.
+- Save loop to the file 001.MP3 in MP3 format. Select destination format
+  "80 Kbps, 32000 Hz, Stereo" in Options, CBR constant bitrate, MP3 version.
+- Close file and open saved MP3 file again, to check it. As you can see, length is now
+  8.892 seconds. Cooledit added two silent frames. You can see one FadeIn frame at the
+  beginning of the file, and a second FadeOut frame at the end of the file,
+  both about 0.036 seconds long.
+
+If you are using another editor that does not automatically add FadeIn and FadeOut frames,
+you must do so manually by inserting 0.036 second silence sections at the beginning
+and end of the file. These frames will be omitted during playback.
+
+
+
+List of music loops (format MP3 80kbps 32000Hz stereo):
 
 110 Supa-Dupa-Fly (Sezam Remix)
 111 a-reflective-dbu

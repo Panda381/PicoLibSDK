@@ -300,6 +300,7 @@ Bool DispHstxIsVSync();
 
 // wait for VSync scanline
 void DispHstxWaitVSync();
+INLINE void WaitVSync() { DispHstxWaitVSync(); }
 
 // Initialize videomode state descriptor (set timings and clear list of strips)
 //  vmode ... videomode state descriptor (must not currently be used)

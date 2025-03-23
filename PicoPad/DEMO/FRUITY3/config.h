@@ -17,6 +17,35 @@
 #define FONTW			8		// width of system font
 #define FONTH			16		// height of system font
 
+#define USE_MP3			1	// use MP3 decoder (lib_mp3*.c, lib_mp3*.h)
+
+#if USE_PICOPADNES		// use PicoPadNES device configuration
+#define USE_DEFAULT_VMODE	4	// use videomode (default = 1)
+					//	0=custom
+					//	1=320x240/16 with BackBuf, slow (sys_clock=126 MHz, detected as 640x480@60)
+					//	2=320x240/16 with BackBuf, fast (sys_clock=252 MHz, detected as 640x480@60)
+					//	3=320x240/16 only FrameBuf, slow (sys_clock=126 MHz, detected as 640x480@60)
+					//	4=320x240/16 only FrameBuf, fast (sys_clock=252 MHz, detected as 640x480@60)
+					//	5=400x300/16 (sys_clock=200 MHz, detected as 800x600@60)
+					//	6=512x384/16 (sys_clock=324 MHz, detected as 1024x768@60Hz, sys_clock may not work on some Pico2s)
+					//	7=532x400/16 (sys_clock=210 MHz, detected as 720x400@70, can be unreliable on some monitors)
+					//	8=640x350/16 (sys_clock=252 MHz, detected as 640x350@70)
+					//	9=640x480/8 slow (sys_clock=126 MHz, detected as 640x480@60)
+					//	10=640x480/8 fast (sys_clock=252 MHz, detected as 640x480@60)
+					//	11=800x600/6 (sys_clock=200 MHz, detected as 800x600@60)
+					//	12=1024x768/4 (sys_clock=324 MHz, detected as 1024x768@60Hz, sys_clock may not work on some Pico2s)
+//#define USE_DRAWCAN	1		// 1=use DrawCan
+//#define USE_DRAWCAN0	0		// 1=use DrawCan common functions, if use drawing canvas
+//#define USE_DRAWCAN1	0		// 1=use DrawCan1 1-bit functions, if use drawing canvas
+//#define USE_DRAWCAN2	0		// 1=use DrawCan2 2-bit functions, if use drawing canvas
+//#define USE_DRAWCAN3	0		// 1=use DrawCan3 3-bit functions, if use drawing canvas
+//#define USE_DRAWCAN4	0		// 1=use DrawCan4 4-bit functions, if use drawing canvas
+//#define USE_DRAWCAN6	0		// 1=use DrawCan6 6-bit functions, if use drawing canvas
+//#define USE_DRAWCAN8	0		// 1=use DrawCan8 8-bit functions, if use drawing canvas
+//#define USE_DRAWCAN12	0		// 1=use DrawCan12 12-bit functions, if use drawing canvas
+//#define USE_DRAWCAN16	0		// 1=use DrawCan15/16 15/16-bit functions, if use drawing canvas
+#endif // USE_PICOPADNES		// use PicoPadNES device configuration
+
 //#define USE_DRAW_STDIO	1		// use DRAW stdio (DrawPrint function)
 //#define USE_USB_STDIO		1		// use USB stdio (UsbPrint function)
 //#define USE_UART_STDIO	1		// use UART stdio (UartPrint function)

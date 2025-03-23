@@ -997,6 +997,8 @@ void DispHstxLinkCan(const sDispHstxVSlot* slot, sDrawCan* can)
 
 	can->fontw = FONTW;
 	can->fonth = FONTH;
+	can->printinv = 0;
+	can->printsize = 0;
 
 	int w = slot->w;
 	int h = slot->h;
@@ -1005,6 +1007,16 @@ void DispHstxLinkCan(const sDispHstxVSlot* slot, sDrawCan* can)
 	can->h = h;
 	can->wb = slot->pitch;
 	can->striph = h;
+
+	can->printposnum = w/FONTW;
+	can->printrownum = h/FONTH;
+	can->printpos = 0;
+	can->printrow = 0;
+#if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
+	can->printcol = DrawCanFncList[can->format]->col_white;
+#else
+	can->printcol = COL16_WHITE;
+#endif
 
 	can->basey = 0;
 	can->clipx1 = 0;
@@ -1020,6 +1032,8 @@ void DispHstxLinkCan(const sDispHstxVSlot* slot, sDrawCan* can)
 	can->dirtyy2 = h;
 	
 	can->buf = (u8*)slot->buf;
+	can->frontbuf = NULL;
+	can->autoupdatelast = Time();
 	can->font = FONT;
 #if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 	can->drawfnc = DrawCanFncList[can->format];
