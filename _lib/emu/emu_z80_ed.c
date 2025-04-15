@@ -14,7 +14,7 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-	u8 op = Z80_ProgByte(cpu);
+	op = Z80_ProgByte(cpu);
 
 	// switch 0xED operation code
 	switch (op)
