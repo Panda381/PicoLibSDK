@@ -1,0 +1,24 @@
+Output check pattern to DVI output
+in resolution 1440x600/56Hz/35kHz,
+pixel clock 64 MHz
+
+DVI breakout board pinout (8x R=270 ohm):
+GPIO12 ... D0+
+GPIO13 ... D0-
+GPIO14 ... CLK+
+GPIO15 ... CLK-
+GPIO16 ... D2+
+GPIO17 ... D2-
+GPIO18 ... D1+
+GPIO19 ... D1-
+
+VGA output:
+GPIO12 ... B0, R=800 (800) ohm
+GPIO13 ... B1, R=400 (400) ohm
+GPIO14 ... G0, R=800 (800) ohm
+GPIO15 ... G1, R=400 (400) ohm
+GPIO16 ... R0, R=800 (800) ohm
+GPIO17 ... R1, R=400 (400) ohm
+GPIO18 ... HSYNC, R=47 ohm
+GPIO19 ... VSYNC, R=47 ohm
+and 3x capatitor 220pF on VGA RGB outputs

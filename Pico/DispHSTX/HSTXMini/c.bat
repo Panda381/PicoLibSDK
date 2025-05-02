@@ -1,7 +1,7 @@
 @echo off
 rem Compilation...
 
-set TARGET=HSTXDemo
+set TARGET=HSTXMini
 set GRPDIR=DispHSTX
 set MEMMAP=
 

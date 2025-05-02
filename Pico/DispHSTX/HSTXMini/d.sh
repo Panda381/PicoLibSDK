@@ -2,5 +2,5 @@
 
 # Delete...
 
-export TARGET="HSTXDemo"
+export TARGET="HSTXMini"
 ../../../_d1.sh

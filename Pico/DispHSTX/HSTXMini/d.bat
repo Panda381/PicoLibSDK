@@ -1,5 +1,5 @@
 @echo off
 rem Delete...
 
-set TARGET=HSTXDemo
+set TARGET=HSTXMini
 ..\..\..\_d1.bat

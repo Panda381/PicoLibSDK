@@ -2,7 +2,7 @@
 
 # Compilation...
 
-export TARGET="HSTXDemo"
+export TARGET="HSTXMini"
 export GRPDIR="DispHSTX"
 export MEMMAP=""
 

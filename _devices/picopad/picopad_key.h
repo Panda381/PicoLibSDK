@@ -39,7 +39,9 @@ extern "C" {
 #define KEY_RELEASE	B7	// key release flag
 
 // timings
+#ifndef KEY_REL_TIME
 #define KEY_REL_TIME	50	// delta time of release in [ms]
+#endif
 
 // keys are currently pressed (index = button code - 1)
 extern volatile Bool KeyPressMap[KEY_NUM];
