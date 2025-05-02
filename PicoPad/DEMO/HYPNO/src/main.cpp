@@ -71,7 +71,11 @@ int main()
 	while (True)
 	{
 		SetMat(a);
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+		a -= 0.1f;
+#else
 		a -= 0.3f;
+#endif
 		if (a < 0) a += PI*2;
 
 		// draw image with transformation

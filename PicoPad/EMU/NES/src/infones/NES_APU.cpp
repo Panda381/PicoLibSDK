@@ -1268,11 +1268,16 @@ u8 NES_TndTab[203] = {
 };
 
 int NES_OldSum = 0; // low-pass filter
+#if PWMSND_GPIO_R >= 0
+int NES_OldSumR = 0; // low-pass filter
+#endif
 
 #endif // OUT_MODE == 2
  
 
-// get output sample (output level is 0..1308)
+// get output sample
+// Mono output level: 0..1308
+// Stereo output level: 12 LOW bits 0..1308, 12 HIGH bits 0..1308
 int FASTCODE NOFLASH(NES_ApuSndOut)(sApuSnd* s)
 {
 
@@ -1342,12 +1347,46 @@ int FASTCODE NOFLASH(NES_ApuSndOut)(sApuSnd* s)
 	//  NES_PulseTab[inx=0..30] = 246/(60/inx+1)
 	//  NES_TndTab[inx=0..202] = 490/(202/inx+1)
 
+#if PWMSND_GPIO_R >= 0
+
+// Stereo simulation, L + R:
+// pulse 1 (0..15) main melody 1: 100% + 100%
+// pulse 2 (0..15) main melody 2: 100% + 50%
+// triangle (0..15) accompanying melody: 50% + 100%
+// noise (0..15) percussion: 100% + 25%
+// DMC (0..127): 25% + 100%
+
+// Mono output level: 0..1308
+// Stereo output level: 12 LOW bits 0..1308, 12 HIGH bits 0..1308
+
+	// left channel
+	int sum = NES_PulseTab[NES_ApuPulseOut(&s->pulse1) + NES_ApuPulseOut(&s->pulse2)]; // index 0..30, output 0..82
+	sum += NES_TndTab[((NES_ApuTriOut(&s->tri)*3)>>1) + NES_ApuNoiseOut(&s->noise)*2 + (NES_ApuDmcOut(&s->dmc)>>2)]; // index 0..202, output 0..245
+
+	// simple low pass filter (new=sum*4: value 0..1308, low pass mixing: (old + 3*new)/4)
+	sum = (NES_OldSum + sum*12) >> 2; // output is max. (1308 + 327*12)/4 = 1308
+	NES_OldSum = sum;
+
+	// right channel
+	int sumR = NES_PulseTab[NES_ApuPulseOut(&s->pulse1) + (NES_ApuPulseOut(&s->pulse2)>>1)]; // index 0..30, output 0..82
+	sumR += NES_TndTab[NES_ApuTriOut(&s->tri)*3 + (NES_ApuNoiseOut(&s->noise)>>1) + NES_ApuDmcOut(&s->dmc)]; // index 0..202, output 0..245
+
+	// simple low pass filter (new=sum*4: value 0..1308, low pass mixing: (old + 3*new)/4)
+	sumR = (NES_OldSumR + sumR*12) >> 2; // output is max. (1308 + 327*12)/4 = 1308
+	NES_OldSumR = sumR;
+
+	sum |= sumR << 12;
+
+#else // PWMSND_GPIO_R
+
 	int sum = NES_PulseTab[NES_ApuPulseOut(&s->pulse1) + NES_ApuPulseOut(&s->pulse2)]; // index 0..30, output 0..82
 	sum += NES_TndTab[NES_ApuTriOut(&s->tri)*3 + NES_ApuNoiseOut(&s->noise)*2 + NES_ApuDmcOut(&s->dmc)]; // index 0..202, output 0..245
 
 	// simple low pass filter (new=sum*4: value 0..1308, low pass mixing: (old + 3*new)/4)
 	sum = (NES_OldSum + sum*12) >> 2; // output is max. (1308 + 327*12)/4 = 1308
 	NES_OldSum = sum;
+
+#endif // PWMSND_GPIO_R
 
 #endif // OUT_MODE == 2
 

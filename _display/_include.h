@@ -15,6 +15,10 @@
 #include "disphstx/disphstx.h"
 #endif
 
+#if USE_DISPHSTXMINI
+#include "disphstxmini/disphstxmini.h"
+#endif
+
 #if USE_DVI
 #include "dvi/dvi.h"
 #endif

@@ -125,6 +125,9 @@ void PC_SoundFreqUpdate()
 
 				// set compare value, on which flip HIGH->LOW
 				PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, PC_SoundDiv);
+#if PWMSND_GPIO_R >= 0
+				PWM_Comp(PWMSND_SLICE_R, PWMSND_CHAN_R, PC_SoundDiv);
+#endif // PWMSND_GPIO_R
 			}
 		}
 
@@ -141,6 +144,9 @@ void PC_SoundFreqUpdate()
 
 				// set compare value, on which flip HIGH->LOW
 				PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, PC_SoundDiv >> 1);
+#if PWMSND_GPIO_R >= 0
+				PWM_Comp(PWMSND_SLICE_R, PWMSND_CHAN_R, PC_SoundDiv >> 1);
+#endif // PWMSND_GPIO_R
 			}
 		}
 
@@ -175,6 +181,9 @@ void PC_SoundInit(int out)
 
 		// set GPIO function to PWM
 		PWM_GpioInit(PWMSND_GPIO);
+#if PWMSND_GPIO_R >= 0
+		PWM_GpioInit(PWMSND_GPIO_R);		// set GPIO function to PWM
+#endif // PWMSND_GPIO_R
 
 		// set clock divider (PWM clock frequency 1.193182 MHz):
 		//   on 125 MHz: divider 1676, INT = 104, FRAC = 12, real freq = 1193317 Hz
@@ -200,6 +209,9 @@ void PC_SoundTerm()
 
 		// set GPIO function to default
 		GPIO_Init(PWMSND_GPIO);
+#if PWMSND_GPIO_R >= 0
+		GPIO_Init(PWMSND_GPIO_R);		// set GPIO function to PWM
+#endif // PWMSND_GPIO_R
 	}
 
 	// no sound

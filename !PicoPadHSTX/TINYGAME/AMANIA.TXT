@@ -1,0 +1,10 @@
+^YArdumania^0
+
+   Adaptation of the game
+ Ardumania on the RP2040
+ Picopad, originally
+ created for the Arduboy
+ platform and 
+       MegaTinyjoypad.
+
+

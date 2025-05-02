@@ -17,7 +17,7 @@
 #include "../include.h"
 
 #define EMU_LCD_WIDTH	320	// LCD display width
-#define EMU_LCD_HEIGHT	240	// LCD display height
+#define EMU_LCD_HEIGHT	HEIGHT	// LCD display height
 
 // text screen buffer (only characters; 160 bytes)
 u8 GB_TextFrame[GB_MSG_WIDTH*GB_MSG_HEIGHT];
@@ -132,7 +132,7 @@ void GB_TextUpdate()
 	u16* c = GB_TextColor;
 	u16 cc, ccc;
 	u8* s2;
-	const u8* f = FontBold8x16;
+	const u8* f = FONT;
 	u16 bg = GB_TextBgColor;
 
 	// start sending image data
@@ -144,24 +144,33 @@ void GB_TextUpdate()
 		cc = *c; // color of the row
 		s2 = s; // start of text row
 
-		// columns
-		for (col = 0; col < GB_MSG_WIDTH; col++)
+		// columns of text row
+		if (line < GB_MSG_LINES)
 		{
-			// get character
-			ch = *s2++;
-
-			// get font pixels
-			ch = f[ch];
-
-			// draw pixels
-			for (pix = 8; pix > 0; pix--)
+			for (col = 0; col < GB_MSG_WIDTH; col++)
 			{
-				// send color of the pixel (or black color of the background)
-				ccc = ((ch & 0x80) != 0) ? cc : bg;
-				DispSendImg2(ccc);
-				DispSendImg2(ccc);
-				ch <<= 1;
+				// get character
+				ch = *s2++;
+
+				// get font pixels
+				ch = f[ch];
+
+				// draw pixels
+				for (pix = 8; pix > 0; pix--)
+				{
+					// send color of the pixel (or black color of the background)
+					ccc = ((ch & 0x80) != 0) ? cc : bg;
+					DispSendImg2(ccc);
+					DispSendImg2(ccc);
+					ch <<= 1;
+				}
 			}
+		}
+
+		// columns of empty row
+		else
+		{
+			for (col = EMU_LCD_WIDTH; col > 0; col--) DispSendImg2(COL_BLACK);
 		}
 
 		// increase line
@@ -174,11 +183,11 @@ void GB_TextUpdate()
 			f += 256;
 
 			// next row after 32 lines
-			if (((line & 0x1f) == 0) || (((line & 0x0f) == 0) && (line >= GB_MSG_BTMLINE)))
+			if (((line & (2*FONTH-1)) == 0) || (((line & (FONTH-1)) == 0) && (line >= GB_MSG_BTMLINE)))
 			{
 				c++; // color of the row
 				s = s2; // start of text row
-				f = FontBold8x16; // font
+				f = FONT; // font
 			}
 		}
 	}

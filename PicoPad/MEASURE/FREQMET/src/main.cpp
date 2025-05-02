@@ -18,8 +18,13 @@
 
 #include "include.h"
 
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+#define FREQ_GPIO1	26	// used GPIO input 1
+#define FREQ_GPIO2	27	// used GPIO input 2 (it can be equal FREQ_GPIO1 if 2nd input is not needed)
+#else // USE_PICOPADHSTX
 #define FREQ_GPIO1	1	// used GPIO input 1
 #define FREQ_GPIO2	14	// used GPIO input 2 (it can be equal FREQ_GPIO1 if 2nd input is not needed)
+#endif // USE_PICOPADHSTX
 
 #define FREQ_PIO1	0	// used PIO1 (medium and low frequency)
 #define FREQ_PIO2	1	// used PIO2 (high frequency)

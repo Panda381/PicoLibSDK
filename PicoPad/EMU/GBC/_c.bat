@@ -12,8 +12,10 @@ if "%1"=="picopad08" goto stop
 
 :default
 rem ..\..\..\_c1.bat picopad08
-..\..\..\_c1.bat picopad10
-rem ..\..\..\_c1.bat picopad20
+rem ..\..\..\_c1.bat picopad10
+..\..\..\_c1.bat picopad20
 rem ..\..\..\_c1.bat picopad20riscv
+rem ..\..\..\_c1.bat picopadhstx
+rem ..\..\..\_c1.bat picopadhstxriscv
 
 :stop

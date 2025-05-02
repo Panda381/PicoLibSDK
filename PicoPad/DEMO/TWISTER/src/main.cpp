@@ -61,7 +61,9 @@ int main()
 		}
 
 		// increment angle of animation
-#if USE_MINIVGA
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+		aa += 0.01f;
+#elif USE_MINIVGA
 		aa += 0.02f;
 #else
 		aa += 0.05f;

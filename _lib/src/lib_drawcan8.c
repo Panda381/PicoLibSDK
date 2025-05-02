@@ -24,6 +24,8 @@
 #if USE_DRAWCAN	&& USE_DRAWCAN8		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #include "../../_font/_include.h"
+#include "../../_sdk/inc/sdk_cpu.h"
+#include "../../_sdk/inc/sdk_float.h"
 #include "../inc/lib_text.h"
 #include "../inc/lib_rand.h"
 #include "../inc/lib_drawcan.h"
@@ -5083,6 +5085,350 @@ void DrawCan8GetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* dst
 }
 void Draw8GetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd) { DrawCan8GetImg(pDrawCan8, xs, ys, w, h, dst, xd, yd, wbd); }
 
+// Draw image with 2D transformation matrix
+//  can ... destination canvas
+//  xd ... destination X coordinate
+//  yd ... destination Y coordinate
+//  wd ... destination width
+//  hd ... destination height
+//  src ... source image
+//  ws ... source image width
+//  hs ... source image height
+//  wbs ... pitch of source image (length of line in bytes)
+//  m ... transformation matrix (should be prepared using PrepDrawImg function)
+//  mode ... draw mode DRAWIMG_*
+//  color ... key or border color (DRAWIMG_PERSP mode: horizon offset)
+// Note to wrap and perspective mode: Width and height of source image should be power of 2, or it will render slower.
+void DrawCan8ImgMat(sDrawCan* can, int xd, int yd, int wd, int hd, const void* src_img, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color)
+{
+	const u8* src = (const u8*)src_img;
+
+	// limit xd
+	int x0 = -wd/2; // start X coordinate
+	int k = can->clipx1 - xd;
+	if (k > 0)
+	{
+		wd -= k;
+		x0 += k;
+		xd += k;
+	}
+	k = can->clipx2;
+	if (xd + wd > k) wd = k - xd;
+	if (wd <= 0) return;
+
+	// limit yd
+	k = can->clipy1 - yd;
+	int h0 = hd;
+	int y0 = (mode == DRAWIMG_PERSP) ? (-hd) : (-hd/2); // start Y coordinate
+	if (k > 0)
+	{
+		hd -= k;
+		y0 += k;
+		yd += k;
+	}
+	k = can->clipy2;
+	if (yd + hd > k) hd = k - yd;
+	if (hd <= 0) return;
+
+	// update dirty rectangle
+	DrawCanDirtyRect_Fast(can, xd, yd, wd, hd);
+
+	// load transformation matrix and convert to integer fractional number
+	int m11 = TOFRACT(m->m11);
+	int m12 = TOFRACT(m->m12);
+	int m13 = TOFRACT(m->m13);
+	int m21 = TOFRACT(m->m21);
+	int m22 = TOFRACT(m->m22);
+	int m23 = TOFRACT(m->m23);
+
+	// check invalid zero matrix
+	Bool zero = (m11 | m12 | m13 | m21 | m22 | m23) == 0;
+
+	// prepare variables
+	int xy0m, yy0m; // temporary Y members
+	u8* d = &((u8*)can->buf)[xd + can->wb*(yd - can->basey)]; // destination image
+	int wbd = can->wb - wd;
+	int i, x2, y2;
+
+	// 0: wrap image
+	if (mode == DRAWIMG_WRAP)
+	{
+		// image dimension is power of 2
+		if (IsPow2(ws) && IsPow2(hs))
+		{
+			// coordinate mask
+			int xmask = ws - 1;
+			int ymask = hs - 1;
+
+			for (; hd > 0; hd--)
+			{
+				xy0m = x0*m11 + y0*m12 + m13;
+				yy0m = x0*m21 + y0*m22 + m23;
+		
+				for (i = wd; i > 0; i--)
+				{
+					x2 = (xy0m>>FRACT) & xmask;
+					y2 = (yy0m>>FRACT) & ymask;
+					*d++ = src[x2 + y2*wbs];
+					xy0m += m11; // x0*m11
+					yy0m += m21; // x0*m21
+				}
+
+				y0++;
+				d += wbd;
+			}
+		}
+
+		// image dimension is not power of 2
+		else
+		{
+			for (; hd > 0; hd--)
+			{
+				xy0m = x0*m11 + y0*m12 + m13;
+				yy0m = x0*m21 + y0*m22 + m23;
+		
+				for (i = wd; i > 0; i--)
+				{
+					x2 = (xy0m>>FRACT) % ws;
+					if (x2 < 0) x2 += ws;
+					y2 = (yy0m>>FRACT) % hs;
+					if (y2 < 0) y2 += hs;
+					*d++ = src[x2 + y2*wbs];
+					xy0m += m11; // x0*m11
+					yy0m += m21; // x0*m21
+				}
+
+				y0++;
+				d += wbd;
+			}
+		}
+	}
+
+	// 1: no border
+	else if (mode == DRAWIMG_NOBORDER)
+	{
+		// if matrix is valid
+		if (!zero)
+		{
+			// source image dimension
+			u32 ww = ws;
+			u32 hh = hs;
+
+			for (; hd > 0; hd--)
+			{
+				xy0m = x0*m11 + y0*m12 + m13;
+				yy0m = x0*m21 + y0*m22 + m23;
+
+				for (i = wd; i > 0; i--)
+				{
+					x2 = xy0m>>FRACT;
+					y2 = yy0m>>FRACT;
+					if (((u32)x2 < ww) && ((u32)y2 < hh)) *d = src[x2 + y2*wbs];
+					d++;
+					xy0m += m11; // x0*m11
+					yy0m += m21; // x0*m21
+				}
+				y0++;
+				d += wbd;
+			}
+		}
+	}
+
+	// 2: clamp image
+	else if (mode == DRAWIMG_CLAMP)
+	{
+		// invalid matrix
+		if (zero)
+		{
+			u16 col = *src;
+			for (; hd > 0; hd--)
+			{
+				for (i = wd; i > 0; i--)
+				{
+					*d++ = col;
+				}
+				d += wbd;
+			}
+		}
+		else
+		{
+			// source image dimension
+			u32 ww = ws - 1;
+			u32 hh = hs - 1;
+
+			for (; hd > 0; hd--)
+			{
+				xy0m = x0*m11 + y0*m12 + m13;
+				yy0m = x0*m21 + y0*m22 + m23;
+		
+				for (i = wd; i > 0; i--)
+				{
+					x2 = xy0m>>FRACT;
+					y2 = yy0m>>FRACT;
+					if (x2 < 0) x2 = 0;
+					if (x2 > ww) x2 = ww;
+					if (y2 < 0) y2 = 0;
+					if (y2 > hh) y2 = hh;
+					*d++ = src[x2 + y2*wbs];
+					xy0m += m11; // x0*m11
+					yy0m += m21; // x0*m21
+				}
+				y0++;
+				d += wbd;
+			}
+		}
+	}
+
+	// 3: color border
+	else if (mode == DRAWIMG_COLOR)
+	{
+		// invalid matrix
+		if (zero)
+		{
+			for (; hd > 0; hd--)
+			{
+				for (i = wd; i > 0; i--)
+				{
+					*d++ = color;
+				}
+				d += wbd;
+			}
+		}
+		else
+		{
+			// source image dimension
+			u32 ww = ws;
+			u32 hh = hs;
+
+			for (; hd > 0; hd--)
+			{
+				xy0m = x0*m11 + y0*m12 + m13;
+				yy0m = x0*m21 + y0*m22 + m23;
+		
+				for (i = wd; i > 0; i--)
+				{
+					x2 = xy0m>>FRACT;
+					y2 = yy0m>>FRACT;
+					if (((u32)x2 < ww) && ((u32)y2 < hh))
+						*d = src[x2 + y2*wbs];
+					else
+						*d = color;
+					d++;
+					xy0m += m11; // x0*m11
+					yy0m += m21; // x0*m21
+				}
+
+				y0++;
+				d += wbd;
+			}
+		}
+	}
+
+	// 4: transparency
+	else if (mode == DRAWIMG_TRANSP)
+	{
+		// if matrix is valid
+		if (!zero)
+		{
+			u32 ww = ws;
+			u32 hh = hs;
+			u16 c;
+
+			for (; hd > 0; hd--)
+			{
+				xy0m = x0*m11 + y0*m12 + m13;
+				yy0m = x0*m21 + y0*m22 + m23;
+		
+				for (i = wd; i > 0; i--)
+				{
+					x2 = xy0m>>FRACT;
+					y2 = yy0m>>FRACT;
+					if (((u32)x2 < ww) && ((u32)y2 < hh))
+					{
+						c = src[x2 + y2*wbs];
+						if (c != color) *d = c;
+					}
+					d++;
+					xy0m += m11; // x0*m11
+					yy0m += m21; // x0*m21
+				}
+				y0++;
+				d += wbd;
+			}
+		}
+	}
+
+	// 5: perspective
+	else if (mode == DRAWIMG_PERSP)
+	{
+		// image dimension is power of 2
+		if (IsPow2(ws) && IsPow2(hs))
+		{
+			// coordinate mask
+			int xmask = ws - 1;
+			int ymask = hs - 1;
+
+			for (; hd > 0; hd--)
+			{
+				int dist = FRACTMUL*h0/(h0 + y0 + color + 1);
+				int m11b = (m11*dist)>>FRACT;
+				int m21b = (m21*dist)>>FRACT;
+				int m12b = (m12*dist)>>FRACT;
+				int m22b = (m22*dist)>>FRACT;
+
+				xy0m = x0*m11b + y0*m12b + m13;
+				yy0m = x0*m21b + y0*m22b + m23;
+		
+				for (i = wd; i > 0; i--)
+				{
+					x2 = (xy0m>>FRACT) & xmask;
+					xy0m += m11b; // x0*m11
+
+					y2 = (yy0m>>FRACT) & ymask;
+					yy0m += m21b; // x0*m21
+
+					*d++ = src[x2 + y2*wbs];
+				}
+				y0++;
+				d += wbd;
+			}
+		}
+
+		// image dimension is not power of 2
+		else
+		{
+			for (; hd > 0; hd--)
+			{
+				int dist = FRACTMUL*h0/(h0 + y0 + color + 1);
+				int m11b = (m11*dist)>>FRACT;
+				int m21b = (m21*dist)>>FRACT;
+				int m12b = (m12*dist)>>FRACT;
+				int m22b = (m22*dist)>>FRACT;
+
+				xy0m = x0*m11b + y0*m12b + m13;
+				yy0m = x0*m21b + y0*m22b + m23;
+		
+				for (i = wd; i > 0; i--)
+				{
+					x2 = (xy0m>>FRACT) % ws;
+					if (x2 < 0) x2 += ws;
+					xy0m += m11b; // x0*m11
+
+					y2 = (yy0m>>FRACT) % hs;
+					if (y2 < 0) y2 += hs;
+					yy0m += m21b; // x0*m21
+
+					*d++ = src[x2 + y2*wbs];
+				}
+				y0++;
+				d += wbd;
+			}
+		}
+	}
+}
+void Draw8ImgMat(int xd, int yd, int wd, int hd, const void* src, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color)
+	{ DrawCan8ImgMat(pDrawCan8, xd, yd, wd, hd, src, ws, hs, wbs, m, mode, color); }
+
 #undef DRAWCAN_IMGLIMIT
 
 #if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
@@ -5192,6 +5538,7 @@ const sDrawCanFnc DrawCan8Fnc = {
 	.pDrawCanBlitInv	= DrawCan8BlitInv,		// Draw transparent image inverted with the same format as destination
 	.pDrawCanBlitSubs	= DrawCan8BlitSubs,		// Draw transparent image with the same format as destination, with substitute color
 	.pDrawCanGetImg		= DrawCan8GetImg,		// Get image from canvas to buffer
+	.pDrawCanImgMat		= DrawCan8ImgMat,		// Draw image with 2D transformation matrix
 	// colors
 	.pColRgb		= Draw8ColRgb,			// convert RGB888 color to pixel color
 #if USE_RAND		// use Random number generator (lib_rand.c, lib_rand.h)

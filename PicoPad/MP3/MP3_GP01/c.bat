@@ -6,6 +6,8 @@ set GRPDIR=MP3
 set MEMMAP=
 
 if "%1"=="picopadvga" goto stop
+if "%1"=="picopadhstx" goto stop
+if "%1"=="picopadhstxriscv" goto stop
 if "%1"=="" goto default
 ..\..\..\_c1.bat %1
 

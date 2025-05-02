@@ -1697,7 +1697,14 @@ u32 M6502_Start(sM6502* cpu, int pwm, u32 freq)
 	dsb();
 
 	// execute program
-#if USE_MINIVGA				// use mini-VGA display
+#if USE_DISPHSTXMINI	// 1=use HSTX Display Mini driver
+	if (DispHstxRunning)
+		DispHstxCore1Exec(M6502_ExecCore1);
+	else
+		Core1Exec(M6502_ExecCore1);
+#elif USE_DISPHSTX			// 1=use HSTX Display driver
+	DispHstxCore1Exec(M6502_ExecCore1);
+#elif USE_MINIVGA			// use mini-VGA display
 	VgaCore1Exec(M6502_ExecCore1);
 #else
 	Core1Exec(M6502_ExecCore1);
@@ -1720,7 +1727,14 @@ u32 M6502_Cont(sM6502* cpu, int pwm, u32 freq)
 	dsb();
 
 	// execute program
-#if USE_MINIVGA				// use mini-VGA display
+#if USE_DISPHSTXMINI	// 1=use HSTX Display Mini driver
+	if (DispHstxRunning)
+		DispHstxCore1Exec(M6502_ExecCore1);
+	else
+		Core1Exec(M6502_ExecCore1);
+#elif USE_DISPHSTX			// 1=use HSTX Display driver
+	DispHstxCore1Exec(M6502_ExecCore1);
+#elif USE_MINIVGA			// use mini-VGA display
 	VgaCore1Exec(M6502_ExecCore1);
 #else
 	Core1Exec(M6502_ExecCore1);
@@ -1748,7 +1762,12 @@ void M6502_Stop(int pwm)
 	// terminate time synchronization (stop PWM counter)
 	M6502_SyncTerm(pwm);
 
-#if !USE_MINIVGA				// use mini-VGA display
+#if !USE_MINIVGA && !USE_DISPHSTX	// use mini-VGA display
+
+#if USE_DISPHSTXMINI	// 1=use HSTX Display Mini driver
+	if (!DispHstxRunning)
+#endif
+
 	// core 1 reset
 	Core1Reset();
 #endif

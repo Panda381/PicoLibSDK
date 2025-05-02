@@ -54,7 +54,11 @@
 #define FSTEP		200		// frequency increment in [kHz]
 
 // RAM test buffer
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+#define RAMBUFN	(RAMSIZE - 180000 - 40000)
+#else
 #define RAMBUFN	(RAMSIZE - 180000)
+#endif
 u8 ALIGNED RamBuf[RAMBUFN];
 
 // error
@@ -80,6 +84,10 @@ int main()
 	int i, vreg, vreg2, clkdiv, clkdiv2;
 	u8 b;
 	u32 crc, ramcrc, f;
+
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+	DrawPrintCol = COL_PRINT_DEF & DISPHSTX_VGA_MASK; // console print color
+#endif
 
 	// enable temperature sensor
 	ADC_TempEnable();
@@ -131,6 +139,9 @@ int main()
 #endif
 
 		// set system clock frequency
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+		WaitVSync();
+#endif
 		ClockPllSysFreq(f);
 		printf("freq=%dMHz vreg=%.2fV clk=%d tmp=%dC\n",
 			(ClockGetHz(CLK_PLL_SYS)+500000)/1000000, VregVoltageFloat(), FlashClkDiv(), (int)(ADC_Temp()+0.5));
@@ -152,7 +163,11 @@ int main()
 		if ((s != s2) || (c != c2)) ErrLock("SinCos ERROR!\n");
 
 		// check flash memory
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+		if (crc != Crc32ATab((void*)XIP_BASE, FLASHSIZE)) ErrLock("Flash CRC ERROR!\n");
+#else
 		if (crc != Crc32ADMA((void*)XIP_BASE, FLASHSIZE)) ErrLock("Flash CRC ERROR!\n");
+#endif
 
 		// check RAM memory again
 		if (ramcrc != Crc32ADMA(RamBuf, RAMBUFN)) ErrLock("RAM CRC ERROR!\n");

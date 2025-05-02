@@ -4,4 +4,5 @@ A ... screenshot
 press B and then add A ... locked screenshot, program is not moving, but may freeze in some cases
 
 
-To compile all samples *.GB and *.GBC use c_all_samples.bat.
+To compile all samples *.GB and *.GBC use c_all_samples_pico1.bat for Picopad1, or c_all_samples_pico2.bat
+for other Picopad2. Select device in _c.bat before compilation.

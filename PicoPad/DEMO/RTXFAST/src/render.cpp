@@ -145,9 +145,15 @@ void FASTCODE NOFLASH(Render3D)()
 	int redold, greenold, blueold;
 
 	// render picture
+#if USE_PICOPADHSTX && USE_DISPHSTX	// use PicoPadHSTX device configuration
+	u16* dst = &FrameBuf[0];
+	y = HEIGHT-1;
+	for (; y >= 0; y -= 1)
+#else
 	u16* dst = &FrameBuf[(CpuID() == 0) ? 0 : WIDTH];
 	y = (CpuID() == 0) ? (HEIGHT-1) : (HEIGHT-2);
 	for (; y >= 0; y -= 2)
+#endif
 	{
 		x = 0;
 
@@ -176,8 +182,21 @@ void FASTCODE NOFLASH(Render3D)()
 		if (tmp > 255) tmp = 255;
 		blue =  tmp; // blue
 
+#if USE_DISPHSTXMINI	// 1=use HSTX Display Mini driver
+		if (DispHstxDispMode == DISPHSTX_DISPMODE_VGA)
+		{
+			*dst++ = COLOR(red, green, blue) & DISPHSTX_VGA_MASK;
+			*dst++ = COLOR(red, green, blue) & DISPHSTX_VGA_MASK;
+		}
+		else
+		{
+			*dst++ = COLOR(red, green, blue);
+			*dst++ = COLOR(red, green, blue);
+		}
+#else
 		*dst++ = COLOR(red, green, blue);
 		*dst++ = COLOR(red, green, blue);
+#endif
 		redold = red;
 		greenold = green;
 		blueold = blue;
@@ -209,13 +228,28 @@ void FASTCODE NOFLASH(Render3D)()
 			if (tmp > 255) tmp = 255;
 			blue =  tmp; // blue
 
+#if USE_DISPHSTXMINI	// 1=use HSTX Display Mini driver
+			if (DispHstxDispMode == DISPHSTX_DISPMODE_VGA)
+			{
+				*dst++ = COLOR((red+redold)>>1, (green+greenold)>>1, (blue+blueold)>>1) & DISPHSTX_VGA_MASK;
+				*dst++ = COLOR(red, green, blue) & DISPHSTX_VGA_MASK;
+			}
+			else
+			{
+				*dst++ = COLOR((red+redold)>>1, (green+greenold)>>1, (blue+blueold)>>1);
+				*dst++ = COLOR(red, green, blue);
+			}
+#else
 			*dst++ = COLOR((red+redold)>>1, (green+greenold)>>1, (blue+blueold)>>1);
 			*dst++ = COLOR(red, green, blue);
+#endif
 			redold = red;
 			greenold = green;
 			blueold = blue;
 		}
 
+#if !USE_PICOPADHSTX || !USE_DISPHSTX // use PicoPadHSTX device configuration
 		dst += WIDTH;
+#endif
 	}
 }

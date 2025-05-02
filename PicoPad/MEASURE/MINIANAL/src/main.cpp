@@ -6,12 +6,12 @@
 // ****************************************************************************
 // Simple logic analyzer and noise generator.
 
-//  Analyzer input: PicoPad GPIO0, PicoPadVGA GPIO12
+//  Analyzer input: PicoPad GPIO0, PicoPadVGA GPIO12, PicopadHSTX GPIO26
 //  Analyzer sample rate: 125 MHz
 //  Displays: 9600 samples
 //  Total sampling time: 76.8 us
 
-//  Noise output: GPIO1
+//  Noise output: GPIO1, PicopadHSTX GPIO27
 //  Noise sample rate: 15.75 MHz
 
 #include "include.h"
@@ -26,7 +26,9 @@
 #define ANALYZER_DIV		1	// clock divider to divide CLK_SYS=125 MHz to sample rate
 #define ANALYZER_SAMPLES	300	// number of 32-bit samples
 
-#if USE_PICOPADVGA
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+#define ANALYZER_GPIO		26	// used GPIO input
+#elif USE_PICOPADVGA
 #define ANALYZER_GPIO		12	// used GPIO input
 #else
 #define ANALYZER_GPIO		0	// used GPIO input
@@ -103,7 +105,13 @@ void AnalyzerDisp()
 #define GENERATOR_PIO		ANALYZER_PIO	// used PIO (common to analyzer and generator)
 #define GENERATOR_SM		1		// used state machine
 #define GENERATOR_OFF		1		// PIO output random program offset
+
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+#define GENERATOR_GPIO		27		// used GPIO output
+#else
 #define GENERATOR_GPIO		1		// used GPIO output
+#endif
+
 #define GENERATOR_DMA		1		// used DMA channel
 #define GENERATOR_DIV		8		// clock divider to divide clk_sys=126 MHz to sample rate
 #define GENERATOR_BITS		15		// number of bits of random sample buffer size in bytes (max. 15 allowed)

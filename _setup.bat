@@ -5,19 +5,21 @@ rem First command-line parameter (%1) of this batch contains device name (e.g. p
 rem This batch is called from the _c1.bat file.
 
 rem Use configuration name as parameter of the batch, to select target device:
-rem   pico .......... base Raspberry Pico module
-rem   pico2 ......... base Raspberry Pico 2 module in ARM mode
-rem   pico2riscv .... base Raspberry Pico 2 module in RISC-V mode
-rem   picotron ...... Picotron with VGA YRGB1111 output
-rem   picoinomini ... Picoino mini version with VGA RGB332 output
-rem   picoino10 ..... Picoino version 1.0 with VGA RGB332 output
-rem   demovga ....... DemoVGA board with VGA RGB565 output
-rem   picopad08 ..... PicoPad beta version 0.8
-rem   picopad10 ..... PicoPad version 1.0 with TFT RGB565 output
-rem   picopad20 ..... PicoPad version 2.0 (ARM) with TFT RGB565 output
-rem   picopad20riscv  PicoPad version 2.0 (RISC-V) with TFT RGB565 output
-rem   picopadvga .... PicoPad with VGA RGB565 output
-rem   (empty) ....... default compilation
+rem   pico .............. base Raspberry Pico module
+rem   pico2 ............. base Raspberry Pico 2 module in ARM mode
+rem   pico2riscv ........ base Raspberry Pico 2 module in RISC-V mode
+rem   picotron .......... Picotron with VGA YRGB1111 output
+rem   picoinomini ....... Picoino mini version with VGA RGB332 output
+rem   picoino10 ......... Picoino version 1.0 with VGA RGB332 output
+rem   demovga ........... DemoVGA board with VGA RGB565 output
+rem   picopad08 ......... PicoPad beta version 0.8
+rem   picopad10 ......... PicoPad version 1.0 with TFT RGB565 output
+rem   picopad20 ......... PicoPad version 2.0 (ARM) with TFT RGB565 output
+rem   picopad20riscv .... PicoPad version 2.0 (RISC-V) with TFT RGB565 output
+rem   picopadvga ........ PicoPad with VGA RGB565 output
+rem   picopadhstx ....... PicoPad RP2350 (ARM) and HSTX HDMI+VGA output
+rem   picopadhstxriscv .. PicoPad RP2350 (RISC-V) and HSTX HDMI+VGA output
+rem   (empty) ........... default compilation
 
 rem Move ":default" label before configuration, which you want to use as default.
 
@@ -33,6 +35,8 @@ if "%1"=="picopad10" goto picopad10
 if "%1"=="picopad20" goto picopad20
 if "%1"=="picopad20riscv" goto picopad20riscv
 if "%1"=="picopadvga" goto picopadvga
+if "%1"=="picopadhstx" goto picopadhstx
+if "%1"=="picopadhstxriscv" goto picopadhstxriscv
 if "%1"=="" goto default
 
 echo.
@@ -112,4 +116,16 @@ exit /b
 set DEVICE=picopadvga
 set DEVCLASS=picopad
 set DEVDIR=!PicoPadVGA
+exit /b
+
+:picopadhstx
+set DEVICE=picopadhstx
+set DEVCLASS=picopad
+set DEVDIR=!PicoPadHSTX
+exit /b
+
+:picopadhstxriscv
+set DEVICE=picopadhstxriscv
+set DEVCLASS=picopad
+set DEVDIR=!PicoPadHSTXriscv
 exit /b

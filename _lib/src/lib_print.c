@@ -1484,7 +1484,7 @@ int print(const char* fmt, ...)
 	return n;
 }
 
-#if USE_PICOPAD || USE_PICOINO || USE_PICOTRON	// use PicoPad or Picoino device configuration
+#if USE_PICOPAD || USE_PICOINO || USE_PICOTRON || USE_PICOPADHSTX // use PicoPad or Picoino device configuration
 char KeyChar();
 #endif
 
@@ -1511,7 +1511,7 @@ char GetChar()
 	if (ch != NOCHAR) return ch;
 #endif
 
-#if USE_PICOPAD || USE_PICOINO || USE_PICOTRON 	// use PicoPad or Picoino device configuration
+#if USE_PICOPAD || USE_PICOINO || USE_PICOTRON || USE_PICOPADHSTX // use PicoPad or Picoino device configuration
 	ch = KeyChar();
 	if (ch != NOCHAR) return ch;
 #endif

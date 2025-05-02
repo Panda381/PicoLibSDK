@@ -26,6 +26,7 @@ CSRC += ${PICOLIBSDK_DISPLAY_DIR}/disphstx/disphstx_vmode_format.c
 CSRC += ${PICOLIBSDK_DISPLAY_DIR}/disphstx/disphstx_vmode_time.c
 CSRC += ${PICOLIBSDK_DISPLAY_DIR}/disphstx/disphstx_picolibsk.c
 
+CSRC += ${PICOLIBSDK_DISPLAY_DIR}/disphstxmini/disphstxmini.c
 CSRC += ${PICOLIBSDK_DISPLAY_DIR}/dvi/dvi.c
 CSRC += ${PICOLIBSDK_DISPLAY_DIR}/dvivga/dvivga.c
 CSRC += ${PICOLIBSDK_DISPLAY_DIR}/minivga/minivga.c

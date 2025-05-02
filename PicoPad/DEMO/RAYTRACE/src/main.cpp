@@ -13,7 +13,9 @@ int main()
 #if RENDER_BOTHCORES	// 1 = use both cores to render, 0 = use only core 0
 
 	// start render on core 1
-#if USE_MINIVGA
+#if USE_PICOPADHSTX && USE_DISPHSTX	// use PicoPadHSTX device configuration
+	DispHstxCore1Exec(Render3D);
+#elif USE_MINIVGA
 	VgaCore1Exec(Render3D);
 #else
 	Core1Exec(Render3D);

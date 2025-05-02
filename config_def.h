@@ -18,13 +18,12 @@
 Default system resources
 ------------------------
 DMA 10 and 11 are reserved for temporary operations (DMA_MemCopy, CrcxxDMA),
-but they can be used temporary by user program, too. Search: UARTSAMPLE_TXDMA,
-UARTSAMPLE_RXDMA, DMA_TEMP_CHAN.
-
+	but they can be used temporary by user program, too. Search: UARTSAMPLE_TXDMA,
+	UARTSAMPLE_RXDMA, DMA_TEMP_CHAN.
 DMA channels 8 and 9 are used by miniVGA library.
 DMA channels 2 to 7 are used by DVI (HDMI) library.
 
-PIO1 is used by miniVGA and DVI (HDMI) library.
+PIO 1 is used by miniVGA and DVI (HDMI) library.
 
 Hardware interpolators are used when drawing to canvas (DRAW_HWINTER_INX) and
 by VGA driver rendering service.

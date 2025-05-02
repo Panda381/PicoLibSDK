@@ -98,6 +98,10 @@ extern const u8 PC_Font16[256*16];
 #include "emu_pc_key.h"		// keyboard
 #include "emu_pc_time.h"	// system time
 
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+extern ALIGNED FRAMETYPE FrameBuf2[];
+#endif
+
 // error handler menu - should be called on termination of emulator, if PC_Error != PC_ERROR_OK
 // - Returns True if emulation continues
 Bool PC_ErrorMenu();

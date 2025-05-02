@@ -226,7 +226,13 @@ extern int NES_XRamSize;		// size of extra RAM
 
 #define SAVEFILE_SIZE	(sizeof(sNES) - XRAM_SIZE - NES_FRAMESIZE - XX + NES_XRamSize)	// size of save file
 
+// frame buffer, with emulator RAM
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+extern ALIGNED FRAMETYPE FrameBuf2[];
+#define NES ((sNES*)FrameBuf2)
+#else
 #define NES ((sNES*)FrameBuf)
+#endif
 
 #define APU (&NES->apu)		// sound chip
 

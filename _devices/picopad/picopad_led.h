@@ -27,7 +27,11 @@ extern "C" {
 #define LED1		0	// LED1 index (yellow USR, on the left)
 #define LED2		1	// LED internal index (green, on Pico board)
 
+#if USE_PICOPADHSTX
+#define LED_NUM		1	// number of LEDs
+#else // USE_PICOPADHSTX
 #define LED_NUM		2	// number of LEDs
+#endif // USE_PICOPADHSTX
 
 // GPIO with LED
 // - Do not use 'const' for faster access

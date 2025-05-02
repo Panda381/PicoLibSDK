@@ -129,7 +129,7 @@ void WatchdogSetupReboot(u32 us, u32 pc, u32 sp)
 	WatchdogSetup(us, False);
 }
 
-#if USE_PICOPAD || USE_PICOINO || USE_PICOTRON || USE_DEMOVGA
+#if USE_PICOPAD || USE_PICOINO || USE_PICOTRON || USE_DEMOVGA || USE_PICOPADHSTX
 // wait for no key pressed
 void KeyWaitNoPressed();
 #endif
@@ -140,7 +140,7 @@ void DeviceTerm();
 // reset to boot loader
 void ResetToBootLoader()
 {
-#if USE_PICOPAD || USE_PICOINO || USE_PICOTRON || USE_DEMOVGA
+#if USE_PICOPAD || USE_PICOINO || USE_PICOTRON || USE_DEMOVGA || USE_PICOPADHSTX
 	// wait for no key pressed
 	KeyWaitNoPressed();
 #endif

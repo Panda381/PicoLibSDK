@@ -1,0 +1,10 @@
+^YTiny-Doc^0
+
+   Adaptation of the game
+ TinyDoc on the RP2040
+ Picopad, originally
+ created for the Arduboy
+ platform and Tinyjoypad
+ Attiny85.
+
+

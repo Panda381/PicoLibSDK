@@ -3,7 +3,7 @@ Game menu: press Y + Up
 A ... screenshot
 
 
-To compile all samples *.NES use c_all_samples.bat.
+To compile all samples *.NES use c_all_samples.bat (select device first in _c.bat).
 
 
 

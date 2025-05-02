@@ -15,8 +15,9 @@
 //	It is possible to take and modify the code or parts of it, without restriction.
 
 #define GB_MSG_WIDTH	(WIDTH/(2*8))	// message text width of window (1 character = 16 pixels width; = 20)
-#define GB_MSG_HEIGHT	11		// message text height of window, 4 rows height 32, 7 rows height 16
-#define GB_MSG_BTMLINE	(4*32)		// bottom line to start 16-line rows
+#define GB_MSG_HEIGHT	11		// message text height of window, 4 rows 2*height, 7 rows 1*height
+#define GB_MSG_BTMLINE	(4*FONTH*2)	// bottom line to start 1*height rows
+#define GB_MSG_LINES	(4*FONTH*2 + 7*FONTH) // height of message windows in graphics lines
 
 // text screen buffer (only characters; 160 bytes)
 extern u8 GB_TextFrame[GB_MSG_WIDTH*GB_MSG_HEIGHT];

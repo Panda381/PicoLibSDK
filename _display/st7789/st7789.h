@@ -110,15 +110,6 @@ void DispRotation(u8 rot);
 // set draw window
 void DispWindow(u16 x1, u16 x2, u16 y1, u16 y2);
 
-// set BGR color order instead of RGB
-void DispSetModeBGR(Bool bgr);
-
-// flip image horizontal
-void DispSetModeFlipX(Bool flipx);
-
-// flip image vertical
-void DispSetModeFlipY(Bool flipy);
-
 // LOW level control: start sending image data to display window (DispSendImg() must follow)
 void DispStartImg(u16 x1, u16 x2, u16 y1, u16 y2);
 

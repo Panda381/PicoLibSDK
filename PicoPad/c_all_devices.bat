@@ -17,4 +17,12 @@ rem Compilation... Compile all projects of device "PicoPadVGA"
 call d.bat
 call c.bat picopadvga
 
+rem Compilation... Compile all projects of device "PicoPadHSTX"
+call d.bat
+call c.bat picopadhstx
+
+rem Compilation... Compile all projects of device "PicoPadHSTX RISCV"
+call d.bat
+call c.bat picopadhstxriscv
+
 call d.bat

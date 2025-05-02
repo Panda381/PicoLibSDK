@@ -3,7 +3,7 @@
 Children's colouring
 pages of images
 320*240/16-bit in
-folder /COLBOOK.
+default folder /COLBOOK.
 
 ^WARROWS^0 .... move
 ^WX+ARROWS^0 .. slow

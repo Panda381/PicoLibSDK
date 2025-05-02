@@ -284,7 +284,7 @@ int MP3FindSyncWord(const u8* buf, int nBytes);
 //  hMP3Decoder ... MP3 decoder handler
 //  mp3FrameInfo ... pointer to get MP3 frame info
 //  buf ... pointer to source buffer (with 4 or 6 bytes of data)
-// Returns error code MP3_ERR_*.
+// Returns error code ERR_MP3_*.
 int MP3GetNextFrameInfo(HMP3Decoder hMP3Decoder, sMP3FrameInfo* mp3FrameInfo, const u8* buf);
 
 // Get info from last frame (can be used after MP3Decode())
@@ -299,7 +299,7 @@ void MP3GetLastFrameInfo(HMP3Decoder hMP3Decoder, sMP3FrameInfo* mp3FrameInfo);
 //  outbuf ... pointer to output buffer, big enough to hold one frame of decodec PCM samples (sMP3FrameInfo.outputSamps, interleave LRLRLR...)
 //		number of output samples = nGrans * nGranSamps * nChans
 //  useSize ... flag indicating whether MP3 data is normal MPEG format (=0) or reformated "self-contained" frames (=1)
-// Returns error code MP3_ERR_*. Use MP3FindSyncWord() to find start of next frame before decode next frame.
+// Returns error code ERR_MP3_*. Use MP3FindSyncWord() to find start of next frame before decode next frame.
 int MP3Decode(HMP3Decoder hMP3Decoder, const u8** inbuf, int* bytesLeft, s16* outbuf, int useSize);
 
 // ----------------------------------------------------------------------------
@@ -479,7 +479,7 @@ extern const char* MP3GenreList[MP3_GENRELIST_NUM];
 //  outbuf ... pointer to output buffer (must be aligned to u16 or better to u32; recommended size MP3PLAYER_OUTSIZE)
 //  outsize ... size of output buffer in bytes
 //  scan ... number of frames to scan file on open, -1=scan all file (count frames and length; recommended value is 100)
-// Returns error code MP3_ERR_* (ERR_MP3_NONE = 0 if OK)
+// Returns error code ERR_MP3_* (ERR_MP3_NONE = 0 if OK)
 int MP3PlayerInit(sMP3Player* mp3, const char* filename, const u8* inbuf, int insize, u8* outbuf, int outsize, int scan);
 
 // Terminate MP3 player

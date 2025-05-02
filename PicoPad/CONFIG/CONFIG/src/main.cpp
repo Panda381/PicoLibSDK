@@ -105,7 +105,7 @@ void PgVolume()
 			if (PlayingSound())
 				StopSound();
 			else
-				PLAYSOUNDREP(TestSnd);
+				PlaySoundChan(0, TestSnd, sizeof(TestSnd), True, SNDSPEED_32K, 1.0f, SNDFORM_ADPCM_S, 1017);
 			break;
 
 		// save

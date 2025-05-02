@@ -19,6 +19,8 @@
 #ifndef _LIB_DRAWCAN2_H
 #define _LIB_DRAWCAN2_H
 
+#include "lib_mat2d.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -503,6 +505,23 @@ void Draw2BlitSubs(int xd, int yd, const void* src, int xs, int ys, int w, int h
 //  wbd ... pitch of destination buffer (length of line in bytes)
 void DrawCan2GetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 void Draw2GetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
+
+// Draw image with 2D transformation matrix
+//  can ... destination canvas
+//  xd ... destination X coordinate
+//  yd ... destination Y coordinate
+//  wd ... destination width
+//  hd ... destination height
+//  src ... source image
+//  ws ... source image width
+//  hs ... source image height
+//  wbs ... pitch of source image (length of line in bytes)
+//  m ... transformation matrix (should be prepared using PrepDrawImg function)
+//  mode ... draw mode DRAWIMG_*
+//  color ... key or border color (DRAWIMG_PERSP mode: horizon offset)
+// Note to wrap and perspective mode: Width and height of source image should be power of 2, or it will render slower.
+void DrawCan2ImgMat(sDrawCan* can, int xd, int yd, int wd, int hd, const void* src, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color);
+void Draw2ImgMat(int xd, int yd, int wd, int hd, const void* src, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color);
 
 #if USE_DRAWCAN0		// 1=use DrawCan common functions, if use drawing canvas
 // drawing function interface

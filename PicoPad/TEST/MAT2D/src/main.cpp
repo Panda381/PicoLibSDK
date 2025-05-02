@@ -136,7 +136,7 @@ int main()
 
 		// draw image
 		DrawImgMat(RaspberryImg, IMGW, IMGH, FRAMEX, FRAMEY, FRAMEW, FRAMEH,
-			&Mat, mode, persp ? 30 : COL_DKGREEN);
+			&Mat, mode, persp ? 30 : ((mode == DRAWIMG_TRANSP) ? COL_WHITE : COL_DKGREEN));
 
 		// draw frame
 		DrawFrame(FRAMEX-1, FRAMEY-1, FRAMEW+2, FRAMEH+2, COL_RED);

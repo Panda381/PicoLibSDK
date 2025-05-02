@@ -6,19 +6,21 @@
 # This script is called from the _c1.sh file.
 
 # Use configuration name as parameter of the script, to select target device:
-#   pico .......... base Raspberry Pico module
-#   pico2 ......... base Raspberry Pico 2 module in ARM mode
-#   pico2riscv .... base Raspberry Pico 2 module in RISC-V mode
-#   picotron ...... Picotron with VGA YRGB1111 output
-#   picoinomini ... Picoino mini version with VGA RGB332 output
-#   picoino10 ..... Picoino version 1.0 with VGA RGB332 output
-#   demovga ....... DemoVGA board with VGA RGB565 output
-#   picopad08 ..... PicoPad beta version 0.8
-#   picopad10 ..... PicoPad version 1.0 with TFT RGB565 output
-#   picopad20 ..... PicoPad version 2.0 (ARM) with TFT RGB565 output
-#   picopad20riscv  PicoPad version 2.0 (RISC-V) with TFT RGB565 output
-#   picopadvga .... PicoPad with VGA RGB565 output
-#   (empty) ....... default compilation
+#   pico .............. base Raspberry Pico module
+#   pico2 ............. base Raspberry Pico 2 module in ARM mode
+#   pico2riscv ........ base Raspberry Pico 2 module in RISC-V mode
+#   picotron .......... Picotron with VGA YRGB1111 output
+#   picoinomini ....... Picoino mini version with VGA RGB332 output
+#   picoino10 ......... Picoino version 1.0 with VGA RGB332 output
+#   demovga ........... DemoVGA board with VGA RGB565 output
+#   picopad08 ......... PicoPad beta version 0.8
+#   picopad10 ......... PicoPad version 1.0 with TFT RGB565 output
+#   picopad20 ......... PicoPad version 2.0 (ARM) with TFT RGB565 output
+#   picopad20riscv .... PicoPad version 2.0 (RISC-V) with TFT RGB565 output
+#   picopadvga ........ PicoPad with VGA RGB565 output
+#   picopadhstx ....... PicoPad RP2350 (ARM) and HSTX HDMI+VGA output
+#   picopadhstxriscv .. PicoPad RP2350 (RISC-V) and HSTX HDMI+VGA output
+#   (empty) ........... default compilation
 
 case "$1" in
     "pico")
@@ -80,6 +82,16 @@ case "$1" in
 	export DEVICE="picopadvga"
 	export DEVCLASS="picopad"
 	export DEVDIR="!PicoPadVGA"
+	;;
+    "picopadhstx")
+	export DEVICE="picopadhstx"
+	export DEVCLASS="picopad"
+	export DEVDIR="!PicoPadHSTX"
+	;;
+    "picopadhstxriscv")
+	export DEVICE="picopadhstxriscv"
+	export DEVCLASS="picopad"
+	export DEVDIR="!PicoPadHSTXriscv"
 	;;
      *) 
 	export DEVICE="picopad10"

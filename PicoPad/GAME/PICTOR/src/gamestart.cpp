@@ -186,7 +186,7 @@ Bool GameStart()
 			break;
 		}
 
-#if USE_PICOPADVGA
+#if USE_PICOPADVGA || USE_PICOPADHSTX
 		WaitMs(45);
 #endif
 	}

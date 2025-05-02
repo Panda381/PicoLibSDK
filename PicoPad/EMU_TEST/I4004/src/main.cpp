@@ -14,7 +14,12 @@
 //   ext GPIO28 ... PWM 6
 //   sound (GPIO15) ... PWM 7
 
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+#define EMU_PWM		1	// index of PWM used to synchronize emulations
+#else
 #define EMU_PWM		2	// index of PWM used to synchronize emulations
+#endif
+
 #define EMU_FREQ	740000	// emulation frequency (nominal frequency = 740 kHz)
 #define EMU_CLKSYS_MIN	120	// minimal system clock in MHz
 #define EMU_CLKSYS_MAX	180	// maximal system clock in MHz
@@ -397,12 +402,21 @@ int main()
 	int i;
 	Bool stop;
 
+#if USE_DISPHSTXMINI	// 1=use HSTX Display Mini driver
+	DispHstxAllTerm();
+	DispHstxStart(0);
+#endif
+
+#if USE_PICOPADHSTX && USE_DISPHSTX	// use PicoPadHSTX device configuration
+	u32 sysclk = ClockGetHz(CLK_SYS);
+#else
 	// Find system clock in Hz that sets the most accurate PWM clock frequency.
 	u32 sysclk = PWM_FindSysClk(EMU_CLKSYS_MIN*MHZ, EMU_CLKSYS_MAX*MHZ, EMU_FREQ*I4004_CLOCKMUL);
 
 	// setup system clock to get precise frequency of emulation
 	if (sysclk > 160*MHZ) VregSetVoltage(VREG_VOLTAGE_1_20);
 	ClockPllSysFreq((sysclk+500)/1000);
+#endif
 
 	// initialize USB
 	UsbHostInit();

@@ -19,11 +19,17 @@
 #if USE_PICOPAD
 
 #include "../../_display/minivga/minivga.h"
+#include "../../_display/disphstxmini/disphstxmini.h"
 #include "../../_display/st7789/st7789.h"
 #include "../../_sdk/inc/sdk_timer.h"
+#include "picopad_init.h"	// initialize
 #include "picopad_ss.h"
 
 #if USE_SCREENSHOT || USE_EMUSCREENSHOT		// use screen shots
+
+#if USE_EMUSCREENSHOT		// use emulator screen shots
+volatile Bool DoEmuScreenShot = False;	// request to do emulator screenshot
+#endif
 
 Bool ScreenShotDiskWasMount = False; // disk was mounted
 volatile Bool ScreenShotIsOpen = False; // screen shot was open

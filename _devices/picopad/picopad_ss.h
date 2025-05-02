@@ -28,6 +28,11 @@ extern "C" {
 
 #if USE_SCREENSHOT || USE_EMUSCREENSHOT		// use screen shots
 
+#if USE_EMUSCREENSHOT		// use emulator screen shots
+extern volatile Bool DoEmuScreenShot;	// request to do emulator screenshot
+#endif
+
+/*
 // BMP file header (size 70 bytes)
 #pragma pack(push,1)
 typedef struct {
@@ -57,6 +62,7 @@ typedef struct {
 					// 0x46
 } sBmp;
 #pragma pack(pop)
+*/
 
 extern Bool ScreenShotDiskWasMount; // disk was mounted
 extern volatile Bool ScreenShotIsOpen; // screen shot was open

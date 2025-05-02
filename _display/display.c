@@ -20,6 +20,10 @@
 #include "disphstx/disphstx.c"
 #endif
 
+#if USE_DISPHSTXMINI
+#include "disphstxmini/disphstxmini.c"
+#endif
+
 #if USE_DVI
 #include "dvi/dvi.c"
 #endif

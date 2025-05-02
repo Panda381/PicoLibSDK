@@ -750,9 +750,17 @@ void SaveFlash(Bool full)
 	KeyFlush();
 	while (KeyGet() == NOKEY) {}
 
+	// reload file list
+	i = StrLen(fn+1) - 4;;
+	LastNameLen = i;
+	memcpy(LastName, fn+1, i);
+	LastNameDir = 0;
+	Remount = True;
+
 	// redraw
+	LastMount = Time()-2000000;
 	FrameFileList();
-	DispFileList();
+//	DispFileList();
 	DispInfoScr();
 }
 

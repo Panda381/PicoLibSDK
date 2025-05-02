@@ -155,7 +155,7 @@ void NewLoop()
 
 int main()
 {
-#if !USE_PICOPADNES		// use PicoPadNES device configuration
+#if !USE_PICOPADHSTX		// use PicoPadHSTX device configuration
 	ClockPllSysFreqVolt(200000);
 #endif
 

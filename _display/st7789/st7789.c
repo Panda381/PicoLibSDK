@@ -99,7 +99,7 @@ ALIGNED u16 FrameBuf[FRAMESIZE];
 #endif // USE_FRAMEBUF
 
 #if USE_EMUSCREENSHOT		// use emulator screen shots
-volatile Bool DoEmuScreenShot = False;	// request to do emulator screenshot
+//volatile Bool DoEmuScreenShot = False;	// request to do emulator screenshot
 #endif
 
 // rotation mode for ST7789_MADCTL

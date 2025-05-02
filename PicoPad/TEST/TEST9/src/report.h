@@ -1,8 +1,10 @@
 // Test9
 
-	printf("real%d: ", REALNAME(RealBits)());
+	WaitMs(2000);
+
+	printf("real%d:\n", REALNAME(RealBits)());
 	n = REALNAME(Test9)(&REALNAME(a));
-	printf("%.2f digits, lost %.2f digits (total %.2f)\n", n*0.30103,
+	printf(" %.2fdig, lost %.2fdig (total %.2f)\n", n*0.30103,
 		REALNAME(MantDigDecD)()-n*0.30103, REALNAME(MantDigDecD)());
 
 #undef REALNAME

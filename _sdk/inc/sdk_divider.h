@@ -225,7 +225,7 @@ u64 UMul64(u64 a, u64 b);
 s64 SMul64(s64 a, s64 b);
 
 // check if integer number is power of 2
-INLINE Bool IsPow2(u32 a) { return ((a & (a-1)) == 0); }
+//INLINE Bool IsPow2(u32 a) { return ((a & (a-1)) == 0); }
 
 #else // RP2040
 
@@ -395,7 +395,7 @@ INLINE u64 UMul64(u64 a, u64 b) { return a*b; }
 INLINE s64 SMul64(s64 a, s64 b) { return a*b; }
 
 // check if integer number is power of 2
-INLINE Bool IsPow2(u32 a) { return ((a & (a-1)) == 0); }
+//INLINE Bool IsPow2(u32 a) { return ((a & (a-1)) == 0); }
 
 // start signed division p/q
 INLINE void DivStartS32(s32 p, s32 q)

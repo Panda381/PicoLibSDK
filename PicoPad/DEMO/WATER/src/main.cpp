@@ -34,7 +34,9 @@ int main()
 #define WAVEPERSP	20.0f	// perspective deformation
 #define WAVELEN		100	// wave length
 
-#if USE_MINIVGA
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+#define ANIMSPEED	0.1f	// animation speed
+#elif USE_MINIVGA
 #define ANIMSPEED	0.1f	// animation speed
 #else
 #define ANIMSPEED	0.2f	// animation speed

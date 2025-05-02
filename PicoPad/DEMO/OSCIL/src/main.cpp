@@ -16,6 +16,7 @@ int main()
 
 	// draw oscilloscope
 	DrawImgRle(OscilImg, OscilImg_Pal, 0, 0, WIDTH, HEIGHT);
+	DispUpdate();
 
 	// main loop
 	f1 = f2 = f3 = 0;

@@ -1197,41 +1197,53 @@ void DispHstxDispSelTerm()
 // get current display selection switch (display selection switch is auto-initialized)
 int DispHstxCheckDispSel()
 {
-	int res = DISPHSTX_DISPMODE_NONE; // do auto-detection
-	u8 in;
+	int res;
+
+#if DISPHSTX_USE_DVI && DISPHSTX_USE_VGA
+
+	res = DISPHSTX_DISPMODE_NONE; // do auto-detection
 
 #if DISPHSTX_DISP_SEL >= 0	// >=0 GPIO pin with display selection switch, -1=do not use display selection switch
+
+	u8 in;
 
 	// init display selection switch
 	if (!DispHstxDispSelInitOK) DispHstxDispSelInit();
 
-#if DISPHSTX_USE_VGA
 	// select pull-up, check VGA position
 	GPIO_PullUp(DISPHSTX_DISP_SEL);		// enable pull-up resistor
-	WaitUs(20);				// short delay to stabilize signal
+	WaitUs(50);				// short delay to stabilize signal
 	GPIO_InEnable(DISPHSTX_DISP_SEL);	// input enable
+	WaitUs(2);				// short delay to stabilize signal
 	cb();
 	in = GPIO_In(DISPHSTX_DISP_SEL);	// read input state
 	cb();
 	GPIO_InDisable(DISPHSTX_DISP_SEL);	// input disable (reason: RP2350-A2 errata RP2350-E9)
 	GPIO_NoPull(DISPHSTX_DISP_SEL);		// disable pull-up resistor
-	if (in == 0) res = DISPHSTX_DISPMODE_VGA; // VGA selected
-#endif // DISPHSTX_USE_VGA
-
-#if DISPHSTX_USE_DVI
-	// select pull-down, check DVI position
-	GPIO_PullDown(DISPHSTX_DISP_SEL);	// enable pull-down resistor
-	WaitUs(20);				// short delay to stabilize signal
-	GPIO_InEnable(DISPHSTX_DISP_SEL);	// input enable
-	cb();
-	in = GPIO_In(DISPHSTX_DISP_SEL);	// read input state
-	cb();
-	GPIO_InDisable(DISPHSTX_DISP_SEL);	// input disable (reason: RP2350-A2 errata RP2350-E9)
-	GPIO_NoPull(DISPHSTX_DISP_SEL);		// disable pull-up resistor
-	if (in == 1) res = DISPHSTX_DISPMODE_DVI; // DVI selected
-#endif // DISPHSTX_USE_VGA
+	if (in == 0)
+		res = DISPHSTX_DISPMODE_VGA; // VGA selected
+	else
+	{
+		// select pull-down, check DVI position
+		GPIO_PullDown(DISPHSTX_DISP_SEL);	// enable pull-down resistor
+		WaitUs(50);				// short delay to stabilize signal
+		GPIO_InEnable(DISPHSTX_DISP_SEL);	// input enable
+		WaitUs(2);				// short delay to stabilize signal
+		cb();
+		in = GPIO_In(DISPHSTX_DISP_SEL);	// read input state
+		cb();
+		GPIO_InDisable(DISPHSTX_DISP_SEL);	// input disable (reason: RP2350-A2 errata RP2350-E9)
+		GPIO_NoPull(DISPHSTX_DISP_SEL);		// disable pull-up resistor
+		if (in == 1) res = DISPHSTX_DISPMODE_DVI; // DVI selected
+	}
 
 #endif // DISPHSTX_DISP_SEL >= 0
+
+#elif DISPHSTX_USE_DVI // only DVI
+	res = DISPHSTX_DISPMODE_DVI;
+#else // only VGA
+	res = DISPHSTX_DISPMODE_VGA;
+#endif
 
 	return res;
 }

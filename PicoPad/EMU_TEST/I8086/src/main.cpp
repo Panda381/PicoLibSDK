@@ -18,7 +18,12 @@
 // CPU frequency = NTSC subcarrier frequency * 4 / 3 = 3.579545 MHz * 4 / 3 = 4.772727 MHz
 // Real emulated frequency = 252/52.8125 = 4.7715976 MHz
 
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+#define EMU_PWM		1	// index of PWM used to synchronize emulations
+#else
 #define EMU_PWM		2	// index of PWM used to synchronize emulations
+#endif
+
 #define EMU_FREQ	4771598	// real emulation frequency (nominal frequency is 4770000 or mode precise 4772727), used divisor 52.8125
 #define EMU_CLKSYS_MIN	252	// minimal system clock in MHz (frequency 252 MHz is required by HDMI display output)
 #define EMU_CLKSYS_MAX	252	// maximal system clock in MHz
@@ -391,12 +396,21 @@ int main()
 	int i;
 	Bool stop;
 
+#if USE_DISPHSTXMINI	// 1=use HSTX Display Mini driver
+	DispHstxAllTerm();
+	DispHstxStart(0);
+#endif
+
+#if USE_PICOPADHSTX && USE_DISPHSTX	// use PicoPadHSTX device configuration
+	u32 sysclk = ClockGetHz(CLK_SYS);
+#else
 	// Find system clock in Hz that sets the most accurate PWM clock frequency.
 	u32 sysclk = PWM_FindSysClk(EMU_CLKSYS_MIN*MHZ, EMU_CLKSYS_MAX*MHZ, EMU_FREQ*I8086_CLOCKMUL);
 
 	// setup system clock to get precise frequency of emulation
 	if (sysclk > 160*MHZ) VregSetVoltage(VREG_VOLTAGE_1_20);
 	ClockPllSysFreq((sysclk+500)/1000);
+#endif
 
 	// initialize USB
 	UsbHostInit();

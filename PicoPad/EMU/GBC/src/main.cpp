@@ -10,8 +10,8 @@
 #define EMU_PWMTOP	4095	// PWM sound top (period = EMU_PWMTOP + 1 = 4096)
 #define EMU_PWMCLOCK	(AUDIO_SAMPLE_RATE*(EMU_PWMTOP+1)) // PWM clock (= 32768*4096 = 134 217 728)
 
-#define DISP_MINFPS	8	// minimal reuired display FPS (limit rendering to speed-up program emulation)
-#define DISP_MAXFPS	22	// maximal reuired display FPS (limit rendering to speed-up program emulation)
+#define DISP_MINFPS	8	// minimal required display FPS (limit rendering to speed-up program emulation)
+#define DISP_MAXFPS	22	// maximal required display FPS (limit rendering to speed-up program emulation)
 #define DISP_MINDELAYUS	(1000000/(DISP_MAXFPS*HEIGHT)) // minimal delay per scanline in [us]
 #define DISP_MAXDELAYUS	(1000000/(DISP_MINFPS*HEIGHT)) // maximal delay per scanline in [us]
 #define DISP_INCDELAY	3	// speed of delay adaptation
@@ -54,7 +54,11 @@ u16 DebFpsCol;			// FPS color
 
 // sound
 s16 StreamBuf[AUDIO_SAMPBUF*2];
+#if PWMSND_GPIO_R >= 0
+u16 SndBuf[AUDIO_SAMPBUF*2];
+#else
 u16 SndBuf[AUDIO_SAMPBUF];
+#endif
 int SndBufInx = AUDIO_SAMPBUF;
 
 // ----------------------------------------------------------------------------
@@ -62,8 +66,14 @@ int SndBufInx = AUDIO_SAMPBUF;
 // ----------------------------------------------------------------------------
 
 // Cache
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+ALIGNED FRAMETYPE FrameBuf2[GB_CACHERAM_NUM*GB_CACHE_SIZE/sizeof(FRAMETYPE)]; // RAM cache pages
+#define CacheBuf ((u8*)FrameBuf2)	// RAM cache buffer
+#else
 ALIGNED FRAMETYPE FrameBuf[GB_CACHERAM_NUM*GB_CACHE_SIZE/sizeof(FRAMETYPE)]; // RAM cache pages
 #define CacheBuf ((u8*)FrameBuf)	// RAM cache buffer
+#endif
+
 sGB_Cache GB_CacheDesc[GB_CACHE_NUM];	// cache page descriptors
 u8 GB_CacheROM[GB_ROMCACHEMAX];		// ROM cache pages
 
@@ -880,7 +890,11 @@ void FASTCODE NOFLASH(PWMSndIrq)()
 		if ((vol == 0) || GlobalSoundOff)
 		{
 			// mute sound
+#if PWMSND_GPIO_R >= 0
+			for (i = 0; i < AUDIO_SAMPBUF*2; i++) SndBuf[i] = EMU_PWMTOP/2;
+#else
 			for (i = 0; i < AUDIO_SAMPBUF; i++) SndBuf[i] = EMU_PWMTOP/2;
+#endif
 		}
 
 		// prepare next sound buffer
@@ -900,6 +914,19 @@ void FASTCODE NOFLASH(PWMSndIrq)()
 				leftChannel = *s++;
 				rightChannel = *s++;
 
+#if PWMSND_GPIO_R >= 0
+				leftChannel = (leftChannel*vol) >> 10;
+				leftChannel += EMU_PWMTOP/2;
+				if (leftChannel < 0) leftChannel = 0;
+				if (leftChannel > EMU_PWMTOP) leftChannel = EMU_PWMTOP;
+				*d++ = (u16)leftChannel;
+
+				rightChannel = (rightChannel*vol) >> 10;
+				rightChannel += EMU_PWMTOP/2;
+				if (rightChannel < 0) rightChannel = 0;
+				if (rightChannel > EMU_PWMTOP) rightChannel = EMU_PWMTOP;
+				*d++ = (u16)rightChannel;
+#else // PWMSND_GPIO_R
 				// (left + right)*vol ... max. 24 bit number, normal 23 bit number, we will need 12 bit number
 				int mono = ((leftChannel + rightChannel)*vol) >> 11;
 				mono += EMU_PWMTOP/2;
@@ -908,11 +935,26 @@ void FASTCODE NOFLASH(PWMSndIrq)()
 				if (mono < 0) mono = 0;
 				if (mono > EMU_PWMTOP) mono = EMU_PWMTOP;
 				*d++ = (u16)mono;
+#endif // PWMSND_GPIO_R
 			}
 		}
 
 		i = 0;
 	}
+
+#if PWMSND_GPIO_R >= 0
+
+	// get next sample
+	u16 samp = SndBuf[2*i];
+	u16 samp_r = SndBuf[2*i+1];
+	i++;
+	SndBufInx = i;
+
+	// output sample
+	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, samp);
+	PWM_Comp(PWMSND_SLICE_R, PWMSND_CHAN_R, samp_r);
+
+#else // PWMSND_GPIO_R
 
 	// get next sample
 	u16 samp = SndBuf[i];
@@ -921,7 +963,11 @@ void FASTCODE NOFLASH(PWMSndIrq)()
 
 	// output sample
 	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, samp);
+
+#endif // PWMSND_GPIO_R
 }
+
+volatile Bool RunEmul = False;
 
 // Main function for Core 1
 void core1_entry()
@@ -934,7 +980,9 @@ void core1_entry()
 	DebFps = 0;		// last FPS
 #endif
 
-	while (True)
+	RunEmul = True;
+
+	while (RunEmul)
 	{
 		// message text mode
 		if (GB_DispMode == GB_DISPMODE_MSG)
@@ -966,6 +1014,7 @@ void core1_entry()
 // initialize system clock
 void GB_InitSysClk()
 {
+#if !USE_PICOPADHSTX || !USE_DISPHSTX		// use PicoPadHSTX device configuration
 	// setup voltage
 	u32 clk = gbContext.cgb.cgbMode ? EMU_CLKSYS_GBC : EMU_CLKSYS_GB;
 	if (clk >= 285000)
@@ -986,11 +1035,13 @@ void GB_InitSysClk()
 
 	// setup system clock
 	ClockPllSysFreq(clk);
+#endif
 }
 
 // restore system clock
 void GB_TermSysClk()
 {
+#if !USE_PICOPADHSTX || !USE_DISPHSTX	// use PicoPadHSTX device configuration
 	// setup system clock
 	ClockPllSysFreq(PLL_KHZ);
 
@@ -1005,19 +1056,30 @@ void GB_TermSysClk()
 #else
 	SSI_SetFlashClkDiv(FLASH_CLKDIV); // preset flash divider
 #endif
+
+#endif
 }
 
 // initialize core 1
 void GB_InitCore1()
 {
+#if USE_PICOPADHSTX && USE_DISPHSTX		// use PicoPadHSTX device configuration
+	// Start Core1, which processes requests to the LCD
+	DispHstxCore1Exec(core1_entry);
+#else
 	// Start Core1, which processes requests to the LCD
 	Core1Exec(core1_entry);
+#endif
 }
 
 // terminate core 1
 void GB_TermCore1()
 {
+#if USE_PICOPADHSTX && USE_DISPHSTX	// use PicoPadHSTX device configuration
+	RunEmul = False;
+#else
 	Core1Reset();
+#endif
 }
 
 void GB_Setup()
@@ -1063,16 +1125,22 @@ void GB_Setup()
 	// initialize PWM sound output
 	PWM_Reset(PWMSND_SLICE);		// reset PWM to default state
 	PWM_GpioInit(PWMSND_GPIO);		// set GPIO function to PWM
+#if PWMSND_GPIO_R >= 0
+	PWM_GpioInit(PWMSND_GPIO_R);		// set GPIO function to PWM
+#endif // PWMSND_GPIO_R
 	SetHandler(IRQ_PWM_WRAP, PWMSndIrq);	// set IRQ handler
 	NVIC_IRQEnable(IRQ_PWM_WRAP);		// enable interrupt on NVIC controller
 	PWM_Clock(PWMSND_SLICE, EMU_PWMCLOCK);	// set clock divider
 	PWM_Top(PWMSND_SLICE, EMU_PWMTOP);	// set period to 256 cycles
 	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, EMU_PWMTOP/2); // write default PWM sample
+#if PWMSND_GPIO_R >= 0
+	PWM_Comp(PWMSND_SLICE_R, PWMSND_CHAN_R, EMU_PWMTOP/2); // write default PWM sample
+#endif // PWMSND_GPIO_R
 	PWM_Enable(PWMSND_SLICE);		// enable PWM
 	PWM_IntEnable(PWMSND_SLICE);		// PWM interrupt enable
 
 	// Start Core1, which processes requests to the LCD
-	multicore_launch_core1(core1_entry);
+	GB_InitCore1();
 
 	OldSyncTime = Time();		// old sync time
 }

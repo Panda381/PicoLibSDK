@@ -1,7 +1,7 @@
 
 // ****************************************************************************
 //
-//                                 Displays
+//      HDMI and VGA display driver for Pico2 RP2350 over HSTX interface
 //
 // ****************************************************************************
 // PicoLibSDK - Alternative SDK library for Raspberry Pico and RP2040

@@ -7,14 +7,6 @@
 
 #include "../include.h"
 
-#ifdef USE_PICOPADNES		// use PicoPadNES device configuration
-
-ALIGNED u16 FrameBuf[WIDTH*HEIGHT];
-// halt on memory error, blinking internal LED on Pico2 board (not on Wifi version)
-#define CHECK_ERR() while (res != DISPHSTX_ERR_OK) { GPIO_Flip(LED_PIN); WaitMs(100); }
-INLINE void DispUpdate() {}
-#endif // USE_PICOPADNES
-
 // MP3 player
 sMP3Player MP3Player;
 u8 ALIGNED MP3PlayerInBuf[MP3PLAYER_INSIZE];
@@ -888,11 +880,7 @@ int main()
 	Bool ok;
 	int k;
 
-#ifdef USE_PICOPADNES		// use PicoPadNES device configuration
-	// initialize videomode 320x240/16
-	int res = DispVMode320x240x16(0, FrameBuf);
-	CHECK_ERR();
-#else
+#if !USE_PICOPADHSTX		// use PicoPadHSTX device configuration
 	ClockPllSysFreqVolt(252000);
 #endif
 

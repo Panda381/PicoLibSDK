@@ -39,7 +39,7 @@ extern "C" {
 //  VIDEO_FRAMESIZE_ALIGNED*2 = 82240
 //  -> VIDEO_FRAMEBUF_SIZE = 153600, almost half of the screen remained unused
 
-#if USE_MINIVGA		// use VGA display 320x240/16; 1=use 1 frame buffer 153 KB, 2=add 1/2 back buffer 230 KB, 3=add 1/4 back buffer 192 KB (vga.c, vga.h)
+#if USE_MINIVGA || USE_DISPHSTX 	// use VGA display 320x240/16; 1=use 1 frame buffer 153 KB, 2=add 1/2 back buffer 230 KB, 3=add 1/4 back buffer 192 KB (vga.c, vga.h)
 
 #define VIDEO_FRAMEBUF_SIZE (FRAMESIZE + VIDEO_FRAMESIZE_ALIGNED*2/2)
 

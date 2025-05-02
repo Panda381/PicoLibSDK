@@ -1,0 +1,10 @@
+^YTiny-Pacman^0
+
+   Adaptation of the game
+ TinyPacman on the RP2040
+ Picopad, originally
+ created for the Arduboy
+ platform and Tinyjoypad
+ Attiny85.
+
+

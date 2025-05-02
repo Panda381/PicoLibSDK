@@ -16,8 +16,8 @@
 
 #include "../include.h"
 
-#define EMU_LCD_WIDTH	320	// LCD display width
-#define EMU_LCD_HEIGHT	240	// LCD display height
+#define EMU_LCD_WIDTH	WIDTH	// LCD display width
+#define EMU_LCD_HEIGHT	HEIGHT	// LCD display height
 
 // text screen buffer (only characters; 160 bytes)
 u8 NES_TextFrame[NES_MSG_WIDTH*NES_MSG_HEIGHT];

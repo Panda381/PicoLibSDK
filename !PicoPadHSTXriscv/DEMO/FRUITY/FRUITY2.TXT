@@ -1,0 +1,11 @@
+^YFruity Loops 2^0
+
+Music loops 31..50
+with MP3 compression
+
+Output to Speaker
+
+^WLeft, A^0 ... previous
+^WRight, B^0 ...... next
+^WX^0 ...... mute on/off
+^WY^0 ............. quit

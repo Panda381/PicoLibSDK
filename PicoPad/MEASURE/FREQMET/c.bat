@@ -1,7 +1,7 @@
 @echo off
 rem Compilation...
 
-if "%1" == "picopadvga" goto stop
+if "%1"=="picopadvga" goto stop
 
 set TARGET=FREQMET
 set GRPDIR=MEASURE
@@ -23,5 +23,7 @@ rem ..\..\..\_c1.bat picopad08
 rem ..\..\..\_c1.bat picopad10
 ..\..\..\_c1.bat picopad20
 rem ..\..\..\_c1.bat picopad20riscv
+rem ..\..\..\_c1.bat picopadhstx
+rem ..\..\..\_c1.bat picopadhstxriscv
 
 :stop

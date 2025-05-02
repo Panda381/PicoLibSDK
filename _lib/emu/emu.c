@@ -20,6 +20,7 @@
 
 #include "../../_sdk/inc/sdk_pwm.h"
 #include "../../_sdk/inc/sdk_multicore.h"
+#include "../../_display/disphstx/disphstx.h"
 
 #include "emu.h"
 

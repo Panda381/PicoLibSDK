@@ -287,7 +287,9 @@ void NES_ApuFrameSetMode5(sApuSnd* s, u8 mode5);
 // clock sound chip by CPU clocks
 void FASTCODE NOFLASH(NES_ApuSndClock)(sApuSnd* s, u16 clk);
 
-// get output sample (output level is 0..1308)
+// get output sample
+// Mono output level: 0..1308
+// Stereo output level: 12 LOW bits 0..1308, 12 HIGH bits 0..1308
 int FASTCODE NOFLASH(NES_ApuSndOut)(sApuSnd* s);
 
 // write sound register 0x4000-0x4013 (reg = register 0x00-0x13)

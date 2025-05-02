@@ -4,11 +4,16 @@
 //                                 Main code
 //
 // ****************************************************************************
-// Input: GPIO1, max. frequency range 4 Hz .. 7 MHz
+// Input: GPIO1 (PicopadHSTX GPIO26), max. frequency range 4 Hz .. 7 MHz
 
 #include "include.h"
 
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+#define PULSE_GPIO	26	// used GPIO input
+#else
 #define PULSE_GPIO	1	// used GPIO input
+#endif
+
 #define PULSE_PIO	0	// used PIO
 #define PULSE_SM	0	// used SM
 #define PULSE_OFF	0	// PIO program offset

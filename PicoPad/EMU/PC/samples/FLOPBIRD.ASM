@@ -14,8 +14,8 @@ GAMESHIFT	EQU	2		; game shift
 BIRDW		EQU	32		; bird image width
 BIRDH		EQU	24		; bird image height
 BACKW		EQU	80		; background width
-SPEEDUP		EQU	7		; bird speed up
-SPEEDDN		EQU	2		; bird speed down
+SPEEDUP		EQU	5		; bird speed up
+SPEEDDN		EQU	1		; bird speed down
 BACKCOL		EQU	3		; background color (blue sky)
 GNDCOL		EQU	42h		; ground color (brown)
 SCOREY		EQU	180		; score Y coordinate

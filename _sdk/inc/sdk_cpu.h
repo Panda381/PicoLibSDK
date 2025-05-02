@@ -677,6 +677,9 @@ INLINE u32 RangeMask(int first, int last) { return (~(((u32)-1) << (last+1))) & 
 // range mask - returns bits set to '1' on range 'first' to 'last' (RangeMask(7,14) returns 0x7F80)
 INLINE u64 RangeMask64(int first, int last) { return (~(((u64)-1) << (last+1))) & (((u64)-1) << first); }
 
+// check if integer number is power of 2
+INLINE Bool IsPow2(u32 a) { return ((a & (a-1)) == 0); }
+
 #if USE_STACKCHECK	// use Stack check (sdk_cpu.c, sdk_cpu.h)
 
 // stack top and bottom of core 0 and core 1

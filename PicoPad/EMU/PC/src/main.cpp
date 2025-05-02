@@ -8,7 +8,11 @@
 // CPU frequency = NTSC subcarrier frequency * 4 / 3 = 3.579545 MHz * 4 / 3 = 4.772727 MHz
 // Real emulated frequency = 252/52.8125 = 4.7715976 MHz
 
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+#define EMU_PWM		1	// index of PWM used to synchronize emulations
+#else
 #define EMU_PWM		2	// index of PWM used to synchronize emulations
+#endif
 
 //#define EMU_FREQ	4771598	// PC-XT: real emulation frequency (nominal frequency is 4770000 or more precise 4772727), used divisor 52.8125
 //#define EMU_FREQ	12000000 // PC-AT: real emulation frequency
@@ -49,7 +53,11 @@ VSyncWait ... vertical sync wait in [ms], default 2
 //                              Data and tables
 // ============================================================================
 
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+ALIGNED FRAMETYPE FrameBuf2[PC_RAM_SIZE/sizeof(FRAMETYPE)];
+#else
 ALIGNED FRAMETYPE FrameBuf[PC_RAM_SIZE/sizeof(FRAMETYPE)];
+#endif
 
 // CPU
 sI8086	i8086cpu;
@@ -239,6 +247,11 @@ int main()
 	int i;
 	Bool stop;
 
+#if USE_DISPHSTXMINI	// 1=use HSTX Display Mini driver
+	DispHstxAllTerm();
+	DispHstxStart(0);
+#endif
+
 	// initialize USB
 #if USE_USB_HOST_HID
 	UsbHostInit();
@@ -263,6 +276,12 @@ int main()
 	GPIO_Out0(PWMSND_GPIO);
 #endif
 
+#if PWMSND_GPIO_R >= 0
+	GPIO_Init(PWMSND_GPIO_R);
+	GPIO_DirOut(PWMSND_GPIO_R);
+	GPIO_Out0(PWMSND_GPIO_R);
+#endif
+
 #if EMU_DEBUG_SYNC
 	// debug measure time synchronization
 	DebCheckSync = Time();
@@ -284,6 +303,9 @@ reset:
 		// load configuration
 		LoadCfg();
 
+#if USE_PICOPADHSTX && USE_DISPHSTX	// use PicoPadHSTX device configuration
+		u32 sysclk = ClockGetHz(CLK_SYS);
+#else
 		// Find system clock in Hz that sets the most accurate PWM clock frequency.
 		u32 sysclk = PWM_FindSysClk(CfgMinClk, CfgMaxClk, CfgFreq*I8086_CLOCKMUL);
 
@@ -298,6 +320,7 @@ reset:
 			VregSetVoltage(VREG_VOLTAGE_1_10);
 
 		ClockPllSysFreq((sysclk+500)/1000);
+#endif
 
 		// open and load file
 		if (!FileOpen(&FileSelPrevFile, FileSelTempBuf))
@@ -346,9 +369,11 @@ reset:
 					}
 				}
 
+#if !USE_PICOPADHSTX || !USE_DISPHSTX	// use PicoPadHSTX device configuration
 				// reset system clock
 				ClockPllSysFreq(PLL_KHZ);
 				VregSetVoltage(VREG_VOLTAGE_1_10);
+#endif
 
 				// wait for no key pressed
 				DrawClear();

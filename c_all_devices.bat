@@ -41,4 +41,12 @@ rem Compilation... Compile all projects of device "Picotron"
 call d_all.bat
 call c_all.bat picotron
 
+rem Compilation... Compile all projects of device "PicoPadHSTX"
+call d_all.bat
+call c_all.bat picopadhstx
+
+rem Compilation... Compile all projects of device "PicopadHSTXriscv"
+call d_all.bat
+call c_all.bat picopadhstxriscv
+
 call d_all.bat

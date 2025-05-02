@@ -323,8 +323,12 @@ void ClockInit()
 	// set PLL_SYS to default 125 MHz (or 150 MHz)
 	PllSetFreq(PLL_SYS, PLL_KHZ);
 
-	// set PLL_USB to default 48 MHz
-	PllSetFreq(PLL_USB, 48000);
+	// set PLL_USB to RP2040 2*48=96 MHz, RP2350 3*48=144 MHz
+#if RP2040
+	PllSetFreq(PLL_USB, 2*48000);
+#else
+	PllSetFreq(PLL_USB, 3*48000);
+#endif
 
 	// setup CLK_REF to XOSC
 	ClockSetup(CLK_REF, CLK_XOSC, 0, 0);
@@ -333,27 +337,22 @@ void ClockInit()
 	ClockSetup(CLK_SYS, CLK_PLL_SYS, 0, 0);
 
 	// setup CLK_USB to PLL_USB
-	ClockSetup(CLK_USB, CLK_PLL_USB, 0, 0);
+	ClockSetup(CLK_USB, CLK_PLL_USB, 48*MHZ, 0);
 
 	// setup CLK_ADC to PLL_USB
-	ClockSetup(CLK_ADC, CLK_PLL_USB, 0, 0);
+	ClockSetup(CLK_ADC, CLK_PLL_USB, 48*MHZ, 0);
 
 #if RP2040
 	// setup CLK_RTC to PLL_USB, 48MHz/1024 = 46875 Hz
-	ClockSetup(CLK_RTC, CLK_PLL_USB, CurrentFreq[CLK_PLL_USB]/1024, 0);
+	ClockSetup(CLK_RTC, CLK_PLL_USB, 46875, 0);
 #endif // RP2040
 
-#if USE_FAST_PERI		// use fast perifery - use system clock instead of USB clock
-	// setup CLK_PERI to PLL_SYS
-	ClockSetup(CLK_PERI, CLK_PLL_SYS, 0, 0);
-#else // USE_FAST_PERI // use USB clock - this will be independent on system clock change
 	// setup CLK_PERI to PLL_USB
 	ClockSetup(CLK_PERI, CLK_PLL_USB, 0, 0);
-#endif // USE_FAST_PERI
 
 #if !RP2040
-	// setup CLK_HSTX to PLL_SYS
-	ClockSetup(CLK_HSTX, CLK_PLL_SYS, 0, 0);
+	// setup CLK_HSTX to PLL_USB
+	ClockSetup(CLK_HSTX, CLK_PLL_USB, 0, 0);
 #endif
 
 #elif USE_XOSC	// USE_PLL ... use XOSC crystal oscillator
@@ -372,7 +371,7 @@ void ClockInit()
 
 #if RP2040
 	// setup CLK_RTC to XOSC, 12MHz/256 = 46875 Hz
-	ClockSetup(CLK_RTC, CLK_XOSC, CurrentFreq[CLK_XOSC]/256, 0);
+	ClockSetup(CLK_RTC, CLK_XOSC, 46875, 0);
 #endif
 
 	// setup CLK_PERI to XOSC
@@ -399,7 +398,7 @@ void ClockInit()
 
 #if RP2040
 	// setup CLK_RTC to ROSC, 6MHz/128 = 46875 Hz
-	ClockSetup(CLK_RTC, CLK_ROSC, CurrentFreq[CLK_ROSC]/128, 0);
+	ClockSetup(CLK_RTC, CLK_ROSC, 46875, 0);
 #endif
 
 	// setup CLK_PERI to ROSC

@@ -33,8 +33,8 @@ int main()
 {
 	int n, n2;	
 
-	printf("Connect USB console and press a key...");
-	while (GetChar() == NOCHAR) {}
+//	printf("Connect USB console and press a key...");
+//	while (GetChar() == NOCHAR) {}
 
 	printf("\nNormal precision:\n");
 

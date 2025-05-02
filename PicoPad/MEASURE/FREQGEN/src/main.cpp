@@ -14,7 +14,9 @@
 #define GENERATOR_SM		0		// used state machine
 #define GENERATOR_OFF		0		// PIO program offset
 
-#if USE_PICOPADVGA
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+#define GENERATOR_GPIO1		26		// used GPIO output 1 (better to be on same PWM slice as GENERATOR_GPIO2)
+#elif USE_PICOPADVGA
 #define GENERATOR_GPIO1		1		// used GPIO output 1 (better to be on same PWM slice as GENERATOR_GPIO2)
 #else
 #define GENERATOR_GPIO1		14		// used GPIO output 1 (better to be on same PWM slice as GENERATOR_GPIO2)
@@ -100,7 +102,9 @@ typedef struct {
 u8 Output = 0;			// selected output
 const u8 OutputGPIO[OUTPUT_NUM] = { GENERATOR_GPIO1, GENERATOR_GPIO2 };
 
-#if USE_PICOPADVGA
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+const char* OutputText[OUTPUT_NUM] = { "GPIO26           ", "GPIO20 (Speaker) " };
+#elif USE_PICOPADVGA
 const char* OutputText[OUTPUT_NUM] = { "GPIO1            ", "GPIO0 (Speaker)  " };
 #else
 const char* OutputText[OUTPUT_NUM] = { "GPIO14           ", "GPIO15 (Speaker) " };
@@ -708,6 +712,10 @@ void Setup(double freq)
 	// stop all transfers
 	StopAll();
 
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+	WaitVSync();		// interrupt from the image generator must not occur during a sys_clock change
+#endif
+
 	// setup system clock
 	pll = &AllSysClk[ibest];
 	ClockPllSysSetup(pll->fbdiv, pll->pd1, pll->pd2);
@@ -742,6 +750,10 @@ void SetupBitNoise(u32 freq)
 
 	// destroy old pattern
 	ClkCntOld = SetInx;
+
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+	WaitVSync();		// interrupt from the image generator must not occur during a sys_clock change
+#endif
 
 	// setup system clock to 100 MHz
 	ClockPllSysFreq(100000);
@@ -881,6 +893,10 @@ void SetupPulseNoise()
 	FreqReq = 50000000/min;
 	FreqReal = (double)FreqReq/12000000*CRYSTAL;
 	ModeReal = MODE_SLOWSTABLE;
+
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+	WaitVSync();		// interrupt from the image generator must not occur during a sys_clock change
+#endif
 
 	// setup system clock to 200 MHz
 	ClockPllSysFreq(200000);
@@ -1024,6 +1040,10 @@ void SetupSineNote(double freq)
 
 	// set output strength to 12 mA (pin = 0..29)
 	GPIO_Drive12mA(OutputGPIO[Output]);
+
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+	WaitVSync();		// interrupt from the image generator must not occur during a sys_clock change
+#endif
 
 	// setup system clock to 200 MHz
 	ClockPllSysFreq(SINENOTE_FREQ/1000);

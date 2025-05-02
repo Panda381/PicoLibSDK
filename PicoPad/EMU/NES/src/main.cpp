@@ -8,7 +8,11 @@
 #include "../include.h"
 
 // frame buffer, with emulator RAM
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+ALIGNED FRAMETYPE FrameBuf2[(sizeof(sNES)+1)/sizeof(FRAMETYPE)];
+#else
 ALIGNED FRAMETYPE FrameBuf[(sizeof(sNES)+1)/sizeof(FRAMETYPE)];
+#endif
 
 int NES_XRamSize;		// size of extra RAM
 
@@ -35,6 +39,9 @@ Bool UseZoom = NES_CLIP_ZOOM;	// use zoom
 
 // sound
 u16 SndBuf = 0;			// next sound sample
+#if PWMSND_GPIO_R >= 0
+u16 SndBufR = 0;		// next sound sample
+#endif
 
 // X pixel offset map in source scanline
 u8 PixOffMap[WIDTH];
@@ -63,6 +70,9 @@ void FASTCODE NOFLASH(PWMSndIrq)()
 
 	// output sample
 	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, SndBuf);
+#if PWMSND_GPIO_R >= 0
+	PWM_Comp(PWMSND_SLICE_R, PWMSND_CHAN_R, SndBufR);
+#endif // PWMSND_GPIO_R
 
 	// pause
 	if (NES_DispMode != NES_DISPMODE_MSG)
@@ -71,8 +81,38 @@ void FASTCODE NOFLASH(PWMSndIrq)()
 		NES_ApuSndClock(APU, NES_CPUCLOCK_PER_SAMPLE);
 
 		// prepare next sound sample (k = 0..1308)
+
+// get output sample
+// Mono output level: 0..1308
+// Stereo output level: 12 LOW bits 0..1308, 12 HIGH bits 0..1308
+
 		int k = NES_ApuSndOut(APU);
 
+#if PWMSND_GPIO_R >= 0
+
+		int kR = k >> 12;
+		k &= 0xfff;
+
+		// prepare sound volume
+		int vol = Config.volume; // volume 0..255, 100=normal
+		if ((vol == 0) || GlobalSoundOff)
+		{
+			k = 0;
+			kR = 0;
+		}
+		else
+		{
+			// k = max 1308, vol = normal 100, k * vol = 130800, output should be max. 1023
+			k = (k*vol + 64) >> 7; // (1308*100 + 64) >> 7 = 1022
+			if (k > EMU_PWMTOP) k = EMU_PWMTOP;
+
+			kR = (kR*vol + 64) >> 7; // (1308*100 + 64) >> 7 = 1022
+			if (kR > EMU_PWMTOP) kR = EMU_PWMTOP;
+		}
+		SndBuf = k;
+		SndBufR = kR;
+
+#else // PWMSND_GPIO_R
 		// prepare sound volume
 		int vol = Config.volume; // volume 0..255, 100=normal
 		if ((vol == 0) || GlobalSoundOff)
@@ -84,6 +124,7 @@ void FASTCODE NOFLASH(PWMSndIrq)()
 			if (k > EMU_PWMTOP) k = EMU_PWMTOP;
 		}
 		SndBuf = k;
+#endif // PWMSND_GPIO_R
 	}
 }
 
@@ -178,10 +219,14 @@ void FASTCODE NOFLASH(core1DrawFrame)()
 	DispStopImg();
 }
 
+volatile Bool RunEmul = False;
+
 // Main function for Core 1
 void core1_entry()
 {
-	while (True)
+	RunEmul = True;
+
+	while (RunEmul)
 	{
 		// message text mode
 		if (NES_DispMode == NES_DISPMODE_MSG)
@@ -341,11 +386,17 @@ void InfoNES_SoundInit()
 	// initialize PWM sound output
 	PWM_Reset(PWMSND_SLICE);		// reset PWM to default state
 	PWM_GpioInit(PWMSND_GPIO);		// set GPIO function to PWM
+#if PWMSND_GPIO_R >= 0
+	PWM_GpioInit(PWMSND_GPIO_R);		// set GPIO function to PWM
+#endif // PWMSND_GPIO_R
 	SetHandler(IRQ_PWM_WRAP, PWMSndIrq);	// set IRQ handler
 	NVIC_IRQEnable(IRQ_PWM_WRAP);		// enable interrupt on NVIC controller
 	PWM_Clock(PWMSND_SLICE, EMU_PWMCLOCK);	// set clock divider
 	PWM_Top(PWMSND_SLICE, EMU_PWMTOP);	// set period to 256 cycles
 	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, EMU_PWMTOP/2); // write default PWM sample
+#if PWMSND_GPIO_R >= 0
+	PWM_Comp(PWMSND_SLICE_R, PWMSND_CHAN_R, EMU_PWMTOP/2); // write default PWM sample
+#endif // PWMSND_GPIO_R
 	PWM_Enable(PWMSND_SLICE);		// enable PWM
 	PWM_IntEnable(PWMSND_SLICE);		// PWM interrupt enable
 }
@@ -353,6 +404,7 @@ void InfoNES_SoundInit()
 // initialize system clock
 void NES_InitSysClk()
 {
+#if !USE_PICOPADHSTX || !USE_DISPHSTX		// use PicoPadHSTX device configuration
 #if NES_CLKSYS >= 285000
 	SSI_InitFlash(6);
 	VregSetVoltage(VREG_VOLTAGE_1_30);
@@ -368,11 +420,13 @@ void NES_InitSysClk()
 	VregSetVoltage(VREG_VOLTAGE_1_10);
 #endif
 	ClockPllSysFreq(NES_CLKSYS);
+#endif
 }
 
 // restore system clock
 void NES_TermSysClk()
 {
+#if !USE_PICOPADHSTX || !USE_DISPHSTX	// use PicoPadHSTX device configuration
 	// setup system clock
 	ClockPllSysFreq(PLL_KHZ);
 
@@ -387,19 +441,30 @@ void NES_TermSysClk()
 #else
 	SSI_SetFlashClkDiv(FLASH_CLKDIV); // preset flash divider
 #endif
+
+#endif
 }
 
 // initialize core 1
 void NES_InitCore1()
 {
+#if USE_PICOPADHSTX && USE_DISPHSTX		// use PicoPadHSTX device configuration
+	// Start Core1, which processes requests to the LCD
+	DispHstxCore1Exec(core1_entry);
+#else
 	// Start Core1, which processes requests to the LCD
 	Core1Exec(core1_entry);
+#endif
 }
 
 // terminate core 1
 void NES_TermCore1()
 {
+#if USE_PICOPADHSTX && USE_DISPHSTX	// use PicoPadHSTX device configuration
+	RunEmul = False;
+#else
 	Core1Reset();
+#endif
 }
 
 // NES initialize (returns False on error)

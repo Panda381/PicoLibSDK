@@ -14,6 +14,7 @@
 #define DC_CMD	GPIO_Out0(DISP_DC_PIN); cb()	// set command mode
 #define DC_DATA	GPIO_Out1(DISP_DC_PIN); cb()	// set data mode
 
+#if !USE_PICOPADHSTX		// use PicoPadHSTX device configuration
 // display start DMA update
 void FASTCODE NOFLASH(DispUpdateStartDMA)()
 {
@@ -76,12 +77,15 @@ void FASTCODE NOFLASH(DispUpdateWaitDMA)()
 
 	CS_OFF; 	// deactivate chip selection
 }
+#endif // !USE_PICOPADHSTX		// use PicoPadHSTX device configuration
 
 int FASTCODE NOFLASH(main)()
 {
+#if !USE_PICOPADHSTX || !USE_DISPHSTX	// use PicoPadHSTX device configuration
 	SSI_InitFlash(10);
 	VregSetVoltage(VREG_VOLTAGE_1_30);
 	ClockPllSysFreq(330000);
+#endif
 
 	float a = 0.2f;
 	float b = 0.8f;
@@ -113,12 +117,16 @@ int FASTCODE NOFLASH(main)()
 		// render + display all: 120 ms
 
 		// start rendering on core 1
+#if !USE_PICOPADHSTX || !USE_DISPHSTX	// use PicoPadHSTX device configuration
 		Core1Exec(Render3D);
+#endif
 
 		// rendering on core 0
 		Render3D();
 		dsb();
+#if !USE_PICOPADHSTX || !USE_DISPHSTX	// use PicoPadHSTX device configuration
 		while (Core1IsRunning) { dsb(); }
+#endif
 
 #if DISP_FPS			// 1=display FPS
 		// FPS
@@ -129,9 +137,13 @@ int FASTCODE NOFLASH(main)()
 		t = Time();
 #endif
 
+#if !USE_PICOPADHSTX		// use PicoPadHSTX device configuration
 		// start transfer to LCD using DMA
 		DispUpdateWaitDMA();
 		DispUpdateStartDMA();
+#else
+//		DispUpdate();
+#endif
 
 		// keys
 		switch (KeyGet())

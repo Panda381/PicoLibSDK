@@ -7,7 +7,9 @@
 
 #include "include.h"
 
-#define PATH	"/COLBOOK/"
+#define HOMEPATH_DEF	"/COLBOOK"		// default home path
+char HomePath[APPPATH_PATHMAX+15];		// home path, with tailing '/'
+int HomePathLen;
 
 #define MAXFILES 60	// max. files (15 rows, 4 columns)
 
@@ -133,9 +135,11 @@ Bool LoadFileList()
 	SelFont8x16();
 
 	// set directory
-	if (!SetDir(PATH))
+	HomePath[HomePathLen] = 0;
+	if (!SetDir(HomePath))
 	{
-		DrawText("No directory " PATH, 0, 0, COL_WHITE);
+		DrawText("No directory ", 0, 0, COL_WHITE);
+		DrawText(HomePath, 13*8, 0, COL_WHITE);
 		DispUpdate();
 		WaitMs(2000);
 		return False;
@@ -383,15 +387,16 @@ void ColSel()
 // load selected image
 void LoadImg()
 {
-	char name[30];
 	sFile file;
 	Modi = False; // not modified
 
 	// prepare filename
-	MemPrint(name, 30, "%s%s", PATH, FileList[FileListSel].name);
+	memcpy(&HomePath[HomePathLen], FileList[FileListSel].name, 13);
 
 	// open file
-	if (!FileOpen(&file, name)) return;
+	Bool res = FileOpen(&file, HomePath);
+	HomePath[HomePathLen] = 0;
+	if (!res) return;
 
 	// skip header
 	FileSeek(&file, 0x46);
@@ -416,7 +421,6 @@ void SaveImg()
 	// check if modified
 	if (!Modi) return;
 
-	char name[30];
 	sFile file;
 	Modi = False; // not modified
 
@@ -424,10 +428,12 @@ void SaveImg()
 	CurOff();
 
 	// prepare filename
-	MemPrint(name, 30, "%s%s", PATH, FileList[FileListSel].name);
+	memcpy(&HomePath[HomePathLen], FileList[FileListSel].name, 13);
 
 	// open file
-	if (!FileOpen(&file, name)) return;
+	Bool res = FileOpen(&file, HomePath);
+	HomePath[HomePathLen] = 0;
+	if (!res) return;
 
 	// skip header
 	FileSeek(&file, 0x46);
@@ -551,6 +557,14 @@ int main()
 	Bool ok;
 	int i;
 
+	// prepare home path
+	HomePathLen = GetHomePath(HomePath, HOMEPATH_DEF);
+	if (HomePathLen > 1)
+	{
+		HomePath[HomePathLen] = PATHCHAR;
+		HomePathLen++;
+		HomePath[HomePathLen] = 0;
+	}
 	while (True)
 	{
 		// load file list (returns False to break)

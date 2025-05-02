@@ -27,6 +27,7 @@
 #include "../../inc/lib_rand.h"
 #include "../../inc/lib_pwmsnd.h"
 #include "../../../_display/_include.h"
+#include "../../../_devices/picopad/_include.h"
 #include "../../../_sdk/usb_inc/sdk_usb_hid.h"
 #include "../../../_sdk/usb_inc/sdk_usb_host_hid.h"
 

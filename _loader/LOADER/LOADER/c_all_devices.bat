@@ -18,3 +18,7 @@ call c.bat picopadvga 0
 call d.bat
 call c.bat picotron 0
 call d.bat
+call c.bat picopadhstx 1
+call d.bat
+call c.bat picopadhstxriscv 2
+call d.bat

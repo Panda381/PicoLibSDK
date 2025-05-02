@@ -1,0 +1,33 @@
+# All's TinyGames for PicoPad RP2040 & RP2350+ GPL v3
+
+**Programmer:** Daniel C (2018-2025)  
+**Contact Email:** [electro_l.i.b@tinyjoypad.com](mailto:electro_l.i.b@tinyjoypad.com)  
+**Website:** [https://www.tinyjoypad.com](https://www.tinyjoypad.com)  
+**Arduino Collection:** [https://sites.google.com/view/arduino-collection](https://sites.google.com/view/arduino-collection)  
+
+## Description
+
+This is a compilation of all the tiny games precompiled in .uf2 format, ready to be used with a Picopad RP2040 or Picopad RP2350. 
+
+For any other variants, you will likely need to recompile from the original source code, which is available on the website [https://www.tinyjoypad.com](https://www.tinyjoypad.com). 
+
+All the games for Picopad are licensed under GPLv3.
+
+## License
+
+All's TinyGames is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses/>.
+Reference in the file "COPYING.txt".
+
+## Additional Notes
+
+The All's TinyGame source code includes commands referencing the library PicoLibSDK, which is not included in the source code.
+
+A uf2 file "*.uf2" is provided with the source code, which includes compiled code from the PicoLibSDK library.  
+Reference in the file "PicoLibSDK_Readme.txt".
+
+Please note that the *.uf2 file is a compiled version with code from the PicoLibSDK library pack by Miroslav Nemecek. Thank you to him!  
+[https://github.com/Panda381/PicoLibSDK](https://github.com/Panda381/PicoLibSDK)

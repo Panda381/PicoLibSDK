@@ -19,10 +19,8 @@
 #if USE_DRAW		// use drawing to frame buffer (lib_draw.c, lib_draw.h)
 
 #include "../../_font/_include.h"
-#include "../../_display/st7789/st7789.h"
-#include "../../_display/minivga/minivga.h"
-#include "../../_display/dvi/dvi.h"
-#include "../../_display/dvivga/dvivga.h"
+#include "../../_display/_include.h"
+#include "../../_devices/picopad/picopad_init.h"
 #include "../inc/lib_stream.h"
 #include "../inc/lib_text.h"
 #include "../inc/lib_print.h"
@@ -5169,7 +5167,8 @@ void GenGrad(COLTYPE* dst, int w)
 void DrawScroll()
 {
 	// update screen
-	DispUpdate();
+	if (pDrawBuf != FrameBuf) // we do not use back buffer, but maybe we are using disp buffer
+		DispUpdate();
 
 	// size of one row (in number of frame elements)
 	int rowsize = WIDTHLEN*DrawFontHeight;
@@ -5185,7 +5184,10 @@ void DrawScroll()
 	DispDirtyAll();
 
 	// load screen to back buffer
-	DispLoad();
+	if (pDrawBuf == FrameBuf) // we do not use back buffer, but maybe we are using disp buffer
+		DispUpdate();
+	else
+		DispLoad();
 }
 
 #if COLBITS != 4
@@ -5200,7 +5202,8 @@ void DrawScroll()
 void DrawScrollRect(int x, int y, int w, int h, int dy, COLTYPE col)
 {
 	// update screen
-	DispUpdate();
+	if (pDrawBuf != FrameBuf) // we do not use back buffer, but maybe we are using disp buffer
+		DispUpdate();
 
 	// limit x
 	if (x < 0)
@@ -5254,7 +5257,10 @@ void DrawScrollRect(int x, int y, int w, int h, int dy, COLTYPE col)
 	}
 
 	// load screen to back buffer
-	DispLoad();
+	if (pDrawBuf == FrameBuf) // we do not use back buffer, but maybe we are using disp buffer
+		DispUpdate();
+	else
+		DispLoad();
 }
 
 #endif // COLBITS != 4

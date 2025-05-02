@@ -49,6 +49,10 @@ void MyPrintCon(const char* name, int max)
 
 int main()
 {
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+	SSI_SetFlashClkDiv(2);
+#endif
+
 	// print title
 	DrawPrint("\fCPU=%s%d CLK=%dMHz\n",
 

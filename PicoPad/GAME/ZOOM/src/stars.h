@@ -12,7 +12,7 @@
 #define STARFREE	-32768	// flag - unused star
 #define STARTIME	50000	// delta time to generate next star, in [us]
 
-#if USE_PICOPADVGA
+#if USE_PICOPADVGA || USE_PICOPADHSTX
 #define STARMIN		(500/5)	// star min. speed
 #define STARMAX		(800/5)	// star max. speed
 #else

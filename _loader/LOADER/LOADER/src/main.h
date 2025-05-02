@@ -21,7 +21,15 @@
 #if RP2040
 #define CUSTOM_FRAMEBUF_SIZE (220000/sizeof(FRAMETYPE))
 #else
+#if USE_PICOPADHSTX
+#if USE_DISPHSTXMINI	// 1=use HSTX Display Mini driver
+#define CUSTOM_FRAMEBUF_SIZE (320000/sizeof(FRAMETYPE))
+#else // USE_DISPHSTXMINI
+#define CUSTOM_FRAMEBUF_SIZE (420000/sizeof(FRAMETYPE))
+#endif // USE_DISPHSTXMINI
+#else // USE_PICOPADHSTX
 #define CUSTOM_FRAMEBUF_SIZE (450000/sizeof(FRAMETYPE))
+#endif // USE_PICOPADHSTX
 #endif
 
 // text of file list
@@ -78,6 +86,7 @@ typedef struct { // 10 bytes
 #define COL_BIGERRFG	COL_YELLOW	// big error foreground color
 #define COL_BIGERRBG	COL_RED		// big error background color
 
+/*
 // BMP file header (size 70 bytes)
 #pragma pack(push,1)
 typedef struct {
@@ -107,6 +116,7 @@ typedef struct {
 					// 0x46
 } sBmp;
 #pragma pack(pop)
+*/
 
 // UF2 sector (size 512 bytes)
 #define UF2_MAGIC_START0		0x0A324655

@@ -19,7 +19,7 @@
 
 #define USE_ORIGSDK		1		// include interface of original-SDK
 
-#define USE_FAST_PERI		1		// use fast perifery - use system clock instead of USB clock
+//#define USE_FAST_PERI		1		// use fast perifery - use system clock instead of USB clock
 
 //#define USE_DRAW_STDIO	1		// use DRAW stdio (DrawPrint function)
 //#define USE_USB_STDIO		1		// use USB stdio (UsbPrint function)

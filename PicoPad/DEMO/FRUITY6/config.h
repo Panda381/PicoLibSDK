@@ -19,11 +19,25 @@
 
 #define USE_MP3			1	// use MP3 decoder (lib_mp3*.c, lib_mp3*.h)
 
-#if USE_PICOPADNES		// use PicoPadNES device configuration
-#define USE_DEFAULT_VMODE	4	// use videomode (default = 1)
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+#define USE_DISPHSTXMINI	0	// 1=use HSTX Display Mini driver
+#define USE_DISPHSTX		1	// 1=use HSTX Display driver
+//#define DISPHSTX_DISP_SEL	-1	// >=0 GPIO pin with display selection switch, -1=do not use display selection switch
+#define DISPHSTX_USE_DVI	1	// 1=use DVI (HDMI) support (DVI requires about 15 KB of RAM)
+#define DISPHSTX_USE_VGA	1	// 1=use VGA support (VGA requires about 30 KB of RAM)
+
+#define USE_DISPHSTXMINI_VMODE	2	// DispHstxMini videomode (default 1; data must be DISPHSTX_VGA_MASK masked in VGA case if only FrameBuf is used)
+					//	1=320x240/16bit, FrameBuf+DispBuf, sys_clock=126 MHz
+					//	2=320x240/16bit, FrameBuf+DispBuf, sys_clock=252 MHz
+					//	3=320x240/16bit (borders 2x46 pixels), FrameBuf+DispBuf, sys_clock variable, clocked from USB 144 MHz
+					//	4=320x240/16bit (borders 2x46 pixels), only FrameBuf, sys_clock variable, clocked from USB 144 MHz
+					//	5=320x144/16bit (borders 2x46 pixels), only FrameBuf, sys_clock variable, clocked from USB 144 MHz
+					//	6=360x240/16bit, only FrameBuf, sys_clock variable, clocked from USB 144 MHz
+
+#define USE_DISPHSTX_VMODE	4	// DispHstx videomode (default 1)
 					//	0=custom
-					//	1=320x240/16 with BackBuf, slow (sys_clock=126 MHz, detected as 640x480@60)
-					//	2=320x240/16 with BackBuf, fast (sys_clock=252 MHz, detected as 640x480@60)
+					//	1=320x240/16 FrameBuf+DispBuf, slow (sys_clock=126 MHz, detected as 640x480@60)
+					//	2=320x240/16 FrameBuf+DispBuf, fast (sys_clock=252 MHz, detected as 640x480@60)
 					//	3=320x240/16 only FrameBuf, slow (sys_clock=126 MHz, detected as 640x480@60)
 					//	4=320x240/16 only FrameBuf, fast (sys_clock=252 MHz, detected as 640x480@60)
 					//	5=400x300/16 (sys_clock=200 MHz, detected as 800x600@60)
@@ -34,17 +48,7 @@
 					//	10=640x480/8 fast (sys_clock=252 MHz, detected as 640x480@60)
 					//	11=800x600/6 (sys_clock=200 MHz, detected as 800x600@60)
 					//	12=1024x768/4 (sys_clock=324 MHz, detected as 1024x768@60Hz, sys_clock may not work on some Pico2s)
-//#define USE_DRAWCAN	1		// 1=use DrawCan
-//#define USE_DRAWCAN0	0		// 1=use DrawCan common functions, if use drawing canvas
-//#define USE_DRAWCAN1	0		// 1=use DrawCan1 1-bit functions, if use drawing canvas
-//#define USE_DRAWCAN2	0		// 1=use DrawCan2 2-bit functions, if use drawing canvas
-//#define USE_DRAWCAN3	0		// 1=use DrawCan3 3-bit functions, if use drawing canvas
-//#define USE_DRAWCAN4	0		// 1=use DrawCan4 4-bit functions, if use drawing canvas
-//#define USE_DRAWCAN6	0		// 1=use DrawCan6 6-bit functions, if use drawing canvas
-//#define USE_DRAWCAN8	0		// 1=use DrawCan8 8-bit functions, if use drawing canvas
-//#define USE_DRAWCAN12	0		// 1=use DrawCan12 12-bit functions, if use drawing canvas
-//#define USE_DRAWCAN16	0		// 1=use DrawCan15/16 15/16-bit functions, if use drawing canvas
-#endif // USE_PICOPADNES		// use PicoPadNES device configuration
+#endif
 
 //#define USE_DRAW_STDIO	1		// use DRAW stdio (DrawPrint function)
 //#define USE_USB_STDIO		1		// use USB stdio (UsbPrint function)

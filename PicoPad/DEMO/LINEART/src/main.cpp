@@ -7,7 +7,12 @@
 
 #include "../include.h"
 
+#if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
+#define FRAMENUM	2000		// number of frames
+#else
 #define FRAMENUM	200		// number of frames
+#endif
+
 #define PERVERT		2		// number of periods of vertex number changes
 #define PERLINE		4		// number of periods of line number changes
 #define TURNS		2		// number of turns

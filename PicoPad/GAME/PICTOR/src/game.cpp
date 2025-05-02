@@ -200,7 +200,7 @@ void Game()
 		}
 #endif
 
-#if USE_PICOPADVGA
+#if USE_PICOPADVGA || USE_PICOPADHSTX
 		WaitMs(45);
 #endif
 

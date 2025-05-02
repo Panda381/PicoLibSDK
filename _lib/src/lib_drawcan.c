@@ -24,6 +24,7 @@
 #if USE_DRAWCAN		// 1=use drawing canvas library (lib_drawcan*.c, lib_drawcan*.h)
 
 #include "../../_font/_include.h"
+#include "../../_sdk/inc/sdk_dma.h"
 #include "../../_sdk/inc/sdk_timer.h"
 #include "../inc/lib_rand.h"
 #include "../inc/lib_text.h"
@@ -1178,6 +1179,27 @@ void DrawCanGetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* dst,
 // For backward compatibility with Draw version 1
 //void DrawGetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd) { pDrawCan->drawfnc->pDrawCanGetImg(pDrawCan, xs, ys, w, h, dst, xd, yd, wbd); }
 void DrawGetImg2(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd) { pDrawCan->drawfnc->pDrawCanGetImg(pDrawCan, xs, ys, w, h, dst, xd, yd, wbd); }
+
+// Draw image with 2D transformation matrix
+//  can ... destination canvas
+//  xd ... destination X coordinate
+//  yd ... destination Y coordinate
+//  wd ... destination width
+//  hd ... destination height
+//  src ... source image
+//  ws ... source image width
+//  hs ... source image height
+//  wbs ... pitch of source image (length of line in bytes)
+//  m ... transformation matrix (should be prepared using PrepDrawImg function)
+//  mode ... draw mode DRAWIMG_*
+//  color ... key or border color (DRAWIMG_PERSP mode: horizon offset)
+// Note to wrap and perspective mode: Width and height of source image should be power of 2, or it will render slower.
+void DrawCanImgMat(sDrawCan* can, int xd, int yd, int wd, int hd, const void* src, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color)
+	{ can->drawfnc->pDrawCanImgMat(can, xd, yd, wd, hd, src, ws, hs, wbs, m, mode, color); }
+
+// For backward compatibility with Draw version 1
+void DrawImgMat2D(int xd, int yd, int wd, int hd, const void* src, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color)
+	{ pDrawCan->drawfnc->pDrawCanImgMat(pDrawCan, xd, yd, wd, hd, src, ws, hs, wbs, m, mode, color); }
 
 // ----- Colors
 

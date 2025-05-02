@@ -24,20 +24,28 @@
 // GPIO with LED
 // - Do not use 'const' for faster access
 u8 LedGpioTab[LED_NUM] = {
+#if LED_NUM > 1
 	LED1_PIN,	// LED1 inverted, blue, on right
 	LED2_PIN,	// default internal LED pin, on Pico board
+#else
+	LED_PIN,
+#endif
 };
 
 // GPIO invert flag
 // - Do not use 'const' for faster access
 Bool LedGpioTabInv[LED_NUM] = {
+#if LED_NUM > 1
 	True,		// LED1 inverted, blue, on right
+#endif
 	False,		// default internal LED pin, on Pico board
 };
 
 // set LED ON (inx = LED index LED?)
 void NOFLASH(LedOn)(u8 inx)
 {
+	if (inx >= LED_NUM) return;
+
 #if USE_PICOPADVGA
 	if (LedGpioTabInv[inx])
 		GPIO_Out0(LedGpioTab[inx]);
@@ -49,6 +57,8 @@ void NOFLASH(LedOn)(u8 inx)
 // set LED OFF (inx = LED index LED?)
 void NOFLASH(LedOff)(u8 inx)
 {
+	if (inx >= LED_NUM) return;
+
 #if USE_PICOPADVGA
 	if (LedGpioTabInv[inx])
 		GPIO_Out1(LedGpioTab[inx]);
@@ -60,6 +70,7 @@ void NOFLASH(LedOff)(u8 inx)
 // flip LED (inx = LED index LED?)
 void NOFLASH(LedFlip)(u8 inx)
 {
+	if (inx >= LED_NUM) return;
 	GPIO_Flip(LedGpioTab[inx]);
 }
 

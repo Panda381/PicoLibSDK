@@ -19,6 +19,8 @@
 #ifndef _LIB_DRAWCAN_H
 #define _LIB_DRAWCAN_H
 
+#include "lib_mat2d.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -103,7 +105,7 @@ typedef struct {
 	u16	printrow;	// console print character row
 	u16	printcol;	// console print color
 
-// @TODO: stripping back buffer is currently not supported
+// @TODO: The stripping back buffer is currently not supported
 
 	// clipping
 	s16	basey;		// base Y of buffer strip
@@ -193,6 +195,16 @@ INLINE u8* DrawBuf() { return pDrawCan->buf; }
 #define DRAWCAN_ELLIPSE_RIGHT	(DRAWCAN_ELLIPSE_ARC0 | DRAWCAN_ELLIPSE_ARC3)	// draw right half-ellipse
 
 #define DRAWCAN_ELLIPSE_MAXD	430		// max. diameter (X or Y) of the ellipse
+
+// DrawImgMat mode
+enum {
+	DRAWIMG_WRAP,		// wrap image
+	DRAWIMG_NOBORDER,	// no border (transparent border)
+	DRAWIMG_CLAMP,		// clamp image (use last pixel as border)
+	DRAWIMG_COLOR,		// color border
+	DRAWIMG_TRANSP,		// transparent image with key color
+	DRAWIMG_PERSP,		// perspective floor
+};
 
 // set dirty all frame buffer
 void DrawCanDirtyAll(sDrawCan* can);
@@ -415,6 +427,7 @@ typedef void (*fDrawCanBlit)(sDrawCan* can, int xd, int yd, const void* src, int
 typedef void (*fDrawCanBlitInv)(sDrawCan* can, int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs, u16 col);
 typedef void (*fDrawCanBlitSubs)(sDrawCan* can, int xd, int yd, const void* src, int xs, int ys, int w, int h, int wbs, u16 col, u16 fnd, u16 subs);
 typedef void (*fDrawCanGetImg)(const sDrawCan* can, int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
+typedef void (*fDrawCanImgMat)(sDrawCan* can, int xd, int yd, int wd, int hd, const void* src, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color);
 typedef u16 (*fDrawColRgb)(u8 r, u8 g, u8 b);
 typedef u16 (*fDrawColRand)();
 
@@ -522,6 +535,7 @@ typedef struct sDrawCanFnc_ {
 	fDrawCanBlitInv		pDrawCanBlitInv;	// Draw transparent image inverted with the same format as destination
 	fDrawCanBlitSubs	pDrawCanBlitSubs;	// Draw transparent image with the same format as destination, with substitute color
 	fDrawCanGetImg		pDrawCanGetImg;		// Get image from canvas to buffer
+	fDrawCanImgMat		pDrawCanImgMat;		// Draw image with 2D transformation matrix
 	// colors
 	fDrawColRgb		pColRgb;		// convert RGB888 color to pixel color
 	fDrawColRand		pColRand;		// random color
@@ -1062,6 +1076,27 @@ void DrawCanGetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* dst,
 //void DrawGetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 void DrawGetImg2(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 INLINE void DrawGetImg(void* dst, int x, int y, int w, int h) { DrawGetImg2(x, y, w, h, dst, 0, 0, DrawPitch(w)); }
+
+// Draw image with 2D transformation matrix
+//  can ... destination canvas
+//  xd ... destination X coordinate
+//  yd ... destination Y coordinate
+//  wd ... destination width
+//  hd ... destination height
+//  src ... source image
+//  ws ... source image width
+//  hs ... source image height
+//  wbs ... pitch of source image (length of line in bytes)
+//  m ... transformation matrix (should be prepared using PrepDrawImg function)
+//  mode ... draw mode DRAWIMG_*
+//  color ... key or border color (DRAWIMG_PERSP mode: horizon offset)
+// Note to wrap and perspective mode: Width and height of source image should be power of 2, or it will render slower.
+void DrawCanImgMat(sDrawCan* can, int xd, int yd, int wd, int hd, const void* src, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color);
+
+// For backward compatibility with Draw version 1
+void DrawImgMat2D(int xd, int yd, int wd, int hd, const void* src, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color);
+INLINE void DrawImgMat(const void* src, int ws, int hs, int xd, int yd, int wd, int hd, const sMat2D* m, u8 mode, u16 color)
+	{ DrawImgMat2D(xd, yd, wd, hd, src, ws, hs, DrawPitch(ws), m, mode, color); }
 
 // ----- Colors
 

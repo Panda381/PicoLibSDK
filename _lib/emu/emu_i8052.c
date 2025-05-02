@@ -1762,7 +1762,14 @@ u32 I8052_Start(sI8052* cpu, int pwm, u32 freq)
 	dsb();
 
 	// execute program
-#if USE_MINIVGA				// use mini-VGA display
+#if USE_DISPHSTXMINI	// 1=use HSTX Display Mini driver
+	if (DispHstxRunning)
+		DispHstxCore1Exec(I8052_ExecCore1);
+	else
+		Core1Exec(I8052_ExecCore1);
+#elif USE_DISPHSTX			// 1=use HSTX Display driver
+	DispHstxCore1Exec(I8052_ExecCore1);
+#elif USE_MINIVGA			// use mini-VGA display
 	VgaCore1Exec(I8052_ExecCore1);
 #else
 	Core1Exec(I8052_ExecCore1);
@@ -1785,7 +1792,14 @@ u32 I8052_Cont(sI8052* cpu, int pwm, u32 freq)
 	dsb();
 
 	// execute program
-#if USE_MINIVGA				// use mini-VGA display
+#if USE_DISPHSTXMINI	// 1=use HSTX Display Mini driver
+	if (DispHstxRunning)
+		DispHstxCore1Exec(I8052_ExecCore1);
+	else
+		Core1Exec(I8052_ExecCore1);
+#elif USE_DISPHSTX			// 1=use HSTX Display driver
+	DispHstxCore1Exec(I8052_ExecCore1);
+#elif USE_MINIVGA			// use mini-VGA display
 	VgaCore1Exec(I8052_ExecCore1);
 #else
 	Core1Exec(I8052_ExecCore1);
@@ -1813,7 +1827,12 @@ void I8052_Stop(int pwm)
 	// terminate time synchronization (stop PWM counter)
 	I8052_SyncTerm(pwm);
 
-#if !USE_MINIVGA				// use mini-VGA display
+#if !USE_MINIVGA && !USE_DISPHSTX	// use mini-VGA display
+
+#if USE_DISPHSTXMINI	// 1=use HSTX Display Mini driver
+	if (!DispHstxRunning)
+#endif
+
 	// core 1 reset
 	Core1Reset();
 #endif

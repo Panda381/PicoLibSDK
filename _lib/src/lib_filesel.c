@@ -65,6 +65,7 @@ typedef struct {
 	char	name[8+1];	// file name (without extension, with terminating zero)
 } sFileDesc;
 
+/*
 // BMP file header (size 70 bytes)
 #pragma pack(push,1)
 typedef struct {
@@ -94,6 +95,7 @@ typedef struct {
 					// 0x46
 } sBmp;
 #pragma pack(pop)
+*/
 
 // current path
 char FileSelPath[FILESEL_PATHMAX+1]; // current path (with terminating 0, without last path character if not root)
@@ -116,6 +118,24 @@ int FileSelExtLen3; // length of file extension 3 (0 to 3 characters)
 
 // colors template - blue theme
 const sFileSelColors FileSelColBlue = {
+#if USE_DISPHSTXMINI && !USE_DISPHSTX_DISPBUF // 1=use HSTX Display Mini driver
+	.titlefg = COL_BLACK & DISPHSTX_VGA_MASK,	// title foreground color - current directory or description
+	.titlebg = COL_WHITE & DISPHSTX_VGA_MASK,	// title background color - current directory or description
+	.filefg = COL_CYAN & DISPHSTX_VGA_MASK,		// file foreground color
+	.filebg = COL_BLUE & DISPHSTX_VGA_MASK,		// file background color
+	.dirfg = COL_WHITE & DISPHSTX_VGA_MASK,		// directory foreground color
+	.dirbg = COL_BLUE & DISPHSTX_VGA_MASK,		// directory background color
+	.curfg = COL_BLACK & DISPHSTX_VGA_MASK,		// cursor coreground color
+	.curbg = COL_CYAN & DISPHSTX_VGA_MASK,		// cursor background color
+	.infofg = COL_GREEN & DISPHSTX_VGA_MASK,	// info text foreground color
+	.infobg = COL_BLUE & DISPHSTX_VGA_MASK,		// info text background color
+	.textfg = COL_GRAY & DISPHSTX_VGA_MASK,		// text foreground color
+	.textbg = COL_BLACK & DISPHSTX_VGA_MASK,	// text background color
+	.biginfofg = COL_YELLOW & DISPHSTX_VGA_MASK,	// big info text foreground color
+	.biginfobg = COL_BLACK & DISPHSTX_VGA_MASK,	// big info text background color
+	.bigerrfg = COL_YELLOW & DISPHSTX_VGA_MASK,	// big error foreground color
+	.bigerrbg = COL_RED & DISPHSTX_VGA_MASK,	// big error background color
+#else // USE_DISPHSTXMINI
 	.titlefg = COL_BLACK,		// title foreground color - current directory or description
 	.titlebg = COL_WHITE,		// title background color - current directory or description
 	.filefg = COL_CYAN,		// file foreground color
@@ -132,10 +152,29 @@ const sFileSelColors FileSelColBlue = {
 	.biginfobg = COL_BLACK,		// big info text background color
 	.bigerrfg = COL_YELLOW,		// big error foreground color
 	.bigerrbg = COL_RED,		// big error background color
+#endif // USE_DISPHSTXMINI
 };
 
 // colors template - green theme
 const sFileSelColors FileSelColGreen = {
+#if USE_DISPHSTXMINI && !USE_DISPHSTX_DISPBUF // 1=use HSTX Display Mini driver
+	.titlefg = COL_BLACK & DISPHSTX_VGA_MASK,	// title foreground color - current directory or description
+	.titlebg = COL_WHITE & DISPHSTX_VGA_MASK,	// title background color - current directory or description
+	.filefg = COL_WHITE & DISPHSTX_VGA_MASK,	// file foreground color
+	.filebg = COL_DKGREEN & DISPHSTX_VGA_MASK,	// file background color
+	.dirfg = COL_YELLOW & DISPHSTX_VGA_MASK,	// directory foreground color
+	.dirbg = COL_DKGREEN & DISPHSTX_VGA_MASK,	// directory background color
+	.curfg = COL_BLACK & DISPHSTX_VGA_MASK,		// cursor coreground color
+	.curbg = COL_WHITE & DISPHSTX_VGA_MASK,		// cursor background color
+	.infofg = COL_YELLOW & DISPHSTX_VGA_MASK,	// info text foreground color
+	.infobg = COL_DKGREEN & DISPHSTX_VGA_MASK,	// info text background color
+	.textfg = COL_GRAY & DISPHSTX_VGA_MASK,		// text foreground color
+	.textbg = COL_BLACK & DISPHSTX_VGA_MASK,	// text background color
+	.biginfofg = COL_YELLOW & DISPHSTX_VGA_MASK,	// big info text foreground color
+	.biginfobg = COL_BLACK & DISPHSTX_VGA_MASK,	// big info text background color
+	.bigerrfg = COL_YELLOW & DISPHSTX_VGA_MASK,	// big error foreground color
+	.bigerrbg = COL_RED & DISPHSTX_VGA_MASK,	// big error background color
+#else // USE_DISPHSTXMINI
 	.titlefg = COL_BLACK,		// title foreground color - current directory or description
 	.titlebg = COL_WHITE,		// title background color - current directory or description
 	.filefg = COL_WHITE,		// file foreground color
@@ -152,6 +191,7 @@ const sFileSelColors FileSelColGreen = {
 	.biginfobg = COL_BLACK,		// big info text background color
 	.bigerrfg = COL_YELLOW,		// big error foreground color
 	.bigerrbg = COL_RED,		// big error background color
+#endif // USE_DISPHSTXMINI
 };
 
 // current color theme
@@ -877,6 +917,10 @@ void FileSelPreviewClr()
 	DrawRect(WIDTH/2, 0, WIDTH/2, HEIGHT, COL_BLACK);
 }
 
+#if USE_DISPHSTXMINI && !USE_DISPHSTX_DISPBUF // 1=use HSTX Display Mini driver
+u16 FileSelLineBuf[WIDTH/2];
+#endif
+
 // display preview
 void FileSelPreview()
 {
@@ -988,6 +1032,23 @@ void FileSelPreview()
 					if ((ch == CH_LF) || (ch == 0))
 						break;
 
+#if USE_DISPHSTXMINI && !USE_DISPHSTX_DISPBUF // 1=use HSTX Display Mini driver
+					// set white text
+					else if (ch == 'W')
+						FileSelDispCol(COL_WHITE & DISPHSTX_VGA_MASK, FileSelColors->textbg);
+
+					// set green text
+					else if (ch == 'X')
+						FileSelDispCol(COL_GREEN & DISPHSTX_VGA_MASK, FileSelColors->textbg);
+
+					// set yellow text
+					else if (ch == 'Y')
+						FileSelDispCol(COL_YELLOW & DISPHSTX_VGA_MASK, FileSelColors->textbg);
+						
+					// set red text
+					else if (ch == 'Z')
+						FileSelDispCol(COL_RED & DISPHSTX_VGA_MASK, FileSelColors->textbg);
+#else // USE_DISPHSTXMINI
 					// set white text
 					else if (ch == 'W')
 						FileSelDispCol(COL_WHITE, FileSelColors->textbg);
@@ -999,11 +1060,11 @@ void FileSelPreview()
 					// set yellow text
 					else if (ch == 'Y')
 						FileSelDispCol(COL_YELLOW, FileSelColors->textbg);
-						
+
 					// set red text
 					else if (ch == 'Z')
 						FileSelDispCol(COL_RED, FileSelColors->textbg);
-						
+#endif // USE_DISPHSTXMINI
 					// set normal text
 					else if (ch == '0')
 						FileSelDispCol(FileSelColors->textfg, FileSelColors->textbg);
@@ -1147,7 +1208,16 @@ void FileSelPreview()
 		i = (FileSelPrevW > (WIDTH/2)) ? (WIDTH/2) : FileSelPrevW;
 
 		// read one video line
+#if USE_DISPHSTXMINI && !USE_DISPHSTX_DISPBUF // 1=use HSTX Display Mini driver
+		{
+			u16* s = FileSelLineBuf;
+			FileRead(&FileSelPrevFile, s, (i*COLBITS+7)/8);
+			for (; i > 0; i--) *dst++ = *s++ & DISPHSTX_VGA_MASK;
+		}
+#else
 		FileRead(&FileSelPrevFile, dst, (i*COLBITS+7)/8);
+#endif
+
 		DispDirtyRect(WIDTH/2, FileSelPrevLine, WIDTH/2, 1);
 
 		// skip rest of line

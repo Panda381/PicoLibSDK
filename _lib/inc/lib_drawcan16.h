@@ -61,6 +61,8 @@
 #ifndef _LIB_DRAWCAN16_H
 #define _LIB_DRAWCAN16_H
 
+#include "lib_mat2d.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -797,6 +799,25 @@ void DrawCan16GetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* ds
 void DrawCan15GetImg(const sDrawCan* can, int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 void Draw16GetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
 void Draw15GetImg(int xs, int ys, int w, int h, void* dst, int xd, int yd, int wbd);
+
+// Draw image with 2D transformation matrix
+//  can ... destination canvas
+//  xd ... destination X coordinate
+//  yd ... destination Y coordinate
+//  wd ... destination width
+//  hd ... destination height
+//  src ... source image
+//  ws ... source image width
+//  hs ... source image height
+//  wbs ... pitch of source image (length of line in bytes)
+//  m ... transformation matrix (should be prepared using PrepDrawImg function)
+//  mode ... draw mode DRAWIMG_*
+//  color ... key or border color (DRAWIMG_PERSP mode: horizon offset)
+// Note to wrap and perspective mode: Width and height of source image should be power of 2, or it will render slower.
+void DrawCan16ImgMat(sDrawCan* can, int xd, int yd, int wd, int hd, const void* src, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color);
+void DrawCan15ImgMat(sDrawCan* can, int xd, int yd, int wd, int hd, const void* src, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color);
+void Draw16ImgMat(int xd, int yd, int wd, int hd, const void* src, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color);
+void Draw15ImgMat(int xd, int yd, int wd, int hd, const void* src, int ws, int hs, int wbs, const sMat2D* m, int mode, u16 color);
 
 // ----- Draw image specific to 16-bit canvas
 //  can ... destination canvas
