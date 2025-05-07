@@ -26,6 +26,7 @@
 #include "../inc/sdk_timer.h"
 #include "../inc/sdk_vreg.h"
 #include "../inc/sdk_powman.h"
+#include "../inc/sdk_psram.h"
 #include "../inc/sdk_flash.h"
 
 // current clock frequency in Hz (clock lines and clock generators)
@@ -513,6 +514,11 @@ void ClockPllSysFreqVolt(u32 freq)
 
 	// reconnect CLK_SYS back to PLL_SYS
 	ClockSetup(CLK_SYS, CLK_PLL_SYS, 0, 0);
+
+#if USE_PSRAM	// use PSRAM Memory (sdk_psram.c, sdk_psram.h)
+	// setup PSRAM timing (should be called after sys_clock change)
+	PSRAM_Timing();
+#endif
 }
 
 #endif // USE_PLL	// use PLL phase-locked loop (sdk_pll.c, sdk_pll.h)

@@ -87,6 +87,10 @@
 #include "inc/lib_miniring.h"		// Mini-Ring buffer
 #endif
 
+#if USE_PMALLOC
+#include "inc/lib_pmalloc.h"		// PSRAM memory allocator
+#endif
+
 #if USE_PRINT
 #include "inc/lib_print.h"		// formatted print
 #endif

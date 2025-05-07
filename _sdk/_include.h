@@ -70,6 +70,10 @@
 #include "inc/sdk_pll.h"	// PLL phase-locked loop
 #endif
 
+#if USE_PSRAM
+#include "inc/sdk_psram.h"	// PSRAM Memory
+#endif
+
 #if RP2350
 #include "inc/sdk_powman.h"	// Power Manager
 #endif

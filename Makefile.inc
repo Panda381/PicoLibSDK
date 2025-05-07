@@ -279,12 +279,12 @@ endif
 # === ASM flags
 
 # MCU
-AFLAGS = $(ARCHCFG)
+AFLAGS += $(ARCHCFG)
 
 # === C flags
 
 # MCU
-CFLAGS = $(ARCHCFG)
+CFLAGS += $(ARCHCFG)
 
 # Optimization level
 #CFLAGS += -O0	# do no optimization
@@ -316,18 +316,24 @@ CFLAGS += -funsigned-char
 # warning as errors
 CFLAGS += -Werror
 
+# extra user's CFLAGS
+CFLAGS += ${EXTRA_CFLAGS}
+
 # === C++ flags
 
-CPPFLAGS = $(CFLAGS)
+CPPFLAGS += $(CFLAGS)
 
 # do not use exceptions and unwind frames
 CPPFLAGS += -fno-exceptions -fno-unwind-tables
 CPPFLAGS += -fno-rtti -fno-use-cxa-atexit -std=gnu++17
 
+# extra user's CPPFLAGS
+CPPFLAGS += ${EXTRA_CPPFLAGS}
+
 # === Linker flags
 
 # MCU
-LDFLAGS = $(ARCHCFG)
+LDFLAGS += $(ARCHCFG)
 
 # no built in
 LDFLAGS += -Wl,--build-id=none
@@ -739,6 +745,9 @@ LDFLAGS+=-Wl,--wrap=__aeabi_uldiv
 LDFLAGS+=-Wl,--wrap=__aeabi_uldivmod
 LDFLAGS+=-Wl,--wrap=__aeabi_lmul
 endif
+
+# extra user's LDFLAGS
+LDFLAGS += ${EXTRA_LDFLAGS}
 
 ##############################################################################
 # Compiler

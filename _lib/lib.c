@@ -120,6 +120,10 @@
 #include "src/lib_miniring.c"
 #endif
 
+#if USE_PMALLOC
+#include "src/lib_pmalloc.c"
+#endif
+
 #if USE_PRINT
 #include "src/lib_print.c"
 #endif

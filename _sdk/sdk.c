@@ -76,6 +76,10 @@
 #include "src/sdk_pll.c"
 #endif
 
+#if USE_PSRAM
+#include "src/sdk_psram.c"
+#endif
+
 #if RP2350
 #include "src/sdk_powman.c"
 #endif

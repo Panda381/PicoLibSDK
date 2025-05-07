@@ -73,3 +73,7 @@
 #define XIP_AUX_BASE		0x50400000
 #define SIO_BASE		0xd0000000	// SIO registers (does not support aliases for atomic access!)
 #define PPB_BASE		0xe0000000	// Cortex-M0+ internal registers (system control block)
+
+#define FLASH_BASE		0x10000000
+#define PSRAM_BASE		0x11000000
+#define SRAM_BASE		0x20000000

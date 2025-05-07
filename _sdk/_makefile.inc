@@ -33,7 +33,6 @@ ASRC += ${PICOLIBSDK_SDK_DIR}/src/sdk_float_riscv.S
 ASRC += ${PICOLIBSDK_SDK_DIR}/src/sdk_float_riscv_sci.S
 endif
 
-# @TODO
 ifeq (${OS},Windows_NT)
 CSRC += ${PICOLIBSDK_SDK_DIR}/sdk.c
 else
@@ -56,6 +55,7 @@ CSRC += ${PICOLIBSDK_SDK_DIR}/src/sdk_multicore.c
 CSRC += ${PICOLIBSDK_SDK_DIR}/src/sdk_pio.c
 CSRC += ${PICOLIBSDK_SDK_DIR}/src/sdk_pll.c
 CSRC += ${PICOLIBSDK_SDK_DIR}/src/sdk_powman.c
+CSRC += ${PICOLIBSDK_SDK_DIR}/src/sdk_psram.c
 CSRC += ${PICOLIBSDK_SDK_DIR}/src/sdk_pwm.c
 CSRC += ${PICOLIBSDK_SDK_DIR}/src/sdk_qmi.c
 CSRC += ${PICOLIBSDK_SDK_DIR}/src/sdk_qspi.c

@@ -23,6 +23,7 @@
 
 MEMORY
 {
+    PSRAM(rwx) : ORIGIN = 0x11000000, LENGTH = 8M /* PSRAM 8MB */
     RAM(rwx) : ORIGIN =  0x20000000, LENGTH = 512K /* main RAM 512KB */
     SCRATCH_X(rwx) : ORIGIN = 0x20080000, LENGTH = 4k /* core 0 stack 4KB */
     BOOTLOADERRAM(rw) : ORIGIN = 0x20081000, LENGTH = 32 /* boot loader resident RAM 32B */
@@ -205,6 +206,13 @@ SECTIONS
         KEEP (*(.stack1*))
     } > SCRATCH_Y
 
+    .psram (NOLOAD) : {
+        __psram_start__ = .;
+        *(.psram*)
+        . = ALIGN(4096);
+        __psram_heap_start__ = .;
+    } > PSRAM
+
     /* stack limit is poorly named, but historically is maximum heap ptr */
     __StackLimit = ORIGIN(RAM) + LENGTH(RAM);
     __Stack0Top = ORIGIN(SCRATCH_X) + LENGTH(SCRATCH_X);
@@ -216,6 +224,8 @@ SECTIONS
 
     PROVIDE (__heap_start = __end__);
     PROVIDE (__heap_end = __HeapLimit);
+    PROVIDE (__psram_start = __psram_start__);
+    PROVIDE (__psram_heap_start = __psram_heap_start__);
     PROVIDE (_end = __end__);
     PROVIDE (__llvm_libc_heap_limit = __HeapLimit);
 

@@ -28,9 +28,11 @@
 #include "../inc/sdk_ssi.h"
 #include "../inc/sdk_float.h"
 #include "../inc/sdk_flash.h"
+#include "../inc/sdk_psram.h"
 #include "../../_lib/inc/lib_alarm.h"
 #include "../../_lib/inc/lib_config.h"
 #include "../../_lib/inc/lib_malloc.h"
+#include "../../_lib/inc/lib_pmalloc.h"
 #include "../../_lib/inc/lib_rand.h"
 #include "../usb_inc/sdk_usb_phy.h" // physical layer
 #include "../usb_inc/sdk_usb_dev.h" // devices
@@ -198,6 +200,16 @@ void RuntimeInit()
 
 	// Device init
 	DeviceInit();
+
+#if USE_PSRAM		// use PSRAM Memory (sdk_psram.c, sdk_psram.h)
+	// initialize PSRAM memory interface
+	PSRAM_Init();
+#endif
+
+#if USE_PMALLOC		// use PSRAM Memory Allocator (lib_pmalloc.c, lib_pmalloc.h)
+	// initialize PSRAM Memory Allocator
+	PmemInit();
+#endif
 
 	// stdio
 #if USE_USB_STDIO		// use USB stdio (UsbPrint function)

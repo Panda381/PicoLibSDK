@@ -146,6 +146,7 @@ INLINE void UnlockIRQ(u32 state)
 
 // IRQ lock (temporary disables interrupt)
 #define IRQ_LOCK u32 irq_state = LockIRQ()	// lock on begin of critical section
+#define IRQ_RELOCK irq_state = LockIRQ()	// lock again on begin of critical section
 #define IRQ_UNLOCK UnlockIRQ(irq_state)		// unlock on end of critical section
 
 // busy wait at least number of sys_clk cycles

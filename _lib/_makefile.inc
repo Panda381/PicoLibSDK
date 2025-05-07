@@ -28,6 +28,7 @@ CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_list.c
 CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_malloc.c
 CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_mat2d.c
 CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_miniring.c
+CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_pmalloc.c
 CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_print.c
 CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_pwmsnd.c
 CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_rand.c

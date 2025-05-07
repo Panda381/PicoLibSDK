@@ -210,6 +210,10 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #define USE_PLL		1		// use PLL phase-locked loop (sdk_pll.c, sdk_pll.h)
 #endif
 
+#ifndef USE_PSRAM
+#define USE_PSRAM	1		// use PSRAM Memory (sdk_psram.c, sdk_psram.h)
+#endif
+
 #ifndef USE_PWM
 #define USE_PWM		1		// use PWM (sdk_pwm.c, sdk_pwm.h)
 #endif
@@ -472,6 +476,10 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 
 #ifndef USE_MAT2D
 #define USE_MAT2D	1		// use 2D transformation matrix (lib_mat2d.c, lib_mat2d.h)
+#endif
+
+#ifndef USE_PMALLOC
+#define USE_PMALLOC	1		// use PSRAM Memory Allocator (lib_pmalloc.c, lib_pmalloc.h)
 #endif
 
 #ifndef USE_MALLOC

@@ -1,7 +1,7 @@
 
 PicoLibSDK - Alternative SDK library for Raspberry Pico, RP2040 and RP2350
 ==========================================================================
-SDK Programmer's Guide, Version 2.08, May 2025
+SDK Programmer's Guide, Version 2.09, May 2025
 
 Copyright (c) 2023-2025 Miroslav Nemecek
 
@@ -846,6 +846,7 @@ History of versions
 	format support
 03/14/2025 version 2.07: MP3 decoder and player
 05/01/2025 version 2.08: Added PicopadHSTX device and DispHSTXMini driver
+05/07/2025 version 2.09: PSRAM memory support, PSRAM memory allocator
 
 Missing and @TODO
 -----------------
