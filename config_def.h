@@ -211,7 +211,11 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #endif
 
 #ifndef USE_PSRAM
+#if RP2040
+#define USE_PSRAM	0		// use PSRAM Memory (sdk_psram.c, sdk_psram.h)
+#else
 #define USE_PSRAM	1		// use PSRAM Memory (sdk_psram.c, sdk_psram.h)
+#endif
 #endif
 
 #ifndef USE_PWM
@@ -479,7 +483,11 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #endif
 
 #ifndef USE_PMALLOC
+#if RP2040
+#define USE_PMALLOC	0		// use PSRAM Memory Allocator (lib_pmalloc.c, lib_pmalloc.h)
+#else
 #define USE_PMALLOC	1		// use PSRAM Memory Allocator (lib_pmalloc.c, lib_pmalloc.h)
+#endif
 #endif
 
 #ifndef USE_MALLOC
