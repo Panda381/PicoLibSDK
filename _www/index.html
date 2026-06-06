@@ -1,0 +1,1417 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=utf-8">
+<meta name="language" content="czech">
+<meta name="content-language" content="cs-cz">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>PicoLibSDK - Alternativní SDK knihovna pro Raspberry Pico, RP2040 a RP2350</title>
+</head>
+
+<body bgcolor="#FFFFFF" text="#000000">
+<div align="center"><center>
+
+<table border="0" width="100%">
+    <tr>
+        <td width="33%"><p align="left"><a href="../index.html"><font
+        face="Arial">&lt;&lt; Zpět</font></a></p>
+        </td>
+        <td width="33%">&nbsp;</td>
+        <td width="34%"><p align="right"><font face="Arial">  <u>Česky:</u>
+        <img src="../../cz2.gif" width="50" height="30" />, </font><a
+        href="index_en.html"><font face="Arial">English: <img
+        src="../../en.gif" border="0" width="50" height="30" /></font></a></p>
+        </td>
+    </tr>
+</table>
+</center></div>
+
+<p align="center"><font color="#FF8000" size="6" face="Arial"><strong>PicoLibSDK</strong></font></p>
+
+<p align="center"><font color="#FF8000" size="4" face="Arial"><strong>Alternativní
+rozšířená knihovna C/C++ SDK pro Raspberry Pico, RP2040 a
+RP2350</strong></font></p>
+
+<p align="center"><font face="Arial">verze 2.09, květen 2025</font></p>
+
+<p align="center"><font face="Arial">(c) Miroslav Němeček</font></p>
+
+<p align="center"><a
+href="https://github.com/Panda381/PicoLibSDK"><font face="Arial">https://github.com/Panda381/PicoLibSDK</font></a></p>
+
+<p align="center"><font face="Arial"><strong>&gt;&gt;&gt; </strong></font><a
+href="#links"><font face="Arial"><strong>Downloady - odkazy</strong></font></a><font
+face="Arial"><strong> &lt;&lt;&lt;</strong></font></p>
+
+<p align="center"><a href="dwn/PicoLibSDK.pdf"><font face="Arial">Manuál
+k PicoLibSDK v PDF</font></a></p>
+
+<p align="center"><a
+href="https://www.youtube.com/watch?v=hWk1_XpkH5U"><font
+face="Arial">Demo video na YouTube</font></a></p>
+
+<p align="center"><a
+href="https://pajenicko.cz/picopad-wifi-open-source-herni-konzole"><font
+face="Arial">Picopad na pajenicko.cz - PRODEJ</font></a></p>
+
+<p align="center"><font face="Arial">Picopad Song: </font><a
+href="https://www.youtube.com/watch?v=AgQXCw2uNpc"><font
+face="Arial">YouTube</font></a><font face="Arial"> ... </font><a
+href="dwn/Picopad_Song.avi"><font face="Arial">video</font></a><font
+face="Arial"> ... </font><a href="dwn/Picopad_Song.mp3"><font
+face="Arial">mp3</font></a><font face="Arial"> ... </font><a
+href="dwn/Picopad_Song.txt"><font face="Arial">Lyrics</font></a></p>
+
+<p align="center"><a href="img/picopad.jpg"><img
+src="img/picopad_m.jpg" border="0" width="400" height="250"></a></p>
+
+<p align="left"><font face="Arial"><strong>Obsah:</strong></font></p>
+
+<ul>
+    <li><p align="left"><a href="#features"><font face="Arial">Vlastnosti
+        knihovny PicoLibSDK</font></a></p>
+    </li>
+    <li><p align="left"><a href="#license"><font face="Arial">Licence</font></a></p>
+    </li>
+    <li><p align="left"><a href="#links"><font face="Arial"><strong>Odkazy</strong></font></a></p>
+    </li>
+    <li><p align="left"><a href="#picopad"><font face="Arial">PicoPad</font></a></p>
+    </li>
+    <li><p align="left"><a href="#picopadhstx"><font face="Arial">PicoPadHSTX</font></a></p>
+    </li>
+    <li><p align="left"><a href="#picopadvga"><font face="Arial">PicoPadVGA</font></a></p>
+    </li>
+    <li><p align="left"><a href="#picoino"><font face="Arial">Picoino</font></a></p>
+    </li>
+    <li><p align="left"><a href="#picoinomini"><font face="Arial">PicoinoMini</font></a></p>
+    </li>
+    <li><p align="left"><a href="#demovga"><font face="Arial">DemoVGA</font></a></p>
+    </li>
+    <li><p align="left"><a href="#picotron"><font face="Arial">Picotron</font></a></p>
+    </li>
+    <li><p align="left"><a href="#samples"><font face="Arial">Ukázkové
+        programy</font></a></p>
+    </li>
+    <li><p align="left"><a href="#video"><font face="Arial">Ukázková
+        videa</font></a></p>
+    </li>
+    <li><p align="left"><a href="#pictor"><font face="Arial">Hra
+        Pictor</font></a></p>
+    </li>
+    <li><p align="left"><a href="#gameboy"><font face="Arial">Game
+        Boy Emulator</font></a></p>
+    </li>
+    <li><p align="left"><a href="#nes"><font face="Arial">NES
+        Emulator</font></a></p>
+    </li>
+    <li><p align="left"><a href="#float"><font face="Arial">Časování
+        floating-point funkcí</font></a></p>
+    </li>
+    <li><p align="left"><a href="#disphstx"><font face="Arial">DispHSTX
+        - Driver DVI (HDMI) a VGA displeje pro Pico2 RP2350</font></a></p>
+    </li>
+    <li><p align="left"><a href="#mp3"><font face="Arial">MP3 přehrávač</font></a></p>
+    </li>
+    <li><p align="left"><a href="#kaleidoscopico"><font
+        face="Arial">Kaleidoscopico</font></a></p>
+    </li>
+    <li><p align="left"><a href="#history"><font face="Arial">Historie
+        verzí</font></a></p>
+    </li>
+</ul>
+
+<p align="left"><font face="Arial">PicoLibSDK je alternativní
+rozšířená knihovna C/C++ SDK pro modul Raspberry Pico s
+procesorem RP2040, se snadným překladem pod Windows. Lze ji
+použít i pro jiné moduly, které tento procesor používají.
+Oproti původní knihovně SDK se knihovna PicoLibSDK snaží rozšířit
+funkčnost původní knihovny a zejména usnadnit její používání.<br>
+</font></p>
+
+<p align="left"><a name="features"></a><font size="5"
+face="Arial"><strong>Vlastnosti knihovny PicoLibSDK</strong></font></p>
+
+<p align="left"><font face="Arial"><strong>Boot loader:</strong>
+Boot loader umožňující výběr a spouštění programů UF2 z
+SD karty.</font></p>
+
+<p align="left"><font face="Arial"><strong>SDK řízení
+hardware:</strong> ADC, boot ROM, řízení systémových hodin,
+řízení CPU, hardwarová dělička, DMA, doorbells, double a
+float aritmetika, FIFO mailboxy, programování flash, GPIO,
+HSTX, I2C, hardware interpolator, IRQ, multicore, PIO, PLL,
+PSRAM, PWM, QSPI, reset a power řízení, ROSC, RTC, SHA256,
+SPI, spinlocky, SysTick, časovač s alarmem, TMDS, TRNG,
+watchdog, XOSC. Procesor RP2350 může být používán v módu
+ARM nebo RISC-V.</font></p>
+
+<p align="left"><font face="Arial"><strong>Tool knihovna:</strong>
+alarm, 32-bitový Unix kalendář, dlouhý 64-bitový
+astronomický kalendář, kreslení na canvas, RGBA barevný
+vektor, CRC kontrola s podporou DMA, dekódování čísel,
+emulátory, escape paketový protokol, event kruhový buffer, FAT
+file system, doubly linked list, alokátor paměti, 2D
+transformační matice, mini-ring buffer, formátovaný tisk, PWM
+zvukový výstup, generátor náhody, rectangle, kruhový buffer,
+DMA kruhový buffer, SD karta, streamy, textové řetězce,
+textové seznamy, textový tisk, tree list, VGA kreslení, video
+přehrávač, MP3 přehrávač.</font></p>
+
+<p align="left"><font face="Arial"><strong>Knihovna USB:</strong>
+multiplayer mini-port, CDC device a host - sériová komunikace,
+HID device a host - včetně externí klávesnice a myši.</font></p>
+
+<p align="left"><font face="Arial"><strong>Velká celá čísla:</strong>
+výpočty s velkými celými čísly, výpočet Bernoulliho čísel.</font></p>
+
+<p align="left"><font face="Arial"><strong>Reálná čísla:</strong>
+výpočty s čísly s pohyblivou řádovou čárkou s volitelnou
+přesností až 3690 číslic a 30-bitovým exponentem. Vědecké
+funkce s volitelnou metodou výpočtu - Ln, Exp, Sqrt, Sin, Cos,
+Tan, arcus, hyperbolické funkce a mnoho dalších. Lineární
+faktoriály s přesným a rychlým výpočtem.</font></p>
+
+<p align="left"><font face="Arial"><strong>Ovladače displeje:</strong>
+Připravená podpora TFT, DVI a VGA displeje.</font></p>
+
+<p align="left"><font face="Arial"><strong>Zařízení:</strong>
+Podpora desek Picoino/PicoinoMini/Picotron/DemoVGA/PicoPadVGA s
+VGA displejem, PicoPad s TFT displejem a základní Raspberry
+Pico bez dalšího hardware.</font></p>
+
+<p align="left"><font face="Arial"><strong>Kompatibilita:</strong>
+Knihovna je ve většině funkcí zpětně kompatibilní s
+originální SDK knihovnou. Lze vyvolávat většinu funkcí z
+originální SDK knihovny, přestože vnitřně jsou často
+řešené jinak.</font></p>
+
+<p align="left"><font face="Arial">Boot loader pro spouštění
+programů z SD karty:</font></p>
+
+<p align="left"><a href="img/loader.png"><font face="Arial"><img
+src="img/loader_m.jpg" border="0" width="320" height="240"></font></a><font
+face="Arial"><br>
+</font></p>
+
+<p align="left"><a name="license"></a><font size="5" face="Arial"><strong>Licence</strong></font></p>
+
+<p align="left"><font face="Arial">Zdrojový kód knihovny je, až
+na několik výjimek, zcela volně k použití pro jakýkoli účel,
+včetně komerčního využití. Většina zdrojového kódu
+knihovny nebo jeho části je možné používat a upravovat bez
+omezení. Jedinou výjimkou jsou knihovny pro single- a
+double-floating-point matematiku, které jsou převážně
+autorským dílem Raspberry Pi a Marka Owena, a proto podléhají
+licenčním podmínkám původních autorů.<br />
+</font></p>
+
+<p align="left"><a name="links"></a><font size="5" face="Arial"><strong>Odkazy</strong></font></p>
+
+<p align="left"><a href="dwn/PicoLibSDK.zip"><font face="Arial">Download
+knihovny PicoLibSDK</font></a><font face="Arial"> (zdrojové
+kódy, obrazy SD karty, ukázkové programy)</font></p>
+
+<p align="left"><font face="Arial"><strong>&gt;&gt;&gt; </strong></font><a
+href="dwn/PicoPad_SD.zip"><font face="Arial"><strong>Obsah SD
+karty pro PicoPad 1</strong></font></a><font face="Arial"><strong>
+&lt;&lt;&lt;</strong></font></p>
+
+<p align="left"><font face="Arial"><strong>&gt;&gt;&gt; </strong></font><a
+href="dwn/PicoPad2_SD.zip"><font face="Arial"><strong>Obsah SD
+karty pro PicoPad 2 v ARM módu</strong></font></a><font
+face="Arial"><strong> &lt;&lt;&lt;</strong></font></p>
+
+<p align="left"><font face="Arial"><strong>&gt;&gt;&gt; </strong></font><a
+href="dwn/PicoPad2riscv_SD.zip"><font face="Arial"><strong>Obsah
+SD karty pro PicoPad 2 v RISC-V módu</strong></font></a><font
+face="Arial"><strong> &lt;&lt;&lt;</strong></font></p>
+
+<p align="left"><font face="Arial"><strong>&gt;&gt;&gt; </strong></font><a
+href="dwn/PicoPadHSTX_SD.zip"><font face="Arial"><strong>Obsah SD
+karty pro PicoPadHSTX v ARM módu</strong></font></a><font
+face="Arial"><strong> &lt;&lt;&lt;</strong></font></p>
+
+<p align="left"><font face="Arial"><strong>&gt;&gt;&gt; </strong></font><a
+href="dwn/PicoPadHSTXriscv_SD.zip"><font face="Arial"><strong>Obsah
+SD karty pro PicoPadHSTX v RISC-V módu</strong></font></a><font
+face="Arial"><strong> &lt;&lt;&lt;</strong></font></p>
+
+<p align="left"><a href="dwn/PicoLibSDK_doc.zip"><font
+face="Arial">Download manuálu ke knihovně PicoLibSDK (formáty
+DOC, ODT, PDF)</font></a></p>
+
+<p align="left"><a href="dwn/PicoLibSDK.pdf"><font face="Arial">Manuál
+k PicoLibSDK v PDF</font></a></p>
+
+<p align="left"><font face="Arial">PicoLibSDK na Github: </font><a
+href="https://github.com/Panda381/PicoLibSDK"><font face="Arial">https://github.com/Panda381/PicoLibSDK</font></a></p>
+
+<p align="left"><a
+href="https://www.youtube.com/watch?v=hWk1_XpkH5U"><font
+face="Arial">Demo video na YouTube</font></a></p>
+
+<p align="left"><a
+href="https://www.youtube.com/watch?v=LWiH7y3T52g"><font
+face="Arial">Video se slide-show přehrávačem pro porovnání
+videomódů PicoLibSDK</font></a></p>
+
+<p align="left"><a href="dwn/PicoPadVGA_SD.zip"><font
+face="Arial">Obsah SD karty pro PicoPadVGA</font></a></p>
+
+<p align="left"><a href="dwn/DemoVGA_SD.zip"><font face="Arial">Obsah
+SD karty pro desku DemoVGA</font></a></p>
+
+<p align="left"><a href="dwn/Picoino_SD.zip"><font face="Arial">Obsah
+SD karty pro Picoino</font></a></p>
+
+<p align="left"><a href="dwn/PicoinoMini_SD.zip"><font
+face="Arial">Obsah SD karty pro PicoinoMini</font></a></p>
+
+<p align="left"><a href="dwn/Picotron_SD.zip"><font face="Arial">Obsah
+SD karty pro Picotron</font></a></p>
+
+<p align="left"><a href="dwn/Pico_SD.zip"><font face="Arial">Ukázkové
+programy pro Raspberry Pico 1</font></a></p>
+
+<p align="left"><a href="dwn/Pico2_SD.zip"><font face="Arial">Ukázkové
+programy pro Raspberry Pico 2 v ARM módu</font></a></p>
+
+<p align="left"><a href="dwn/Pico2riscv_SD.zip"><font
+face="Arial">Ukázkové programy pro Raspberry Pico 2 v RISC-V
+módu</font></a></p>
+
+<p align="left"><font face="Arial">Picopad Song: </font><a
+href="https://www.youtube.com/watch?v=AgQXCw2uNpc"><font
+face="Arial">YouTube</font></a><font face="Arial"> ... </font><a
+href="dwn/Picopad_Song.avi"><font face="Arial">video</font></a><font
+face="Arial"> ... </font><a href="dwn/Picopad_Song.mp3"><font
+face="Arial">mp3</font></a><font face="Arial"> ... </font><a
+href="dwn/Picopad_Song.txt"><font face="Arial">Lyrics</font></a></p>
+
+<p align="left"><a
+href="https://www.youtube.com/watch?v=gyACp6pt99w"><font
+face="Arial">Demo video PC DOS emulátoru</font></a><font
+face="Arial"><br>
+</font></p>
+
+<p align="left"><font size="5" face="Arial"><strong>Cílová zařízení</strong></font></p>
+
+<p align="left"><a name="picopad"></a><font face="Arial"><strong>PicoPad</strong></font></p>
+
+<p align="left"><font face="Arial">Hlavním cílovým zařízením,
+pro které je knihovna v současnosti připravena, je konzole
+PicoPad, s 16-bitovým TFT displejem 320x240 pixelů, 8 tlačítky
+a mikroSD kartou. Většinu programů a her na modulu PicoPad lze
+ovládat také z klávesnice USB, která je připojena ke
+konektoru USB modulu Pico prostřednictvím napájecího rozbočovače,
+který poskytuje externí napájení +5 V. Mapování kláves:
+A-&gt;Ctrl, B-&gt;Alt, X-&gt;Shift, Y-&gt;Esc.</font></p>
+
+<p align="left"><a href="img/picopad.jpg"><font face="Arial"><img
+src="img/picopad_m.jpg" border="0" width="400" height="250"></font></a></p>
+
+<p align="left"><font face="Arial">PicoPad 1.0 schéma zapojení
+(nebo jako </font><a href="dwn/picopad10_diagram.pdf"><font
+face="Arial">PDF</font></a><font face="Arial">):</font></p>
+
+<p align="left"><a href="img/picopad10_diagram.jpg"><font
+face="Arial"><img src="img/picopad10_diagram_m.jpg" border="0"
+width="500" height="345"></font></a></p>
+
+<p align="left"><font face="Arial"><strong>PicoPad 0.8</strong></font></p>
+
+<p align="left"><font face="Arial">Je připraven překlad také
+pro PicoPad verze 0.8, což byl první prototyp PicoPad. Překlad
+slouží spíše jako ukázka možnosti alternativní konfigurace
+překladu.</font></p>
+
+<p align="left"><a href="img/picopad08.jpg"><font face="Arial"><img
+src="img/picopad08_m.jpg" border="0" width="400" height="220"></font></a></p>
+
+<p align="left"><font face="Arial">PicoPad 0.8 schéma zapojení
+(nebo jako </font><a href="dwn/picopad08_diagram.pdf"><font
+face="Arial">PDF</font></a><font face="Arial">):</font></p>
+
+<p align="left"><a href="img/picopad08_diagram.jpg"><font
+face="Arial"><img src="img/picopad08_diagram_m.jpg" border="0"
+width="500" height="328"></font></a></p>
+
+<p align="left"><a name="picopadhstx"></a><font face="Arial"><strong>PicoPadHSTX</strong></font></p>
+
+<p align="left"><font face="Arial">PicoPadHSTX je alternativou ke
+konzoli PicoPad s výstupem na displej VGA a DVI (HDMI), s
+procesorem RP2350 a stereofonním zvukem. Obvykle se používá v
+rozlišení 320x240 pixelů s 16bitovým barevným formátem
+RGB565. Většinu programů a her na zařízení PicoPadHSTX lze
+ovládat také pomocí klávesnice USB. PicoPadHSTX musí být
+napájen z externího zdroje +5 V přes USB konektor. Mapování
+kláves: A-&gt;Ctrl, B-&gt;Alt, X-&gt;Shift, Y-&gt;Esc. Pro
+PicoPadHSTX jsou k dispozici všechny programy pro PicoPad,
+včetně více než 2000 her pro GameBoy a NES konzoli.
+Připravené hry pro GameBoy a NES můžete nalézt na serverech </font><a
+href="https://webshare.cz/#/search?what=picopadhstx"><font
+face="Arial">webshare</font></a><font face="Arial"> a </font><a
+href="https://datoid.cz/s/picopadhstx"><font face="Arial">datoid</font></a><font
+face="Arial">. ... </font><a href="dwn/PicoPadHSTX_png.zip"><font
+face="Arial">Download podkladů pro PicoPadHSTX</font></a><font
+face="Arial"> ... </font><a href="dwn/PicoPadHSTX_SD.zip"><font
+face="Arial">Download SD karty pro PicoPadHSTX v ARM módu</font></a><font
+face="Arial"> ... </font><a href="dwn/PicoPadHSTXriscv_SD.zip"><font
+face="Arial">Download SD karty pro PicoPadHSTX v RISC-V módu</font></a><font
+face="Arial">.</font></p>
+
+<p align="left"><a href="img/PicopadHSTX.jpg"><font face="Arial"><img
+src="img/PicopadHSTX_m.jpg" border="0" width="400" height="339"></font></a></p>
+
+<p align="left"><font face="Arial">PicoPadHSTX schéma zapojení:</font></p>
+
+<p align="left"><a href="img/PicopadHSTX_diagram.jpg"><font
+face="Arial"><img src="img/PicopadHSTX_diagram_m.jpg" border="0"
+width="800" height="377"></font></a></p>
+
+<p align="left"><font face="Arial">PicoPadHSTX osazení součástek:</font></p>
+
+<p align="left"><a href="img/PicopadHSTX_route.jpg"><font
+face="Arial"><img src="img/PicopadHSTX_route_m.jpg" border="0"
+width="400" height="326"></font></a></p>
+
+<p align="left"><a name="picopadvga"></a><font face="Arial"><strong>PicoPadVGA</strong></font></p>
+
+<p align="left"><font face="Arial">PicoPadVGA je alternativou ke
+konzoli PicoPad s výstupem na displej VGA. Obvykle se používá
+v rozlišení 320x240 pixelů s 16bitovým barevným formátem
+RGB565. Podporováno je také rozlišení 400x300 pixelů.
+Většinu programů a her na zařízení PicoPadVGA lze ovládat
+také pomocí klávesnice USB. PicoPadVGA musí být napájen z
+externího zdroje +5 V přes napájecí USB konektor. Mapování
+kláves: A-&gt;Ctrl, B-&gt;Alt, X-&gt;Shift, Y-&gt;Esc. </font><a
+href="dwn/PicoPadVGA_png.zip"><font face="Arial">Download podkladů
+pro PicoPadVGA</font></a></p>
+
+<p align="left"><a href="img/PicoPadVGA.jpg"><font face="Arial"><img
+src="img/PicoPadVGA_m.jpg" border="0" width="400" height="300"></font></a></p>
+
+<p align="left"><font face="Arial">PicoPadVGA schéma zapojení:</font></p>
+
+<p align="left"><a href="img/PicoPadVGA_diagram.jpg"><font
+face="Arial"><img src="img/PicoPadVGA_diagram_m.jpg" border="0"
+width="640" height="351"></font></a></p>
+
+<p align="left"><font face="Arial">PicoPadVGA osazení součástek:</font></p>
+
+<p align="left"><a href="img/PicoPadVGA_mounting.jpg"><font
+face="Arial"><img src="img/PicoPadVGA_mounting_m.jpg" border="0"
+width="400" height="328"></font></a></p>
+
+<p align="left"><a name="picoino"></a><font face="Arial"><strong>Picoino</strong></font></p>
+
+<p align="left"><font face="Arial">Další připravenou
+alternativou překladu je Picoino, což je předchůdce PicoPad,
+s vestavěnou klávesnicí 56 tlačítek a výstupem na VGA
+monitor v 8-bitovém barevném módu RGB332. V knihovně je
+připraveno rozlišení obrazu 320x240. Spolu s knihovnou </font><a
+href="https://www.breatharian.eu/hw/picovga/index.html"><font
+face="Arial">PicoVGA</font></a><font face="Arial"> je možné i
+vyšší rozlišení a kombinované módy. </font><a
+href="dwn/picoino_png.zip"><font face="Arial">Download podkladů
+pro Picoino.</font></a></p>
+
+<p align="left"><font face="Arial">Ukázkové programy pro
+Picoino jsou připravené adaptací programů pro PicoPad -
+grafika změněna z 16-bitů na 8-bitů a k ovládání se používá
+8 tlačítek klávesnice přemapovaných na kódy PicoPad
+(kurzory, Space -&gt; A, Z -&gt; B, Ctrl -&gt;X, BackSpace -&gt;
+Y).</font></p>
+
+<p align="left"><a href="img/picoino.jpg"><font face="Arial"><img
+src="img/picoino_m.jpg" border="0" width="400" height="260"></font></a></p>
+
+<p align="left"><font face="Arial">Picoino 1.0 schéma zapojení:</font></p>
+
+<p align="left"><a href="img/picoino_diagram.png"><font
+face="Arial"><img src="img/picoino_diagram_m.jpg" border="0"
+width="500" height="466"></font></a></p>
+
+<p align="left"><font face="Arial">Picoino 1.0 osazení součástek:</font></p>
+
+<p align="left"><a href="img/picoino_mounting.jpg"><font
+face="Arial"><img src="img/picoino_mounting_m.jpg" border="0"
+width="400" height="283"></font></a></p>
+
+<p align="left"><font face="Arial">Picoino výstup na VGA
+monitor:</font></p>
+
+<p align="left"><a href="img/picovga1.jpg"><font face="Arial"><img
+src="img/picovga1_m.jpg" border="0" width="400" height="319"></font></a></p>
+
+<p align="left"><a name="picoinomini"></a><font face="Arial"><strong>PicoinoMini</strong></font></p>
+
+<p align="left"><font face="Arial">Jako menší bratr PicoPad
+vznikla odlehčená verze Picoino, která má 8-bitový výstup
+RGB332 na VGA displej (mód QVGA 320x240), SD kartu, externí
+konektor jako PicoPad a 8 tlačítek jako PicoPad. Je určena
+především pro tutoriály k programování Raspberry Pico,
+protože umožňuje snadné sestavení z běžných domácích
+zásob - pro výstup na VGA monitor mohou stačit 3 rezistory a
+VGA konektor.</font> <a href="dwn/picoinomini_png.zip"><font
+face="Arial">Download podkladů pro PicoinoMini.</font></a></p>
+
+<p align="left"><a href="img/picoinomini.jpg"><img
+src="img/picoinomini_m.jpg" border="0" width="400" height="303"></a></p>
+
+<p align="left"><font face="Arial">PicoinoMini schéma zapojení:</font></p>
+
+<p align="left"><a href="img/picoinomini_diagram.jpg"><img
+src="img/picoinomini_diagram_m.jpg" border="0" width="500"
+height="291"></a></p>
+
+<p align="left"><font face="Arial">PicoinoMini osazení součástek:</font></p>
+
+<p align="left"><a href="img/picoinomini_mounting.jpg"><font
+face="Arial"><img src="img/picoinomini_mounting_m.jpg" border="0"
+width="400" height="324"></font></a></p>
+
+<p align="left"><font face="Arial">PicoinoMini výstup na VGA
+monitor:</font></p>
+
+<p align="left"><a href="img/picoinomini_vga.jpg"><font
+face="Arial"><img src="img/picoinomini_vga_m.jpg" border="0"
+width="400" height="267"></font></a></p>
+
+<p align="left"><a name="demovga"></a><font face="Arial"><strong>DemoVGA</strong></font></p>
+
+<p align="left"><font face="Arial">DemoVGA je demo modul s
+výstupem na VGA monitor v rozlišení 320x240 pixelů, 16-bitů
+barvy ve formátu RGB565. Obsahuje SD kartu, přídavný
+napájecí USB konektor, výstup na sluchátka a 3 tlačítka. K
+některým programům (typicky hry) se používá externí USB
+klávesnice. </font><a href="dwn/DemoVGA_png.zip"><font
+face="Arial">Download podkladů pro DemoVGA.</font></a></p>
+
+<p align="left"><a href="img/DemoVGA.jpg"><font face="Arial"><strong><img
+src="img/DemoVGA_m.jpg" border="0" width="400" height="300"></strong></font></a></p>
+
+<p align="left"><font face="Arial">DemoVGA schéma zapojení:</font></p>
+
+<p align="left"><a href="img/DemoVGA_diagram.png"><font
+face="Arial"><strong><img src="img/DemoVGA_diagram_m.jpg"
+border="0" width="600" height="280"></strong></font></a></p>
+
+<p align="left"><font face="Arial">DemoVGA osazení součástek:</font></p>
+
+<p align="left"><a href="img/DemoVGA_route.jpg"><font
+face="Arial"><strong><img src="img/DemoVGA_route_m.jpg"
+border="0" width="400" height="325"></strong></font></a></p>
+
+<p align="left"><a name="picotron"></a><font face="Arial"><strong>Picotron</strong></font></p>
+
+<p align="left"><font face="Arial">Picotron je jednoduchý minipočítač
+zaměřený na technické aplikace. Disponuje výstupem na VGA
+displej v rozlišení až 800x600 pixelů, 4-bitový barevný
+výstup v režimu YRGB1111 (16-barevný režim jako v PC-CGA a
+EGA). Dále má SD kartu, sluchátkový audio konektor a
+klávesnici ze 40 mikrospínačů. </font><a
+href="dwn/picotron_png.zip"><font face="Arial">Download podkladů
+pro Picotron</font></a><font face="Arial">.</font></p>
+
+<p align="left"><a href="img/picotron.jpg"><img
+src="img/picotron_m.jpg" border="0" width="400" height="272"></a></p>
+
+<p align="left"><font face="Arial">Picotron schéma zapojení:</font></p>
+
+<p align="left"><a href="img/picotron_diagram.jpg"><img
+src="img/picotron_diagram_m.jpg" border="0" width="500"
+height="654"></a></p>
+
+<p align="left"><font face="Arial">Picotron osazení součástek:</font></p>
+
+<p align="left"><a href="img/picotron_route.jpg"><font
+face="Arial"><strong><img src="img/picotron_route_m.jpg"
+border="0" width="400" height="271"></strong></font></a></p>
+
+<p align="left"><font face="Arial"><strong>Raspberry Pico</strong></font></p>
+
+<p align="left"><font face="Arial">Knihovna je připravena též
+pro základní modul Raspberry Pico, bez přídavného hardware.
+To slouží především ke zkoušení základních tutoriálů
+pro Raspberry Pico.</font></p>
+
+<p align="left"><a href="img/Pico-R3-Pinout.png"><font
+face="Arial"><img src="img/Pico-R3-Pinout_m.jpg" border="0"
+width="400" height="262"></font></a><font face="Arial"><br>
+</font></p>
+
+<p align="left"><a name="samples"></a><font size="5" face="Arial"><strong>Ukázkové
+programy</strong></font></p>
+
+<p align="left"><font face="Arial">Součástí knihovny je připravené
+ukázkové programy a hry. Jsou připraveny obrazy SD karty pro
+jednotlivá cílová zařízení. Před použitím SD karty je
+potřeba do procesoru nahrát boot loader - to je možné buď
+nahrátím programu LOADER.UF2 z root složky obrazu SD karty,
+nebo nahrátím kteréhokoliv jiného programu, protože každý
+program obsahuje současně i boot loader. Programy lze ukončit
+tlačítkem Y a přejít do boot loaderu.</font></p>
+
+<p align="left"><a href="img/games.jpg"><font face="Arial"><img
+src="img/games_m.jpg" border="0" width="640" height="480"></font></a></p>
+
+<p align="left"><font face="Arial"><strong>Config</strong> -
+nastavení konfigurace PicoPad. Nastaví hlasitost, podsvícení
+displeje, referenční napětí ADC, napětí pro měření
+baterie, kalibrace měření teploty, kalibrace frekvence
+krystalu.</font></p>
+
+<p align="left"><font face="Arial"><img src="img/config.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial"><strong>SD-card boot loader</strong>
+- program je nahrán do paměti RAM a umožňuje zapsat nový
+boot loader z SD karty do flash paměti (případně s aplikací).
+Ale také může uložit obsah paměti flash do souboru UF2,
+aniž by se obsah paměti flash spuštěním tohoto programu změnil.</font></p>
+
+<p align="left"><font face="Arial"><img src="img/sdboot.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial"><strong>Frekvenční
+generátor</strong> - generuje obdélníkový signál nebo PWM
+signál (sinus, pila, trojúhelník - sample rate 100 kHz),
+frekvenční rozsah od 0,01 Hz do 100 MHz. Přesnost 5 číslic
+(30 ppm) nebo po kalibraci krystalu 6 číslic (až 3 ppm, podle
+přesnosti kalibrace). Výstup buď na GPIO14 nebo na GPIO15 (s
+reproduktorem).</font></p>
+
+<p align="left"><font face="Arial"><img src="img/freqgen.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial"><strong>Měřič frekvence</strong>
+- měří frekvenci ze 2 vstupů (GPIO1 a GPIO14) v rozsahu
+0,0256 Hz až 100 MHz, s přesností 5 číslic (30 ppm) nebo po
+kalibraci krystalu 6 číslic (až 3 ppm, podle přesnosti
+kalibrace). Měří s plnou přesností i nízké kmitočty, tj.
+nejedná se jen o jednoduchý čítač pulzů. Během měření
+kombinuje 3 různé metody, s využitím obou PIO.</font></p>
+
+<p align="left"><font face="Arial"><img src="img/freqmet.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial"><strong>RC metr</strong> - měří
+odpor rezistorů, kapacitu a ESR kondenzátorů. Podle následujícího
+schématu je zapotřebí adaptér s 5 rezistory, připojený k
+externímu konektoru. GPIO0 ... rezistor 200 ohmů, GPIO1 ...
+rezistor 2 Kohm, GPIO14 ... rezistor 20 Kohm, GPIO26 ... rezistor
+200 Kohm, GPIO27 ... rezistor 2 Mohm, GPIO28 ... testovací
+vstup. V případě PicoPadVGA je nutné vypnout výstupní piny
+VGA pomocí přepínače DIL. Rezistory: 0,1 ohm až 100 Mohm,
+přesnost 5 % (nižší na koncích rozsahu). Kondenzátory: 5 pF
+až 5 mF, přesnost 10 %. Metoda měření kondenzátorů využívá
+logaritmickou regresi křivek nabíjení a vybíjení
+kondenzátoru.</font></p>
+
+<p align="left"><font face="Arial"><img src="img/rcmeter.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial"><img
+src="img/rcmeter_diagram.jpg" width="400" height="270"></font></p>
+
+<p align="left"><font face="Arial"><img src="img/141PF.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial"><strong>141-PF</strong> -
+emulátor kalkulačky s procesorem Intel 4004.</font></p>
+
+<p align="left"><font face="Arial"><img src="img/I8086.jpg"
+width="320" height="240"> <img src="img/FileSel.jpg" width="320"
+height="240"></font></p>
+
+<p align="left"><font face="Arial">Testovací emulátory mnoha
+procesorů, spolu s ukázkovými aplikacemi.<br>
+</font></p>
+
+<h2 align="left"><a name="video"></a><font face="Arial">Ukázková
+videa</font></h2>
+
+<p align="left"><font face="Arial">Videa lze přehrávat
+programem VIDEO.UF2 na zařízeních PicoPad a DemoVGA. Byla
+vygenerována pomocí programu PicoPadVideo. Videa je nutné
+nahrát na SD kartu do složky /VIDEO.</font></p>
+
+<p align="left"><a href="dwn/PicoPad_video.zip"><font
+face="Arial">Download základní sady (310 MB)</font></a><font
+face="Arial">, sada obsahuje:</font></p>
+
+<p align="left"><font face="Arial"><strong>BIRDS</strong> .....
+(00:44, 17 MB) Dva hašteřiví ptáčkové v kleci<br>
+<strong>CANORA</strong> .... (00:29, 11 MB) Česká středověká
+hudební skupina Canora <br>
+<strong>CORALS</strong> .... (05:42, 134 MB) Ryby v Egyptě mezi
+korály<br>
+<strong>MANDEL</strong> .... (09:05, 214 MB) Mandelbrot Fractal
+Deep Zoom 10^220</font></p>
+
+<p align="left"><font face="Arial">Download další ukázková
+videa (z důvodu ukončení činnosti serveru Ulozto jsou odkazy
+nefunkční, pouze pro ilustraci):</font></p>
+
+<p align="left"><a
+href="https://ulozto.cz/file/PTsvxBnEoaAG/bugs-bunny-rabbit-season-and-duck-season-picopad-video-zip"><font
+face="Arial"><strong>BUNNY</strong></font></a><font face="Arial">
+..... (04:56, 116 MB) Bugs Bunny - králičí sezóna a kachní
+sezóna (Anglický dabing)<br>
+</font><a
+href="https://ulozto.cz/file/Xa6rOmn8VLJE/cimrman-dlouhy-siroky-a-kratkozraky-picopad-video-zip"><font
+face="Arial"><strong>CIMRMAN</strong></font></a><font
+face="Arial"> ... (66:09, 1556 MB) Cimrman - Dlouhý, Široký a
+Krátkozraký<br>
+</font><a
+href="https://ulozto.cz/file/lNBP4wHehg0t/kyary-pamyu-pamyu-ring-a-bell-picopad-video-zip"><font
+face="Arial"><strong>KYARY</strong></font></a><font face="Arial">
+..... (04:18, 101 MB) Kyary Pamyu Pamyu - Ring a Bell<br>
+</font><a
+href="https://ulozto.cz/file/V3PVwvzhPNJA/minion-madness-picopad-video-zip"><font
+face="Arial"><strong>MINION</strong></font></a><font face="Arial">
+.... (12:12, 287 MB) Minion Madness<br>
+</font><a
+href="https://ulozto.cz/file/NdY3YFJfB18D/jak-krtek-ke-kalhotkam-prisel-picopad-video-zip"><font
+face="Arial"><strong>MOLE</strong></font></a><font face="Arial">
+...... (13:01, 307 MB) Jak krtek ke kalhotkám přišel<br>
+</font><a
+href="https://ulozto.cz/file/U71XTOlNdTme/final-song-from-shrek-1-picopad-video-zip"><font
+face="Arial"><strong>SHREK</strong></font></a><font face="Arial">
+..... (00:59, 23 MB) Závěrečná písnička ze Shrek 1<br>
+</font><a
+href="https://ulozto.cz/file/XyTdhZsPng6N/snehurka-a-sedm-trpasliku-picopad-video-zip"><font
+face="Arial"><strong>SNOWHITE</strong></font></a><font
+face="Arial"> ..... (80:07, 1885 MB) Sněhurka a sedm trpaslíků
+(Český dabing)<br>
+</font><a
+href="https://ulozto.cz/file/6rCVsX9TKtIt/troopers-picopad-video-zip"><font
+face="Arial"><strong>TROOPERS</strong></font></a><font
+face="Arial"> .. (53:20 1255 MB) Troopeři</font></p>
+
+<h2 align="left"><a href="img/demo_video.png"><font face="Arial"><img
+src="img/demo_video_m.jpg" border="0" width="400" height="300"></font></a><font
+face="Arial"><br>
+</font></h2>
+
+<h2 align="left"><a name="pictor"></a><font face="Arial">Hra
+Pictor</font></h2>
+
+<p align="left"><font face="Arial"><strong>Pictor</strong>
+(Picopad Collector) je střílecí hra. Vznikla ve dvou verzích.
+Jednak pro konzoli Picopad, s rozlišením grafiky 320x240 pixelů,
+a jednak jako Windows aplikace, s vyšším rozlišením grafiky
+960x720 pixelů a s vyšší kvalitou zvuku. Hra obsahuje 12
+pozadí (pro 12 scén), 13 aktorů, 36 nepřátel a 12 hudebních
+smyček. Hra je k dispozici spolu se zdrojovými kódy jako Open
+Source a je možné ji, nebo její části, používat k
+libovolným účelům. Zdrojové kódy Windows verze hry je možné
+překládat pomocí MS VC++ 2005.</font></p>
+
+<p align="left"><font face="Arial">Pictor pro Windows a Pictor
+pro Picopad:</font></p>
+
+<p align="left"><a href="img/Pictor.png"><font face="Arial"><img
+src="img/Pictor_m.jpg" border="0" width="400" height="300"></font></a><font
+face="Arial"> </font><a href="img/Pictor2.png"><font face="Arial"><img
+src="img/Pictor_Picopad.jpg" border="0" width="400" height="300"></font></a></p>
+
+<p align="left"><a href="dwn/Pictor.zip"><font face="Arial">Download
+Pictor pro Windows (45 MB)</font></a></p>
+
+<p align="left"><a href="dwn/Pictor_src.zip"><font face="Arial">Download
+Pictor pro Windows, spolu se zdrojovým kódem (90 MB)</font></a></p>
+
+<p align="left"><font face="Arial">Pictor na Github, Windows
+verze: </font><a href="https://github.com/Panda381/Pictor"><font
+face="Arial">https://github.com/Panda381/Pictor</font></a></p>
+
+<p align="left"><font face="Arial">Pictor na Github, verze pro
+konzoli Picopad: </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/PicoPad/GAME/PICTOR"><font
+face="Arial">https://github.com/Panda381/PicoLibSDK/tree/main/PicoPad/GAME/PICTOR</font></a></p>
+
+<p align="left"><font face="Arial">Pictor UF2 pro Picopad: </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/!PicoPad10/GAME"><font
+face="Arial">https://github.com/Panda381/PicoLibSDK/tree/main/!PicoPad10/GAME</font></a><font
+face="Arial"><br>
+</font></p>
+
+<h2 align="left"><a name="gameboy"></a><font face="Arial">Game
+Boy Emulator</font></h2>
+
+<p align="left"><font face="Arial">Emulátor her pro Game Boy
+Mono a Game Boy Color pro Picopad, Picopad2 a PicopadHSTX (v ARM
+i RISC-V módu). Bylo otestováno a připraveno 573 her ve
+spustitelném tvaru UF2, z toho 271 her je pro Game Boy Mono a
+302 her je pro Game Boy Color. Všechny hry pro Game Boy Mono
+jsou kolorizované. Úspěšnost emulace je 80%. 15% původních
+her je nefunkčních (nejsou součástí balíku) a 5% her je
+sice funkčních, ale mají estetické vady grafiky (např.
+roztřesený úvodní obrázek). Tlačítka X=START, Y=SELECT.
+Kombinace Y+Nahoru vyvolá herní menu (uložení hry).</font></p>
+
+<p align="left"><font face="Arial">Z důvodu autorských práv
+nelze poskytnout hry ke stažení. Vlastníte-li legální kopii
+hry ve formátu souborů *.GB nebo *.GBC, můžete k emulaci na
+Picopad použít některou z následujících možností:</font></p>
+
+<ul>
+    <li><p align="left"><font face="Arial">Může být možné
+        nalézt vaši hru v archivech připravených her na některém
+        serveru, např. </font><a
+        href="https://webshare.cz/#/search?what=picopad"><font
+        face="Arial">webshare</font></a><font face="Arial"> nebo </font><a
+        href="https://datoid.cz/s/picopad"><font face="Arial">datoid</font></a><font
+        face="Arial">. Hru v archivu vyhledejte podle jména
+        uvedeného v seznamu níže. Hru spustíte nahrátím
+        souboru *.UF2 do Picopad. K dispozici jsou překlady pro
+        Picopad1 (modul Pico1 s RP2040), pro Picopad2 (modul
+        Pico2 s RP2350) v ARM i RISC-V módu a pro PicopadHSTX
+        (modul Pico2 s RP2350) v ARM i RISC-V módu.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial">Hru můžete
+        zkonvertovat do spustitelného tvaru *.UF2 pomocí
+        aplikace APPS. Hru nahrajete na SD kartu a vyberete ji v
+        seznamu her v APPS.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial">Hru si můžete
+        přeložit do spustitelného tvaru *.UF2 sami. Potřebujete
+        k tomu zdrojový kód emulátoru, knihovnu PicoLibSDK a
+        kompilátor GCC ARM. Hru uložíte do složky
+        &quot;samples&quot; a přeložíte ji pod Windows
+        povelovým souborem &quot;c_all_samples.bat&quot;. V
+        systému Linux budete potřebovat nejdříve přeložit
+        podpůrný program GBprep, připravit program příkazem
+        s GBprep a zkompilovat pomocí c.sh.</font></p>
+    </li>
+</ul>
+
+<p align="left"><a href="dwn/GameBoySrc.zip"><font face="Arial">Download
+zdrojového kódu emulátoru</font></a></p>
+
+<p align="left"><a href="dwn/GameBoyData.zip"><font face="Arial">Download
+obsahu SD karty - pouze data (texty a obrázky) bez
+spustitelných souborů</font></a></p>
+
+<p align="left"><a href="dwn/GameBoyList.txt"><font face="Arial">Seznam
+her TXT (krátké DOS jméno a plné jméno hry)</font></a></p>
+
+<p align="left"><font face="Arial">Náhledy her: </font><a
+href="img/preview01.png"><font face="Arial">1</font></a><font
+face="Arial"> - </font><a href="img/preview02.png"><font
+face="Arial">2</font></a><font face="Arial"> - </font><a
+href="img/preview03.png"><font face="Arial">3</font></a><font
+face="Arial"> - </font><a href="img/preview04.png"><font
+face="Arial">4</font></a><font face="Arial"> - </font><a
+href="img/preview05.png"><font face="Arial">5</font></a><font
+face="Arial"> - </font><a href="img/preview06.png"><font
+face="Arial">6</font></a><font face="Arial"> - </font><a
+href="img/preview07.png"><font face="Arial">7</font></a><font
+face="Arial"> - </font><a href="img/preview08.png"><font
+face="Arial">8</font></a><font face="Arial"> - </font><a
+href="img/preview09.png"><font face="Arial">9</font></a><font
+face="Arial"> - </font><a href="img/preview10.png"><font
+face="Arial">10</font></a><font face="Arial"> - </font><a
+href="img/preview11.png"><font face="Arial">11</font></a><font
+face="Arial"> - </font><a href="img/preview12.png"><font
+face="Arial">12</font></a><font face="Arial"> - </font><a
+href="img/preview13.png"><font face="Arial">13</font></a><font
+face="Arial"> - </font><a href="img/preview14.png"><font
+face="Arial">14</font></a><font face="Arial"> - </font><a
+href="img/preview15.png"><font face="Arial">15</font></a><font
+face="Arial"> - </font><a href="img/preview16.png"><font
+face="Arial">16</font></a><font face="Arial"> - </font><a
+href="img/preview17.png"><font face="Arial">17</font></a><font
+face="Arial"> - </font><a href="img/preview18.png"><font
+face="Arial">18</font></a><font face="Arial"> - </font><a
+href="img/preview19.png"><font face="Arial">19</font></a><font
+face="Arial"> - </font><a href="img/preview20.png"><font
+face="Arial">20</font></a><font face="Arial"> - </font><a
+href="img/preview21.png"><font face="Arial">21</font></a><font
+face="Arial"> - </font><a href="img/preview22.png"><font
+face="Arial">22</font></a><font face="Arial"> - </font><a
+href="img/preview23.png"><font face="Arial">23</font></a><font
+face="Arial"> - </font><a href="img/preview24.png"><font
+face="Arial">24</font></a><font face="Arial"> - </font><a
+href="dwn/GameBoyPreview.zip"><font face="Arial">Vše (24 stránek)</font></a><font
+face="Arial"> - </font><a href="dwn/GameBoyPNG.zip"><font
+face="Arial">Vše (PNG soubory)</font></a></p>
+
+<p align="left"><font face="Arial"><img src="img/gameboy.jpg"
+width="800" height="600"></font></p>
+
+<p align="left">&nbsp;</p>
+
+<h2 align="left"><a name="nes"></a><font face="Arial">NES
+Emulator</font></h2>
+
+<p align="left"><font face="Arial">Emulátor her pro NES pro
+Picopad, Picopad2 a PicopadHSTX (v ARM i RISC-V módu). Bylo
+otestováno a připraveno 1549 her ve spustitelném tvaru UF2.
+Tlačítka X=START, Y=SELECT. Kombinace Y+Nahoru vyvolá herní
+menu (uložení hry).</font></p>
+
+<p align="left"><font face="Arial">Z důvodu autorských práv
+nelze poskytnout hry ke stažení. Vlastníte-li legální kopii
+hry ve formátu souborů *.NES, můžete k emulaci na Picopad
+použít některou z následujících možností:</font></p>
+
+<ul>
+    <li><p align="left"><font face="Arial">Může být možné
+        nalézt vaši hru v archivech připravených her na některém
+        serveru, např. </font><a
+        href="https://webshare.cz/#/search?what=picopad"><font
+        face="Arial">webshare</font></a><font face="Arial"> nebo </font><a
+        href="https://datoid.cz/s/picopad"><font face="Arial">datoid</font></a><font
+        face="Arial">. Hru v archivu vyhledejte podle jména
+        uvedeného v seznamu níže. Hru spustíte nahrátím
+        souboru *.UF2 do Picopad. K dispozici jsou překlady pro
+        Picopad1 (modul Pico1 s RP2040), pro Picopad2 (modul
+        Pico2 s RP2350) v ARM i RISC-V módu a pro PicopadHSTX
+        (modul Pico2 s RP2350) v ARM i RISC-V módu.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial">Hru můžete
+        zkonvertovat do spustitelného tvaru *.UF2 pomocí
+        aplikace APPS. Hru nahrajete na SD kartu a vyberete ji v
+        seznamu her v APPS.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial">Hru si můžete
+        přeložit do spustitelného tvaru *.UF2 sami. Potřebujete
+        k tomu zdrojový kód emulátoru, knihovnu PicoLibSDK a
+        kompilátor GCC ARM. Hru uložíte do složky
+        &quot;samples&quot; a přeložíte ji pod Windows
+        povelovým souborem &quot;c_all_samples.bat&quot;. V
+        systému Linux budete potřebovat nejdříve přeložit
+        podpůrný program NESprep, připravit program příkazem
+        s NESprep a zkompilovat pomocí c.sh.</font></p>
+    </li>
+</ul>
+
+<p align="left"><a href="dwn/NesSrc.zip"><font face="Arial">Download
+zdrojového kódu emulátoru</font></a></p>
+
+<p align="left"><a href="dwn/NesData.zip"><font face="Arial">Download
+obsahu SD karty - pouze data (texty a obrázky) bez
+spustitelných souborů</font></a></p>
+
+<p align="left"><a href="dwn/NesList.txt"><font face="Arial">Seznam
+her TXT (krátké DOS jméno a plné jméno hry)</font></a></p>
+
+<p align="left"><font face="Arial">Náhledy her: </font><a
+href="img/nes_01.png"><font face="Arial">1</font></a><font
+face="Arial"> - </font><a href="img/nes_02.png"><font
+face="Arial">2</font></a><font face="Arial"> - </font><a
+href="img/nes_03.png"><font face="Arial">3</font></a><font
+face="Arial"> - </font><a href="img/nes_04.png"><font
+face="Arial">4</font></a><font face="Arial"> - </font><a
+href="img/nes_05.png"><font face="Arial">5</font></a><font
+face="Arial"> - </font><a href="img/nes_06.png"><font
+face="Arial">6</font></a><font face="Arial"> - </font><a
+href="img/nes_07.png"><font face="Arial">7</font></a><font
+face="Arial"> - </font><a href="img/nes_08.png"><font
+face="Arial">8</font></a><font face="Arial"> - </font><a
+href="img/nes_09.png"><font face="Arial">9</font></a><font
+face="Arial"> - </font><a href="img/nes_10.png"><font
+face="Arial">10</font></a><font face="Arial"> - </font><a
+href="img/nes_11.png"><font face="Arial">11</font></a><font
+face="Arial"> - </font><a href="img/nes_12.png"><font
+face="Arial">12</font></a><font face="Arial"> - </font><a
+href="img/nes_13.png"><font face="Arial">13</font></a><font
+face="Arial"> - </font><a href="img/nes_14.png"><font
+face="Arial">14</font></a><font face="Arial"> - </font><a
+href="img/nes_15.png"><font face="Arial">15</font></a><font
+face="Arial"> - </font><a href="img/nes_16.png"><font
+face="Arial">16</font></a><font face="Arial"> - </font><a
+href="img/nes_17.png"><font face="Arial">17</font></a><font
+face="Arial"> - </font><a href="img/nes_18.png"><font
+face="Arial">18</font></a><font face="Arial"> - </font><a
+href="img/nes_19.png"><font face="Arial">19</font></a><font
+face="Arial"> - </font><a href="img/nes_20.png"><font
+face="Arial">20</font></a><font face="Arial"> - </font><a
+href="img/nes_21.png"><font face="Arial">21</font></a><font
+face="Arial"> - </font><a href="img/nes_22.png"><font
+face="Arial">22</font></a><font face="Arial"> - </font><a
+href="img/nes_23.png"><font face="Arial">23</font></a><font
+face="Arial"> - </font><a href="img/nes_24.png"><font
+face="Arial">24</font></a><font face="Arial"> - </font><a
+href="img/nes_25.png"><font face="Arial">25</font></a><font
+face="Arial"> - </font><a href="img/nes_26.png"><font
+face="Arial">26</font></a><font face="Arial"> - </font><a
+href="img/nes_27.png"><font face="Arial">27</font></a><font
+face="Arial"> - </font><a href="img/nes_28.png"><font
+face="Arial">28</font></a><font face="Arial"> - </font><a
+href="img/nes_29.png"><font face="Arial">29</font></a><font
+face="Arial"> - </font><a href="img/nes_30.png"><font
+face="Arial">30</font></a><font face="Arial"> - </font><a
+href="img/nes_31.png"><font face="Arial">31</font></a><font
+face="Arial"> - </font><a href="img/nes_32.png"><font
+face="Arial">32</font></a><font face="Arial"> - </font><a
+href="img/nes_33.png"><font face="Arial">33</font></a><font
+face="Arial"> - </font><a href="img/nes_34.png"><font
+face="Arial">34</font></a><font face="Arial"> - </font><a
+href="img/nes_35.png"><font face="Arial">35</font></a><font
+face="Arial"> - </font><a href="img/nes_36.png"><font
+face="Arial">36</font></a><font face="Arial"> - </font><a
+href="img/nes_37.png"><font face="Arial">37</font></a><font
+face="Arial"> - </font><a href="img/nes_38.png"><font
+face="Arial">38</font></a><font face="Arial"> - </font><a
+href="img/nes_39.png"><font face="Arial">39</font></a><font
+face="Arial"> - </font><a href="img/nes_40.png"><font
+face="Arial">40</font></a><font face="Arial"> - </font><a
+href="img/nes_41.png"><font face="Arial">41</font></a><font
+face="Arial"> - </font><a href="img/nes_42.png"><font
+face="Arial">42</font></a><font face="Arial"> - </font><a
+href="img/nes_43.png"><font face="Arial">43</font></a><font
+face="Arial"> - </font><a href="img/nes_44.png"><font
+face="Arial">44</font></a><font face="Arial"> - </font><a
+href="img/nes_45.png"><font face="Arial">45</font></a><font
+face="Arial"> - </font><a href="img/nes_46.png"><font
+face="Arial">46</font></a><font face="Arial"> - </font><a
+href="img/nes_47.png"><font face="Arial">47</font></a><font
+face="Arial"> - </font><a href="img/nes_48.png"><font
+face="Arial">48</font></a><font face="Arial"> - </font><a
+href="img/nes_49.png"><font face="Arial">49</font></a><font
+face="Arial"> - </font><a href="img/nes_50.png"><font
+face="Arial">50</font></a><font face="Arial"> - </font><a
+href="img/nes_51.png"><font face="Arial">51</font></a><font
+face="Arial"> - </font><a href="img/nes_52.png"><font
+face="Arial">52</font></a><font face="Arial"> - </font><a
+href="img/nes_53.png"><font face="Arial">53</font></a><font
+face="Arial"> - </font><a href="img/nes_54.png"><font
+face="Arial">54</font></a><font face="Arial"> - </font><a
+href="img/nes_55.png"><font face="Arial">55</font></a><font
+face="Arial"> - </font><a href="img/nes_56.png"><font
+face="Arial">56</font></a><font face="Arial"> - </font><a
+href="img/nes_57.png"><font face="Arial">57</font></a><font
+face="Arial"> - </font><a href="img/nes_58.png"><font
+face="Arial">58</font></a><font face="Arial"> - </font><a
+href="img/nes_59.png"><font face="Arial">59</font></a><font
+face="Arial"> - </font><a href="img/nes_60.png"><font
+face="Arial">60</font></a><font face="Arial"> - </font><a
+href="img/nes_61.png"><font face="Arial">61</font></a><font
+face="Arial"> - </font><a href="img/nes_62.png"><font
+face="Arial">62</font></a><font face="Arial"> - </font><a
+href="img/nes_63.png"><font face="Arial">63</font></a><font
+face="Arial"> - </font><a href="img/nes_64.png"><font
+face="Arial">64</font></a><font face="Arial"> - </font><a
+href="img/nes_65.png"><font face="Arial">65</font></a><font
+face="Arial"> - </font><a href="dwn/NesPreview.zip"><font
+face="Arial">Vše (65 stránek)</font></a><font face="Arial"> - </font><a
+href="dwn/NesPNG.zip"><font face="Arial">Vše (PNG soubory)</font></a></p>
+
+<p align="left"><font face="Arial"><img src="img/nes.jpg"
+width="800" height="600"></font></p>
+
+<p align="left">&nbsp;</p>
+
+<h2 align="left"><a name="float"></a><font face="Arial">Časování
+floating-point funkcí RP2040 (Pico1) a RP2350 (Pico2)</font></h2>
+
+<p align="left"><font face="Arial">V následujících tabulkách
+jsou uvedeny naměřené průměrné časy floating-point funkcí
+SDK knihovny pro procesory RP2040 (Pico1) a RP2350 (Pico2). Byly
+testovány jak režimy se standardní libc knihovnou, tak i
+optimalizované verze. Tučným písmem jsou označeny typické
+konfigurace s maximální akcelerací.</font></p>
+
+<p align="left"><a href="dwn/Timing.htm"><font face="Arial">Tabulka
+v HTM formátu</font></a></p>
+
+<p align="left"><a href="dwn/Timing.pdf"><font face="Arial">Tabulka
+v PDF formátu</font></a></p>
+
+<p align="left"><a href="dwn/fputest.zip"><font face="Arial">Download
+tabulek spolu se zdrojovým kódem testů</font></a></p>
+
+<p align="left"><font face="Arial">Rychlejší výpočet základních
+float funkcí pro RP2350 v RISC-V módu: </font><a
+href="sdk_float_riscv.S"><font face="Arial">sdk_float_riscv.S</font></a></p>
+
+<p align="left"><font face="Arial">Rychlejší výpočet vědeckých
+float funkcí pro RP2350 v RISC-V módu: </font><a
+href="sdk_float_riscv_sci.S"><font face="Arial">sdk_float_riscv_sci.S</font></a></p>
+
+<p align="left"><font face="Arial">Šablona rychlých float
+funkcí v C: </font><a href="sdk_float_riscv_sci.c"><font
+face="Arial">sdk_float_riscv_sci.c</font></a></p>
+
+<p align="left"><font face="Arial">Rychlejší výpočet základních
+double funkcí pro RP2350 v RISC-V módu: </font><a
+href="sdk_double_riscv.S"><font face="Arial">sdk_double_riscv.S</font></a></p>
+
+<p align="left"><font face="Arial">Rychlejší výpočet vědeckých
+double funkcí pro RP2350 v RISC-V módu: </font><a
+href="sdk_double_riscv_sci.S"><font face="Arial">sdk_double_riscv_sci.S</font></a></p>
+
+<p align="left"><font face="Arial">Šablona rychlých double
+funkcí v C: </font><a href="sdk_double_riscv_sci.c"><font
+face="Arial">sdk_double_riscv_sci.c</font></a></p>
+
+<p align="left"><font face="Arial">Stručný přehled rychlosti
+hlavních akcelerovaných funkcí RISC-V Hazard3:</font></p>
+
+<p align="left"><img src="img/timings_riscv.jpg" width="552"
+height="523"></p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><a name="disphstx"></a><font size="5"
+face="Arial"><strong>DispHSTX - Driver DVI (HDMI) a VGA displeje
+pro Pico2 RP2350</strong></font></p>
+
+<p align="left"><font face="Arial">DispHSTX je driver pro
+mikrokontrolér Pico2 RP2350, v režimu ARMv8 i RISC-V Hazard3,
+umožňující generovat DVI (HDMI) a VGA videosignál pomocí
+periferie HSTX. Podporuje 40 různých obrazových formátů - 9
+režimů pixelové grafiky, 2 textové režimy, atributovou
+kompresi, kompresi RLE a HSTX. Pro 8 základních grafických režimů
+jsou k dispozici funkce pro kreslení geometrických tvarů, obrázků
+a textů. Kreslící knihovna podporuje back buffer - aktualizuje
+hranice označující modifikovanou oblast. Při nedostatku
+paměti lze back buffer použít v režimu pruhů. Různé
+grafické obrazové formáty lze kombinovat na jedné obrazovce dělením
+obrazovky na pruhy a sloty. V obou režimech, DVI (HDMI) i VGA,
+je možné barevné rozlišení až 16 bitů na pixel. Ačkoli v
+režimu VGA je výstup pouze přes 6bitový převodník RGB, vyššího
+barevného rozlišení je dosaženo pomocí pulzní modulace PPM
+(Pulse Pattern Modulation), zobrazení se vizuálně blíží
+15bitovému displeji. Časování generovaného videosignálu je
+omezeno pouze možnostmi přetaktování použitého
+mikrokontroléru. Obvykle je možné dosáhnout rozlišení až
+1440x600 pixelů. K dispozici je též mini verze driveru,
+DispHSTXMini, která je omezena pouze na videomód 320x240 pixelů,
+avšak umožňuje přetaktování systémových hodin a malou
+zátěž procesoru.</font></p>
+
+<p align="left"><font face="Arial">DispHSTX driver je rozsáhlý,
+bližší informace k němu naleznete na samostatných odkazech:</font></p>
+
+<p align="left"><font face="Arial">DispHSTX na GitHub: </font><a
+href="https://github.com/Panda381/DispHSTX"><font face="Arial">https://github.com/Panda381/DispHSTX</font></a></p>
+
+<p align="left"><font face="Arial">DispHSTX web stránka: </font><a
+href="https://www.breatharian.eu/hw/disphstx/index.html"><font
+face="Arial">https://www.breatharian.eu/hw/disphstx/index.html</font></a></p>
+
+<p align="left"><font face="Arial">DispHSTX demo příklad v
+PicoLibSDK: </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/Pico/DispHSTX/HSTXDemo"><font
+face="Arial">https://github.com/Panda381/PicoLibSDK/tree/main/Pico/DispHSTX/HSTXDemo</font></a></p>
+
+<p align="left"><font face="Arial"><img src="img/DispHSTX_m.jpg"
+width="400" height="300"></font></p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><a name="mp3"></a><font size="5" face="Arial"><strong>MP3
+přehrávač</strong></font></p>
+
+<p align="left"><font face="Arial">Ukázkové programy PicoLibSDK
+obsahují aplikace pro přehrávání souborů MP3. Program nabídne
+přehrávání seznamu souborů MP3 ze své domovské složky a z
+podsložek. Při spuštění ze zavaděče předá zavaděč
+programu informace o cestě k domovské složce. Program MP3 lze
+uložit do libovolné složky, ale pokud je to možné, doporučuje
+se použít výchozí složku /MP3.</font></p>
+
+<p align="left"><font face="Arial">Při spuštění se zobrazí
+seznam složek a seznam skladeb MP3. V seznamu lze používat tlačítka:
+A = spuštění přehrávání nebo vnoření do složky, B =
+spuštění přehrávání od začátku, Y = návrat o jednu složku
+výše nebo konec programu.</font></p>
+
+<p align="left"><font face="Arial">Při přehrávání skladby se
+zobrazí obrázek BMP se stejným názvem jako MP3. Soubor BMP
+musí být ve formátu RGB565 (ve Photoshopu nelze použít
+ukládání v 16bitovém režimu, je třeba použít rozšířený
+režim RGB565) a o velikosti 320x240 pixelů. Pokud obrázek
+není k dispozici, zobrazí se pouze informační stránka.</font></p>
+
+<p align="left"><font face="Arial">Během přehrávání lze použít
+tlačítka Vlevo/vpravo = posun o 10 sekund, Nahoru/Dolů = ovládání
+hlasitosti, A = předchozí stopa, B = následující stopa, X =
+přepínání mezi obrázkem a informační stránkou a
+pozastavení skladby, Y = konec přehrávání.</font></p>
+
+<p align="left"><font face="Arial"><img src="img/MP3_GP01.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial">V dolní části informační
+stránky jsou 2 řádky sloužící pro informace o ladění.
+'Poll' zobrazuje čas potřebný k načtení jednoho frame z SD
+karty. Tato položka musí být menší než položka
+'FrameTime', jinak hrozí výpadek zvuku. Položka 'Decode'
+podobně ukazuje čas potřebný k dekódování jednoho frame.
+Hodnota musí být opět nižší než „FrameTime“. Položka
+„buf“ zobrazuje tři hodnoty - zaplnění vstupní
+vyrovnávací paměti při čtení frame, zaplnění vstupní
+vyrovnávací paměti při dekódování frame a zaplnění
+výstupní vyrovnávací paměti při dekódování frame. Pokud
+jsou hodnoty nízké, hrozí výpadek zvuku.</font></p>
+
+<p align="left"><font face="Arial">Aplikace MP3 přehrávače
+existuje ve dvou verzích. Základní varianta MP3.UF2 přehrává
+hudbu v MONO na interním reproduktoru Picopadu. Varianta
+MP3_GP01.UF2 přehrává hudbu v režimu STEREO na výstupní
+piny GPIO0 a GPIO1 (konektor Ext na Picopad). Doporučuje se
+použít následující zapojení:</font></p>
+
+<p align="left"><font face="Arial"><img src="img/MP3_diagram.jpg"
+width="509" height="215"></font></p>
+
+<p align="left"><font face="Arial">Výstup zvuku probíhá přes
+12-bitový PWM se vzorkovací frekvencí 123 kHz. Na některých
+zařízeních může být slyšitelný šum a rušení na pozadí
+- do zvuku se mohou indukovat signály z SD karty a z měniče
+napětí.</font></p>
+
+<p align="left"><font face="Arial">&gt;&gt;&gt; </font><a
+href="https://www.youtube.com/watch?v=vlbYJt3-EwI"><font
+face="Arial">Demo video na YouTube</font></a><font face="Arial">
+&lt;&lt;&lt;</font></p>
+
+<p align="left"><font face="Arial"><img src="img/MP3_GP01B.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial">K přehrávači je k dispozici
+ukázková sada skladeb, ve stylu různých interpretů,
+vytvořená v nástroji Suno AI. Celkem je to 248 skladeb,
+obsahujících 13 hodin hudby. Skladby lze stáhnout zde.</font></p>
+
+<p align="left"><a href="dwn/MP3_1.zip"><font face="Arial">Download
+skladeb část 1</font></a><font face="Arial"> (200 MB): styly
+ABBA, The Beatles, Breton Celtic, Classical</font></p>
+
+<p align="left"><a href="dwn/MP3_2.zip"><font face="Arial">Download
+skladeb část 2</font></a><font face="Arial"> (224 MB): styly
+Computer, Cyberpunk, Enya, Folk</font></p>
+
+<p align="left"><a href="dwn/MP3_3.zip"><font face="Arial">Download
+skladeb část 3</font></a><font face="Arial"> (213 MB): styly
+Children, Jean-Michel Jarre, J-pop</font></p>
+
+<p align="left"><a href="dwn/MP3_4.zip"><font face="Arial">Download
+skladeb část 4</font></a><font face="Arial"> (217 MB): styly
+Loreena McKennitt, Medieval, Meditation, Metal, Vox Angeli</font></p>
+
+<p align="left"><a href="dwn/MP3_5.zip"><font face="Arial">Download
+skladeb část 5</font></a><font face="Arial"> (207 MB): styly
+Mixed, Nightwish s Tarja Turunen, Mike Oldfield</font></p>
+
+<p align="left"><font face="Arial">Download programu: </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/!PicoPad10/MP3"><font
+face="Arial">Picopad1</font></a><font face="Arial">, </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/!PicoPad20/MP3"><font
+face="Arial">Picopad2</font></a><font face="Arial">, </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/!PicoPad20riscv/MP3"><font
+face="Arial">Picopad2riscv</font></a><font face="Arial">.</font></p>
+
+<p align="left"><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/_lib/mp3"><font
+face="Arial">Zdrojový kód MP3 knihovny</font></a><font
+face="Arial">, </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/PicoPad/MP3/MP3"><font
+face="Arial">zdrojový kód MP3 přehrávače</font></a><font
+face="Arial">.</font></p>
+
+<p align="left"><font face="Arial"></font>&nbsp;</p>
+
+<p align="left"><a name="kaleidoscopico"><font size="5"
+face="Arial"><strong></strong></font></a><font size="5"
+face="Arial"><strong>Kaleidoscopico</strong></font></p>
+
+<p align="left"><font face="Arial">Tento projekt nemá nic
+společného s knihovnou PicoLibSDK, a ani nejsem jeho autorem.
+Autorem je geniální hudebník a programátor Linus Akesson ze
+Švédska. Je to vzorová ukázka toho, co dokáže schopný
+programátor dosáhnout s modulem Raspberry Pico 2. I když
+ocení to spíše jen programátoři, kteří vědí, jak je
+něco takového extrémně obtížné dosáhnout. Mimochodem, já
+bych tohle rozhodně neuměl vytvořit. Jedná se o grafické a
+hudební demo, s výstupem na VGA monitor v rozlišení
+1024x768/60Hz. Procesor přitom pracuje na frekvenci jen 130 MHz
+(!). Program tvoří 17000 řádků RISC-V assembleru a
+využívá do krajnosti všech možností procesoru RP2350.
+Výsledná animace je tak úžasná, že jsem si musel modul
+Kaleidoscopico postavit, abych ji mohl vidět na vlastní oči.</font></p>
+
+<p align="left"><font face="Arial">Schéma zapojení je
+jednoduché a lze ho realizovat i na kontaktním poli. Já si
+vyrobil plošný spoj, protože jsem chtěl mít zařízení
+kompaktní. Odpory pro VGA by měly sice mít vyšší přesnost,
+ale kvalitě obrazu moc neublíží když použijete blízké
+hodnoty jako já - 470, 1K0, 2K2 a 4K7.</font></p>
+
+<p align="left"><font face="Arial">Nahrál jsem záznam dema -
+záměrně kamerou a jen v ruce, z důvodu autentičnosti, aby
+bylo lépe vidět jak demo vypadá v reálu a že se skutečně
+vše generuje programově v reálném čase: </font><a
+href="https://www.youtube.com/watch?v=XT4kAaerATs"><font
+face="Arial">https://www.youtube.com/watch?v=XT4kAaerATs</font></a></p>
+
+<p align="left"><a href="img/Kaleidoscopico.jpg"><font
+face="Arial"><img src="img/Kaleidoscopico_m.jpg" border="0"
+width="400" height="398"></font></a><font face="Arial"> <img
+src="img/Kaleidoscopico_preview.jpg" width="581" height="400"></font></p>
+
+<p align="left"><a href="img/Kaleidoscopico_diagram.png"><font
+face="Arial"><img src="img/Kaleidoscopico_diagram_m.jpg"
+border="0" width="617" height="300"></font></a></p>
+
+<p align="left"><a href="img/Kaleidoscopico_route.jpg"><font
+face="Arial"><img src="img/Kaleidoscopico_route_m.jpg" border="0"
+width="278" height="300"></font></a><font face="Arial"> </font><a
+href="img/Kaleidoscopico_bottom.png"><font face="Arial"><img
+src="img/Kaleidoscopico_bottom_m.jpg" border="0" width="278"
+height="300"></font></a></p>
+
+<p align="left"><a href="dwn/Kaleidoscopico.zip"><font
+face="Arial">Download podkladů - schéma a plošný spoj v
+Eagle, firmware ve formátu UF2 a BIN</font></a></p>
+
+<p align="left"><a
+href="https://linusakesson.net/scene/kaleidoscopico/index.php"><font
+face="Arial">Stránky autora s projektem Kaleidoscopico</font></a></p>
+
+<p align="left"><a
+href="https://www.youtube.com/watch?v=KhhLoVBpg48"><font
+face="Arial">Autorova videonahrávka se záznamem Kaleidoscopico</font></a></p>
+
+<p align="left"><a
+href="https://www.youtube.com/watch?v=XT4kAaerATs"><font
+face="Arial">Má nahrávka se záznamem Kaleodoscopico</font></a></p>
+
+<p align="left"><a
+href="https://www.breatharian.eu/hw/craft/index.html"><font
+face="Arial">Obdobné demo Craft, jehož je Linuse Akessona také
+autor, které jsem dříve realizoval</font></a></p>
+
+<p align="left"><font face="Arial"></font>&nbsp;</p>
+
+<h2 align="left"><a name="history"></a><font size="5"
+face="Arial"><strong>Historie verzí</strong></font></h2>
+
+<ul>
+    <li><p align="left"><font face="Arial"><strong>8. 3. 2023</strong>
+        prototyp PicoPad s alfa před-verzí PicoLibSDK verze
+        0.8.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>28. 4. 2023</strong>
+        plná verze PicoPad s alfa verzí PicoLibSDK verze 0.90</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>28. 6. 2023</strong>
+        alfa verze PicoLibSDK v0.91, opraveno měření baterie</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>30. 7. 2023</strong>
+        verze 1.00: první oficiální uvedení</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>6. 8. 2023</strong>
+        verze 1.01: printf() tisk paměťového bloku, výstup
+        stdio na UART a FILE, přidáno zařízení Pico a
+        PicoinoMini, opravy a příklady USB</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>14. 8. 2023</strong>
+        verze 1.02: přidán video přehrávač, přidána deska
+        DemoVGA, přidány kompilační skripty pro Linux</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>19. 8. 2023</strong>
+        verze 1.03: oprava rychlosti SPI SD karty, ošetření
+        krátkých časů alarmu časovače</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>26.8.2023</strong>
+        verze 1.04: náhrada knihoven qvga/vga/qdraw/drawtft
+        univerzálnější knihovnou minivga/draw s
+        4/8/15/16-bitovým výstupem a rozlišením 320x240 až
+        800x600. Přidán slide show přehrávač. Přidáno zařízení
+        Picotron se 4-bitovým výstupem. Přidán BOOTSEL do
+        boot3 loader (v menu baterie).</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>9.9.2023</strong>
+        verze 1.05: CSYNC pro VGA driver, přidána knihovna
+        PicoVGA8, přidána knihovna VREG, nastavení hlasitosti,
+        podsvícení a kalibrace krystalu.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>3.10.2023</strong>
+        verze 1.06: přidáno zařízení PicoPadVGA a několik
+        funkcí pro kreslení.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>6.10.2023</strong>
+        verze 1.07: podpora programů v RAM, podpora ukládání
+        a načítání Flash boot loaderu.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>18.10.2023</strong>
+        verze 1.08: simulace keypadu pomocí klávesnice USB
+        (USE_USBPAD, A-&gt;Ctrl, B-&gt;Alt, X-&gt;Shift,
+        Y-&gt;Esc).</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>5.12.2023</strong>
+        verze 1.09: ADPCM komprese zvuku, interface originální
+        SDK.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>30.12.2023</strong>
+        verze 1.10: Intel 4004/4040 CPU emulátor, DVI (HDMI)
+        displej, DVIVGA (HDMI s VGA) displej, selector souborů</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>27.01.2024</strong>
+        verze 1.11: zavaděč předává domovskou cestu
+        aplikaci; emulátory CPU: I4004, I4040, I8008, I8048,
+        I8052, I8080, I8085, I8086, I8088, I80186, I80188, M6502,
+        M65C02, X80, Z80.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>1.5.2024</strong>
+        verze 1.12: Spořič obrazovky v loaderu pro vypnutí během
+        nabíjení. Jendoduchý PC DOS emulátor.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>14.6.2024</strong>
+        verze 1.13: Game Boy Emulátor</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>8.10.2024</strong>
+        verze 2.00: podpora RP2350 Pico 2</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>27.10.2024</strong>
+        verze 2.01: Rychlá float knihovna pro RISC-V Hazard3
+        jádro.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>5.11.2024</strong>
+        verze 2.02: NES Emulátor</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>3.12.2024</strong>
+        verze 2.03: Rychlá double knihovna pro RISC-V Hazard3
+        jádro.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>24.2.2025</strong>
+        verze 2.04: DispHSTX knihovna, DrawCan knihovna, rychlejší
+        překlad, konfigurovatelné cesty překladu</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>2.3.2025</strong>
+        verze 2.05: Kompilace DispHSTX pro Raspberry PicoSDK</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>5.3.2025</strong>
+        verze 2.06: Update PWMSnd - vyšší kvalita zvuku, méně
+        šumu, vyšší výstupní samplovací rychlost PWM,
+        12-bitový výstup, podpora stereo a 16-bit formátu</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>14.3.2025</strong>
+        verze 2.07: MP3 dekodér a přehrávač</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>1.5.2025</strong>
+        verze 2.08: Přidána konzole PicopadHSTX a driver
+        DispHSTXMini</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>7.5.2025</strong>
+        verze 2.09: podpora paměti PSRAM, alokátor paměti
+        PSRAM</font></p>
+    </li>
+</ul>
+
+<p align="right"><font face="Arial">Miroslav Němeček</font></p>
+
+<p align="left"><a href="../index.html"><font size="3"
+face="Arial">&lt;&lt; Zpět</font></a></p>
+
+<p>&nbsp;</p>
+</body>
+</html>

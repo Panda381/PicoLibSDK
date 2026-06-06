@@ -1,0 +1,1420 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=utf-8">
+<meta name="language" content="english">
+<meta name="content-language" content="en">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>PicoLibSDK - Alternative SDK library for Raspberry Pico, RP2040 and RP2350</title>
+</head>
+
+<body bgcolor="#FFFFFF" text="#000000">
+<div align="center"><center>
+
+<table border="0" width="100%">
+    <tr>
+        <td width="33%"><p align="left"><a
+        href="../index_en.html"><font face="Arial">&lt;&lt; Back</font></a></p>
+        </td>
+        <td width="33%">&nbsp;</td>
+        <td width="34%"><p align="right"><a href="index.html"><font
+        face="Arial">Cesky: <img src="../../cz.gif" width="50"
+        height="30" /></font></a><font face="Arial">, <u>English:</u>
+        <img src="../../en2.gif" width="50" height="30" /></font></p>
+        </td>
+    </tr>
+</table>
+</center></div>
+
+<p align="center"><font color="#FF8000" size="6" face="Arial"><strong>PicoLibSDK</strong></font></p>
+
+<p align="center"><font color="#FF8000" size="4" face="Arial"><strong>Alternative
+Extended C/C++ SDK library for Raspberry Pico, RP2040 and RP2350</strong></font></p>
+
+<p align="center"><font face="Arial">Version 2.09, May 2025</font></p>
+
+<p align="center"><font face="Arial">(c) Miroslav Nemecek</font></p>
+
+<p align="center"><a
+href="https://github.com/Panda381/PicoLibSDK"><font face="Arial">https://github.com/Panda381/PicoLibSDK</font></a></p>
+
+<p align="center"><font face="Arial"><strong>&gt;&gt;&gt; </strong></font><a
+href="#links"><font face="Arial"><strong>Downloads - Links</strong></font></a><font
+face="Arial"><strong> &lt;&lt;&lt;</strong></font></p>
+
+<p align="center"><a href="dwn/PicoLibSDK.pdf"><font face="Arial">Manual
+for PicoLibSDK in PDF</font></a></p>
+
+<p align="center"><a
+href="https://www.youtube.com/watch?v=hWk1_XpkH5U"><font
+face="Arial">Demo video on YouTube</font></a></p>
+
+<p align="center"><a
+href="https://pajenicko.cz/picopad-wifi-open-source-herni-konzole"><font
+face="Arial">Picopad on pajenicko.cz - SALES</font></a></p>
+
+<p align="center"><font face="Arial">Picopad Song: </font><a
+href="https://www.youtube.com/watch?v=AgQXCw2uNpc"><font
+face="Arial">YouTube</font></a><font face="Arial"> ... </font><a
+href="dwn/Picopad_Song.avi"><font face="Arial">video</font></a><font
+face="Arial"> ... </font><a href="dwn/Picopad_Song.mp3"><font
+face="Arial">mp3</font></a><font face="Arial"> ... </font><a
+href="dwn/Picopad_Song.txt"><font face="Arial">Lyrics</font></a></p>
+
+<p align="center"><a href="img/picopad.jpg"><img
+src="img/picopad_m.jpg" border="0" width="400" height="250"></a></p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><font face="Arial"><strong>Contents:</strong></font></p>
+
+<ul>
+    <li><p align="left"><a href="#features"><font face="Arial">PicoLibSDK
+        library features</font></a></p>
+    </li>
+    <li><p align="left"><a href="#license"><font face="Arial">License</font></a></p>
+    </li>
+    <li><p align="left"><a href="#links"><font face="Arial"><strong>Links</strong></font></a></p>
+    </li>
+    <li><p align="left"><a href="#picopad"><font face="Arial">PicoPad</font></a></p>
+    </li>
+    <li><p align="left"><a href="#picopadhstx"><font face="Arial">PicoPadHSTX</font></a></p>
+    </li>
+    <li><p align="left"><a href="#picopadvga"><font face="Arial">PicoPadVGA</font></a></p>
+    </li>
+    <li><p align="left"><a href="#picoino"><font face="Arial">Picoino</font></a></p>
+    </li>
+    <li><p align="left"><a href="#picoinomini"><font face="Arial">PicoinoMini</font></a></p>
+    </li>
+    <li><p align="left"><a href="#demovga"><font face="Arial">DemoVGA</font></a></p>
+    </li>
+    <li><p align="left"><a href="#picotron"><font face="Arial">Picotron</font></a></p>
+    </li>
+    <li><p align="left"><a href="#samples"><font face="Arial">Sample
+        Programs</font></a></p>
+    </li>
+    <li><p align="left"><a href="#video"><font face="Arial">Sample
+        Videos</font></a></p>
+    </li>
+    <li><p align="left"><a href="#pictor"><font face="Arial">Pictor
+        Game</font></a></p>
+    </li>
+    <li><p align="left"><a href="#gameboy"><font face="Arial">Game
+        Boy Emulator</font></a></p>
+    </li>
+    <li><p align="left"><a href="#nes"><font face="Arial">NES
+        Emulator</font></a></p>
+    </li>
+    <li><p align="left"><a href="#float"><font face="Arial">Timing
+        of floating-point functions</font></a></p>
+    </li>
+    <li><p align="left"><a href="#disphstx"><font face="Arial">DispHSTX
+        - DVI (HDMI) and VGA display driver for Pico2 RP2350</font></a></p>
+    </li>
+    <li><p align="left"><a href="#mp3"><font face="Arial">MP3
+        Player</font></a></p>
+    </li>
+    <li><p align="left"><a href="#kaleidoscopico"><font
+        face="Arial">Kaleidoscopico</font></a></p>
+    </li>
+    <li><p align="left"><a href="#history"><font face="Arial">History
+        of versions</font></a></p>
+    </li>
+</ul>
+
+<p align="left"><font face="Arial">PicoLibSDK is an alternative
+extended C/C++ SDK library for the Raspberry Pico module with the
+RP2040 processor, with easy compilation under Windows. It can
+also be used for other modules which use this processor. Compared
+to the original SDK library, the PicoLibSDK library tries to
+extend the functionality of the original library and especially
+to make the SDK library easier to use.<br>
+</font></p>
+
+<p align="left"><a name="features"></a><font size="5"
+face="Arial"><strong>PicoLibSDK library features</strong></font></p>
+
+<p align="left"><font face="Arial"><strong>Boot Loader:</strong>
+Boot loader allowing to select and run UF2 programs from SD card.</font></p>
+
+<p align="left"><font face="Arial"><strong>SDK hardware control:</strong>
+ADC, boot ROM, system clocks control, CPU control, hardware
+divider, DMA, doorbells, double and float arithmetics, FIFO
+mailboxes, flash programming, GPIO, HSTX, I2C, hardware
+interpolator, IRQ, multicore, PIO, PLL, PSRAM, PWM, QSPI, reset
+and power control, ROSC, RTC, SHA256, SPI, spinlocks, SysTick,
+alarm timer, TMDS, TRNG, watchdog, XOSC. The RP2350 processor can
+be used in ARM or RISC-V mode.</font></p>
+
+<p align="left"><font face="Arial"><strong>Tool library:</strong>
+alarm, 32-bit Unix calendar, long 64-bit astronomic calendar,
+canvas drawing, RGBA color vector, CRC check with DMA support,
+decode numbers, emulators, escape packet protocol, event ring
+buffer, FAT file system, doubly linked list, memory allocator, 2D
+transformation matrix, mini-ring buffer, formatted print, PWM
+sound output, random generator, rectangle, ring buffer, DMA ring
+buffer, SD card, streams, text strings, text list, text print,
+tree list, VGA drawing, video player, MP3 player.</font></p>
+
+<p align="left"><font face="Arial"><strong>USB library:</strong>
+multiplayer mini-port, CDC device and host - serial
+communication, HID device and host - including external keyboard
+and mouse.</font></p>
+
+<p align="left"><font face="Arial"><strong>Big intergers:</strong>
+calculations with large integers, calculation of Bernoulli
+numbers.</font></p>
+
+<p align="left"><font face="Arial"><strong>Real numbers:</strong>
+calculations with floating-point numbers with optional precision
+up to 3690 digits and 30-bit exponent. Scientific functions with
+optional calculation method - Ln, Exp, Sqrt, Sin, Cos, Tan,
+arcus, hyperbolic functions and many more. Linear factorials with
+accurate and fast calculation.</font></p>
+
+<p align="left"><font face="Arial"><strong>Display drivers:</strong>
+Prepared support of TFT, DVI and VGA display.</font></p>
+
+<p align="left"><font face="Arial"><strong>Devices:</strong>
+Support of boards Picoino/PicoinoMini/Picotron/DemoVGA/PicoPadVGA
+with VGA display, PicoPad with TFT display and basic Raspberry
+Pico without additional hardware.</font></p>
+
+<p align="left"><font face="Arial"><strong>Compatibility:</strong>
+The library is backwards compatible with the original SDK library
+in most functions. Most functions can be called from the original
+SDK library, although internally they are often handled
+differently.</font></p>
+
+<p align="left"><font face="Arial">Boot loader for running
+programs from the SD card:</font></p>
+
+<p align="left"><a href="img/loader.png"><font face="Arial"><img
+src="img/loader_m.jpg" border="0" width="320" height="240"></font></a><font
+face="Arial"><br>
+</font></p>
+
+<p align="left"><a name="license"></a><font size="5" face="Arial"><strong>License</strong></font></p>
+
+<p align="left"><font face="Arial">The library source code is,
+with a few exceptions, completely free to use for any purpose,
+including commercial use. It is possible to use and modify most
+or parts of the library source code without restriction. The only
+exceptions are the single- and double-floating-point mathematics
+libraries, which are mostly the copyrighted work of Raspberry Pi
+and Mark Owen and are therefore subject to the licensing terms of
+the original authors.<br>
+</font></p>
+
+<p align="left"><a name="links"></a><font size="5" face="Arial"><strong>Links</strong></font></p>
+
+<p align="left"><a href="dwn/PicoLibSDK.zip"><font face="Arial">Download
+PicoLibSDK library</font></a><font face="Arial"> (source codes,
+images of SD card, sample programs)</font></p>
+
+<p align="left"><font face="Arial"><strong>&gt;&gt;&gt; </strong></font><a
+href="dwn/PicoPad_SD.zip"><font face="Arial"><strong>SD card
+contents for PicoPad 1</strong></font></a><font face="Arial"><strong>
+&lt;&lt;&lt;</strong></font></p>
+
+<p align="left"><font face="Arial"><strong>&gt;&gt;&gt; </strong></font><a
+href="dwn/PicoPad2_SD.zip"><font face="Arial"><strong>SD card
+contents for PicoPad 2 in ARM mode</strong></font></a><font
+face="Arial"><strong> &lt;&lt;&lt;</strong></font></p>
+
+<p align="left"><font face="Arial"><strong>&gt;&gt;&gt; </strong></font><a
+href="dwn/PicoPad2riscv_SD.zip"><font face="Arial"><strong>SD
+card contents for PicoPad 2 in RISC-V mode</strong></font></a><font
+face="Arial"><strong> &lt;&lt;&lt;</strong></font></p>
+
+<p align="left"><font face="Arial"><strong>&gt;&gt;&gt; </strong></font><a
+href="dwn/PicoPadHSTX_SD.zip"><font face="Arial"><strong>SD card
+contents for PicoPadHSTX in ARM mode</strong></font></a><font
+face="Arial"><strong> &lt;&lt;&lt;</strong></font></p>
+
+<p align="left"><font face="Arial"><strong>&gt;&gt;&gt; </strong></font><a
+href="dwn/PicoPadHSTXriscv_SD.zip"><font face="Arial"><strong>SD
+card contents for PicoPadHSTX in RISC-V mode</strong></font></a><font
+face="Arial"><strong> &lt;&lt;&lt;</strong></font></p>
+
+<p align="left"><a href="dwn/PicoLibSDK_doc.zip"><font
+face="Arial">Download manual for PicoLibSDK library (formats DOC,
+ODT, PDF)</font></a></p>
+
+<p align="left"><a href="dwn/PicoLibSDK.pdf"><font face="Arial">Manual
+for PicoLibSDK in PDF</font></a></p>
+
+<p align="left"><font face="Arial">PicoLibSDK on Github: </font><a
+href="https://github.com/Panda381/PicoLibSDK"><font face="Arial">https://github.com/Panda381/PicoLibSDK</font></a></p>
+
+<p align="left"><a
+href="https://www.youtube.com/watch?v=hWk1_XpkH5U"><font
+face="Arial">Demo video on YouTube</font></a></p>
+
+<p align="left"><a
+href="https://www.youtube.com/watch?v=LWiH7y3T52g"><font
+face="Arial">Video with slide-show player to compare videomodes
+of PicoLibSDK</font></a></p>
+
+<p align="left"><a href="dwn/PicoPadVGA_SD.zip"><font
+face="Arial">SD card contents for PicoPadVGA</font></a></p>
+
+<p align="left"><a href="dwn/DemoVGA_SD.zip"><font face="Arial">SD
+card contents for board DemoVGA</font></a></p>
+
+<p align="left"><a href="dwn/Picoino_SD.zip"><font face="Arial">SD
+card contents for Picoino</font></a></p>
+
+<p align="left"><a href="dwn/PicoinoMini_SD.zip"><font
+face="Arial">SD card contents for PicoinoMini</font></a></p>
+
+<p align="left"><a href="dwn/Picotron_SD.zip"><font face="Arial">SD
+card contents for Picotron</font></a></p>
+
+<p align="left"><a href="dwn/Pico_SD.zip"><font face="Arial">Sample
+programs for Raspberry Pico 1</font></a></p>
+
+<p align="left"><a href="dwn/Pico2_SD.zip"><font face="Arial">Sample
+programs for Raspberry Pico 2 in ARM mode</font></a></p>
+
+<p align="left"><a href="dwn/Pico2riscv_SD.zip"><font
+face="Arial">Sample programs for Raspberry Pico 2 in RISC-V mode</font></a></p>
+
+<p align="left"><font face="Arial">Picopad Song: </font><a
+href="https://www.youtube.com/watch?v=AgQXCw2uNpc"><font
+face="Arial">YouTube</font></a><font face="Arial"> ... </font><a
+href="dwn/Picopad_Song.avi"><font face="Arial">video</font></a><font
+face="Arial"> ... </font><a href="dwn/Picopad_Song.mp3"><font
+face="Arial">mp3</font></a><font face="Arial"> ... </font><a
+href="dwn/Picopad_Song.txt"><font face="Arial">Lyrics</font></a></p>
+
+<p align="left"><a
+href="https://www.youtube.com/watch?v=gyACp6pt99w"><font
+face="Arial">Demo video of PC DOS emulator</font></a><font
+face="Arial"><br>
+</font></p>
+
+<p align="left"><font size="5" face="Arial"><strong>Target
+Devices</strong></font></p>
+
+<p align="left"><a name="picopad"></a><font face="Arial"><strong>PicoPad</strong></font></p>
+
+<p align="left"><font face="Arial">The main target device, for
+which the library is currently prepared, is the PicoPad console,
+with a 16-bit 320x240 pixel TFT display, 8 buttons and a microSD
+card. Most programs and games on the PicoPad can also be
+controlled from the USB keyboard, which is connected to the
+Pico's USB connector via a power splitter that also provides an
+external +5V power supply. Key mapping: A-&gt;Ctrl, B-&gt;Alt,
+X-&gt;Shift, Y-&gt;Esc.</font></p>
+
+<p align="left"><a href="img/picopad.jpg"><img
+src="img/picopad_m.jpg" border="0" width="400" height="250"></a></p>
+
+<p align="left"><font face="Arial">PicoPad 1.0 schematic diagram
+(or as </font><a href="dwn/picopad10_diagram.pdf"><font
+face="Arial">PDF</font></a><font face="Arial">):</font></p>
+
+<p align="left"><a href="img/picopad10_diagram.jpg"><img
+src="img/picopad10_diagram_m.jpg" border="0" width="500"
+height="345"></a></p>
+
+<p align="left"><font face="Arial"><strong>PicoPad 0.8</strong></font></p>
+
+<p align="left"><font face="Arial">A compilation is also ready
+for PicoPad version 0.8, which was the first PicoPad prototype.
+The compilation serves more as a demonstration of the possibility
+of an alternative configuration of the compilation.</font></p>
+
+<p align="left"><a href="img/picopad08.jpg"><font face="Arial"><img
+src="img/picopad08_m.jpg" border="0" width="400" height="220"></font></a></p>
+
+<p align="left"><font face="Arial">PicoPad 0.8 schematic diagram
+(or as </font><a href="dwn/picopad08_diagram.pdf"><font
+face="Arial">PDF</font></a><font face="Arial">):</font></p>
+
+<p align="left"><a href="img/picopad08_diagram.jpg"><font
+face="Arial"><img src="img/picopad08_diagram_m.jpg" border="0"
+width="500" height="328"></font></a></p>
+
+<p align="left"><a name="picopadhstx"></a><font face="Arial"><strong>PicoPadHSTX</strong></font></p>
+
+<p align="left"><font face="Arial">PicoPadHSTX is an alternative
+to the PicoPad console with VGA and DVI (HDMI) display output,
+RP2350 processor and stereo sound. It is usually used in 320x240
+pixel resolution with 16-bit RGB565 color format. Most programs
+and games on the PicoPadHSTX can also be controlled using the USB
+keyboard. The PicoPadHSTX must be powered from an external +5V
+power supply via the USB connector. Key mapping: A-&gt;Ctrl,
+B-&gt;Alt, X-&gt;Shift, Y-&gt;Esc. All PicoPad programs are
+available for the PicoPadHSTX, including more than 2000 games for
+GameBoy and NES console. You can find ready-made games for
+GameBoy and NES on servers </font><a
+href="https://webshare.cz/#/search?what=picopadhstx"><font
+face="Arial">webshare</font></a><font face="Arial"> and </font><a
+href="https://datoid.cz/s/picopadhstx"><font face="Arial">datoid</font></a><font
+face="Arial">. ... </font><a href="dwn/PicoPadHSTX_png.zip"><font
+face="Arial">Download sources for PicoPadHSTX</font></a><font
+face="Arial"> ... </font><a href="dwn/PicoPadHSTX_SD.zip"><font
+face="Arial">Download SD card for PicoPadHSTX in ARM mode</font></a><font
+face="Arial"> ... </font><a href="dwn/PicoPadHSTXriscv_SD.zip"><font
+face="Arial">Download SD card for PicoPadHSTX in RISC-V mode</font></a></p>
+
+<p align="left"><a href="img/PicopadHSTX.jpg"><font face="Arial"><img
+src="img/PicopadHSTX_m.jpg" border="0" width="400" height="339"></font></a></p>
+
+<p align="left"><font face="Arial">PicoPadHSTX schematic diagram:</font></p>
+
+<p align="left"><a href="img/PicopadHSTX_diagram.jpg"><font
+face="Arial"><img src="img/PicopadHSTX_diagram_m.jpg" border="0"
+width="800" height="377"></font></a></p>
+
+<p align="left"><font face="Arial">PicoPadHSTX component fitting:</font></p>
+
+<p align="left"><a href="img/PicopadHSTX_route.jpg"><font
+face="Arial"><img src="img/PicopadHSTX_route_m.jpg" border="0"
+width="400" height="326"></font></a></p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><a name="picopadvga"></a><font face="Arial"><strong>PicoPadVGA</strong></font></p>
+
+<p align="left"><font face="Arial">PicoPadVGA is an alternative
+to the PicoPad console with VGA display output. It is typically
+used in 320x240 pixel resolution with a 16-bit RGB565 color
+format. A 400x300 pixel resolution is also supported. Most
+programs and games on the PicoPadVGA can also be controlled from
+the USB keyboard. PicoPadVGA must be powered from an external +5V
+power supply via power USB connector. Key mapping: A-&gt;Ctrl,
+B-&gt;Alt, X-&gt;Shift, Y-&gt;Esc. </font><a
+href="dwn/PicoPadVGA_png.zip"><font face="Arial">Download sources
+for PicoPadVGA</font></a></p>
+
+<p align="left"><a href="img/PicoPadVGA.jpg"><font face="Arial"><img
+src="img/PicoPadVGA_m.jpg" border="0" width="400" height="300"></font></a></p>
+
+<p align="left"><font face="Arial">PicoPadVGA schematic diagram:</font></p>
+
+<p align="left"><a href="img/PicoPadVGA_diagram.jpg"><font
+face="Arial"><img src="img/PicoPadVGA_diagram_m.jpg" border="0"
+width="640" height="351"></font></a></p>
+
+<p align="left"><font face="Arial">PicoPadVGA component fitting:</font></p>
+
+<p align="left"><a href="img/PicoPadVGA_mounting.jpg"><font
+face="Arial"><img src="img/PicoPadVGA_mounting_m.jpg" border="0"
+width="400" height="328"></font></a></p>
+
+<p align="left"><a name="picoino"></a><font face="Arial"><strong>Picoino</strong></font></p>
+
+<p align="left"><font face="Arial">Another prepared compilation
+alternative is the Picoino, a predecessor to the PicoPad, with a
+built-in 56-button keyboard and output to a VGA monitor in 8-bit
+RGB332 color mode. The library is prepared with 320x240 image
+resolution. Together with the </font><a
+href="https://www.breatharian.eu/hw/picovga/index_en.html"><font
+face="Arial">PicoVGA</font></a><font face="Arial"> library,
+higher resolutions and combined modes are possible. </font><a
+href="dwn/picoino_png.zip"><font face="Arial">Download sources
+for Picoino.</font></a></p>
+
+<p align="left"><font face="Arial">Sample programs for Picoino
+are prepared by adapting programs for PicoPad - graphics changed
+from 16-bit to 8-bit and 8 keyboard buttons mapped to PicoPad
+codes (cursors, Space -&gt; A, Z -&gt; B, Ctrl -&gt;X, BackSpace
+-&gt; Y) are used for control.</font></p>
+
+<p align="left"><a href="img/picoino.jpg"><font face="Arial"><img
+src="img/picoino_m.jpg" border="0" width="400" height="260"></font></a></p>
+
+<p align="left"><font face="Arial">Picoino 1.0 schematic diagram:</font></p>
+
+<p align="left"><a href="img/picoino_diagram.png"><font
+face="Arial"><img src="img/picoino_diagram_m.jpg" border="0"
+width="500" height="466"></font></a></p>
+
+<p align="left"><font face="Arial">Picoino 1.0 component fitting:</font></p>
+
+<p align="left"><a href="img/picoino_mounting.jpg"><font
+face="Arial"><img src="img/picoino_mounting_m.jpg" border="0"
+width="400" height="283"></font></a></p>
+
+<p align="left"><font face="Arial">Picoino 1.0 output to VGA
+monitor:</font></p>
+
+<p align="left"><a href="img/picovga1.jpg"><font face="Arial"><img
+src="img/picovga1_m.jpg" border="0" width="400" height="319"></font></a></p>
+
+<p align="left"><a name="picoinomini"></a><font face="Arial"><strong>PicoinoMini</strong></font></p>
+
+<p align="left"><font face="Arial">As the smaller brother of the
+PicoPad, a lightweight version of the Picoino was created, which
+has 8-bit RGB332 output to a VGA display (QVGA 320x240 mode), an
+SD card, an external connector like the PicoPad and 8 buttons
+like the PicoPad. It is mainly intended for Raspberry Pico
+programming tutorials, as it allows easy assembly from common
+household supplies - 3 resistors and a VGA connector can be
+enough for output to a VGA monitor.</font> <a
+href="dwn/picoinomini_png.zip"><font face="Arial">Download
+sources for PicoinoMini.</font></a></p>
+
+<p align="left"><a href="img/picoinomini.jpg"><img
+src="img/picoinomini_m.jpg" border="0" width="400" height="303"></a></p>
+
+<p align="left"><font face="Arial">PicoinoMini schematic diagram:</font></p>
+
+<p align="left"><a href="img/picoinomini_diagram.jpg"><img
+src="img/picoinomini_diagram_m.jpg" border="0" width="500"
+height="291"></a></p>
+
+<p align="left"><font face="Arial">PicoinoMini component fitting:</font></p>
+
+<p align="left"><a href="img/picoinomini_mounting.jpg"><img
+src="img/picoinomini_mounting_m.jpg" border="0" width="400"
+height="324"></a></p>
+
+<p align="left"><font face="Arial">PicoinoMini output to VGA
+monitor:</font></p>
+
+<p align="left"><a href="img/picoinomini_vga.jpg"><font
+face="Arial"><img src="img/picoinomini_vga_m.jpg" border="0"
+width="400" height="267"></font></a></p>
+
+<p align="left"><a name="demovga"></a><font face="Arial"><strong>DemoVGA</strong></font></p>
+
+<p align="left"><font face="Arial">DemoVGA is a demo module with
+output to a VGA monitor in 320x240 pixel resolution, 16-bit
+RGB565 color format. Includes SD card, additional USB power
+connector, headphone output and 3 buttons. An external USB
+keyboard is used for some programs (typically games). </font><a
+href="dwn/DemoVGA_png.zip"><font face="Arial">Download sources
+for DemoVGA.</font></a></p>
+
+<p align="left"><a href="img/DemoVGA.jpg"><font face="Arial"><strong><img
+src="img/DemoVGA_m.jpg" border="0" width="400" height="300"></strong></font></a></p>
+
+<p align="left"><font face="Arial">DemoVGA schematic diagram:</font></p>
+
+<p align="left"><a href="img/DemoVGA_diagram.png"><font
+face="Arial"><strong><img src="img/DemoVGA_diagram_m.jpg"
+border="0" width="600" height="280"></strong></font></a></p>
+
+<p align="left"><font face="Arial">DemoVGA component fitting:</font></p>
+
+<p align="left"><a href="img/DemoVGA_route.jpg"><font
+face="Arial"><strong><img src="img/DemoVGA_route_m.jpg"
+border="0" width="400" height="325"></strong></font></a></p>
+
+<p align="left"><a name="picotron"></a><font face="Arial"><strong>Picotron</strong></font></p>
+
+<p align="left"><font face="Arial">Picotron is a simple
+minicomputer focused on technical applications. It has an output
+to a VGA display with a resolution of up to 800x600 pixels, 4-bit
+color output in YRGB1111 mode (16-color mode as in PC-CGA and
+EGA). It also has an SD card, headphone audio jack and a keyboard
+of 40 micro-switches. </font><a href="dwn/picotron_png.zip"><font
+face="Arial">Download sources for Picotron</font></a><font
+face="Arial">.</font></p>
+
+<p align="left"><a href="img/picotron.jpg"><img
+src="img/picotron_m.jpg" border="0" width="400" height="272"></a></p>
+
+<p align="left"><font face="Arial">Picotron schematic diagram:</font></p>
+
+<p align="left"><a href="img/picotron_diagram.jpg"><img
+src="img/picotron_diagram_m.jpg" border="0" width="500"
+height="654"></a></p>
+
+<p align="left"><font face="Arial">Picotron component fitting:</font></p>
+
+<p align="left"><a href="img/picotron_route.jpg"><font
+face="Arial"><strong><img src="img/picotron_route_m.jpg"
+border="0" width="400" height="271"></strong></font></a></p>
+
+<p align="left"><font face="Arial"><strong>Raspberry Pico</strong></font></p>
+
+<p align="left"><font face="Arial">The library is also ready for
+the basic Raspberry Pico module, without additional hardware.
+This is mainly used to test basic tutorials for the Raspberry
+Pico.</font></p>
+
+<p align="left"><a href="img/Pico-R3-Pinout.png"><font
+face="Arial"><img src="img/Pico-R3-Pinout_m.jpg" border="0"
+width="400" height="262"></font></a><font face="Arial"><br>
+</font></p>
+
+<p align="left"><a name="samples"></a><font size="5" face="Arial"><strong>Sample
+Programs</strong></font></p>
+
+<p align="left"><font face="Arial">The library has 56 sample
+programs and games. SD card images are prepared for each target
+device. Before using the SD card, you need to load the boot
+loader into the processor - this is possible either by loading
+the LOADER.UF2 program from the root folder of the SD card image,
+or by loading any other program, as each program contains a boot
+loader at the same time. The programs can be exited by pressing
+the Y button and going to the boot loader.</font></p>
+
+<p align="left"><a href="img/games.jpg"><font face="Arial"><img
+src="img/games_m.jpg" border="0" width="640" height="480"></font></a></p>
+
+<p align="left"><font face="Arial"><strong>Config</strong> -
+Setup PicoPad configuration. Sets volume, display backlight, ADC
+reference voltage, battery measurement voltage, temperature
+measurement calibration, crystal frequency calibration..</font></p>
+
+<p align="left"><font face="Arial"><img src="img/config.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial"><strong>SD-card boot loader</strong>
+- the program is loaded into RAM memory and allows writing a new
+boot3 loader from the SD card to flash memory (possibly with the
+application). But it also saves the flash memory contents to a
+UF2 file without modifying the flash memory contents by running
+this program.</font></p>
+
+<p align="left"><font face="Arial"><img src="img/sdboot.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial"><strong>Frequency generator</strong>
+- Generates a rectangular signal or PWM signal (sine, sawtooth,
+triangle - sample rate 100 kHz), frequency range from 0.01 Hz to
+100 MHz. Accuracy 5 digits (30 ppm) or 6 digits (up to 3 ppm,
+depending on crystal calibration accuracy). Output to either
+GPIO14 or GPIO15 (with speaker).</font></p>
+
+<p align="left"><font face="Arial"><img src="img/freqgen.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial"><strong>Frequency meter</strong>
+- measures frequency from 2 inputs (GPIO1 and GPIO14) in the
+range of 0.0256 Hz to 100 MHz, with an accuracy of 5 digits (30
+ppm) or 6 digits (up to 3 ppm, depending on calibration accuracy)
+after crystal calibration. It also measures low frequencies with
+full accuracy, i.e. it is not just a simple pulse counter. It
+combines 3 different methods during measurement, using both PIOs.</font></p>
+
+<p align="left"><font face="Arial"><img src="img/freqmet.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial"><strong>RC meter</strong> -
+measures the resistance of resistors, capacitance and ESR of
+capacitors. An adapter with 5 resistors, connected to an external
+connector, is needed according to the following diagram. GPIO0
+... resistor 200 ohm, GPIO1 ... resistor 2 Kohm, GPIO14 ...
+resistor 20 Kohm, GPIO26 ... resistor 200 Kohm, GPIO27 ...
+resistor 2 Mohm, GPIO28 ... test input. In case of PicoPadVGA it
+is necessary to disable the VGA output pins using the DIL switch.
+Resistors: 0.1 ohm up to 100 Mohm, precision 5% (lower on ends of
+range). Capacitors: 5 pF up to 5 mF, precision 10%. The capacitor
+measurement method uses a logarithmic regression of the capacitor
+charging and discharging curves.</font></p>
+
+<p align="left"><font face="Arial"><img src="img/rcmeter.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial"><img
+src="img/rcmeter_diagram.jpg" width="400" height="270"></font></p>
+
+<p align="left"><font face="Arial"><img src="img/141PF.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial"><strong>141-PF</strong> -
+calculator emulator with Intel 4004 processor.</font></p>
+
+<p align="left"><font face="Arial"><img src="img/I8086.jpg"
+width="320" height="240"> <img src="img/FileSel.jpg" width="320"
+height="240"></font></p>
+
+<p align="left"><font face="Arial">Test emulators for many
+processors, along with sample applications.<br>
+</font></p>
+
+<h2 align="left"><a name="video"></a><font face="Arial">Sample
+Videos</font></h2>
+
+<p align="left"><font face="Arial">Videos can be played by
+program VIDEO.UF2 on devices PicoPad and DemoVGA. They where
+generated using the PicoPadVideo program. Videos must be uploaded
+to the SD card in the /VIDEO folder.</font></p>
+
+<p align="left"><a href="dwn/PicoPad_video.zip"><font
+face="Arial">Download Base Set (310 MB)</font></a><font
+face="Arial">, set contains:</font></p>
+
+<p align="left"><font face="Arial"><strong>BIRDS</strong> .....
+(00:44, 17 MB) Two squabbling birds in a cage<br>
+<strong>CANORA</strong> .... (00:29, 11 MB) Czech medieval music
+group Canora <br>
+<strong>CORALS</strong> .... (05:42, 134 MB) Fish in Egypt among
+corals<br>
+<strong>MANDEL</strong> .... (09:05, 214 MB) Mandelbrot Fractal
+Deep Zoom 10^220</font></p>
+
+<p align="left"><font face="Arial">Download more sample videos
+(due to the closure of the Ulozto server the links are broken,
+only for illustration):</font></p>
+
+<p align="left"><a
+href="https://ulozto.cz/file/PTsvxBnEoaAG/bugs-bunny-rabbit-season-and-duck-season-picopad-video-zip"><font
+face="Arial"><strong>BUNNY</strong></font></a><font face="Arial">
+..... (04:56, 116 MB) Bugs Bunny - Rabbit Season and Duck Season
+(English dubbing)<br>
+</font><a
+href="https://ulozto.cz/file/Xa6rOmn8VLJE/cimrman-dlouhy-siroky-a-kratkozraky-picopad-video-zip"><font
+face="Arial"><strong>CIMRMAN</strong></font></a><font
+face="Arial"> ... (66:09, 1556 MB) Cimrman - Long, Wide and
+Nearsighted (Czech dubbing)<br>
+</font><a
+href="https://ulozto.cz/file/lNBP4wHehg0t/kyary-pamyu-pamyu-ring-a-bell-picopad-video-zip"><font
+face="Arial"><strong>KYARY</strong></font></a><font face="Arial">
+..... (04:18, 101 MB) Kyary Pamyu Pamyu - Ring a Bell<br>
+</font><a
+href="https://ulozto.cz/file/V3PVwvzhPNJA/minion-madness-picopad-video-zip"><font
+face="Arial"><strong>MINION</strong></font></a><font face="Arial">
+.... (12:12, 287 MB) Minion Madness<br>
+</font><a
+href="https://ulozto.cz/file/NdY3YFJfB18D/jak-krtek-ke-kalhotkam-prisel-picopad-video-zip"><font
+face="Arial"><strong>MOLE</strong></font></a><font face="Arial">
+...... (13:01, 307 MB) How the Mole got his pants (Czech dubbing)<br>
+</font><a
+href="https://ulozto.cz/file/U71XTOlNdTme/final-song-from-shrek-1-picopad-video-zip"><font
+face="Arial"><strong>SHREK</strong></font></a><font face="Arial">
+..... (00:59, 23 MB) Final song from Shrek 1<br>
+</font><a
+href="https://ulozto.cz/file/XyTdhZsPng6N/snehurka-a-sedm-trpasliku-picopad-video-zip"><font
+face="Arial"><strong>SNOWHITE</strong></font></a><font
+face="Arial"> ..... (80:07, 1885 MB) Snow White and Seven Dwarfs
+(Czech dubbing)<br>
+</font><a
+href="https://ulozto.cz/file/6rCVsX9TKtIt/troopers-picopad-video-zip"><font
+face="Arial"><strong>TROOPERS</strong></font></a><font
+face="Arial"> .. (53:20 1255 MB) Troopers</font></p>
+
+<p align="left"><a href="img/demo_video.png"><font face="Arial"><img
+src="img/demo_video_m.jpg" border="0" width="400" height="300"></font></a><font
+face="Arial"><br>
+</font></p>
+
+<h2 align="left"><a name="pictor"></a><font face="Arial">Pictor
+Game</font></h2>
+
+<p align="left"><font face="Arial"><strong>Pictor</strong>
+(Picopad Collector) is a shooting game. It was created in two
+versions. Firstly for the Picopad console, with a graphics
+resolution of 320x240 pixels, and secondly as a Windows
+application, with a higher graphics resolution of 960x720 pixels
+and with higher quality sound. The game contains 12 backgrounds
+(for 12 scenes), 13 actors, 36 enemies and 12 music loops. The
+game is available with the source code as Open Source and can be
+used, or parts of it, for any purpose. The source code for the
+Windows version of the game can be compiled using MS VC++ 2005..</font></p>
+
+<p align="left"><font face="Arial">Pictor for Windows and Pictor
+for Picopad:</font></p>
+
+<p align="left"><a href="img/Pictor.png"><font face="Arial"><img
+src="img/Pictor_m.jpg" border="0" width="400" height="300"></font></a><font
+face="Arial"> </font><a href="img/Pictor2.png"><font face="Arial"><img
+src="img/Pictor_Picopad.jpg" border="0" width="400" height="300"></font></a></p>
+
+<p align="left"><a href="dwn/Pictor.zip"><font face="Arial">Download
+Pictor for Windows (45 MB)</font></a></p>
+
+<p align="left"><a href="dwn/Pictor_src.zip"><font face="Arial">Download
+Pictor for Windows, with source code (90 MB)</font></a></p>
+
+<p align="left"><font face="Arial">Pictor on Github, Windows
+version: </font><a href="https://github.com/Panda381/Pictor"><font
+face="Arial">https://github.com/Panda381/Pictor</font></a></p>
+
+<p align="left"><font face="Arial">Pictor on Github, version for
+Picopad console: </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/PicoPad/GAME/PICTOR"><font
+face="Arial">https://github.com/Panda381/PicoLibSDK/tree/main/PicoPad/GAME/PICTOR</font></a></p>
+
+<p align="left"><font face="Arial">Pictor UF2 for Picopad: </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/!PicoPad10/GAME"><font
+face="Arial">https://github.com/Panda381/PicoLibSDK/tree/main/!PicoPad10/GAME</font></a><font
+face="Arial"><br>
+</font></p>
+
+<h2 align="left"><a name="gameboy"></a><font face="Arial">Game
+Boy Emulator</font></h2>
+
+<p align="left"><font face="Arial">Game emulator for Game Boy
+Mono and Game Boy Color for Picopad, Picopad2 and PicopadHSTX (in
+ARM and RISC-V mode). There are 573 games tested and prepared in
+the UF2 executable, 271 of which are for Game Boy Mono and 302 of
+which are for Game Boy Color. All games for Game Boy Mono are
+colorized. The emulation success rate is 80%. 15% of the original
+games are non-functional (not included in the package) and 5% of
+the games are functional, but have aesthetic defects in the
+graphics (e.g. jittery intro image). Buttons X=START, Y=SELECT.
+Combination Y+Up will bring up the game menu (save game). </font></p>
+
+<p align="left"><font face="Arial">Due to copyright reasons,
+games cannot be made available for download. If you own legal
+copy of a game in *.GB or *.GBC file format, you can use any of
+the following options to emulate it on Picopad:</font></p>
+
+<ul>
+    <li><p align="left"><font face="Arial">It may be possible to
+        find your game in the archives of prepared games on a
+        server such as </font><a
+        href="https://webshare.cz/#/search?what=picopad"><font
+        face="Arial">webshare</font></a><font face="Arial"> or </font><a
+        href="https://datoid.cz/s/picopad"><font face="Arial">datoid</font></a><font
+        face="Arial">. Search for your game in the archive by the
+        name in the list below. Run the game by uploading the
+        *.UF2 file into Picopad. Compilations are available for
+        Picopad1 (Pico1 module with RP2040), Picopad2 (Pico2
+        module with RP2350) in both ARM and RISC-V mode and
+        PicopadHSTX (Pico2 module with RP2350) in both ARM and
+        RISC-V mode.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial">You can convert the
+        game to *.UF2 executable format using the APPS
+        application. You can upload the game to your SD card and
+        select it from the list of games in APPS.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial">You can compile the
+        game to *.UF2 executable yourself. For this you need the
+        emulator source code, the PicoLibSDK library and the GCC
+        ARM compiler. You save the game in the
+        &quot;samples&quot; folder and compile it under Windows
+        with the command file &quot;c_all_samples.bat&quot;. On
+        Linux, you will first need to compile the GBprep support
+        program, prepare the program with the GBprep command, and
+        compile it with c.sh.</font></p>
+    </li>
+</ul>
+
+<p align="left"><a href="dwn/GameBoySrc.zip"><font face="Arial">Download
+source code of the emulator</font></a></p>
+
+<p align="left"><a href="dwn/GameBoyData.zip"><font face="Arial">Download
+SD card content - only data (texts and images) without executable
+files</font></a></p>
+
+<p align="left"><a href="dwn/GameBoyList.txt"><font face="Arial">List
+of games TXT (short DOS name and full name of the game)</font></a></p>
+
+<p align="left"><font face="Arial">Games preview: </font><a
+href="img/preview01.png"><font face="Arial">1</font></a><font
+face="Arial"> - </font><a href="img/preview02.png"><font
+face="Arial">2</font></a><font face="Arial"> - </font><a
+href="img/preview03.png"><font face="Arial">3</font></a><font
+face="Arial"> - </font><a href="img/preview04.png"><font
+face="Arial">4</font></a><font face="Arial"> - </font><a
+href="img/preview05.png"><font face="Arial">5</font></a><font
+face="Arial"> - </font><a href="img/preview06.png"><font
+face="Arial">6</font></a><font face="Arial"> - </font><a
+href="img/preview07.png"><font face="Arial">7</font></a><font
+face="Arial"> - </font><a href="img/preview08.png"><font
+face="Arial">8</font></a><font face="Arial"> - </font><a
+href="img/preview09.png"><font face="Arial">9</font></a><font
+face="Arial"> - </font><a href="img/preview10.png"><font
+face="Arial">10</font></a><font face="Arial"> - </font><a
+href="img/preview11.png"><font face="Arial">11</font></a><font
+face="Arial"> - </font><a href="img/preview12.png"><font
+face="Arial">12</font></a><font face="Arial"> - </font><a
+href="img/preview13.png"><font face="Arial">13</font></a><font
+face="Arial"> - </font><a href="img/preview14.png"><font
+face="Arial">14</font></a><font face="Arial"> - </font><a
+href="img/preview15.png"><font face="Arial">15</font></a><font
+face="Arial"> - </font><a href="img/preview16.png"><font
+face="Arial">16</font></a><font face="Arial"> - </font><a
+href="img/preview17.png"><font face="Arial">17</font></a><font
+face="Arial"> - </font><a href="img/preview18.png"><font
+face="Arial">18</font></a><font face="Arial"> - </font><a
+href="img/preview19.png"><font face="Arial">19</font></a><font
+face="Arial"> - </font><a href="img/preview20.png"><font
+face="Arial">20</font></a><font face="Arial"> - </font><a
+href="img/preview21.png"><font face="Arial">21</font></a><font
+face="Arial"> - </font><a href="img/preview22.png"><font
+face="Arial">22</font></a><font face="Arial"> - </font><a
+href="img/preview23.png"><font face="Arial">23</font></a><font
+face="Arial"> - </font><a href="img/preview24.png"><font
+face="Arial">24</font></a><font face="Arial"> - </font><a
+href="dwn/GameBoyPreview.zip"><font face="Arial">All (24 pages)</font></a><font
+face="Arial"> - </font><a href="dwn/GameBoyPNG.zip"><font
+face="Arial">All (PNG files)</font></a></p>
+
+<p align="left"><font face="Arial"><img src="img/gameboy.jpg"
+width="800" height="600"></font></p>
+
+<p align="left">&nbsp;</p>
+
+<h2 align="left"><a name="nes"></a><font face="Arial">NES
+Emulator</font></h2>
+
+<p align="left"><font face="Arial">Game emulator for NES for
+Picopad, Picopad2 and PicopadHSTX (in ARM and RISC-V mode). There
+are 1549 games tested and prepared in the UF2 executable. Buttons
+X=START, Y=SELECT. Combination Y+Up will bring up the game menu
+(save game).</font></p>
+
+<p align="left"><font face="Arial">Due to copyright reasons,
+games cannot be made available for download. If you own legal
+copy of a game in *.NES file format, you can use any of the
+following options to emulate it on Picopad:</font></p>
+
+<ul>
+    <li><p align="left"><font face="Arial">It may be possible to
+        find your game in the archives of prepared games on a
+        server such as </font><a
+        href="https://webshare.cz/#/search?what=picopad"><font
+        face="Arial">webshare</font></a><font face="Arial"> or </font><a
+        href="https://datoid.cz/s/picopad"><font face="Arial">datoid</font></a><font
+        face="Arial">. Search for your game in the archive by the
+        name in the list below. Run the game by uploading the
+        *.UF2 file into Picopad. Compilations are available for
+        Picopad1 (Pico1 module with RP2040), Picopad2 (Pico2
+        module with RP2350) in both ARM and RISC-V mode and
+        PicopadHSTX (Pico2 module with RP2350) in both ARM and
+        RISC-V mode.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial">You can convert the
+        game to *.UF2 executable format using the APPS
+        application. You can upload the game to your SD card and
+        select it from the list of games in APPS.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial">You can compile the
+        game to *.UF2 executable yourself. For this you need the
+        emulator source code, the PicoLibSDK library and the GCC
+        ARM compiler. You save the game in the
+        &quot;samples&quot; folder and compile it under Windows
+        with the command file &quot;c_all_samples.bat&quot;. On
+        Linux, you will first need to compile the NESprep support
+        program, prepare the program with the GBprep command, and
+        compile it with c.sh.</font></p>
+    </li>
+</ul>
+
+<p align="left"><a href="dwn/NesSrc.zip"><font face="Arial">Download
+source code of the emulator</font></a></p>
+
+<p align="left"><a href="dwn/NesData.zip"><font face="Arial">Download
+SD card content - only data (texts and images) without executable
+files</font></a></p>
+
+<p align="left"><a href="dwn/NesList.txt"><font face="Arial">List
+of games TXT (short DOS name and full name of the game)</font></a></p>
+
+<p align="left"><font face="Arial">Games preview: </font><a
+href="img/nes_01.png"><font face="Arial">1</font></a><font
+face="Arial"> - </font><a href="img/nes_02.png"><font
+face="Arial">2</font></a><font face="Arial"> - </font><a
+href="img/nes_03.png"><font face="Arial">3</font></a><font
+face="Arial"> - </font><a href="img/nes_04.png"><font
+face="Arial">4</font></a><font face="Arial"> - </font><a
+href="img/nes_05.png"><font face="Arial">5</font></a><font
+face="Arial"> - </font><a href="img/nes_06.png"><font
+face="Arial">6</font></a><font face="Arial"> - </font><a
+href="img/nes_07.png"><font face="Arial">7</font></a><font
+face="Arial"> - </font><a href="img/nes_08.png"><font
+face="Arial">8</font></a><font face="Arial"> - </font><a
+href="img/nes_09.png"><font face="Arial">9</font></a><font
+face="Arial"> - </font><a href="img/nes_10.png"><font
+face="Arial">10</font></a><font face="Arial"> - </font><a
+href="img/nes_11.png"><font face="Arial">11</font></a><font
+face="Arial"> - </font><a href="img/nes_12.png"><font
+face="Arial">12</font></a><font face="Arial"> - </font><a
+href="img/nes_13.png"><font face="Arial">13</font></a><font
+face="Arial"> - </font><a href="img/nes_14.png"><font
+face="Arial">14</font></a><font face="Arial"> - </font><a
+href="img/nes_15.png"><font face="Arial">15</font></a><font
+face="Arial"> - </font><a href="img/nes_16.png"><font
+face="Arial">16</font></a><font face="Arial"> - </font><a
+href="img/nes_17.png"><font face="Arial">17</font></a><font
+face="Arial"> - </font><a href="img/nes_18.png"><font
+face="Arial">18</font></a><font face="Arial"> - </font><a
+href="img/nes_19.png"><font face="Arial">19</font></a><font
+face="Arial"> - </font><a href="img/nes_20.png"><font
+face="Arial">20</font></a><font face="Arial"> - </font><a
+href="img/nes_21.png"><font face="Arial">21</font></a><font
+face="Arial"> - </font><a href="img/nes_22.png"><font
+face="Arial">22</font></a><font face="Arial"> - </font><a
+href="img/nes_23.png"><font face="Arial">23</font></a><font
+face="Arial"> - </font><a href="img/nes_24.png"><font
+face="Arial">24</font></a><font face="Arial"> - </font><a
+href="img/nes_25.png"><font face="Arial">25</font></a><font
+face="Arial"> - </font><a href="img/nes_26.png"><font
+face="Arial">26</font></a><font face="Arial"> - </font><a
+href="img/nes_27.png"><font face="Arial">27</font></a><font
+face="Arial"> - </font><a href="img/nes_28.png"><font
+face="Arial">28</font></a><font face="Arial"> - </font><a
+href="img/nes_29.png"><font face="Arial">29</font></a><font
+face="Arial"> - </font><a href="img/nes_30.png"><font
+face="Arial">30</font></a><font face="Arial"> - </font><a
+href="img/nes_31.png"><font face="Arial">31</font></a><font
+face="Arial"> - </font><a href="img/nes_32.png"><font
+face="Arial">32</font></a><font face="Arial"> - </font><a
+href="img/nes_33.png"><font face="Arial">33</font></a><font
+face="Arial"> - </font><a href="img/nes_34.png"><font
+face="Arial">34</font></a><font face="Arial"> - </font><a
+href="img/nes_35.png"><font face="Arial">35</font></a><font
+face="Arial"> - </font><a href="img/nes_36.png"><font
+face="Arial">36</font></a><font face="Arial"> - </font><a
+href="img/nes_37.png"><font face="Arial">37</font></a><font
+face="Arial"> - </font><a href="img/nes_38.png"><font
+face="Arial">38</font></a><font face="Arial"> - </font><a
+href="img/nes_39.png"><font face="Arial">39</font></a><font
+face="Arial"> - </font><a href="img/nes_40.png"><font
+face="Arial">40</font></a><font face="Arial"> - </font><a
+href="img/nes_41.png"><font face="Arial">41</font></a><font
+face="Arial"> - </font><a href="img/nes_42.png"><font
+face="Arial">42</font></a><font face="Arial"> - </font><a
+href="img/nes_43.png"><font face="Arial">43</font></a><font
+face="Arial"> - </font><a href="img/nes_44.png"><font
+face="Arial">44</font></a><font face="Arial"> - </font><a
+href="img/nes_45.png"><font face="Arial">45</font></a><font
+face="Arial"> - </font><a href="img/nes_46.png"><font
+face="Arial">46</font></a><font face="Arial"> - </font><a
+href="img/nes_47.png"><font face="Arial">47</font></a><font
+face="Arial"> - </font><a href="img/nes_48.png"><font
+face="Arial">48</font></a><font face="Arial"> - </font><a
+href="img/nes_49.png"><font face="Arial">49</font></a><font
+face="Arial"> - </font><a href="img/nes_50.png"><font
+face="Arial">50</font></a><font face="Arial"> - </font><a
+href="img/nes_51.png"><font face="Arial">51</font></a><font
+face="Arial"> - </font><a href="img/nes_52.png"><font
+face="Arial">52</font></a><font face="Arial"> - </font><a
+href="img/nes_53.png"><font face="Arial">53</font></a><font
+face="Arial"> - </font><a href="img/nes_54.png"><font
+face="Arial">54</font></a><font face="Arial"> - </font><a
+href="img/nes_55.png"><font face="Arial">55</font></a><font
+face="Arial"> - </font><a href="img/nes_56.png"><font
+face="Arial">56</font></a><font face="Arial"> - </font><a
+href="img/nes_57.png"><font face="Arial">57</font></a><font
+face="Arial"> - </font><a href="img/nes_58.png"><font
+face="Arial">58</font></a><font face="Arial"> - </font><a
+href="img/nes_59.png"><font face="Arial">59</font></a><font
+face="Arial"> - </font><a href="img/nes_60.png"><font
+face="Arial">60</font></a><font face="Arial"> - </font><a
+href="img/nes_61.png"><font face="Arial">61</font></a><font
+face="Arial"> - </font><a href="img/nes_62.png"><font
+face="Arial">62</font></a><font face="Arial"> - </font><a
+href="img/nes_63.png"><font face="Arial">63</font></a><font
+face="Arial"> - </font><a href="img/nes_64.png"><font
+face="Arial">64</font></a><font face="Arial"> - </font><a
+href="img/nes_65.png"><font face="Arial">65</font></a><font
+face="Arial"> - </font><a href="dwn/NesPreview.zip"><font
+face="Arial">All (65 pages)</font></a><font face="Arial"> - </font><a
+href="dwn/NesPNG.zip"><font face="Arial">All (PNG files)</font></a></p>
+
+<p align="left"><font face="Arial"><img src="img/nes.jpg"
+width="800" height="600"></font></p>
+
+<p align="left">&nbsp;</p>
+
+<h2 align="left"><a name="float"></a><font face="Arial">Timing of
+floating-point functions of RP2040 (Pico1) and RP2350 (Pico2)</font></h2>
+
+<p align="left"><font face="Arial">The following tables show the
+measured average times of the floating-point functions of the SDK
+library for the RP2040 (Pico1) and RP2350 (Pico2) processors.
+Both the modes with the standard libc library and the optimized
+versions were tested. Typical configurations with maximum
+acceleration are marked in bold.</font></p>
+
+<p align="left"><a href="dwn/Timing.htm"><font face="Arial">Tables
+in HTM format</font></a></p>
+
+<p align="left"><a href="dwn/Timing.pdf"><font face="Arial">Tables
+in PDF format</font></a></p>
+
+<p align="left"><a href="dwn/fputest.zip"><font face="Arial">Download
+tables with source codes of the tests</font></a></p>
+
+<p align="left"><font face="Arial">Faster calculation of base
+float functions for RP2350 in RISC-V mode: </font><a
+href="sdk_float_riscv.S"><font face="Arial">sdk_float_riscv.S</font></a></p>
+
+<p align="left"><font face="Arial">Faster calculation of
+scientific float functions for RP2350 in RISC-V mode: </font><a
+href="sdk_float_riscv_sci.S"><font face="Arial">sdk_float_riscv_sci.S</font></a></p>
+
+<p align="left"><font face="Arial">Template for fast float
+functions in C: </font><a href="sdk_float_riscv_sci.c"><font
+face="Arial">sdk_float_riscv_sci.c</font></a></p>
+
+<p align="left"><font face="Arial">Faster calculation of base
+double functions for RP2350 in RISC-V mode: </font><a
+href="sdk_double_riscv.S"><font face="Arial">sdk_double_riscv.S</font></a></p>
+
+<p align="left"><font face="Arial">Faster calculation of
+scientific double functions for RP2350 in RISC-V mode: </font><a
+href="sdk_double_riscv_sci.S"><font face="Arial">sdk_double_riscv_sci.S</font></a></p>
+
+<p align="left"><font face="Arial">Template for fast double
+functions in C: </font><a href="sdk_double_riscv_sci.c"><font
+face="Arial">sdk_double_riscv_sci.c</font></a></p>
+
+<p align="left"><font face="Arial">A brief overview of the speed
+of the main accelerated RISC-V Hazard3 functions:</font></p>
+
+<p align="left"><img src="img/timings_riscv.jpg" width="552"
+height="523"></p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><a name="disphstx"></a><font size="5"
+face="Arial"><strong>DispHSTX - DVI (HDMI) and VGA display driver
+for Pico2 RP2350</strong></font></p>
+
+<p align="left"><font face="Arial">DispHSTX is a driver for Pico2
+RP2350 microcontroller, both in ARMv8 and RISC-V Hazard3 mode,
+allowing to generate DVI (HDMI) and VGA video signal, using HSTX
+peripheral. It supports 40 different image formats - 9 modes of
+pixel graphics, 2 text modes, attribute compression, RLE and HSTX
+compression. Functions for drawing geometric shapes, images and
+texts are provided for 8 basic graphic modes. The drawing library
+supports a back buffer - it updates the boundaries indicating the
+modified &quot;dirty area&quot;. If memory is insufficient, the
+back buffer can be used in strip mode. Several different image
+formats can be combined on one screen simultaneously by dividing
+the screen into strips and slots. In both modes, DVI (HDMI) and
+VGA, color resolution up to 16 bits per pixel is possible.
+Although in VGA mode the output is only via a 6-bit RGB
+converter, higher colour resolution is achieved by the Pulse
+Pattern Modulation PPM, the display is visually close to the
+15-bit display. The timing of the generated video signal is
+limited only by the overclocking capabilities of the
+microcontroller used. It is usually possible to achieve a
+resolution of up to 1440x600 pixels. There is also a mini version
+of the driver, DispHSTXMini, which is limited to 320x240 pixel
+video mode only, but allows system clock overclocking and low CPU
+load.</font></p>
+
+<p align="left"><font face="Arial">The DispHSTX driver is
+extensive, a more detailed description can be found on separate
+links:</font></p>
+
+<p align="left"><font face="Arial">DispHSTX on GitHub: </font><a
+href="https://github.com/Panda381/DispHSTX"><font face="Arial">https://github.com/Panda381/DispHSTX</font></a></p>
+
+<p align="left"><font face="Arial">DispHSTX web page: </font><a
+href="https://www.breatharian.eu/hw/disphstx/index_en.html"><font
+face="Arial">https://www.breatharian.eu/hw/disphstx/index_en.html</font></a></p>
+
+<p align="left"><font face="Arial">DispHSTX demo sample in
+PicoLibSDK: </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/Pico/DispHSTX/HSTXDemo"><font
+face="Arial">https://github.com/Panda381/PicoLibSDK/tree/main/Pico/DispHSTX/HSTXDemo</font></a></p>
+
+<p align="left"><font face="Arial"><img src="img/DispHSTX_m.jpg"
+width="400" height="300"></font></p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><a name="mp3"></a><font size="5" face="Arial"><strong>MP3
+Player</strong></font></p>
+
+<p align="left"><font face="Arial">The PicoLibSDK sample programs
+include applications for playing MP3 files. The program will
+offer to play a list of MP3 files from its home folder and from
+subfolders. When run from the loader, the loader will pass the
+information to the home folder path to the program. The MP3
+program can be saved in any folder, but it is recommended to use
+the default /MP3 folder if possible.</font></p>
+
+<p align="left"><font face="Arial">At startup, a folder list and
+a list of MP3 songs are displayed. Buttons can be used in the
+list: A = start playback or nesting in a folder, B = start
+playback from the beginning, Y = return one folder above or end
+of program.</font></p>
+
+<p align="left"><font face="Arial">When the song is played, a BMP
+image with the same name as the MP3 will be displayed. The BMP
+file must be in RGB565 format (in Photoshop, saving in 16-bit
+mode cannot be used, the extended RGB565 mode must be used) and
+320x240 pixels in size. If the image is not available, only the
+info page will be displayed.</font></p>
+
+<p align="left"><font face="Arial">During playback you can use
+the keys Left/Right = 10 seconds shift, Up/Down = volume control,
+A = previous track, B = next track, X = switch between picture
+and info page and pause track, Y = end of playback.</font></p>
+
+<p align="left"><font face="Arial"><img src="img/MP3_GP01.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial">There are 2 lines at the
+bottom of the info page serving for debugging information. 'Poll'
+shows the time it took to load one frame from the SD card. The
+entry must be lower than the 'FrameTime' entry, otherwise there
+is a risk of audio dropout. The 'Decode' entry similarly shows
+the time required to decode one frame. The value must again be
+lower than the 'FrameTime'. The 'buf' entry displays three values
+- input buffer filling when reading a frame, input buffer filling
+when decoding a frame, and output buffer filling when decoding a
+frame. If the values are low, there is a risk of audio dropout.</font></p>
+
+<p align="left"><font face="Arial">The MP3 player application
+comes in two versions. The basic variant MP3.UF2 plays music in
+MONO on the Picopad's internal speaker. The MP3_GP01.UF2 variant
+plays music in STEREO to the output pins GPIO0 and GPIO1 (Ext
+connector of the Picopad). The following wiring is recommended to
+use:</font></p>
+
+<p align="left"><font face="Arial"><img src="img/MP3_diagram.jpg"
+width="509" height="215"></font></p>
+
+<p align="left"><font face="Arial">Audio output is via 12-bit PWM
+with a sampling rate of 123 kHz. Noise and interference may be
+audible on some devices in the background - signals from the SD
+card and voltage converter may be induced into the audio.</font></p>
+
+<p align="left"><font face="Arial">&gt;&gt;&gt; </font><a
+href="https://www.youtube.com/watch?v=vlbYJt3-EwI"><font
+face="Arial">Demo video on YouTube</font></a><font face="Arial">
+&lt;&lt;&lt;</font></p>
+
+<p align="left"><font face="Arial"><img src="img/MP3_GP01B.jpg"
+width="320" height="240"></font></p>
+
+<p align="left"><font face="Arial">The player comes with a sample
+set of songs, in the style of various artists, created in Suno
+AI. In total, there are 248 tracks, containing 13 hours of music.
+Samples can be downloaded here.</font></p>
+
+<p align="left"><a href="dwn/MP3_1.zip"><font face="Arial">Download
+samples part 1</font></a><font face="Arial"> (200 MB): styles of
+ABBA, The Beatles, Breton Celtic, Classical</font></p>
+
+<p align="left"><a href="dwn/MP3_2.zip"><font face="Arial">Download
+samples part 2</font></a><font face="Arial"> (224 MB): styles of
+Computer, Cyberpunk, Enya, Folk</font></p>
+
+<p align="left"><a href="dwn/MP3_3.zip"><font face="Arial">Download
+samples part 3</font></a><font face="Arial"> (213 MB): styles of
+Children, Jean-Michel Jarre, J-pop</font></p>
+
+<p align="left"><a href="dwn/MP3_4.zip"><font face="Arial">Download
+samples part 4</font></a><font face="Arial"> (217 MB): styles of
+Loreena McKennitt, Medieval, Meditation, Metal, Vox Angeli</font></p>
+
+<p align="left"><a href="dwn/MP3_5.zip"><font face="Arial">Download
+samples part 5</font></a><font face="Arial"> (207 MB): styles of
+Mixed, Nightwish with Tarja Turunen, Mike Oldfield</font></p>
+
+<p align="left"><font face="Arial">Download program: </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/!PicoPad10/MP3"><font
+face="Arial">Picopad1</font></a><font face="Arial">, </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/!PicoPad20/MP3"><font
+face="Arial">Picopad2</font></a><font face="Arial">, </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/!PicoPad20riscv/MP3"><font
+face="Arial">Picopad2riscv</font></a><font face="Arial">.</font></p>
+
+<p align="left"><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/_lib/mp3"><font
+face="Arial">Source codes of MP3 library</font></a><font
+face="Arial">, </font><a
+href="https://github.com/Panda381/PicoLibSDK/tree/main/PicoPad/MP3/MP3"><font
+face="Arial">source codes of MP3 player</font></a><font
+face="Arial">.</font></p>
+
+<p align="left"><font face="Arial"></font>&nbsp;</p>
+
+<p align="left"><a name="kaleidoscopico"><font size="5"
+face="Arial"><strong></strong></font></a><font size="5"
+face="Arial"><strong>Kaleidoscopico</strong></font></p>
+
+<p align="left"><font face="Arial">This project has nothing to do
+with the PicoLibSDK library, and I am not even its author. The
+author is the brilliant musician and programmer Linus Akesson
+from Sweden. It is a prime example of what a skilled programmer
+can achieve with the Raspberry Pico 2 module. However, only
+programmers who know how extremely difficult it is to achieve
+something like this will truly appreciate it. By the way, I
+definitely wouldn't be able to create this. It is a graphics and
+music demo, with output to a VGA monitor at a resolution of
+1024x768/60Hz. The processor runs at a frequency of only 130 MHz
+(!). The program consists of 17000 rows of RISC-V assembler and
+uses all the capabilities of the RP2350 processor to the extreme.
+The resulting animation is so amazing that I had to build the
+Kaleidoscopico module to see it with my own eyes.</font></p>
+
+<p align="left"><font face="Arial">The wiring diagram is simple
+and can also be implemented on a breadboard. I made a printed
+circuit board because I wanted the device to be compact. The
+resistors for VGA should have higher precision, but the image
+quality will not suffer much if you use values close to mine -
+470, 1K0, 2K2, and 4K7.</font></p>
+
+<p align="left"><font face="Arial">I recorded the demo -
+intentionally with a camera and just in my hand, for
+authenticity, so you can better see what the demo looks like in
+reality and that everything is actually generated
+programmatically in real time: </font><a
+href="https://www.youtube.com/watch?v=XT4kAaerATs"><font
+face="Arial">https://www.youtube.com/watch?v=XT4kAaerATs</font></a></p>
+
+<p align="left"><a href="img/Kaleidoscopico.jpg"><font
+face="Arial"><img src="img/Kaleidoscopico_m.jpg" border="0"
+width="400" height="398"></font></a><font face="Arial"> <img
+src="img/Kaleidoscopico_preview.jpg" width="581" height="400"></font></p>
+
+<p align="left"><a href="img/Kaleidoscopico_diagram.png"><font
+face="Arial"><img src="img/Kaleidoscopico_diagram_m.jpg"
+border="0" width="617" height="300"></font></a></p>
+
+<p align="left"><a href="img/Kaleidoscopico_route.jpg"><font
+face="Arial"><img src="img/Kaleidoscopico_route_m.jpg" border="0"
+width="278" height="300"></font></a><font face="Arial"> </font><a
+href="img/Kaleidoscopico_bottom.png"><font face="Arial"><img
+src="img/Kaleidoscopico_bottom_m.jpg" border="0" width="278"
+height="300"></font></a></p>
+
+<p align="left"><a href="dwn/Kaleidoscopico.zip"><font
+face="Arial">Download documents - schematic and PCB in Eagle,
+firmware in UF2 and BIN formats</font></a></p>
+
+<p align="left"><a
+href="https://linusakesson.net/scene/kaleidoscopico/index.php"><font
+face="Arial">Author's website with the Kaleidoscopico project</font></a></p>
+
+<p align="left"><a
+href="https://www.youtube.com/watch?v=KhhLoVBpg48"><font
+face="Arial">Author's demo video of Kaleidoscopico</font></a></p>
+
+<p align="left"><a
+href="https://www.youtube.com/watch?v=XT4kAaerATs"><font
+face="Arial">My recording with Kaleodoscopico</font></a></p>
+
+<p align="left"><a
+href="https://www.breatharian.eu/hw/craft/index_en.html"><font
+face="Arial">A similar demo, Craft, also created by Linus
+Akesson, which I previously implemented.</font></a></p>
+
+<p align="left"><font face="Arial"></font>&nbsp;</p>
+
+<h2 align="left"><a name="history"></a><font size="5"
+face="Arial"><strong>History of versions</strong></font></h2>
+
+<ul>
+    <li><p align="left"><font face="Arial"><strong>03/08/2023</strong>
+        PicoPad prototype with pre-alpha PicoLibSDK version 0.8.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>04/28/2023</strong>
+        PicoPad full version with alpha PicoLibSDK version 0.90</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>06/28/2023</strong>
+        alpha PicoLibSDK version 0.91, improved battery
+        measurement</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>07/30/2023</strong>
+        version 1.00: first final release</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>08/06/2023</strong>
+        version 1.01: printf() print memory block, stdio to UART
+        and FILE, add Pico and PicoinoMini devices, some USB
+        repairs</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>08/14/2023</strong>
+        version 1.02: added video player, added DemoVGA board,
+        added compilation scripts for Linux</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>08/19/2023</strong>
+        version 1.03: SPI SD card speed fix, timer-alarm
+        treatment for short times</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>08/26/2023</strong>
+        version 1.04: Replace qvga/vga/qdraw/drawtft libraries
+        with more versatile minivga/draw libraries with 4/8/15/16
+        bit output and 320x240 to 800x600 pixel resolution.
+        Slide-show player added. Added Picotron device, with
+        4-bit VGA output. Added BOOTSEL to boot3 loader (in
+        Battery menu).</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>09/09/2023</strong>
+        version 1.05: CSYNC in VGA driver, added PicoVGA8
+        library, added VREG library, setup volume and backlight,
+        calibrate crystal.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>10/03/2023</strong>
+        version 1.06: added PicoPadVGA device and some drawing
+        functions.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>10/06/2023</strong>
+        version 1.07: support for RAM programs, support for
+        saving and loading Flash boot loader.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>10/18/2023</strong>
+        version 1.08: simulate keypad using USB keyboard
+        (USE_USBPAD, A-&gt;Ctrl, B-&gt;Alt, X-&gt;Shift,
+        Y-&gt;Esc).</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>12/05/2023</strong>
+        version 1.09: ADPCM sound compression, original-SDK
+        interface.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>12/30/2023</strong>
+        version 1.10: Intel 4004/4040 CPU emulator, DVI (HDMI)
+        display, DVIVGA (HDMI with VGA) display, file selector</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>01/27/2024</strong>
+        version 1.11: loader passes home path to the application;
+        CPU emulators: I4004, I4040, I8008, I8048, I8052, I8080,
+        I8085, I8086, I8088, I80186, I80188, M6502, M65C02, X80,
+        Z80.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>05/01/2024</strong>
+        version 1.12: Screen saver in loader to turn off when
+        charging. Simple PC DOS emulator.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>06/14/2024</strong>
+        version 1.13: Game Boy Emulator</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>10/08/2024</strong>
+        version 2.00: RP2350 Pico 2 support</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>10/27/2024</strong>
+        version 2.01: Fast float library for RISC-V Hazard3 core.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>11/05/2024</strong>
+        version 2.02: NES Emulator</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>12/03/2024</strong>
+        version 2.03: Fast double library for RISC-V Hazard3
+        core.</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>02/24/2025</strong>
+        version 2.04: DispHSTX library v1.00, DrawCan library,
+        faster compilation, configurable compilation paths</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>03/02/2025</strong>
+        version 2.05: Build of DispHSTX v1.01 library for
+        Raspberry PicoSDK</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>03/05/2025</strong>
+        version 2.06: PWMSnd update - higher quality audio
+        output, less noise, higher PWM output sample rate, 12-bit
+        output, stereo and 16-bit format support</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>03/14/2025</strong>
+        version 2.07: MP3 decoder and player</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>05/01/2025</strong>
+        version 2.08: Added PicopadHSTX device and DispHSTXMini
+        driver</font></p>
+    </li>
+    <li><p align="left"><font face="Arial"><strong>05/07/2025</strong>
+        version 2.09: PSRAM memory support, PSRAM memory
+        allocator</font></p>
+    </li>
+</ul>
+
+<p align="right"><font face="Arial">Miroslav Nemecek</font></p>
+
+<p align="left"><a href="../index_en.html"><font size="3"
+face="Arial">&lt;&lt; Back</font></a></p>
+
+<p>&nbsp;</p>
+</body>
+</html>
