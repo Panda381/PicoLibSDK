@@ -325,11 +325,22 @@ void DoMove(const sMove* m)
 		SetPiece(m->extra, EMPTY); // capture enemy pawn
 	}
 
-	// make castle
-	else
+	// small castle
+	else if (m->flags == MOVEFLAG_SMALL)
 	{
-		SetPiece(m->src, m->dstpiece & ~MOVEMASK); // put rook
+		SetPiece(m->src, EMPTY); // empty king
+		SetPiece(m->src+1, m->dstpiece & ~MOVEMASK); // put rook
 		SetPiece(m->dst, m->srcpiece & ~MOVEMASK); // put king
+		SetPiece(m->src+3, EMPTY); // empty rook
+	}
+
+	// big castle
+	else if (m->flags == MOVEFLAG_BIG)
+	{
+		SetPiece(m->src, EMPTY); // empty king
+		SetPiece(m->src-1, m->dstpiece & ~MOVEMASK); // put rook
+		SetPiece(m->dst, m->srcpiece & ~MOVEMASK); // put king
+		SetPiece(m->src-4, EMPTY); // empty rook
 	}
 }
 
@@ -338,14 +349,36 @@ void UndoMove(const sMove* m)
 {
 	if ((m->srcpiece & PIECEMASK) == KING) Players[Player].king = m->src;
 
-	SetPiece(m->src, m->srcpiece);
+	// En Passant
 	if (m->flags == MOVEFLAG_EP)
 	{
+		SetPiece(m->src, m->srcpiece);
 		SetPiece(m->dst, EMPTY);
 		SetPiece(m->extra, m->dstpiece);
 	}
+
+	// small castle
+	else if (m->flags == MOVEFLAG_SMALL)
+	{
+		SetPiece(m->src, m->srcpiece | NOMOVING);
+		SetPiece(m->src+1, EMPTY);
+		SetPiece(m->dst, EMPTY);
+		SetPiece(m->src+3, m->dstpiece | NOMOVING);
+	}
+
+	// big castle
+	else if (m->flags == MOVEFLAG_BIG)
+	{
+		SetPiece(m->src, m->srcpiece | NOMOVING);
+		SetPiece(m->src-1, EMPTY);
+		SetPiece(m->dst, EMPTY);
+		SetPiece(m->src-4, m->dstpiece | NOMOVING);
+	}
 	else
+	{
+		SetPiece(m->src, m->srcpiece);
 		SetPiece(m->dst, m->dstpiece);
+	}
 }
 
 // do move with visualization
@@ -590,7 +623,8 @@ void SearchMoves(s16 val)
 					// 2 fields: must be first move and to empty field
 					if ((jump == 20) || (jump == -20))
 					{
-						if (((piece & MOVEMASK) == MOVING) || (piece3 != EMPTY)) break;
+						if (((piece & MOVEMASK) == MOVING) || (piece3 != EMPTY)
+							|| (GetPiece(pos - jump/2) != EMPTY)) break;
 					}
 
 					// 1 step in straight direction: must be to empty field
@@ -721,14 +755,12 @@ void SearchMoves(s16 val)
 			check = TestCheck();
 			Players[Player].king = pos0+2;
 			check |= TestCheck();
-			Players[Player].king = pos0+3;
-			check |= TestCheck();
 			Players[Player].king = pos0;
 
 			if (!check && (movenum < STACK_MAX))
 			{
 				move->src = pos0;
-				move->dst = pos;
+				move->dst = pos0+2;
 				move->srcpiece = piece;
 				move->dstpiece = piece3;
 				move->flags = MOVEFLAG_SMALL;
@@ -750,16 +782,12 @@ void SearchMoves(s16 val)
 			check = TestCheck();
 			Players[Player].king = pos0-2;
 			check |= TestCheck();
-			Players[Player].king = pos0-3;
-			check |= TestCheck();
-			Players[Player].king = pos0-4;
-			check |= TestCheck();
 			Players[Player].king = pos0;
 
 			if (!check && (movenum < STACK_MAX))
 			{
 				move->src = pos0;
-				move->dst = pos;
+				move->dst = pos0-2;
 				move->srcpiece = piece;
 				move->dstpiece = piece3;
 				move->flags = MOVEFLAG_BIG;

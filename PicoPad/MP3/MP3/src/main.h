@@ -16,6 +16,7 @@
 #define HEIGHT 240
 #endif
 
+/*
 // BMP file header (size 70 bytes)
 #if !USE_SCREENSHOT		// use screen shots
 #pragma pack(push,1)
@@ -47,5 +48,6 @@ typedef struct {
 } sBmp;
 #pragma pack(pop)
 #endif
+*/
 
 #endif // _MAIN_H

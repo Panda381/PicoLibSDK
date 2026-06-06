@@ -14,7 +14,7 @@
 //	This source code is freely available for any purpose, including commercial.
 //	It is possible to take and modify the code or parts of it, without restriction.
 
-#undef REAL			// number type
+#undef REAL		// number type
 #undef REALEXT		// extended number type
 #undef BASE_BITS	// number of bits of base entry
 #undef BASE_NUM		// number of base entries

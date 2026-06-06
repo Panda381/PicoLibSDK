@@ -898,7 +898,7 @@ int TextFindRev(const pText* text, const pText* fnd, int pos)
 	// one-character text
 	const char* f = (*fnd)->data;
 	char ch = *f;
-	if (len == 1) return TextFindChar(text, ch, pos);
+	if (len == 1) return TextFindCharRev(text, ch, pos);
 
 	// find string
 	f++;
@@ -1638,15 +1638,15 @@ Bool TextRow(pText* dst, const pText* src, int row)
 // unformat text - substitute white characters with one space character
 Bool TextUnformat(pText* text)
 {
+	// copy before write
+	if (!TextCopyWrite(text)) return False;
+
 	char *dst, *src;
 	int len = (*text)->len;
 	dst = (*text)->data;
 	src = dst;
 	Bool lastspace = False; // flag - last character was space
 	char ch;
-
-	// copy before write
-	if (!TextCopyWrite(text)) return False;
 
 	for (; len > 0;  len--)
 	{
