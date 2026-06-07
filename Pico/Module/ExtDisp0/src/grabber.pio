@@ -1,0 +1,71 @@
+
+; ============================================================================
+;                       SPI grabber (29 instructions)
+; ============================================================================
+; Data format: Motorola 8-bit, polarity 1, phase 1, MSB first, LSB last
+
+; clock 252 MHz, 1 instruction 4 ns, SPI speed 24000000 (24 MHz, up to 62 MHz), 1 bit 42 ns up to 16 ns
+
+; Idle: CS=HIGH, CLK=HIGH
+; Rising CLK edge: sample data
+
+; (GPIO19) GPIO26, pin 0: LCD_MOSI 8-bit data, MSB first, LSB last
+; (GPIO20) GPIO27, pin 1: LCD_DC data/command, HIGH data, LOW command --> INVERTED: LOW data, HIGH command
+; (GPIO21) GPIO28, pin 2: LCD_CS chip select, HIGH inactive, LOW active
+; (GPIO22) GPIO29, pin 3: LCD_SCK clock, idle HIGH, rising (LOW->HIGH) sample data ... 1 pulse 20 ns up to 8 ns
+
+.program grabber
+.define CSPIN	2
+.define SCKPIN	3
+
+public start:
+
+	; [2] reset ISR shift register
+	mov	isr null		; reset ISR shift register
+	wait	0 pin CSPIN		; waiting for CS = LOW
+
+.wrap_target				; wrap jump target
+
+	; [3] load data bit 7 and DC into ISR input shift register
+	wait	0 pin SCKPIN		; waiting for CLK = LOW
+	wait	1 pin SCKPIN		; waiting for CLK = HIGH, rising edge of CLK
+	in	pins 2			; input data bit 7 and DC into ISR input shift register
+
+	; [4] load data bit 6 into ISR input shift register
+	wait	0 pin SCKPIN		; waiting for CLK = LOW
+	jmp	pin start		; CS is not active
+	wait	1 pin SCKPIN		; waiting for CLK = HIGH, rising edge of CLK
+	in	pins 1			; input data bit 6 into ISR input shift register
+
+	; [3] load data bit 5 into ISR input shift register
+	wait	0 pin SCKPIN		; waiting for CLK = LOW
+	wait	1 pin SCKPIN		; waiting for CLK = HIGH, rising edge of CLK
+	in	pins 1			; input data bit 5 into ISR input shift register
+
+	; [3] load data bit 4 into ISR input shift register
+	wait	0 pin SCKPIN		; waiting for CLK = LOW
+	wait	1 pin SCKPIN		; waiting for CLK = HIGH, rising edge of CLK
+	in	pins 1			; input data bit 4 into ISR input shift register
+
+	; [4] load data bit 3 into ISR input shift register
+	wait	0 pin SCKPIN		; waiting for CLK = LOW
+	jmp	pin start		; CS is not active
+	wait	1 pin SCKPIN		; waiting for CLK = HIGH, rising edge of CLK
+	in	pins 1			; input data bit 3 into ISR input shift register
+
+	; [3] load data bit 2 into ISR input shift register
+	wait	0 pin SCKPIN		; waiting for CLK = LOW
+	wait	1 pin SCKPIN		; waiting for CLK = HIGH, rising edge of CLK
+	in	pins 1			; input data bit 2 into ISR input shift register
+
+	; [3] load data bit 1 into ISR input shift register
+	wait	0 pin SCKPIN		; waiting for CLK = LOW
+	wait	1 pin SCKPIN		; waiting for CLK = HIGH, rising edge of CLK
+	in	pins 1			; input data bit 1 into ISR input shift register
+
+	; [4] load data bit 0 into ISR input shift register + AUTO-PUSH
+	wait	0 pin SCKPIN		; waiting for CLK = LOW
+	jmp	pin, start		; CS is not active
+	wait	1 pin SCKPIN		; waiting for CLK = HIGH, rising edge of CLK
+	in	pins 1			; input data bit 0 into ISR input shift register + AUTO-PUSH
+.wrap					; wrap jump to .wrap_target
