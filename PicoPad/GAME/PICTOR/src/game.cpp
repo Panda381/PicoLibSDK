@@ -196,7 +196,7 @@ void Game()
 #if !DEB_ENDLESS	// 1=endless level
 		if (CurrentFrame >= MaxFrame)
 		{
-			NewGame(Level+1);
+			if (!NewGame(Level+1)) return;
 		}
 #endif
 
